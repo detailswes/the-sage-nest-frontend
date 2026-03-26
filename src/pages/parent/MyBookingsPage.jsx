@@ -316,7 +316,7 @@ const PastBookingCard = ({ booking }) => {
             </div>
 
             {/* Cancellation reason */}
-            {booking.status === 'CANCELLED' && booking.cancellation_reason && (
+            {['CANCELLED', 'REFUNDED'].includes(booking.status) && booking.cancellation_reason && (
               <p className="mt-2 text-xs text-gray-400 italic">
                 Reason: {booking.cancellation_reason}
               </p>

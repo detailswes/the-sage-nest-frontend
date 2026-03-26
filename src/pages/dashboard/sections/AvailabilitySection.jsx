@@ -14,7 +14,7 @@ import {
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-import { listAvailability, addAvailabilitySlot, removeAvailabilitySlot } from '../../../api/expertApi';
+import { listAvailability, addAvailabilitySlot, removeAvailabilitySlot, getMyProfile } from '../../../api/expertApi';
 import { listBlockouts, createBlockout, deleteBlockout } from '../../../api/blockoutApi';
 import { getCalendarBookings } from '../../../api/bookingApi';
 
@@ -564,6 +564,7 @@ const AvailabilitySection = () => {
 
   const [loadingInit, setLoadingInit] = useState(true);
   const [initError,   setInitError]   = useState('');
+  const [expertTz,    setExpertTz]    = useState('');
 
   const [addingSlot,  setAddingSlot]  = useState(false);
   const [removingId,  setRemovingId]  = useState(null);
@@ -580,8 +581,14 @@ const AvailabilitySection = () => {
       listAvailability(),
       listBlockouts(initialRange.start.toISOString(), initialRange.end.toISOString()),
       getCalendarBookings(initialRange.start.toISOString(), initialRange.end.toISOString()),
+      getMyProfile(),
     ])
-      .then(([s, b, bk]) => { setSlots(s); setBlockouts(b); setCalBookings(bk); })
+      .then(([s, b, bk, profile]) => {
+        setSlots(s);
+        setBlockouts(b);
+        setCalBookings(bk);
+        setExpertTz(profile?.timezone || '');
+      })
       .catch(() => setInitError('Failed to load availability data.'))
       .finally(() => setLoadingInit(false));
   }, []);
@@ -766,6 +773,19 @@ const AvailabilitySection = () => {
           />
         </div>
       </div>
+
+      {/* Timezone notice */}
+      {expertTz ? (
+        <div className="mb-4 px-4 py-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-sm text-gray-600">
+          Your availability times are set in your profile timezone: <span className="font-semibold text-[#1F2933]">{expertTz}</span>
+        </div>
+      ) : (
+        <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <strong>Timezone not set.</strong> Please set your timezone in your{' '}
+          <a href="/dashboard/expert/profile" className="underline font-medium">Profile</a>{' '}
+          before adding availability, so your slots display correctly to parents.
+        </div>
+      )}
 
       {/* Settings panels */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">

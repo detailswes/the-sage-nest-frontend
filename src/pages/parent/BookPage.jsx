@@ -18,7 +18,7 @@ function formatDuration(mins) {
 
 function formatSlotTime(isoString) {
   return new Date(isoString).toLocaleTimeString('en-GB', {
-    hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+    hour: '2-digit', minute: '2-digit',
   });
 }
 
@@ -198,7 +198,7 @@ const BookPage = () => {
       <div>
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-[#1F2933]">Find an Expert</h2>
-          <p className="text-sm text-gray-500 mt-1">Browse our verified experts and book a session.</p>
+          <p className="text-sm text-gray-500 mt-1">Browse our vetted experts and book a session.</p>
         </div>
 
         {error && (
@@ -343,6 +343,8 @@ const BookPage = () => {
           <p className="text-xs text-gray-400 mt-1">Try selecting a different date.</p>
         </div>
       ) : (
+        <>
+        <p className="text-xs text-gray-400 mb-2">Times shown in your local timezone.</p>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
           {slots.map((slot) => (
             <button key={slot.start} onClick={() => setSelectedSlot(slot)}
@@ -355,6 +357,7 @@ const BookPage = () => {
             </button>
           ))}
         </div>
+        </>
       )}
 
       {/* Summary + Book button */}
@@ -364,11 +367,16 @@ const BookPage = () => {
           <div className="space-y-1 text-sm text-gray-600 mb-4">
             <p><span className="font-medium text-[#1F2933]">Expert:</span> {selectedExpert?.user?.name}</p>
             <p><span className="font-medium text-[#1F2933]">Service:</span> {selectedService?.title}</p>
-            <p><span className="font-medium text-[#1F2933]">Date:</span> {new Date(selectedSlot.start).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}</p>
-            <p><span className="font-medium text-[#1F2933]">Time:</span> {formatSlotTime(selectedSlot.start)} UTC</p>
+            <p><span className="font-medium text-[#1F2933]">Date:</span> {new Date(selectedSlot.start).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p><span className="font-medium text-[#1F2933]">Time:</span> {formatSlotTime(selectedSlot.start)} <span className="text-xs text-gray-400">(your local time)</span></p>
             <p><span className="font-medium text-[#1F2933]">Format:</span> {selectedFormat === 'ONLINE' ? 'Online' : 'In-Person'}</p>
             <p><span className="font-medium text-[#1F2933]">Duration:</span> {formatDuration(selectedService?.duration_minutes)}</p>
             <p className="text-base font-semibold text-[#1F2933] mt-2">{formatPrice(selectedService?.price)}</p>
+          </div>
+
+          {/* Health disclaimer */}
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
+            Sage Nest is a booking platform, not a healthcare provider. Practitioners listed on this platform are independent professionals. Advice given during sessions does not constitute medical advice, diagnosis, or treatment and should not be relied upon as a substitute for professional medical care. Always seek the advice of a qualified healthcare provider if you have concerns about your or your child's health. If you believe you or your child need urgent medical care, contact emergency services immediately.
           </div>
 
           {/* T&C acceptance — required before booking */}
