@@ -48,9 +48,10 @@ const InfoRow = ({ label, value }) => (
 const BusinessInfoCard = ({ initialData = null }) => {
   const [data, setData] = useState(initialData);
   const [showForm, setShowForm] = useState(!initialData);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [saving, setSaving]       = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [serverError, setServerError] = useState("");
+  const [saved, setSaved]         = useState(false);
 
   const [form, setForm] = useState(
     initialData
@@ -76,57 +77,37 @@ const BusinessInfoCard = ({ initialData = null }) => {
   const isIndividual = form.entity_type === "INDIVIDUAL";
   const isCompany = form.entity_type === "COMPANY";
 
-  const inputClass =
-    "w-full px-3 py-2.5 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]";
+  const inputClass = (field) =>
+    `w-full px-3 py-2.5 rounded-lg border text-sm text-[#1F2933] bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
+      fieldErrors[field] ? "border-red-400" : "border-[#E4E7E4]"
+    }`;
   const labelClass = "block text-xs font-medium text-[#1F2933] mb-1";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
-    setFormError("");
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    setServerError("");
     setSaved(false);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    setFormError("");
+    setServerError("");
 
-    if (!form.entity_type) {
-      setFormError("Entity type is required.");
-      return;
-    }
-    if (!form.legal_name.trim()) {
-      setFormError("Full legal name is required.");
-      return;
-    }
-    if (isIndividual && !form.date_of_birth) {
-      setFormError("Date of birth is required for individual experts.");
-      return;
-    }
-    if (!form.primary_address.trim()) {
-      setFormError("Primary address is required.");
-      return;
-    }
-    if (!form.tin.trim()) {
-      setFormError("Tax Identification Number (TIN) is required.");
-      return;
-    }
-    if (isCompany && !form.company_reg_number.trim()) {
-      setFormError(
-        "Company registration number is required for legal entities."
-      );
-      return;
-    }
-    if (!form.iban.trim()) {
-      setFormError("IBAN / bank account is required.");
-      return;
-    }
-    if (!form.business_email.trim()) {
-      setFormError("Email address is required.");
-      return;
-    }
-    if (!form.website.trim()) {
-      setFormError("Website is required.");
+    const errs = {};
+    if (!form.entity_type) errs.entity_type = "Entity type is required.";
+    if (!form.legal_name.trim()) errs.legal_name = "Full legal name is required.";
+    if (isIndividual && !form.date_of_birth) errs.date_of_birth = "Date of birth is required.";
+    if (!form.primary_address.trim()) errs.primary_address = "Primary address is required.";
+    if (!form.tin.trim()) errs.tin = "Tax Identification Number (TIN) is required.";
+    if (isCompany && !form.company_reg_number.trim()) errs.company_reg_number = "Company registration number is required.";
+    if (!form.iban.trim()) errs.iban = "IBAN / bank account is required.";
+    if (!form.business_email.trim()) errs.business_email = "Email address is required.";
+    if (!form.website.trim()) errs.website = "Website is required.";
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
       return;
     }
 
@@ -150,9 +131,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
       setData(updated);
       setShowForm(false);
       setSaved(true);
+      setFieldErrors({});
       setTimeout(() => setSaved(false), 5000);
     } catch (err) {
-      setFormError(
+      setServerError(
         err?.response?.data?.error || "Failed to save business information."
       );
     } finally {
@@ -177,7 +159,8 @@ const BusinessInfoCard = ({ initialData = null }) => {
             type="button"
             onClick={() => {
               setShowForm(true);
-              setFormError("");
+              setFieldErrors({});
+              setServerError("");
               setSaved(false);
             }}
             className="flex-shrink-0 ml-4 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-1.5 rounded-lg transition-colors"
@@ -284,9 +267,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
           onSubmit={handleSave}
           className="mt-4 border border-[#E4E7E4] rounded-xl p-4 space-y-4"
         >
-          {formError && (
+          {serverError && (
             <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {formError}
+              {serverError}
             </p>
           )}
 
@@ -299,7 +282,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
               name="entity_type"
               value={form.entity_type}
               onChange={handleChange}
-              className={inputClass}
+              className={inputClass("entity_type")}
             >
               <option value="">Select type…</option>
               {ENTITY_TYPES.map((t) => (
@@ -308,6 +291,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 </option>
               ))}
             </select>
+            {fieldErrors.entity_type && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.entity_type}</p>}
           </div>
 
           {/* Legal name */}
@@ -321,8 +305,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
               value={form.legal_name}
               onChange={handleChange}
               placeholder="Individual or business name as officially registered"
-              className={inputClass}
+              className={inputClass("legal_name")}
             />
+            {fieldErrors.legal_name && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.legal_name}</p>}
           </div>
 
           {/* Date of birth — individual only */}
@@ -337,8 +322,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 value={form.date_of_birth}
                 onChange={handleChange}
                 max={new Date().toISOString().split("T")[0]}
-                className={inputClass}
+                className={inputClass("date_of_birth")}
               />
+              {fieldErrors.date_of_birth && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.date_of_birth}</p>}
             </div>
           )}
 
@@ -357,8 +343,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
                   ? "Registered business address"
                   : "Residential address"
               }
-              className={`${inputClass} resize-none`}
+              className={`${inputClass("primary_address")} resize-none`}
             />
+            {fieldErrors.primary_address && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.primary_address}</p>}
           </div>
 
           {/* TIN */}
@@ -373,8 +360,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
               value={form.tin}
               onChange={handleChange}
               placeholder="CPR (Denmark), PPS (Ireland), or national equivalent"
-              className={inputClass}
+              className={inputClass("tin")}
             />
+            {fieldErrors.tin && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.tin}</p>}
           </div>
 
           {/* VAT number — optional */}
@@ -389,7 +377,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
               value={form.vat_number}
               onChange={handleChange}
               placeholder="Leave blank if not applicable"
-              className={inputClass}
+              className={inputClass("vat_number")}
             />
           </div>
 
@@ -406,8 +394,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 value={form.company_reg_number}
                 onChange={handleChange}
                 placeholder="Official company registration number"
-                className={inputClass}
+                className={inputClass("company_reg_number")}
               />
+              {fieldErrors.company_reg_number && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.company_reg_number}</p>}
             </div>
           )}
 
@@ -422,15 +411,16 @@ const BusinessInfoCard = ({ initialData = null }) => {
               value={form.iban}
               onChange={handleChange}
               placeholder="e.g. IE64IRCE92050112345678"
-              className={inputClass}
+              className={inputClass("iban")}
             />
+            {fieldErrors.iban && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.iban}</p>}
           </div>
 
           {/* Email + website side by side */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>
-                Email address <span className="text-red-500">*</span>
+                Email <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -438,8 +428,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 value={form.business_email}
                 onChange={handleChange}
                 placeholder="business@example.com"
-                className={inputClass}
+                className={inputClass("business_email")}
               />
+              {fieldErrors.business_email && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.business_email}</p>}
             </div>
             <div>
               <label className={labelClass}>
@@ -451,8 +442,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 value={form.website}
                 onChange={handleChange}
                 placeholder="https://www.example.com"
-                className={inputClass}
+                className={inputClass("website")}
               />
+              {fieldErrors.website && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.website}</p>}
             </div>
           </div>
 
@@ -470,7 +462,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
               value={form.municipality}
               onChange={handleChange}
               placeholder="e.g. Copenhagen"
-              className={inputClass}
+              className={inputClass("municipality")}
             />
           </div>
 
@@ -488,7 +480,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
               onChange={handleChange}
               rows={3}
               placeholder="Leave blank if same as primary address"
-              className={`${inputClass} resize-none`}
+              className={`${inputClass("business_address")} resize-none`}
             />
           </div>
 
@@ -499,7 +491,8 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 type="button"
                 onClick={() => {
                   setShowForm(false);
-                  setFormError("");
+                  setFieldErrors({});
+                  setServerError("");
                 }}
                 className="text-sm text-gray-500 hover:text-[#1F2933] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
               >

@@ -214,7 +214,7 @@ const BookPage = () => {
             <p className="text-sm font-medium text-gray-500">No experts available yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
             {experts.map((e) => (
               <ExpertCard key={e.id} expert={e} onSelect={handleSelectExpert} />
             ))}

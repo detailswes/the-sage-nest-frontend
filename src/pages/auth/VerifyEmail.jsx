@@ -28,7 +28,7 @@ const ResendForm = ({ title, description }) => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email address"
+            placeholder="Enter your email"
             required
             className="w-full px-4 py-3 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] placeholder-gray-400 bg-white mb-3 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]"
           />

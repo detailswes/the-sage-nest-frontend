@@ -96,7 +96,7 @@ const Register = () => {
              
   const textFields = [
     { id: 'name', label: 'Full name', type: 'text', placeholder: 'Jane Smith' },
-    { id: 'email', label: 'Email address', type: 'email', placeholder: 'you@example.com' },
+    { id: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com' },
   ];
 
   // ── Email sent state ────────────────────────────────────────────────────────

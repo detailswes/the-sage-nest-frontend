@@ -27,6 +27,7 @@ import BookingStatusPage from "./pages/parent/BookingStatusPage";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import TermsConditionsPage from "./pages/legal/TermsConditionsPage";
 import ExpertManagementSection from "./pages/dashboard/sections/ExpertManagementSection";
+import ParentManagementSection from "./pages/dashboard/sections/ParentManagementSection";
 import LegalDocumentsSection from "./pages/dashboard/sections/LegalDocumentsSection";
 
 function App() {
@@ -132,8 +133,9 @@ function App() {
             }
           >
             <Route index element={<Navigate to="experts" replace />} />
-            <Route path="experts"           element={<ExpertManagementSection />} />
-            <Route path="legal-documents"   element={<LegalDocumentsSection />} />
+            <Route path="experts"         element={<ExpertManagementSection />} />
+            <Route path="parents"         element={<ParentManagementSection />} />
+            <Route path="legal-documents" element={<LegalDocumentsSection />} />
           </Route>
 
           {/* Stripe redirect pages — require EXPERT auth */}

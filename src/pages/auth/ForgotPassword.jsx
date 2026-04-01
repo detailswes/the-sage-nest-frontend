@@ -11,8 +11,8 @@ const ForgotPassword = () => {
   const [serverError, setServerError] = useState('');
 
   const validate = () => {
-    if (!email.trim()) return 'Email address is required.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email address.';
+    if (!email.trim()) return 'Email is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email.';
     return '';
   };
 
@@ -94,7 +94,7 @@ const ForgotPassword = () => {
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-            Email address
+            Email
           </label>
           <input
             id="email"

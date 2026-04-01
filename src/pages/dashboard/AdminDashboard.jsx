@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useState } from "react";
+import { Link, useLocation, Outlet } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const UsersIcon = ({ active }) => (
   <svg
-    className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[#445446]' : 'text-current'}`}
+    className={`w-5 h-5 flex-shrink-0 ${
+      active ? "text-[#445446]" : "text-current"
+    }`}
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -37,19 +39,26 @@ const LogoutIcon = () => (
 
 const DocumentIcon = ({ active }) => (
   <svg
-    className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[#445446]' : 'text-current'}`}
+    className={`w-5 h-5 flex-shrink-0 ${
+      active ? "text-[#445446]" : "text-current"
+    }`}
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
     strokeWidth={1.8}
   >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+    />
   </svg>
 );
 
 const NAV_ITEMS = [
-  { path: 'experts',          label: 'Expert Management', Icon: UsersIcon },
-  { path: 'legal-documents',  label: 'Legal Documents',   Icon: DocumentIcon },
+  { path: "experts", label: "Expert Management", Icon: UsersIcon },
+  // { path: 'parents',          label: 'Parent Management', Icon: UsersIcon },
+  { path: "legal-documents", label: "Legal Documents", Icon: DocumentIcon },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -58,26 +67,42 @@ const AdminDashboard = () => {
   const location = useLocation();
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
-  const lastSegment = location.pathname.split('/').pop();
-  const activeSection = ['experts', 'legal-documents'].includes(lastSegment) ? lastSegment : 'experts';
+  const lastSegment = location.pathname.split("/").pop();
+  const activeSection = ["experts", "parents", "legal-documents"].includes(
+    lastSegment
+  )
+    ? lastSegment
+    : "experts";
 
   const initials = user?.name
-    ? user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-    : 'A';
+    ? user.name
+        .trim()
+        .split(/\s+/)
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "A";
 
   return (
     <div className="min-h-screen bg-[#F5F7F5] flex">
       {/* ── Sidebar ── */}
       <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-[#E4E7E4] flex flex-col z-10">
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-[#E4E7E4] gap-2.5">
-          <img
-            src="/assets/images/Sage-Nest_Final.svg"
-            alt="Sage Nest"
-            className="h-8"
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
-          <span className="text-[#1F2933] font-bold text-base tracking-tight">Sage Nest</span>
+        <div className="h-16 flex items-center px-6 border-b border-[#E4E7E4]">
+          <Link to="/dashboard/admin/experts" className="flex items-center gap-2.5">
+            <img
+              src="/assets/images/Sage-Nest_Final.svg"
+              alt="Sage Nest"
+              className="h-8"
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
+            />
+            <span className="text-[#1F2933] font-bold text-base tracking-tight">
+              Sage Nest
+            </span>
+          </Link>
         </div>
 
         {/* Admin badge + user info */}
@@ -88,12 +113,16 @@ const AdminDashboard = () => {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <p className="text-sm font-semibold text-[#1F2933] truncate">{user?.name}</p>
+                <p className="text-sm font-semibold text-[#1F2933] truncate">
+                  {user?.name}
+                </p>
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#445446] text-white flex-shrink-0">
                   ADMIN
                 </span>
               </div>
-              <p className="text-xs text-gray-400 truncate mt-0.5">{user?.email}</p>
+              <p className="text-xs text-gray-400 truncate mt-0.5">
+                {user?.email}
+              </p>
             </div>
           </div>
         </div>
@@ -108,8 +137,8 @@ const AdminDashboard = () => {
                 to={path}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
-                    ? 'bg-[#445446]/10 text-[#445446]'
-                    : 'text-gray-500 hover:text-[#1F2933] hover:bg-gray-50'
+                    ? "bg-[#445446]/10 text-[#445446]"
+                    : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
                 }`}
               >
                 <Icon active={isActive} />
@@ -142,15 +171,29 @@ const AdminDashboard = () => {
       {showSignOutConfirm && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowSignOutConfirm(false); }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowSignOutConfirm(false);
+          }}
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mx-auto mb-4">
-              <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+              <svg
+                className="w-6 h-6 text-red-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"
+                />
               </svg>
             </div>
-            <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">Sign out?</h3>
+            <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
+              Sign out?
+            </h3>
             <p className="text-sm text-gray-500 text-center mb-6">
               Are you sure you want to sign out of your account?
             </p>
