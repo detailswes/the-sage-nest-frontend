@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   listExperts,
   approveExpert,
@@ -1510,6 +1511,7 @@ const ExpertModal = ({ expert, onClose, onActionRequest }) => {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const ExpertManagementSection = () => {
+  const navigate = useNavigate();
   const [experts, setExperts] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
@@ -1893,7 +1895,7 @@ const ExpertManagementSection = () => {
           }`}
         >
           {/* Header row */}
-          <div className="grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_200px] gap-3 px-5 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
+          <div className="grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_200px] gap-3 px-5 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
               Name
             </p>
@@ -1909,6 +1911,9 @@ const ExpertManagementSection = () => {
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
               Joined
             </p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Bookings
+            </p>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">
               Actions
             </p>
@@ -1922,13 +1927,13 @@ const ExpertManagementSection = () => {
             return (
               <div
                 key={expert.id}
-                className={`grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_200px] gap-3 px-5 py-4 items-center hover:bg-gray-50 transition-colors ${
+                className={`grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_200px] gap-3 px-5 py-4 items-center hover:bg-gray-50 transition-colors ${
                   idx > 0 ? "border-t border-[#E4E7E4]" : ""
                 }`}
               >
-                {/* Name — opens modal */}
+                {/* Name — opens detail page */}
                 <button
-                  onClick={() => setSelectedExpert(expert)}
+                  onClick={() => navigate(`/dashboard/admin/experts/${expert.id}`)}
                   className="flex items-center gap-2.5 text-left group"
                   title="View full profile"
                 >
@@ -1982,6 +1987,22 @@ const ExpertManagementSection = () => {
                 <p className="text-xs text-gray-500">
                   {formatDate(expert.user?.created_at)}
                 </p>
+
+                {/* Bookings count */}
+                {(() => {
+                  const count = expert._count?.bookings ?? 0;
+                  return count > 0 ? (
+                    <button
+                      onClick={() => navigate(`/dashboard/admin/bookings?search=${encodeURIComponent(expert.user?.name || "")}`)}
+                      className="text-sm font-medium text-[#445446] hover:underline text-left"
+                      title="View bookings for this expert"
+                    >
+                      {count}
+                    </button>
+                  ) : (
+                    <span className="text-sm text-gray-300">0</span>
+                  );
+                })()}
 
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-1.5">
@@ -2108,13 +2129,6 @@ const ExpertManagementSection = () => {
         onPageChange={handlePageChange}
       />
 
-      {selectedExpert && (
-        <ExpertModal
-          expert={selectedExpert}
-          onClose={() => setSelectedExpert(null)}
-          onActionRequest={requestAction}
-        />
-      )}
 
       {confirmAction &&
         (() => {

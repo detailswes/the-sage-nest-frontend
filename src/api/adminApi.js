@@ -20,16 +20,25 @@ export const resendVerification = (id) => api.post(`/admin/experts/${id}/resend-
 export const manuallyVerify     = (id) => api.post(`/admin/experts/${id}/verify`).then((r) => r.data);
 
 // ── Tax export ────────────────────────────────────────────────────────────────
-export const exportTaxDataCsv   = (id, year) =>
+export const exportTaxDataCsv       = (id, year) =>
   api.get(`/admin/experts/${id}/tax-export`, { params: { year }, responseType: 'blob' }).then((r) => r.data);
+
+export const getExpertYearlySummary = (id, year, status = "ALL") =>
+  api.get(`/admin/experts/${id}/yearly-summary`, { params: { year, status } }).then((r) => r.data);
 
 // ── GDPR ──────────────────────────────────────────────────────────────────────
 export const gdprDeleteExpert   = (id, confirmEmail) =>
   api.post(`/admin/experts/${id}/gdpr-delete`, { confirm_email: confirmEmail }).then((r) => r.data);
 
 // ── Bookings ──────────────────────────────────────────────────────────────────
-export const listExpertBookings = (expertId) => api.get('/admin/bookings', { params: { expertId } }).then((r) => r.data);
-export const adminManualRefund  = (bookingId, reason) => api.post(`/admin/bookings/${bookingId}/refund`, { reason }).then((r) => r.data);
+export const getExpertDetail       = (id) => api.get(`/admin/experts/${id}`).then((r) => r.data);
+export const listExpertBookings    = (expertId) => api.get('/admin/bookings', { params: { expertId } }).then((r) => r.data);
+export const adminManualRefund     = (bookingId, reason, amount) => api.post(`/admin/bookings/${bookingId}/refund`, { reason, ...(amount != null ? { amount } : {}) }).then((r) => r.data);
+export const listAllBookings       = (params = {}) => api.get('/admin/bookings/all', { params }).then((r) => r.data);
+export const getBookingDetail      = (id) => api.get(`/admin/bookings/${id}`).then((r) => r.data);
+export const adminCancelBooking    = (id, reason) => api.post(`/admin/bookings/${id}/cancel`, { reason }).then((r) => r.data);
+export const markBookingDisputed   = (id, disputed, reason) => api.post(`/admin/bookings/${id}/dispute`, { disputed, reason }).then((r) => r.data);
+export const updateBookingNote     = (id, note) => api.put(`/admin/bookings/${id}/note`, { note }).then((r) => r.data);
 
 // ── Legal documents ───────────────────────────────────────────────────────────
 export const getLegalDocuments  = () => api.get('/admin/legal-documents').then((r) => r.data);
@@ -53,3 +62,8 @@ export const suspendParent      = (id) => api.post(`/admin/parents/${id}/suspend
 // ── Parent GDPR ───────────────────────────────────────────────────────────────
 export const gdprDeleteParent   = (id, confirmEmail) =>
   api.post(`/admin/parents/${id}/gdpr-delete`, { confirm_email: confirmEmail }).then((r) => r.data);
+
+// ── Transactions (Payment Overview) ──────────────────────────────────────────
+export const listTransactions      = (params = {}) => api.get('/admin/transactions', { params }).then((r) => r.data);
+export const exportTransactionsCsv = (params = {}) =>
+  api.get('/admin/transactions/export', { params, responseType: 'blob' }).then((r) => r.data);

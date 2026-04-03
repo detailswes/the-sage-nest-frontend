@@ -29,6 +29,9 @@ import TermsConditionsPage from "./pages/legal/TermsConditionsPage";
 import ExpertManagementSection from "./pages/dashboard/sections/ExpertManagementSection";
 import ParentManagementSection from "./pages/dashboard/sections/ParentManagementSection";
 import LegalDocumentsSection from "./pages/dashboard/sections/LegalDocumentsSection";
+import BookingsManagementSection from "./pages/dashboard/sections/BookingsManagementSection";
+import AdminExpertDetailSection from "./pages/dashboard/sections/AdminExpertDetailSection";
+import PaymentsOverviewSection from "./pages/dashboard/sections/PaymentsOverviewSection";
 
 function App() {
   return (
@@ -134,7 +137,10 @@ function App() {
           >
             <Route index element={<Navigate to="experts" replace />} />
             <Route path="experts"         element={<ExpertManagementSection />} />
+            <Route path="experts/:id"     element={<AdminExpertDetailSection />} />
             <Route path="parents"         element={<ParentManagementSection />} />
+            <Route path="bookings"        element={<BookingsManagementSection />} />
+            <Route path="payments"        element={<PaymentsOverviewSection />} />
             <Route path="legal-documents" element={<LegalDocumentsSection />} />
           </Route>
 
