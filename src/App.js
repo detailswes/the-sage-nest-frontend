@@ -31,6 +31,7 @@ import ParentManagementSection from "./pages/dashboard/sections/ParentManagement
 import LegalDocumentsSection from "./pages/dashboard/sections/LegalDocumentsSection";
 import BookingsManagementSection from "./pages/dashboard/sections/BookingsManagementSection";
 import AdminExpertDetailSection from "./pages/dashboard/sections/AdminExpertDetailSection";
+import AdminParentDetailSection from "./pages/dashboard/sections/AdminParentDetailSection";
 import PaymentsOverviewSection from "./pages/dashboard/sections/PaymentsOverviewSection";
 
 function App() {
@@ -139,6 +140,7 @@ function App() {
             <Route path="experts"         element={<ExpertManagementSection />} />
             <Route path="experts/:id"     element={<AdminExpertDetailSection />} />
             <Route path="parents"         element={<ParentManagementSection />} />
+            <Route path="parents/:id"     element={<AdminParentDetailSection />} />
             <Route path="bookings"        element={<BookingsManagementSection />} />
             <Route path="payments"        element={<PaymentsOverviewSection />} />
             <Route path="legal-documents" element={<LegalDocumentsSection />} />

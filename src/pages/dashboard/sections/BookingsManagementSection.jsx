@@ -93,6 +93,8 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
   const [refundReason, setRefundReason]       = useState("");
   const [refundAmount, setRefundAmount]       = useState("");
   const [refundAmountError, setRefundAmountError] = useState("");
+  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+  const [pendingRefundAmount, setPendingRefundAmount] = useState(undefined);
 
   // Internal note
   const [note, setNote]         = useState("");
@@ -165,7 +167,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
     }
   };
 
-  const handleRefund = async () => {
+  const handleRefundSubmit = () => {
     setRefundAmountError("");
     const bookingTotal = parseFloat(booking.amount);
     let parsedAmount = undefined;
@@ -180,19 +182,29 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
         return;
       }
     }
+    setPendingRefundAmount(parsedAmount);
+    setShowRefundConfirm(true);
+  };
+
+  const handleRefundConfirm = async () => {
+    setShowRefundConfirm(false);
     clearFeedback();
     setActionLoading("refund");
+    const bookingTotal = parseFloat(booking.amount);
     try {
-      await adminManualRefund(bookingId, refundReason.trim() || undefined, parsedAmount);
-      const isPartial = parsedAmount != null && parsedAmount < bookingTotal;
-      setActionSuccess(isPartial ? `Partial refund of £${parsedAmount.toFixed(2)} issued successfully.` : "Full refund issued successfully.");
+      await adminManualRefund(bookingId, refundReason.trim() || undefined, pendingRefundAmount);
+      const isPartial = pendingRefundAmount != null && pendingRefundAmount < bookingTotal;
+      setActionSuccess(isPartial
+        ? `Partial refund of £${pendingRefundAmount.toFixed(2)} issued successfully.`
+        : "Full refund issued successfully.");
       setShowRefundForm(false);
       setRefundReason("");
       setRefundAmount("");
+      setPendingRefundAmount(undefined);
       await load();
       onUpdated();
     } catch (e) {
-      setActionError(e?.response?.data?.error || "Failed to issue refund.");
+      setActionError(e?.response?.data?.error || "Failed to issue refund. Please try again.");
     } finally {
       setActionLoading(null);
     }
@@ -509,7 +521,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                   />
                   <div className="flex gap-2 mt-2">
                     <button
-                      onClick={handleRefund}
+                      onClick={handleRefundSubmit}
                       disabled={actionLoading === "refund"}
                       className="px-3 py-1.5 text-xs font-medium bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
                     >
@@ -560,6 +572,42 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
           </div>
         )}
       </div>
+
+      {/* Refund confirmation modal */}
+      {showRefundConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-50 mx-auto mb-4">
+              <svg className="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
+              {pendingRefundAmount != null ? "Confirm Partial Refund" : "Confirm Full Refund"}
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-4">
+              {pendingRefundAmount != null
+                ? `Issue a partial refund of £${pendingRefundAmount.toFixed(2)} for booking #${bookingId}?`
+                : `Issue a full refund of £${parseFloat(booking.amount).toFixed(2)} for booking #${bookingId}?`}
+              {" "}This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRefundConfirm(false)}
+                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRefundConfirm}
+                className="flex-1 py-2.5 px-4 rounded-lg bg-gray-700 hover:bg-gray-800 text-white text-sm font-medium transition-colors"
+              >
+                Yes, issue refund
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

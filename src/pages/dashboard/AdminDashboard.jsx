@@ -101,12 +101,9 @@ const AdminDashboard = () => {
   const location = useLocation();
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
-  const lastSegment = location.pathname.split("/").pop();
-  const activeSection = ["experts", "parents", "bookings", "payments", "legal-documents"].includes(
-    lastSegment
-  )
-    ? lastSegment
-    : "experts";
+  const segments = location.pathname.split("/");
+  const knownSections = ["experts", "parents", "bookings", "payments", "legal-documents"];
+  const activeSection = knownSections.find((s) => segments.includes(s)) ?? "experts";
 
   const initials = user?.name
     ? user.name

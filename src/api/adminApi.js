@@ -51,6 +51,9 @@ export const getAuditLog        = (entityId, entityType = 'EXPERT', page = 1) =>
 // ── Parent list ───────────────────────────────────────────────────────────────
 export const listParents        = (params = {}) => api.get('/admin/parents', { params }).then((r) => r.data);
 
+// ── Parent detail (single) ────────────────────────────────────────────────────
+export const getParentDetail    = (id) => api.get(`/admin/parents/${id}`).then((r) => r.data);
+
 // ── Parent bookings ───────────────────────────────────────────────────────────
 export const listParentBookings = (parentId) => api.get(`/admin/parents/${parentId}/bookings`).then((r) => r.data);
 
