@@ -26,6 +26,10 @@ export const exportTaxDataCsv       = (id, year) =>
 export const getExpertYearlySummary = (id, year, status = "ALL") =>
   api.get(`/admin/experts/${id}/yearly-summary`, { params: { year, status } }).then((r) => r.data);
 
+// ── Language approvals ────────────────────────────────────────────────────────
+export const approveLanguage = (id, language) => api.post(`/admin/experts/${id}/languages/approve`, { language }).then((r) => r.data);
+export const rejectLanguage  = (id, language) => api.post(`/admin/experts/${id}/languages/reject`,  { language }).then((r) => r.data);
+
 // ── GDPR ──────────────────────────────────────────────────────────────────────
 export const gdprDeleteExpert   = (id, confirmEmail) =>
   api.post(`/admin/experts/${id}/gdpr-delete`, { confirm_email: confirmEmail }).then((r) => r.data);

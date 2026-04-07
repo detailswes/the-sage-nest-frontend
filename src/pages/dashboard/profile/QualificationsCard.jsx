@@ -245,6 +245,9 @@ const QualificationsCard = ({ initialData = [] }) => {
             Select your qualifications and upload supporting documents for admin
             review.
           </p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Supporting documents optional · PDF, JPG, PNG · max 5 MB
+          </p>
         </div>
         {!showForm && (
           <button
@@ -352,6 +355,12 @@ const QualificationsCard = ({ initialData = [] }) => {
                       onChange={handleEditFileChange}
                     />
                   </div>
+
+                  {!q.document_url && !editForm.document && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      Adding a supporting document helps admins verify this entry faster.
+                    </p>
+                  )}
 
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <button
@@ -518,12 +527,6 @@ const QualificationsCard = ({ initialData = [] }) => {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-[#1F2933] mb-1">
-              Supporting document{" "}
-              <span className="font-normal text-gray-400">
-                (optional · PDF, JPG, PNG · max 5 MB)
-              </span>
-            </label>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -544,6 +547,12 @@ const QualificationsCard = ({ initialData = [] }) => {
               onChange={handleFileChange}
             />
           </div>
+
+          {!form.document && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Adding a supporting document helps admins verify this entry faster.
+            </p>
+          )}
 
           <div className="flex items-center justify-end gap-2 pt-1">
             <button

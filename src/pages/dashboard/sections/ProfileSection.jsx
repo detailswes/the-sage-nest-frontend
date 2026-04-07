@@ -10,7 +10,7 @@ import BusinessInfoCard from '../profile/BusinessInfoCard';
 import InsuranceCard from '../profile/InsuranceCard';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const MAX_FILE_SIZE = 1024 * 1024;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMG_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 const SESSION_FORMAT_OPTIONS = [
@@ -20,12 +20,13 @@ const SESSION_FORMAT_OPTIONS = [
 ];
 
 const LANGUAGES = [
-  'English', 'Irish', 'French', 'Spanish', 'German', 'Italian',
-  'Portuguese', 'Polish', 'Romanian', 'Arabic', 'Hindi', 'Urdu',
-  'Mandarin', 'Punjabi', 'Lithuanian', 'Latvian', 'Russian',
+  'English', 'Danish', 'Swedish', 'Norwegian', 'Finnish',
+  'German', 'French', 'Italian', 'Spanish', 'Portuguese',
+  'Dutch', 'Polish', 'Irish',
 ];
 
 const SUMMARY_MAX = 200;
+const BIO_MAX = 700;
 
 const TIMEZONES = [
   { value: 'Europe/Rome',    label: 'Rome / Italy (CET/CEST)' },
@@ -121,6 +122,7 @@ const EMPTY_FORM = {
   timezone: 'Europe/Rome',
   address_street: '', address_city: '', address_postcode: '',
   languages: [],
+  pending_languages: [],
   instagram: '', facebook: '', linkedin: '',
 };
 
@@ -139,6 +141,8 @@ const ProfileSection = () => {
   const [initCerts, setInitCerts]               = useState(null);
   const [initBusinessInfo, setInitBusinessInfo] = useState(undefined); // undefined = not loaded
   const [initInsurance, setInitInsurance]       = useState(undefined); // undefined = not loaded
+
+  const [customLangInput, setCustomLangInput] = useState('');
 
   const [loading, setLoading]     = useState(true);
   const [saving, setSaving]       = useState(false);
@@ -168,7 +172,8 @@ const ProfileSection = () => {
           address_street:   data.address_street   || '',
           address_city:     data.address_city     || '',
           address_postcode: data.address_postcode || '',
-          languages:        Array.isArray(data.languages) ? data.languages : [],
+          languages:         Array.isArray(data.languages)         ? data.languages         : [],
+          pending_languages: Array.isArray(data.pending_languages) ? data.pending_languages : [],
           instagram:        data.instagram || '',
           facebook:         data.facebook  || '',
           linkedin:         data.linkedin  || '',
@@ -218,6 +223,24 @@ const ProfileSection = () => {
     if (success) setSuccess(false);
   };
 
+  const handleAddCustomLanguage = () => {
+    const lang = customLangInput.trim();
+    if (!lang) return;
+    if (
+      LANGUAGES.map((l) => l.toLowerCase()).includes(lang.toLowerCase()) ||
+      form.languages.map((l) => l.toLowerCase()).includes(lang.toLowerCase()) ||
+      form.pending_languages.map((l) => l.toLowerCase()).includes(lang.toLowerCase())
+    ) return;
+    setForm((f) => ({ ...f, pending_languages: [...f.pending_languages, lang] }));
+    setCustomLangInput('');
+    if (success) setSuccess(false);
+  };
+
+  const handleRemovePendingLanguage = (lang) => {
+    setForm((f) => ({ ...f, pending_languages: f.pending_languages.filter((l) => l !== lang) }));
+    if (success) setSuccess(false);
+  };
+
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -227,7 +250,7 @@ const ProfileSection = () => {
       setImageError('Please upload a JPEG, PNG, or WebP image.'); return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      setImageError(`Your photo is ${(file.size / 1024 / 1024).toFixed(1)} MB — max 1 MB.`); return;
+      setImageError(`Your photo is ${(file.size / 1024 / 1024).toFixed(1)} MB — max 5 MB. Try to upload a photo of shorter size.`); return;
     }
     const localUrl = URL.createObjectURL(file);
     setImagePreview(localUrl);
@@ -248,6 +271,9 @@ const ProfileSection = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (form.bio.length > BIO_MAX) {
+      setError(`Full bio must be ${BIO_MAX} characters or fewer.`); return;
+    }
     if (form.summary.length > SUMMARY_MAX) {
       setError(`Summary must be ${SUMMARY_MAX} characters or fewer.`); return;
     }
@@ -265,7 +291,8 @@ const ProfileSection = () => {
         address_street:   form.address_street   || null,
         address_city:     form.address_city     || null,
         address_postcode: form.address_postcode || null,
-        languages:        form.languages,
+        languages:         form.languages,
+        pending_languages: form.pending_languages,
         instagram:        form.instagram || null,
         facebook:         form.facebook  || null,
         linkedin:         form.linkedin  || null,
@@ -409,13 +436,21 @@ const ProfileSection = () => {
             )}
             {memberSince && <span className="text-xs text-gray-400">Member since {memberSince}</span>}
           </div>
-          <div className="mt-2 min-h-[1.25rem]">
+          <div className="mt-2">
             {imageError ? (
-              <p className="text-xs text-red-500">{imageError}</p>
+              <div className="flex items-start gap-1.5 px-2.5 py-2 bg-red-50 border border-red-200 rounded-lg">
+                <svg className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                </svg>
+                <p className="text-xs text-red-600 flex-1 leading-snug">{imageError}</p>
+                <button type="button" onClick={() => setImageError('')} className="text-red-400 hover:text-red-600 flex-shrink-0 ml-1">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
             ) : uploading ? (
-              <p className="text-xs text-[#445446]">Uploading photo…</p>
+              <p className="text-xs text-[#445446] min-h-[1.25rem]">Uploading photo…</p>
             ) : (
-              <p className="text-xs text-gray-400">Click your photo to change it · JPEG, PNG or WebP · max 1 MB · <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-green-50 text-green-700 border border-green-200 align-middle">Public</span></p>
+              <p className="text-xs text-gray-400 min-h-[1.25rem]">Click your photo to change it · JPEG, PNG or WebP · max 5 MB · <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-green-50 text-green-700 border border-green-200 align-middle">Public</span></p>
             )}
           </div>
         </div>
@@ -466,8 +501,11 @@ const ProfileSection = () => {
               onChange={handleChange}
               rows={4}
               placeholder="Tell parents about your background, experience and approach…"
-              className={`${inputClass} resize-none`}
+              className={`${inputClass} resize-none ${form.bio.length > BIO_MAX ? 'border-red-400 focus:border-red-400 focus:ring-red-200/50' : ''}`}
             />
+            <p className={`mt-1 text-xs text-right font-medium ${form.bio.length > BIO_MAX ? 'text-red-500' : form.bio.length > BIO_MAX - 70 ? 'text-amber-500' : 'text-gray-400'}`}>
+              {form.bio.length} / {BIO_MAX}
+            </p>
           </div>
 
           {/* Session format */}
@@ -540,9 +578,59 @@ const ProfileSection = () => {
                 />
               ))}
             </div>
-            {form.languages.length > 0 && (
-              <p className="mt-2 text-xs text-gray-500">Selected: {form.languages.join(', ')}</p>
+
+            {/* Admin-approved custom languages (in form.languages but not in predefined LANGUAGES list) */}
+            {form.languages.filter((l) => !LANGUAGES.includes(l)).length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {form.languages.filter((l) => !LANGUAGES.includes(l)).map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => handleLanguageToggle(lang)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#445446] text-white border border-[#445446] transition-all duration-150"
+                  >
+                    {lang}
+                    <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-white/20 text-white">Approved</span>
+                  </button>
+                ))}
+              </div>
             )}
+
+            {/* Pending (custom) languages */}
+            {form.pending_languages.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {form.pending_languages.map((lang) => (
+                  <span key={lang} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-50 border border-amber-200 text-amber-700">
+                    {lang}
+                    <span className="text-[10px] font-normal opacity-75">· pending review</span>
+                    <button type="button" onClick={() => handleRemovePendingLanguage(lang)} className="ml-0.5 hover:text-amber-900 transition-colors">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Add custom language */}
+            <div className="flex items-center gap-2 mt-3">
+              <input
+                type="text"
+                value={customLangInput}
+                onChange={(e) => setCustomLangInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomLanguage(); } }}
+                placeholder="Add a language not in the list…"
+                className="flex-1 px-3 py-2 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomLanguage}
+                disabled={!customLangInput.trim()}
+                className="flex-shrink-0 text-sm font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-2 rounded-lg transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-gray-400">Custom languages are reviewed by an admin before appearing publicly.</p>
           </div>
 
           {/* Social Media */}

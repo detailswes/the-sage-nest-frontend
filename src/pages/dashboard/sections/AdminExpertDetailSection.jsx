@@ -18,6 +18,8 @@ import {
   republishExpert,
   getAuditLog,
   gdprDeleteExpert,
+  approveLanguage,
+  rejectLanguage,
 } from "../../../api/adminApi";
 import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
 
@@ -141,6 +143,8 @@ const AdminExpertDetailSection = () => {
   const [actionLoading, setActionLoading] = useState(null);
   const [actionError, setActionError]     = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+  const [langActionLoading, setLangActionLoading] = useState(null); // language being actioned
+  const [langConfirm, setLangConfirm] = useState(null); // { lang, action: 'approve' | 'reject' }
 
   // Tabs
   const [activeTab, setActiveTab]   = useState("profile");
@@ -235,6 +239,32 @@ const AdminExpertDetailSection = () => {
   };
 
   const clearFeedback = () => { setActionError(""); setActionSuccess(""); };
+
+  const handleApproveLanguage = async (language) => {
+    setLangConfirm(null);
+    setLangActionLoading(language);
+    try {
+      const updated = await approveLanguage(expert.id, language);
+      setExpert((e) => ({ ...e, languages: updated.languages, pending_languages: updated.pending_languages }));
+    } catch (e) {
+      setActionError(e?.response?.data?.error || "Failed to approve language.");
+    } finally {
+      setLangActionLoading(null);
+    }
+  };
+
+  const handleRejectLanguage = async (language) => {
+    setLangConfirm(null);
+    setLangActionLoading(language);
+    try {
+      const updated = await rejectLanguage(expert.id, language);
+      setExpert((e) => ({ ...e, languages: updated.languages, pending_languages: updated.pending_languages }));
+    } catch (e) {
+      setActionError(e?.response?.data?.error || "Failed to reject language.");
+    } finally {
+      setLangActionLoading(null);
+    }
+  };
 
   const runAction = async (label, fn) => {
     clearFeedback();
@@ -495,6 +525,73 @@ const AdminExpertDetailSection = () => {
                         {expert.languages.map((lang) => (
                           <span key={lang} className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#445446]/10 text-[#445446]">{lang}</span>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {expert.pending_languages?.length > 0 && (
+                    <div>
+                      <SectionLabel>Pending Language Approvals</SectionLabel>
+                      <div className="flex flex-wrap gap-3">
+                        {expert.pending_languages.map((lang) => {
+                          const isConfirming = langConfirm?.lang === lang;
+                          const isLoading    = langActionLoading === lang;
+                          return (
+                            <div key={lang} className="flex items-center gap-2.5 pl-4 pr-2.5 py-2 rounded-full text-sm font-medium bg-amber-50 border border-amber-200 text-amber-700">
+                              <span>
+                                {lang}
+                                {isConfirming && (
+                                  <span className="ml-1.5 font-normal text-amber-600">
+                                    — {langConfirm.action === 'approve' ? 'Approve?' : 'Reject?'}
+                                  </span>
+                                )}
+                              </span>
+
+                              {isConfirming ? (
+                                /* Confirmation row */
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => langConfirm.action === 'approve' ? handleApproveLanguage(lang) : handleRejectLanguage(lang)}
+                                    disabled={isLoading}
+                                    className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${langConfirm.action === 'approve' ? 'bg-green-100 hover:bg-green-200 text-green-700' : 'bg-red-100 hover:bg-red-200 text-red-600'}`}
+                                  >
+                                    {isLoading ? '…' : 'Confirm'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setLangConfirm(null)}
+                                    className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                /* Default approve / reject icons */
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setLangConfirm({ lang, action: 'approve' })}
+                                    disabled={isLoading}
+                                    title="Approve"
+                                    className="p-1.5 rounded-full bg-green-100 hover:bg-green-200 text-green-700 disabled:opacity-50 transition-colors"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setLangConfirm({ lang, action: 'reject' })}
+                                    disabled={isLoading}
+                                    title="Reject"
+                                    className="p-1.5 rounded-full bg-red-100 hover:bg-red-200 text-red-600 disabled:opacity-50 transition-colors"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

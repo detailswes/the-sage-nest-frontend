@@ -104,7 +104,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
     if (isCompany && !form.company_reg_number.trim()) errs.company_reg_number = "Company registration number is required.";
     if (!form.iban.trim()) errs.iban = "IBAN / bank account is required.";
     if (!form.business_email.trim()) errs.business_email = "Email address is required.";
-    if (!form.website.trim()) errs.website = "Website is required.";
 
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
@@ -414,6 +413,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
               className={inputClass("iban")}
             />
             {fieldErrors.iban && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.iban}</p>}
+            <p className="mt-1.5 text-xs text-gray-400">
+              Required for tax reporting under DAC7 — EU Directive 2021/514. Stored encrypted.
+            </p>
           </div>
 
           {/* Email + website side by side */}
@@ -434,7 +436,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
             </div>
             <div>
               <label className={labelClass}>
-                Website <span className="text-red-500">*</span>
+                Website <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -444,7 +446,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 placeholder="https://www.example.com"
                 className={inputClass("website")}
               />
-              {fieldErrors.website && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.website}</p>}
             </div>
           </div>
 

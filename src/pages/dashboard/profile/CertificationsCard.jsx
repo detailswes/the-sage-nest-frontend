@@ -200,6 +200,9 @@ const CertificationsCard = ({ initialData = [] }) => {
           <p className="text-xs text-gray-500 mt-0.5">
             Additional training or certifications that build parent trust.
           </p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Supporting documents optional · PDF, JPG, PNG · max 5 MB
+          </p>
         </div>
         {!showForm && (
           <button
@@ -292,6 +295,12 @@ const CertificationsCard = ({ initialData = [] }) => {
                       onChange={handleEditFileChange}
                     />
                   </div>
+
+                  {!c.document_url && !editForm.document && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      Adding a supporting document helps admins verify this entry faster.
+                    </p>
+                  )}
 
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <button
@@ -426,12 +435,6 @@ const CertificationsCard = ({ initialData = [] }) => {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#1F2933] mb-1">
-              Supporting document{" "}
-              <span className="font-normal text-gray-400">
-                (optional · PDF, JPG, PNG · max 5 MB)
-              </span>
-            </label>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -452,6 +455,12 @@ const CertificationsCard = ({ initialData = [] }) => {
               onChange={handleFileChange}
             />
           </div>
+          {!form.document && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Adding a supporting document helps admins verify this entry faster.
+            </p>
+          )}
+
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
