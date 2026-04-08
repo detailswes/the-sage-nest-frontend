@@ -6,13 +6,12 @@ import { getProfileImageUrl } from '../../utils/imageUrl';
 function formatDate(isoStr) {
   return new Date(isoStr).toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    timeZone: 'UTC',
   });
 }
 
 function formatTime(isoStr) {
   return new Date(isoStr).toLocaleTimeString('en-GB', {
-    hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+    hour: '2-digit', minute: '2-digit',
   });
 }
 
@@ -139,7 +138,7 @@ const BookingCard = ({ booking, onCancel }) => {
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
-                <span>{formatTime(booking.scheduled_at)} UTC</span>
+                <span>{formatTime(booking.scheduled_at)}</span>
               </div>
 
               {/* Duration */}
@@ -287,7 +286,7 @@ const PastBookingCard = ({ booking }) => {
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
-                <span>{formatTime(booking.scheduled_at)} UTC</span>
+                <span>{formatTime(booking.scheduled_at)}</span>
               </div>
 
               {/* Duration */}

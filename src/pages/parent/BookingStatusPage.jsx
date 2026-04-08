@@ -5,10 +5,15 @@ import { getBookingById } from '../../api/bookingApi';
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS        = 40; // ~2 minutes total
 
+function formatLocation(expert) {
+  return [expert?.address_street, expert?.address_city, expert?.address_postcode]
+    .filter(Boolean).join(', ');
+}
+
 function formatDate(isoStr) {
   return new Date(isoStr).toLocaleString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+    hour: '2-digit', minute: '2-digit',
   });
 }
 
@@ -26,8 +31,11 @@ const SuccessBanner = ({ booking }) => (
     </p>
     <div className="bg-[#F5F7F5] rounded-xl border border-[#E4E7E4] p-5 text-left mb-6 space-y-2 text-sm">
       <p><span className="font-medium text-[#1F2933]">Service:</span> {booking.service?.title}</p>
-      <p><span className="font-medium text-[#1F2933]">Date & Time:</span> {formatDate(booking.scheduled_at)} UTC</p>
+      <p><span className="font-medium text-[#1F2933]">Date & Time:</span> {formatDate(booking.scheduled_at)}</p>
       <p><span className="font-medium text-[#1F2933]">Format:</span> {booking.format === 'ONLINE' ? 'Online' : 'In-Person'}</p>
+      {booking.format === 'IN_PERSON' && formatLocation(booking.expert) && (
+        <p><span className="font-medium text-[#1F2933]">Location:</span> {formatLocation(booking.expert)}</p>
+      )}
       {booking.format === 'ONLINE' && (
         <div className="mt-3 px-3 py-2.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
           Your expert will send you a meeting link (Zoom / Teams) before the session.
