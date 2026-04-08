@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { getMyProfile, updateMyProfile, uploadProfileImage } from '../../../api/expertApi';
+import { getMyProfile, updateMyProfile, uploadProfileImage, exportMyData } from '../../../api/expertApi';
 import { getProfileImageUrl } from '../../../utils/imageUrl';
 import { createConnectLink, verifyStripeReturn } from '../../../api/stripeApi';
 import QualificationsCard from '../profile/QualificationsCard';
@@ -147,6 +147,7 @@ const ProfileSection = () => {
   const [loading, setLoading]     = useState(true);
   const [saving, setSaving]       = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError]         = useState('');
   const [imageError, setImageError] = useState('');
   const [success, setSuccess]     = useState(false);
@@ -303,6 +304,26 @@ const ProfileSection = () => {
       setError(err?.response?.data?.error || 'Failed to save profile.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const data = await exportMyData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `sage-nest-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -719,6 +740,43 @@ const ProfileSection = () => {
       {initCerts        !== null      && <CertificationsCard initialData={initCerts} />}
       {initBusinessInfo !== undefined && <BusinessInfoCard   initialData={initBusinessInfo} />}
       {initInsurance    !== undefined && <InsuranceCard      initialData={initInsurance} />}
+
+      {/* GDPR Data Export */}
+      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mt-5">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#445446]/8 flex items-center justify-center">
+            <svg className="w-5 h-5 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-[#1F2933]">Your Data</h3>
+            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+              Download a copy of all personal and professional data Sage Nest holds about you — including your profile, services, bookings, and business information. Provided under GDPR Article 20 (right to data portability).
+            </p>
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={exporting}
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#445446]/30 bg-[#445446]/5 text-[#445446] text-sm font-medium hover:bg-[#445446]/10 disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-150"
+            >
+              {exporting ? (
+                <>
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+                  Preparing download…
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                  Download my data
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

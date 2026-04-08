@@ -101,6 +101,17 @@ export const deleteInsurance = () =>
 export const saveBusinessInfo = (data) =>
   api.put('/experts/me/business-info', data).then((r) => r.data);
 
+// ─── Notification Preferences ─────────────────────────────────────────────────
+export const getNotificationPreferences = () =>
+  api.get('/experts/me/notification-preferences').then((r) => r.data);
+
+export const updateNotificationPreferences = (prefs) =>
+  api.put('/experts/me/notification-preferences', prefs).then((r) => r.data);
+
+// ─── GDPR Data Export ─────────────────────────────────────────────────────────
+export const exportMyData = () =>
+  api.get('/experts/me/export').then((r) => r.data);
+
 // ─── Services ─────────────────────────────────────────────────────────────────
 export const listServices = () => api.get('/services').then((r) => r.data);
 export const createService = (data) => api.post('/services', data).then((r) => r.data);
