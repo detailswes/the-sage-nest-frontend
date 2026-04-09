@@ -31,6 +31,13 @@ function minDate() {
   return todayISO();
 }
 
+function maxDate(advanceDays) {
+  if (!advanceDays) return undefined;
+  const d = new Date();
+  d.setDate(d.getDate() + advanceDays);
+  return d.toISOString().slice(0, 10);
+}
+
 // ─── Expert card ─────────────────────────────────────────────────────────────
 const ExpertCard = ({ expert, onSelect }) => {
   const [imgSrc, setImgSrc] = useState(getProfileImageUrl(expert.profile_image));
@@ -334,6 +341,7 @@ const BookPage = () => {
       <div className="mb-5">
         <label className="block text-sm font-medium text-[#1F2933] mb-2">Select date</label>
         <input type="date" value={selectedDate} min={minDate()}
+          max={maxDate(expertDetail?.advance_booking_days)}
           onChange={(e) => setSelectedDate(e.target.value)}
           className="block w-full max-w-xs border border-[#E4E7E4] rounded-lg px-3 py-2 text-sm text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]" />
       </div>
