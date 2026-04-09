@@ -85,6 +85,8 @@ const ServicesSection = () => {
     const errs = {};
     if (!form.title.trim())
       errs.title = 'Title is required';
+    if (!form.description.trim())
+      errs.description = 'Description is required';
     if (!form.duration_minutes || isNaN(form.duration_minutes) || parseInt(form.duration_minutes) < 1)
       errs.duration_minutes = 'Enter a valid duration in minutes';
     if (!form.price || isNaN(form.price) || parseFloat(form.price) <= 0)
@@ -235,12 +237,11 @@ const ServicesSection = () => {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                Description <span className="font-normal text-gray-400">(optional)</span>
-              </label>
+              <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Description</label>
               <textarea name="description" value={form.description} onChange={handleChange} rows={2}
                 placeholder="Brief description of what this service includes…"
-                className={`${inputClass(false)} resize-none`} />
+                className={`${inputClass(!!formErrors.description)} resize-none`} />
+              {formErrors.description && <p className="mt-1.5 text-xs text-red-500">{formErrors.description}</p>}
             </div>
 
             {/* Format + Cluster */}
