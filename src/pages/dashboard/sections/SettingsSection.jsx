@@ -1,5 +1,13 @@
-import { useState, useEffect } from "react";
-import { changePasswordApi } from "../../../api/authApi";
+import { useState, useEffect, useRef } from "react";
+import {
+  changePasswordApi,
+  get2FAStatusApi,
+  sendSetupOtpApi,
+  enable2FAApi,
+  disable2FAApi,
+  deleteAccountApi,
+} from "../../../api/authApi";
+import { useAuth } from "../../../context/AuthContext";
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -133,7 +141,9 @@ const PasswordField = ({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete={name === "current" ? "current-password" : "new-password"}
-        className={`${inputClass} ${error ? "border-red-400 focus:border-red-400 focus:ring-red-200" : ""}`}
+        className={`${inputClass} ${
+          error ? "border-red-400 focus:border-red-400 focus:ring-red-200" : ""
+        }`}
       />
       <button
         type="button"
@@ -157,7 +167,11 @@ const ChangePasswordCard = () => {
     confirm: false,
   });
   const [saving, setSaving] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState({ current: "", next: "", confirm: "" });
+  const [fieldErrors, setFieldErrors] = useState({
+    current: "",
+    next: "",
+    confirm: "",
+  });
   const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
@@ -182,7 +196,8 @@ const ChangePasswordCard = () => {
       errors.next = pwError;
       hasError = true;
     } else if (form.current && form.current === form.next) {
-      errors.next = "New password must be different from your current password.";
+      errors.next =
+        "New password must be different from your current password.";
       hasError = true;
     }
 
@@ -211,9 +226,14 @@ const ChangePasswordCard = () => {
       setForm({ current: "", next: "", confirm: "" });
       setSuccess(true);
     } catch (err) {
-      const msg = err?.response?.data?.error || "Failed to change password. Please try again.";
+      const msg =
+        err?.response?.data?.error ||
+        "Failed to change password. Please try again.";
       // "Current password is incorrect" → attach to current field
-      if (msg.toLowerCase().includes("current") || msg.toLowerCase().includes("incorrect")) {
+      if (
+        msg.toLowerCase().includes("current") ||
+        msg.toLowerCase().includes("incorrect")
+      ) {
         setFieldErrors((fe) => ({ ...fe, current: msg }));
       } else {
         setFieldErrors((fe) => ({ ...fe, confirm: msg }));
@@ -490,19 +510,407 @@ const NotificationPreferencesCard = () => {
   );
 };
 
-// ─── Placeholder card ─────────────────────────────────────────────────────────
-const ComingSoonCard = ({ icon, title, description }) => (
-  <div className="bg-white rounded-xl border border-[#E4E7E4] px-6 py-5 opacity-60">
-    <div className="flex items-center gap-2.5 mb-2">
-      {icon}
-      <span className="text-sm font-semibold text-[#1F2933]">{title}</span>
-      <span className="ml-auto text-xs font-medium text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-full border border-gray-200">
-        Coming soon
-      </span>
+// ─── Delete Account card (expert) ────────────────────────────────────────────
+const DeleteAccountCard = () => {
+  const { logout } = useAuth();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleDelete = async () => {
+    if (!password) {
+      setError("Please enter your password to confirm.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await deleteAccountApi({ password });
+      logout();
+    } catch (err) {
+      const errData = err?.response?.data;
+      setError(errData?.error || "Could not delete account. Please try again.");
+      if (errData?.has_pending_payout) {
+        setShowConfirm(false);
+        setPassword("");
+      }
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-red-200 px-6 py-5">
+      <div className="flex items-center gap-2.5 mb-1">
+        <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+        </svg>
+        <h2 className="text-sm font-semibold text-red-600">Delete Account</h2>
+      </div>
+
+      {error && !showConfirm && (
+        <div className="mt-3 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">
+          {error}
+        </div>
+      )}
+
+      {!showConfirm ? (
+        <div className="mt-3 space-y-3">
+          <div className="text-xs text-gray-500 leading-relaxed space-y-2">
+            <p>The following will be <strong>permanently deleted:</strong></p>
+            <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
+              <li>Profile photo, biography, and expertise</li>
+              <li>Address, social links, and contact details</li>
+              <li>Qualifications, certifications, and insurance documents</li>
+              <li>Your password and login access</li>
+            </ul>
+            <p className="mt-2">The following will be <strong>retained for 5 years</strong> under DAC7 (EU tax reporting obligations):</p>
+            <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
+              <li>Your full name and tax identification number</li>
+              <li>Bank account details (IBAN)</li>
+              <li>Earnings and booking records tied to financial transactions</li>
+            </ul>
+          </div>
+          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            Deletion is blocked if you have a pending payout. Please wait for it to clear first.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowConfirm(true)}
+            className="px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-sm font-medium rounded-lg transition-colors"
+          >
+            Delete my account
+          </button>
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <div className="px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+            This action is <strong>permanent and irreversible.</strong> Your profile and login access will be deleted immediately.
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+              Enter your password to confirm
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
+                placeholder="Your current password"
+                className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition pr-10 ${error ? "border-red-400" : "border-[#E4E7E4]"}`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                tabIndex={-1}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <EyeIcon open={showPassword} />
+              </button>
+            </div>
+            {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => { setShowConfirm(false); setPassword(""); setError(""); }}
+              className="flex-1 py-2.5 text-sm font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleDelete}
+              className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {loading ? "Deleting…" : "Yes, delete my account"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
-    <p className="text-xs text-gray-400 leading-relaxed">{description}</p>
-  </div>
-);
+  );
+};
+
+
+// ─── Two-Factor Authentication card ──────────────────────────────────────────
+const TwoFactorCard = () => {
+  const [enabled, setEnabled] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+  const [step, setStep] = useState("idle"); // 'idle' | 'entering_code'
+  const [intent, setIntent] = useState(null); // 'enable' | 'disable'
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [successMsg, setSuccessMsg] = useState("");
+  const codeInputRef = useRef(null);
+
+  useEffect(() => {
+    get2FAStatusApi()
+      .then((data) => setEnabled(data.enabled))
+      .catch(() => {})
+      .finally(() => setLoadingStatus(false));
+  }, []);
+
+  // OTP expiry countdown
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timeLeft]);
+
+  // Resend cooldown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const handleSendCode = async (intentType) => {
+    setSaving(true);
+    setCodeError("");
+    try {
+      await sendSetupOtpApi({
+        purpose: intentType === "enable" ? "enable_2fa" : "disable_2fa",
+      });
+      setIntent(intentType);
+      setStep("entering_code");
+      setCode("");
+      setTimeLeft(60);
+      setResendCooldown(30);
+      setTimeout(() => codeInputRef.current?.focus(), 50);
+    } catch (err) {
+      const msg =
+        err?.response?.data?.error || "Failed to send code. Try again.";
+      setCodeError(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setCodeError("");
+    try {
+      await sendSetupOtpApi({
+        purpose: intent === "enable" ? "enable_2fa" : "disable_2fa",
+      });
+      setCode("");
+      setTimeLeft(60);
+      setResendCooldown(30);
+    } catch (err) {
+      setCodeError(
+        err?.response?.data?.error || "Failed to resend. Try again."
+      );
+    }
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    if (code.length !== 6) {
+      setCodeError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setSaving(true);
+    setCodeError("");
+    try {
+      if (intent === "enable") {
+        await enable2FAApi({ code });
+        setEnabled(true);
+        setSuccessMsg("Two-factor authentication enabled.");
+      } else {
+        await disable2FAApi({ code });
+        setEnabled(false);
+        setSuccessMsg("Two-factor authentication disabled.");
+      }
+      setStep("idle");
+      setCode("");
+      setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (err) {
+      const errData = err?.response?.data;
+      if (errData?.expired) {
+        setCodeError("Code expired. Please request a new one.");
+        setTimeLeft(0);
+      } else {
+        setCodeError(errData?.error || "Incorrect code. Please try again.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setStep("idle");
+    setCode("");
+    setCodeError("");
+    setTimeLeft(0);
+    setIntent(null);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E4E7E4] px-6 py-5">
+      {/* Header */}
+      <div className="flex items-center gap-2.5 mb-1">
+        <svg
+          className="w-4 h-4 text-[#445446]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"
+          />
+        </svg>
+        <h2 className="text-sm font-semibold text-[#1F2933]">
+          Two-Factor Authentication
+        </h2>
+        {!loadingStatus && (
+          <span
+            className={`ml-auto text-xs font-medium px-2.5 py-0.5 rounded-full ${
+              enabled
+                ? "bg-green-50 text-green-700 border border-green-200"
+                : "bg-gray-100 text-gray-500 border border-gray-200"
+            }`}
+          >
+            {enabled ? "Enabled" : "Disabled"}
+          </span>
+        )}
+      </div>
+
+      {loadingStatus ? (
+        <div className="flex items-center justify-center py-6">
+          <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+        </div>
+      ) : step === "idle" ? (
+        <>
+          <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+            {enabled
+              ? "A verification code is sent to your email each time you sign in."
+              : "When enabled, you'll need to enter a code sent to your email each time you sign in."}
+          </p>
+
+          {successMsg && (
+            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+              <svg
+                className="w-4 h-4 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              {successMsg}
+            </div>
+          )}
+
+          {codeError && (
+            <p className="mb-3 text-xs text-red-500">{codeError}</p>
+          )}
+
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => handleSendCode(enabled ? "disable" : "enable")}
+            className={`text-sm font-medium py-2 px-4 rounded-lg border transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+              enabled
+                ? "border-red-200 text-red-600 hover:bg-red-50"
+                : "border-[#445446] text-[#445446] hover:bg-[#445446]/5"
+            }`}
+          >
+            {saving ? "Sending code…" : enabled ? "Disable 2FA" : "Enable 2FA"}
+          </button>
+        </>
+      ) : (
+        /* OTP entry */
+        <form onSubmit={handleVerify} className="mt-3 space-y-3">
+          <p className="text-xs text-gray-500 leading-relaxed">
+            A 6-digit code was sent to your email. Enter it below to{" "}
+            <strong>{intent === "enable" ? "enable" : "disable"}</strong>{" "}
+            two-factor authentication.
+          </p>
+
+          <div>
+            <input
+              ref={codeInputRef}
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={code}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                setCode(val);
+                if (codeError) setCodeError("");
+              }}
+              placeholder="000000"
+              disabled={timeLeft === 0}
+              className={`w-full px-4 py-3 rounded-lg border text-sm text-center tracking-[0.5em] font-mono text-[#1F2933] placeholder-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${
+                codeError ? "border-red-400" : "border-[#E4E7E4]"
+              } ${timeLeft === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+            />
+            <div className="flex items-center justify-between mt-1.5">
+              {codeError ? (
+                <p className="text-xs text-red-500">{codeError}</p>
+              ) : (
+                <span />
+              )}
+              {timeLeft > 0 && (
+                <p
+                  className={`text-xs ${
+                    timeLeft <= 10 ? "text-red-500" : "text-gray-400"
+                  }`}
+                >
+                  Expires in {timeLeft}s
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={saving || code.length !== 6 || timeLeft === 0}
+              className="flex items-center gap-2 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors"
+            >
+              {saving && (
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              )}
+              {saving ? "Verifying…" : "Confirm"}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="text-sm text-gray-400 hover:text-gray-600"
+            >
+              Cancel
+            </button>
+            {resendCooldown > 0 ? (
+              <span className="ml-auto text-xs text-gray-400">
+                Resend in {resendCooldown}s
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                className="ml-auto text-xs text-[#445446] hover:underline"
+              >
+                Resend code
+              </button>
+            )}
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 const SettingsSection = () => (
@@ -519,45 +927,9 @@ const SettingsSection = () => (
 
     <NotificationPreferencesCard />
 
-    <ComingSoonCard
-      icon={
-        <svg
-          className="w-4 h-4 text-[#445446]"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3m-3 3.75h3m-3 3.75H12"
-          />
-        </svg>
-      }
-      title="Two-Factor Authentication (2FA)"
-      description="Add an extra layer of security to your account using an authenticator app. Requires a 6-digit code on every login."
-    />
+    <TwoFactorCard />
 
-    <ComingSoonCard
-      icon={
-        <svg
-          className="w-4 h-4 text-red-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z"
-          />
-        </svg>
-      }
-      title="Account Deletion"
-      description="Permanently delete your account and all associated personal data under GDPR Article 17 (right to erasure)."
-    />
+    <DeleteAccountCard />
   </div>
 );
 

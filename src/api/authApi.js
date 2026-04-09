@@ -174,3 +174,34 @@ export const acceptPrivacyPolicyApi = async () => {
   const response = await api.post('/auth/accept-pp');
   return response.data;
 };
+
+// ── 2FA ───────────────────────────────────────────────────────────────────────
+export const verifyOtpApi = async ({ otp_token, code }) => {
+  const response = await api.post('/auth/verify-otp', { otp_token, code });
+  return response.data;
+};
+
+export const resendOtpApi = async ({ otp_token }) => {
+  const response = await api.post('/auth/resend-otp', { otp_token });
+  return response.data;
+};
+
+export const get2FAStatusApi = async () => {
+  const response = await api.get('/auth/2fa/status');
+  return response.data;
+};
+
+export const sendSetupOtpApi = async ({ purpose }) => {
+  const response = await api.post('/auth/2fa/send-otp', { purpose });
+  return response.data;
+};
+
+export const enable2FAApi = async ({ code }) => {
+  const response = await api.post('/auth/2fa/enable', { code });
+  return response.data;
+};
+
+export const disable2FAApi = async ({ code }) => {
+  const response = await api.post('/auth/2fa/disable', { code });
+  return response.data;
+};
