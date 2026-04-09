@@ -78,8 +78,8 @@ const AppointmentModal = ({ event, onClose }) => {
               <p className="font-medium text-[#1F2933]">
                 {new Date(b.scheduled_at).toLocaleString('en-GB', {
                   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
-                })} UTC
+                  hour: '2-digit', minute: '2-digit',
+                })}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">{b.duration_minutes} minutes</p>
             </div>

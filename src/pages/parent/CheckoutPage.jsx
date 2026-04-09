@@ -7,7 +7,7 @@ function formatPrice(price) {
 function formatSlotTime(isoStr) {
   return new Date(isoStr).toLocaleString('en-GB', {
     weekday: 'short', day: 'numeric', month: 'short',
-    hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+    hour: '2-digit', minute: '2-digit',
   });
 }
 
@@ -18,7 +18,7 @@ const CheckoutPage = () => {
 
   const {
     bookingId, clientSecret,
-    expertName, serviceTitle, amount, scheduledAt, format,
+    expertName, serviceTitle, amount, scheduledAt, format, sessionLocation,
   } = state || {};
 
   const [stripeReady, setStripeReady]   = useState(false);
@@ -95,9 +95,13 @@ const CheckoutPage = () => {
       },
     });
 
-    // Only reached if confirmPayment did NOT redirect (i.e., an error occurred)
+    // Only reached if confirmPayment did NOT redirect (i.e., an error occurred).
+    // Validation errors (incomplete fields) are already shown inline by the
+    // Payment Element — suppress the banner for those to avoid duplication.
     if (error) {
-      setPayError(error.message || 'Payment failed. Please try again.');
+      if (error.type !== 'validation_error') {
+        setPayError(error.message || 'Payment failed. Please try again.');
+      }
       setPaying(false);
     }
   };
@@ -125,7 +129,12 @@ const CheckoutPage = () => {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Booking summary</p>
           <p className="text-base font-semibold text-[#1F2933]">{serviceTitle}</p>
           <p className="text-sm text-gray-500 mt-0.5">with {expertName}</p>
-          <p className="text-sm text-gray-500 mt-0.5">{scheduledAt ? formatSlotTime(scheduledAt) : ''} UTC</p>
+          <p className="text-sm text-gray-500 mt-0.5">{scheduledAt ? formatSlotTime(scheduledAt) : ''}</p>
+          {format === 'IN_PERSON' && sessionLocation && (
+            <p className="text-sm text-gray-500 mt-0.5">
+              <span className="font-medium text-[#1F2933]">Location:</span> {sessionLocation}
+            </p>
+          )}
           <div className="flex items-center justify-between mt-3">
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
               format === 'ONLINE'

@@ -103,16 +103,12 @@ const ServicesSection = () => {
     const errs = {};
     if (!form.title.trim())
       errs.title = 'Title is required';
-    const dur = parseInt(form.duration_minutes);
-    if (!form.duration_minutes || isNaN(dur) || dur < 15 || dur > 480)
-      errs.duration_minutes = 'Duration must be between 15 and 480 minutes';
-    const price = parseFloat(form.price);
-    if (!form.price || isNaN(price) || price < 1.00)
-      errs.price = 'Price must be at least €1.00';
-    if (!form.format)
-      errs.format = 'Please select a format';
-    if (!form.cluster)
-      errs.cluster = 'Please select a category';
+    if (!form.description.trim())
+      errs.description = 'Description is required';
+    if (!form.duration_minutes || isNaN(form.duration_minutes) || parseInt(form.duration_minutes) < 1)
+      errs.duration_minutes = 'Enter a valid duration in minutes';
+    if (!form.price || isNaN(form.price) || parseFloat(form.price) <= 0)
+      errs.price = 'Enter a valid price';
     return errs;
   };
 
@@ -305,9 +301,7 @@ const ServicesSection = () => {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                Description <span className="font-normal text-gray-400">(optional)</span>
-              </label>
+              <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Description</label>
               <textarea name="description" value={form.description} onChange={handleChange} rows={2}
                 placeholder="Brief description of what this service includes…"
                 maxLength={300}

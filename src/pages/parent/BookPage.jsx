@@ -182,15 +182,22 @@ const BookPage = () => {
         format:      selectedFormat,
         tcAccepted:  true,
       });
+      const detail = expertDetail || selectedExpert;
+      const sessionLocation = selectedFormat === 'IN_PERSON'
+        ? [detail?.address_street, detail?.address_city, detail?.address_postcode]
+            .filter(Boolean).join(', ')
+        : null;
+
       navigate('/checkout', {
         state: {
-          bookingId:    result.bookingId,
-          clientSecret: result.clientSecret,
-          expertName:   selectedExpert.user?.name,
-          serviceTitle: selectedService.title,
-          amount:       selectedService.price,
-          scheduledAt:  selectedSlot.start,
-          format:       selectedFormat,
+          bookingId:       result.bookingId,
+          clientSecret:    result.clientSecret,
+          expertName:      selectedExpert.user?.name,
+          serviceTitle:    selectedService.title,
+          amount:          selectedService.price,
+          scheduledAt:     selectedSlot.start,
+          format:          selectedFormat,
+          sessionLocation,
         },
       });
     } catch (err) {
@@ -378,6 +385,11 @@ const BookPage = () => {
             <p><span className="font-medium text-[#1F2933]">Date:</span> {new Date(selectedSlot.start).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
             <p><span className="font-medium text-[#1F2933]">Time:</span> {formatSlotTime(selectedSlot.start)} <span className="text-xs text-gray-400">(your local time)</span></p>
             <p><span className="font-medium text-[#1F2933]">Format:</span> {selectedFormat === 'ONLINE' ? 'Online' : 'In-Person'}</p>
+            {selectedFormat === 'IN_PERSON' && (() => {
+              const d = expertDetail || selectedExpert;
+              const loc = [d?.address_street, d?.address_city, d?.address_postcode].filter(Boolean).join(', ');
+              return loc ? <p><span className="font-medium text-[#1F2933]">Location:</span> {loc}</p> : null;
+            })()}
             <p><span className="font-medium text-[#1F2933]">Duration:</span> {formatDuration(selectedService?.duration_minutes)}</p>
             <p className="text-base font-semibold text-[#1F2933] mt-2">{formatPrice(selectedService?.price)}</p>
           </div>
