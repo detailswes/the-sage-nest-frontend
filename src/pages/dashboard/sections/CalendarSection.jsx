@@ -56,6 +56,14 @@ const AppointmentModal = ({ event, onClose }) => {
             <div>
               <p className="text-xs text-gray-400">Parent</p>
               <p className="font-medium text-[#1F2933]">{b.parent?.name || '—'}</p>
+              {b.parent?.email && (
+                <a
+                  href={`mailto:${b.parent.email}`}
+                  className="text-xs text-[#445446] hover:underline"
+                >
+                  {b.parent.email}
+                </a>
+              )}
             </div>
           </div>
 
