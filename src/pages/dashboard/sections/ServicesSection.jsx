@@ -105,10 +105,16 @@ const ServicesSection = () => {
       errs.title = 'Title is required';
     if (!form.description.trim())
       errs.description = 'Description is required';
-    if (!form.duration_minutes || isNaN(form.duration_minutes) || parseInt(form.duration_minutes) < 1)
-      errs.duration_minutes = 'Enter a valid duration in minutes';
-    if (!form.price || isNaN(form.price) || parseFloat(form.price) <= 0)
-      errs.price = 'Enter a valid price';
+    const dur = parseInt(form.duration_minutes);
+    if (!form.duration_minutes || isNaN(dur) || dur < 15 || dur > 480)
+      errs.duration_minutes = 'Duration must be between 15 and 480 minutes';
+    const price = parseFloat(form.price);
+    if (!form.price || isNaN(price) || price < 1.00)
+      errs.price = 'Price must be at least €1.00';
+    if (!form.format)
+      errs.format = 'Please select a format';
+    if (!form.cluster)
+      errs.cluster = 'Please select a category';
     return errs;
   };
 
@@ -305,7 +311,8 @@ const ServicesSection = () => {
               <textarea name="description" value={form.description} onChange={handleChange} rows={2}
                 placeholder="Brief description of what this service includes…"
                 maxLength={300}
-                className={`${inputClass(false)} resize-none`} />
+                className={`${inputClass(!!formErrors.description)} resize-none`} />
+              {formErrors.description && <p className="mt-1.5 text-xs text-red-500">{formErrors.description}</p>}
               <div className="flex justify-end mt-1.5">
                 <p className={`text-xs tabular-nums ${
                   form.description.length >= 280 ? 'text-red-500' :
