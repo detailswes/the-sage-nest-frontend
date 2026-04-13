@@ -5,15 +5,64 @@ import { enGB } from 'date-fns/locale/en-GB';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { getCalendarBookings } from '../../../api/bookingApi';
 
-// ─── react-big-calendar localizer (date-fns) ─────────────────────────────────
+// ─── react-big-calendar localizer (date-fns) — Monday week start ─────────────
 const locales = { 'en-GB': enGB };
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }), // Monday
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
   getDay,
   locales,
 });
+
+// ─── Custom toolbar (matches AvailabilitySection) ─────────────────────────────
+const VIEWS = ['day', 'week', 'month', 'agenda'];
+const CustomToolbar = ({ label, onNavigate, onView, view }) => (
+  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => onNavigate('PREV')}
+        className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
+        title="Previous"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+      </button>
+      <button
+        onClick={() => onNavigate('TODAY')}
+        className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#E4E7E4] hover:bg-gray-50 transition-colors"
+      >
+        Today
+      </button>
+      <button
+        onClick={() => onNavigate('NEXT')}
+        className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
+        title="Next"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+        </svg>
+      </button>
+      <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
+    </div>
+    <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
+      {VIEWS.map((v) => (
+        <button
+          key={v}
+          onClick={() => onView(v)}
+          className={`px-4 py-1.5 text-xs font-medium transition-colors ${
+            view === v
+              ? 'bg-[#445446] text-white'
+              : 'text-gray-500 hover:bg-gray-50 bg-white'
+          }`}
+        >
+          {v.charAt(0).toUpperCase() + v.slice(1)}
+        </button>
+      ))}
+    </div>
+  </div>
+);
 
 // ─── Appointment detail modal ─────────────────────────────────────────────────
 const AppointmentModal = ({ event, onClose }) => {
@@ -226,7 +275,7 @@ const CalendarSection = () => {
           onNavigate={handleNavigate}
           onView={handleView}
           onSelectEvent={handleSelect}
-          components={{ event: EventBlock }}
+          components={{ toolbar: CustomToolbar, event: EventBlock }}
           popup
           style={{ height: '100%', padding: '8px' }}
         />

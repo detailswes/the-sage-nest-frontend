@@ -136,6 +136,7 @@ function bookingsToEvents(bookings) {
       start,
       end,
       type: "booking",
+      format: b.format,         // ONLINE | IN_PERSON — drives colour
       bookingId: b.id,
     };
   });
@@ -200,6 +201,13 @@ function getRangeForView(view, date) {
       end: endOfWeek(date, { weekStartsOn: 1 }),
     };
   }
+  if (view === "day") {
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+    return { start: dayStart, end: dayEnd };
+  }
   const mStart = startOfMonth(date);
   const mEnd = endOfMonth(date);
   return {
@@ -259,7 +267,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => (
       <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
     </div>
     <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
-      {["week", "month"].map((v) => (
+      {["day", "week", "month"].map((v) => (
         <button
           key={v}
           onClick={() => onView(v)}
@@ -299,13 +307,19 @@ const eventStyleGetter = (event) => {
   if (event.type === "blockout")
     return { style: { ...base, backgroundColor: "#ef4444", color: "#fff" } }; // Blocked – red
   if (event.type === "booking")
-    return { style: { ...base, backgroundColor: "#2563eb", color: "#fff" } };
+    return {
+      style: {
+        ...base,
+        backgroundColor: event.format === "ONLINE" ? "#2563eb" : "#445446",
+        color: "#fff",
+      },
+    };
   return { style: base };
 };
 
-// ─── Custom event renderer ────────────────────────────────────────────────────
-// In month view react-big-calendar hides the built-in time label, so we render
-// it ourselves for availability slots so the expert can see the actual window.
+// ─── Custom event renderers ───────────────────────────────────────────────────
+// Month view has no time axis so we show the actual time range inside the event.
+// Week/day views already position events on the time grid — just show the label.
 const fmtTime = (d) =>
   d.toLocaleTimeString("en-GB", {
     hour: "2-digit",
@@ -313,13 +327,19 @@ const fmtTime = (d) =>
     hour12: false,
   });
 
-const EventComponent = ({ event }) => {
+// Used in month view — show HH:MM–HH:MM for availability slots
+const MonthEventComponent = ({ event }) => {
   if (event.type === "availability") {
-    return (
-      <span title={`Available ${fmtTime(event.start)}–${fmtTime(event.end)}`}>
-        {fmtTime(event.start)}–{fmtTime(event.end)}
-      </span>
-    );
+    const label = `${fmtTime(event.start)}–${fmtTime(event.end)}`;
+    return <span title={`Available ${label}`}>{label}</span>;
+  }
+  return <span title={event.title}>{event.title}</span>;
+};
+
+// Used in week/day views — position on grid is self-explanatory, just show label
+const TimeGridEventComponent = ({ event }) => {
+  if (event.type === "availability") {
+    return <span title={`Available ${fmtTime(event.start)}–${fmtTime(event.end)}`}>Available</span>;
   }
   return <span title={event.title}>{event.title}</span>;
 };
@@ -328,15 +348,20 @@ const EventComponent = ({ event }) => {
 const Legend = () => (
   <div className="flex items-center gap-4 mb-4 flex-wrap">
     {[
-      { color: "#445446", label: "Available" },
+      { color: "#445446", label: "Available",           opacity: 0.85 },
       { color: "#f97316", label: "Day Off" },
       { color: "#ef4444", label: "Blocked" },
-      { color: "#2563eb", label: "Booked" },
-    ].map(({ color, label }) => (
+      { color: "#2563eb", label: "Booked (Online)" },
+      { color: "#445446", label: "Booked (In-Person)",  border: "2px dashed #445446", bg: "transparent" },
+    ].map(({ color, label, opacity, border, bg }) => (
       <div key={label} className="flex items-center gap-1.5">
         <span
           className="w-3 h-3 rounded-sm flex-shrink-0"
-          style={{ backgroundColor: color }}
+          style={{
+            backgroundColor: bg !== undefined ? bg : color,
+            opacity: opacity ?? 1,
+            border: border ?? "none",
+          }}
         />
         <span className="text-xs text-gray-500">{label}</span>
       </div>
@@ -1239,6 +1264,7 @@ const AvailabilitySection = () => {
             localizer={localizer}
             events={events}
             view={view}
+            views={['day', 'week', 'month']}
             date={date}
             onNavigate={handleNavigate}
             onView={handleViewChange}
@@ -1246,7 +1272,9 @@ const AvailabilitySection = () => {
             eventPropGetter={eventStyleGetter}
             components={{
               toolbar: () => null,
-              month: { event: EventComponent },
+              month: { event: MonthEventComponent },
+              week:  { event: TimeGridEventComponent },
+              day:   { event: TimeGridEventComponent },
               showMore: ShowMoreComponent,
             }}
             step={30}
