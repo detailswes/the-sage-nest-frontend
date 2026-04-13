@@ -1,13 +1,162 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout";
 import PasswordInput from "../../components/auth/PasswordInput";
 import useAuthForm from "../../hooks/useAuthForm";
 import { validateLoginForm } from "../../utils/validation";
-import { loginUser } from "../../api/authApi";
+import { loginUser, verifyOtpApi, resendOtpApi } from "../../api/authApi";
 import { useAuth } from "../../context/AuthContext";
 import useResendVerification from "../../hooks/useResendVerification";
 
+// ─── OTP step ─────────────────────────────────────────────────────────────────
+const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendStatus, setResendStatus] = useState(null); // 'sent' | 'error'
+  const [expired, setExpired] = useState(false);
+  const inputRef = useRef(null);
+
+  // 60-second countdown for OTP expiry
+  const [timeLeft, setTimeLeft] = useState(60);
+  useEffect(() => {
+    if (timeLeft <= 0) { setExpired(true); return; }
+    const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timeLeft]);
+
+  // Resend cooldown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    if (!code.trim() || code.length !== 6) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const data = await verifyOtpApi({ otp_token: otpToken, code: code.trim() });
+      onSuccess(data);
+    } catch (err) {
+      const errData = err?.response?.data;
+      if (errData?.expired) {
+        setExpired(true);
+        setError("Your code has expired. Please request a new one.");
+      } else {
+        setError(errData?.error || "Incorrect code. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError("");
+    setResendStatus(null);
+    try {
+      await resendOtpApi({ otp_token: otpToken });
+      setTimeLeft(60);
+      setExpired(false);
+      setCode("");
+      setResendCooldown(30);
+      setResendStatus("sent");
+    } catch {
+      setResendStatus("error");
+    }
+  };
+
+  return (
+    <>
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#445446]/10 mb-4">
+          <svg className="w-6 h-6 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-semibold text-[#1F2933] mb-1">Check your email</h1>
+        <p className="text-sm text-gray-500">
+          We sent a 6-digit code to<br />
+          <span className="font-medium text-[#1F2933]">{userEmail}</span>
+        </p>
+      </div>
+
+      {error && (
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      {resendStatus === "sent" && (
+        <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+          New code sent — check your inbox.
+        </div>
+      )}
+
+      <form onSubmit={handleVerify} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+            Verification code
+          </label>
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={code}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+              setCode(val);
+              if (error) setError("");
+            }}
+            placeholder="000000"
+            disabled={expired}
+            className={`w-full px-4 py-3 rounded-lg border text-sm text-center tracking-[0.5em] font-mono text-[#1F2933] placeholder-gray-300 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
+              error ? "border-red-400" : "border-[#E4E7E4]"
+            } ${expired ? "opacity-50 cursor-not-allowed" : ""}`}
+          />
+          {!expired && (
+            <p className={`mt-1.5 text-xs text-right ${timeLeft <= 10 ? "text-red-500" : "text-gray-400"}`}>
+              Expires in {timeLeft}s
+            </p>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || expired || code.length !== 6}
+          className="w-full bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors duration-200 text-sm"
+        >
+          {loading ? "Verifying…" : "Verify"}
+        </button>
+      </form>
+
+      <div className="mt-4 text-center">
+        {resendCooldown > 0 ? (
+          <p className="text-xs text-gray-400">Resend in {resendCooldown}s</p>
+        ) : (
+          <button
+            type="button"
+            onClick={handleResend}
+            className="text-sm text-[#445446] hover:underline"
+          >
+            Resend code
+          </button>
+        )}
+      </div>
+    </>
+  );
+};
+
+// ─── Login form ───────────────────────────────────────────────────────────────
 const Login = () => {
   const { login } = useAuth();
   const {
@@ -24,6 +173,8 @@ const Login = () => {
   // Set when backend returns 403 email_not_verified
   const [unverifiedEmail, setUnverifiedEmail] = useState(null);
   const [lockedMessage, setLockedMessage] = useState(null);
+  // Set when backend returns two_factor_required
+  const [otpPending, setOtpPending] = useState(null); // { otp_token, email }
   const { resend, status: resendStatus, countdown } = useResendVerification();
 
   const handleSubmit = async (e) => {
@@ -40,6 +191,10 @@ const Login = () => {
     setLockedMessage(null);
     try {
       const data = await loginUser(form);
+      if (data.two_factor_required) {
+        setOtpPending({ otp_token: data.otp_token, email: form.email });
+        return;
+      }
       login(data);
       // GuestRoute reactively redirects to /dashboard once user state updates
     } catch (err) {
@@ -61,6 +216,28 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  // ── OTP screen ──────────────────────────────────────────────────────────────
+  if (otpPending) {
+    return (
+      <AuthLayout>
+        <OtpStep
+          otpToken={otpPending.otp_token}
+          userEmail={otpPending.email}
+          onSuccess={(data) => login(data)}
+        />
+        <p className="mt-5 text-center">
+          <button
+            type="button"
+            onClick={() => setOtpPending(null)}
+            className="text-sm text-gray-400 hover:text-gray-600"
+          >
+            ← Back to sign in
+          </button>
+        </p>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout>
