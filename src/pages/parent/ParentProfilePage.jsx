@@ -379,10 +379,12 @@ const DeleteAccountSection = ({ onLogout }) => {
       await deleteAccountApi({ password });
       onLogout();
     } catch (err) {
-      setError(
-        err?.response?.data?.error ||
-          "Could not delete account. Please try again."
-      );
+      const errData = err?.response?.data;
+      setError(errData?.error || "Could not delete account. Please try again.");
+      if (errData?.has_upcoming_bookings || errData?.has_pending_transactions) {
+        setShowConfirm(false);
+        setPassword("");
+      }
       setLoading(false);
     }
   };
@@ -396,17 +398,22 @@ const DeleteAccountSection = ({ onLogout }) => {
         </p>
       </div>
       <div className="px-6 py-6">
+        {error && !showConfirm && (
+          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+            {error}
+          </div>
+        )}
         {!showConfirm ? (
           <div className="space-y-4">
             <div className="text-sm text-gray-600 leading-relaxed space-y-2">
-              <p>Deleting your account will immediately remove:</p>
+              <p>Deleting your account will immediately and permanently remove:</p>
               <ul className="list-disc list-inside text-gray-500 space-y-1 pl-2">
                 <li>Your name, email address, and phone number</li>
                 <li>Your password and login access</li>
               </ul>
-              <p className="text-xs text-gray-400 mt-2">
-                Booking records are retained in anonymised form for accounting
-                purposes as required by law (GDPR Art. 17(3)(b)).
+              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3">
+                You must cancel any upcoming bookings and wait for all transactions
+                to be settled before your account can be deleted.
               </p>
             </div>
             <button

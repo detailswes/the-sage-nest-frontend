@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { listServices, createService, updateService, deleteService } from '../../../api/expertApi';
+import { listServices, createService, updateService, deleteService, reorderServices } from '../../../api/expertApi';
 
 const FORMAT_OPTIONS  = [
   { value: 'ONLINE',    label: 'Online' },
@@ -45,6 +45,21 @@ const PowerIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9" />
   </svg>
 );
+const ChevronUpIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+  </svg>
+);
+const ChevronDownIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+  </svg>
+);
+const CopyIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+  </svg>
+);
 const Spinner = ({ className = 'w-4 h-4' }) => (
   <div className={`${className} rounded-full border-2 border-current border-t-transparent animate-spin`} />
 );
@@ -61,6 +76,9 @@ const ServicesSection = () => {
   const [formErrors, setFormErrors]   = useState({});
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError]     = useState('');
+
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isReordering, setIsReordering]   = useState(false);
 
   const [deletingId, setDeletingId]     = useState(null);
   const [togglingId, setTogglingId]     = useState(null);
@@ -87,16 +105,38 @@ const ServicesSection = () => {
       errs.title = 'Title is required';
     if (!form.description.trim())
       errs.description = 'Description is required';
-    if (!form.duration_minutes || isNaN(form.duration_minutes) || parseInt(form.duration_minutes) < 1)
-      errs.duration_minutes = 'Enter a valid duration in minutes';
-    if (!form.price || isNaN(form.price) || parseFloat(form.price) <= 0)
-      errs.price = 'Enter a valid price';
+    const dur = parseInt(form.duration_minutes);
+    if (!form.duration_minutes || isNaN(dur) || dur < 15 || dur > 480)
+      errs.duration_minutes = 'Duration must be between 15 and 480 minutes';
+    const price = parseFloat(form.price);
+    if (!form.price || isNaN(price) || price < 1.00)
+      errs.price = 'Price must be at least €1.00';
+    if (!form.format)
+      errs.format = 'Please select a format';
+    if (!form.cluster)
+      errs.cluster = 'Please select a category';
     return errs;
   };
 
   const openAdd = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setFormErrors({});
+    setFormError('');
+    setShowForm(true);
+  };
+
+  const openDuplicate = (svc) => {
+    setEditingId(null);
+    setIsDuplicating(true);
+    setForm({
+      title:            svc.title,
+      description:      svc.description  || '',
+      duration_minutes: String(svc.duration_minutes),
+      price:            String(svc.price),
+      format:           svc.format       || '',
+      cluster:          svc.cluster      || '',
+    });
     setFormErrors({});
     setFormError('');
     setShowForm(true);
@@ -120,6 +160,7 @@ const ServicesSection = () => {
   const cancelForm = () => {
     setShowForm(false);
     setEditingId(null);
+    setIsDuplicating(false);
     setForm(EMPTY_FORM);
     setFormErrors({});
     setFormError('');
@@ -164,6 +205,23 @@ const ServicesSection = () => {
       setListError('Failed to delete service.');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleReorder = async (index, direction) => {
+    const swapIndex = index + direction;
+    if (swapIndex < 0 || swapIndex >= services.length) return;
+    const reordered = [...services];
+    [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
+    setServices(reordered);
+    setIsReordering(true);
+    try {
+      await reorderServices(reordered.map((s) => s.id));
+    } catch {
+      setListError('Failed to save new order.');
+      setServices(services); // revert
+    } finally {
+      setIsReordering(false);
     }
   };
 
@@ -221,7 +279,7 @@ const ServicesSection = () => {
       {showForm && (
         <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mb-5">
           <h3 className="text-base font-semibold text-[#1F2933] mb-5">
-            {editingId ? 'Edit Service' : 'Add New Service'}
+            {editingId ? 'Edit Service' : isDuplicating ? 'Duplicate Service' : 'Add New Service'}
           </h3>
           {formError && (
             <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{formError}</div>
@@ -231,8 +289,20 @@ const ServicesSection = () => {
             <div>
               <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Service title</label>
               <input type="text" name="title" value={form.title} onChange={handleChange}
-                placeholder="e.g. 1-hour Nutrition Consultation" className={inputClass(!!formErrors.title)} />
-              {formErrors.title && <p className="mt-1.5 text-xs text-red-500">{formErrors.title}</p>}
+                placeholder="e.g. 1-hour Nutrition Consultation" maxLength={80}
+                className={inputClass(!!formErrors.title)} />
+              <div className="flex items-center justify-between mt-1.5">
+                {formErrors.title
+                  ? <p className="text-xs text-red-500">{formErrors.title}</p>
+                  : <span />}
+                <p className={`text-xs tabular-nums ${
+                  form.title.length >= 75 ? 'text-red-500' :
+                  form.title.length >= 60 ? 'text-amber-500' :
+                  'text-gray-400'
+                }`}>
+                  {form.title.length}/80
+                </p>
+              </div>
             </div>
 
             {/* Description */}
@@ -240,25 +310,41 @@ const ServicesSection = () => {
               <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Description</label>
               <textarea name="description" value={form.description} onChange={handleChange} rows={2}
                 placeholder="Brief description of what this service includes…"
+                maxLength={300}
                 className={`${inputClass(!!formErrors.description)} resize-none`} />
               {formErrors.description && <p className="mt-1.5 text-xs text-red-500">{formErrors.description}</p>}
+              <div className="flex justify-end mt-1.5">
+                <p className={`text-xs tabular-nums ${
+                  form.description.length >= 280 ? 'text-red-500' :
+                  form.description.length >= 240 ? 'text-amber-500' :
+                  'text-gray-400'
+                }`}>
+                  {form.description.length}/300
+                </p>
+              </div>
             </div>
 
             {/* Format + Cluster */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Format</label>
-                <select name="format" value={form.format} onChange={handleChange} className={inputClass(false)}>
-                  <option value="">Any format…</option>
+                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                  Format <span className="text-red-400">*</span>
+                </label>
+                <select name="format" value={form.format} onChange={handleChange} className={inputClass(!!formErrors.format)}>
+                  <option value="" disabled>Select a format…</option>
                   {FORMAT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
+                {formErrors.format && <p className="mt-1.5 text-xs text-red-500">{formErrors.format}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Category</label>
-                <select name="cluster" value={form.cluster} onChange={handleChange} className={inputClass(false)}>
-                  <option value="">No category…</option>
+                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                  Category <span className="text-red-400">*</span>
+                </label>
+                <select name="cluster" value={form.cluster} onChange={handleChange} className={inputClass(!!formErrors.cluster)}>
+                  <option value="" disabled>Select a category…</option>
                   {CLUSTER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
+                {formErrors.cluster && <p className="mt-1.5 text-xs text-red-500">{formErrors.cluster}</p>}
               </div>
             </div>
 
@@ -267,13 +353,13 @@ const ServicesSection = () => {
               <div>
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Duration (min)</label>
                 <input type="number" name="duration_minutes" value={form.duration_minutes} onChange={handleChange}
-                  placeholder="60" min="1" className={inputClass(!!formErrors.duration_minutes)} />
+                  placeholder="60" min="15" max="480" className={inputClass(!!formErrors.duration_minutes)} />
                 {formErrors.duration_minutes && <p className="mt-1.5 text-xs text-red-500">{formErrors.duration_minutes}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Price (€)</label>
                 <input type="number" name="price" value={form.price} onChange={handleChange}
-                  placeholder="75.00" min="0.01" step="0.01" className={inputClass(!!formErrors.price)} />
+                  placeholder="75.00" min="1.00" step="0.01" className={inputClass(!!formErrors.price)} />
                 {formErrors.price && <p className="mt-1.5 text-xs text-red-500">{formErrors.price}</p>}
               </div>
             </div>
@@ -333,10 +419,26 @@ const ServicesSection = () => {
                 </div>
 
                 <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <button onClick={() => handleReorder(services.indexOf(svc), -1)}
+                    disabled={isReordering || services.indexOf(svc) === 0}
+                    title="Move up"
+                    className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                    <ChevronUpIcon />
+                  </button>
+                  <button onClick={() => handleReorder(services.indexOf(svc), 1)}
+                    disabled={isReordering || services.indexOf(svc) === services.length - 1}
+                    title="Move down"
+                    className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                    <ChevronDownIcon />
+                  </button>
                   <button onClick={() => handleToggle(svc)} disabled={togglingId === svc.id}
                     title={svc.is_active ? 'Deactivate' : 'Activate'}
                     className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-40">
                     {togglingId === svc.id ? <Spinner /> : <PowerIcon />}
+                  </button>
+                  <button onClick={() => openDuplicate(svc)} title="Duplicate"
+                    className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors">
+                    <CopyIcon />
                   </button>
                   <button onClick={() => openEdit(svc)} title="Edit"
                     className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors">
