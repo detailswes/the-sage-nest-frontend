@@ -282,10 +282,10 @@ const ChangePasswordSection = ({ onLogout }) => {
       setBanner({ type: "error", message: "All fields are required." });
       return;
     }
-    if (next.length < 6) {
+    if (next.length < 8) {
       setBanner({
         type: "error",
-        message: "New password must be at least 6 characters.",
+        message: "New password must be at least 8 characters.",
       });
       return;
     }
@@ -336,7 +336,7 @@ const ChangePasswordSection = ({ onLogout }) => {
             type="password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
-            placeholder="Minimum 6 characters"
+            placeholder="Minimum 8 characters"
           />
         </Field>
         <Field label="Confirm new password">

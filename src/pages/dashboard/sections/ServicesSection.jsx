@@ -6,10 +6,11 @@ const FORMAT_OPTIONS  = [
   { value: 'IN_PERSON', label: 'In-Person' },
 ];
 const CLUSTER_OPTIONS = [
-  { value: 'FOR_MUM', label: 'For Mum' },
-  { value: 'FOR_BABY', label: 'For Baby' },
-  { value: 'PACKAGE',  label: 'Package' },
-  { value: 'GIFT',     label: 'Gift' },
+  { value: 'FOR_PARENTS', label: 'For Parents' },
+  { value: 'FOR_BABY',    label: 'For Baby' },
+  { value: 'PACKAGE',     label: 'Package' },
+  { value: 'GIFT',        label: 'Gift' },
+  { value: 'EVENT',       label: 'Event' },
 ];
 
 const FORMAT_BADGE = {
@@ -17,10 +18,11 @@ const FORMAT_BADGE = {
   IN_PERSON: { label: 'In-Person', cls: 'bg-purple-100 text-purple-700' },
 };
 const CLUSTER_BADGE = {
-  FOR_MUM:  { label: 'For Mum',  cls: 'bg-pink-100 text-pink-700' },
-  FOR_BABY: { label: 'For Baby', cls: 'bg-cyan-100 text-cyan-700' },
-  PACKAGE:  { label: 'Package',  cls: 'bg-amber-100 text-amber-700' },
-  GIFT:     { label: 'Gift',     cls: 'bg-green-100 text-green-700' },
+  FOR_PARENTS: { label: 'For Parents', cls: 'bg-pink-100 text-pink-700' },
+  FOR_BABY:    { label: 'For Baby',    cls: 'bg-cyan-100 text-cyan-700' },
+  PACKAGE:     { label: 'Package',     cls: 'bg-amber-100 text-amber-700' },
+  GIFT:        { label: 'Gift',        cls: 'bg-green-100 text-green-700' },
+  EVENT:       { label: 'Event',       cls: 'bg-violet-100 text-violet-700' },
 };
 
 const EMPTY_FORM = {

@@ -21,6 +21,10 @@ export const getMyBookings = () =>
 export const cancelBooking = (id, reason) =>
   api.delete(`/bookings/${id}`, { data: { reason } }).then((r) => r.data);
 
+/** Reschedule a confirmed booking to a new slot (no payment change) */
+export const rescheduleBooking = (id, newScheduledAt) =>
+  api.patch(`/bookings/${id}/reschedule`, { newScheduledAt }).then((r) => r.data);
+
 // ─── Public slot availability ─────────────────────────────────────────────────
 
 /** Returns available time slots for an expert on a given date */
@@ -39,3 +43,11 @@ export const getCalendarBookings = (from, to) =>
 
 export const markSessionLinkSent = (id) =>
   api.patch(`/bookings/${id}/link-sent`).then((r) => r.data);
+
+/** Expert cancels a confirmed booking — always triggers a full refund to the parent */
+export const expertCancelBooking = (id) =>
+  api.post(`/bookings/${id}/expert-cancel`).then((r) => r.data);
+
+/** Reconcile a stuck PENDING_PAYMENT booking by checking Stripe directly */
+export const verifyPayment = (id) =>
+  api.post(`/bookings/${id}/verify-payment`).then((r) => r.data);

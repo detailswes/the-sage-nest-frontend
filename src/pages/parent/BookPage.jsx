@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listExperts, getExpertPublic } from '../../api/expertApi';
 import { getAvailableSlots, createBooking } from '../../api/bookingApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
+import BookingCalendar from '../../components/booking/BookingCalendar';
+import CancellationPolicy from '../../components/booking/CancellationPolicy';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatPrice(price) {
@@ -116,6 +118,15 @@ const BookPage = () => {
   const [booking,         setBooking]         = useState(false);
   const [bookErr,         setBookErr]         = useState('');
   const [tcAccepted,      setTcAccepted]      = useState(false);
+
+  const summaryRef = useRef(null);
+
+  // Scroll the booking summary into view whenever a slot is selected
+  useEffect(() => {
+    if (selectedSlot && summaryRef.current) {
+      summaryRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedSlot]);
 
   // Load expert list on mount
   useEffect(() => {
@@ -340,10 +351,12 @@ const BookPage = () => {
       {/* Date picker */}
       <div className="mb-5">
         <label className="block text-sm font-medium text-[#1F2933] mb-2">Select date</label>
-        <input type="date" value={selectedDate} min={minDate()}
-          max={maxDate(expertDetail?.advance_booking_days)}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="block w-full max-w-xs border border-[#E4E7E4] rounded-lg px-3 py-2 text-sm text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]" />
+        <BookingCalendar
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+          minDateISO={minDate()}
+          maxDateISO={maxDate(expertDetail?.advance_booking_days)}
+        />
       </div>
 
       {/* Slots grid */}
@@ -375,9 +388,14 @@ const BookPage = () => {
         </>
       )}
 
+      {/* Cancellation policy — always visible on slot step */}
+      <div className="mt-5">
+        <CancellationPolicy />
+      </div>
+
       {/* Summary + Book button */}
       {selectedSlot && (
-        <div className="bg-white rounded-xl border border-[#E4E7E4] p-5 mt-2">
+        <div ref={summaryRef} className="bg-white rounded-xl border border-[#E4E7E4] p-5 mt-2">
           <h3 className="text-sm font-semibold text-[#1F2933] mb-3">Booking summary</h3>
           <div className="space-y-1 text-sm text-gray-600 mb-4">
             <p><span className="font-medium text-[#1F2933]">Expert:</span> {selectedExpert?.user?.name}</p>

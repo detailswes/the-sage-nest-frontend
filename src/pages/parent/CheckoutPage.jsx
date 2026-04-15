@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import CancellationPolicy from '../../components/booking/CancellationPolicy';
 
 function formatPrice(price) {
   return `£${Number(price).toFixed(2)}`;
@@ -28,6 +29,9 @@ const CheckoutPage = () => {
   const elementsRef       = useRef(null);
   const paymentElementRef = useRef(null);
   const mountedRef        = useRef(false);
+
+  // Scroll to top on mount so the order summary is the first thing visible
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, []);
 
   // Guard: redirect if no booking state
   useEffect(() => {
@@ -170,13 +174,8 @@ const CheckoutPage = () => {
           )}
 
           {/* Cancellation policy — visible before payment is committed */}
-          <div className="mb-4 px-3 py-3 bg-amber-50 border border-amber-200 rounded-lg flex gap-2">
-            <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-            </svg>
-            <p className="text-xs text-amber-800 leading-relaxed">
-              <span className="font-semibold">Cancellation policy:</span> Free cancellation up to 24 hours before the session. Cancellations made within 24 hours of the session are not eligible for a refund.
-            </p>
+          <div className="mb-4">
+            <CancellationPolicy />
           </div>
 
           <button type="submit"
