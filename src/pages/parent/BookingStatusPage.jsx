@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { getBookingById } from '../../api/bookingApi';
+import { getBookingById, verifyPayment } from '../../api/bookingApi';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS        = 40; // ~2 minutes total
@@ -119,6 +119,11 @@ const BookingStatusPage = () => {
       pollCount.current += 1;
       if (pollCount.current >= MAX_POLLS) {
         clearInterval(timer.current);
+        // Polling exhausted — ask the backend to verify directly with Stripe
+        // in case the webhook was delayed or missed.
+        verifyPayment(id)
+          .then((result) => setStatus(result.status))
+          .catch(() => {}); // non-fatal; UI already shows fallback link
         return;
       }
       fetchStatus();

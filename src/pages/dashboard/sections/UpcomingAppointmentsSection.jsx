@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getUpcomingAppointments, markSessionLinkSent } from '../../../api/bookingApi';
+import { getUpcomingAppointments, markSessionLinkSent, expertCancelBooking } from '../../../api/bookingApi';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const CalendarCheckIcon = () => (
@@ -55,10 +55,48 @@ function formatDuration(minutes) {
   return m ? `${h}h ${m}min` : `${h}h`;
 }
 
+// ─── Cancel confirmation modal ────────────────────────────────────────────────
+const CancelModal = ({ booking, onConfirm, onDismiss, cancelling }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+    <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-xl w-full max-w-md p-6">
+      <h3 className="text-base font-semibold text-[#1F2933] mb-2">Cancel this appointment?</h3>
+      <p className="text-sm text-gray-500 mb-1">
+        <span className="font-medium text-[#1F2933]">{booking.parent?.name}</span>
+        {' — '}{booking.service?.title}
+      </p>
+      <p className="text-sm text-gray-500 mb-4">
+        {formatAppointmentDate(booking.scheduled_at)} at {formatAppointmentTime(booking.scheduled_at)}
+      </p>
+      <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-5">
+        <p className="text-xs text-amber-700 leading-relaxed">
+          <strong>This action cannot be undone.</strong> The parent will receive a full refund and
+          an email notifying them of the cancellation.
+        </p>
+      </div>
+      <div className="flex gap-3">
+        <button
+          onClick={onDismiss}
+          disabled={cancelling}
+          className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-[#E4E7E4] rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+        >
+          Keep appointment
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={cancelling}
+          className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60"
+        >
+          {cancelling ? 'Cancelling…' : 'Yes, cancel'}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 // ─── Appointment card ─────────────────────────────────────────────────────────
-const AppointmentCard = ({ booking, onMarkSent }) => {
+const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
   const [marking, setMarking] = useState(false);
-  const isOnline = booking.service?.format === 'ONLINE' || booking.format === 'ONLINE';
+  const isOnline = booking.format === 'ONLINE';
   const needsLinkReminder = isOnline && !booking.session_link_sent;
 
   const handleMark = async () => {
@@ -138,6 +176,16 @@ const AppointmentCard = ({ booking, onMarkSent }) => {
           </button>
         </div>
       )}
+
+      {/* Cancel button */}
+      <div className="px-4 pb-4">
+        <button
+          onClick={() => onCancelRequest(booking)}
+          className="w-full text-xs font-medium text-red-600 border border-red-200 bg-white hover:bg-red-50 py-2 rounded-lg transition-colors"
+        >
+          Cancel appointment
+        </button>
+      </div>
     </div>
   );
 };
@@ -147,6 +195,8 @@ const UpcomingAppointmentsSection = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     getUpcomingAppointments()
@@ -166,6 +216,21 @@ const UpcomingAppointmentsSection = () => {
     }
   }, []);
 
+  const handleCancelConfirm = async () => {
+    if (!cancelTarget) return;
+    setCancelling(true);
+    try {
+      await expertCancelBooking(cancelTarget.id);
+      setAppointments((prev) => prev.filter((a) => a.id !== cancelTarget.id));
+      setCancelTarget(null);
+    } catch {
+      setError('Failed to cancel the appointment. Please try again.');
+      setCancelTarget(null);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -176,6 +241,15 @@ const UpcomingAppointmentsSection = () => {
 
   return (
     <div>
+      {cancelTarget && (
+        <CancelModal
+          booking={cancelTarget}
+          onConfirm={handleCancelConfirm}
+          onDismiss={() => setCancelTarget(null)}
+          cancelling={cancelling}
+        />
+      )}
+
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-[#1F2933]">Upcoming Appointments</h2>
@@ -205,6 +279,7 @@ const UpcomingAppointmentsSection = () => {
               key={booking.id}
               booking={booking}
               onMarkSent={handleMarkSent}
+              onCancelRequest={setCancelTarget}
             />
           ))}
         </div>

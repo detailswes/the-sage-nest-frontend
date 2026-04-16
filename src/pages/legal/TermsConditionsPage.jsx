@@ -26,8 +26,15 @@ const TermsConditionsPage = () => (
         </Section>
 
         <Section title="3. Cancellation policy">
-          <p><strong>Free cancellation:</strong> You may cancel your booking for a full refund up to 24 hours before the scheduled session start time.</p>
-          <p><strong>No refund window:</strong> Cancellations made within 24 hours of the session are not eligible for a refund. If you believe exceptional circumstances apply, please contact our support team.</p>
+          <p>We understand that life happens and plans sometimes change. To honour the commitment made by both you and your expert — who has dedicated this time exclusively for you — the following cancellation policy applies to all bookings:</p>
+          <ul className="list-disc pl-5 space-y-1 my-2">
+            <li><strong>More than 24 hours</strong> before your session &rarr; Full refund</li>
+            <li><strong>Between 12 and 24 hours</strong> before your session &rarr; 50% refund</li>
+            <li><strong>Less than 12 hours</strong> before your session or no-show &rarr; No refund</li>
+          </ul>
+          <p>Need to change your time? You can reschedule for free as long as you do so more than 12 hours before your session — simply use the Reschedule option in your booking.</p>
+          <p>If your expert cancels for any reason, you will always receive a full refund regardless of timing.</p>
+          <p>Cancellations are processed based on the time your request is received by Sage Nest. If you have any questions, our support team is here to help.</p>
         </Section>
 
         <Section title="4. Health disclaimer">
