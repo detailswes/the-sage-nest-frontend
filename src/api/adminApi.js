@@ -70,6 +70,11 @@ export const activateParent     = (id) => api.post(`/admin/parents/${id}/activat
 export const deactivateParent   = (id) => api.post(`/admin/parents/${id}/deactivate`).then((r) => r.data);
 export const suspendParent      = (id) => api.post(`/admin/parents/${id}/suspend`).then((r) => r.data);
 
+// ── Parent support tools ──────────────────────────────────────────────────────
+export const sendParentPasswordReset  = (id) => api.post(`/admin/parents/${id}/send-password-reset`).then((r) => r.data);
+export const resendParentVerification = (id) => api.post(`/admin/parents/${id}/resend-verification`).then((r) => r.data);
+export const manuallyVerifyParent     = (id) => api.post(`/admin/parents/${id}/verify`).then((r) => r.data);
+
 // ── Parent GDPR ───────────────────────────────────────────────────────────────
 export const gdprDeleteParent   = (id, confirmEmail) =>
   api.post(`/admin/parents/${id}/gdpr-delete`, { confirm_email: confirmEmail }).then((r) => r.data);

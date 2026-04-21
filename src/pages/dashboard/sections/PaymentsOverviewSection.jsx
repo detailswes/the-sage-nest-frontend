@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { listTransactions, exportTransactionsCsv, getBookingDetail } from "../../../api/adminApi";
+import { formatFormat, formatTransferStatus } from "../../../utils/formatBookingTime";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -138,7 +139,7 @@ function TransactionDetailModal({ bookingId, onClose }) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Format</span>
-                  <span className="font-medium text-[#1F2933]">{booking.format || "—"}</span>
+                  <span className="font-medium text-[#1F2933]">{formatFormat(booking.format)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Date &amp; Time</span>
@@ -171,7 +172,7 @@ function TransactionDetailModal({ bookingId, onClose }) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Transfer status</span>
-                  <span className="font-medium text-[#1F2933] capitalize">{booking.transfer_status || "—"}</span>
+                  <span className="font-medium text-[#1F2933]">{formatTransferStatus(booking)}</span>
                 </div>
                 {booking.refund_status && (
                   <div className="flex justify-between">
