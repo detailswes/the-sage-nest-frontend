@@ -9,6 +9,7 @@ import {
   gdprDeleteParent,
   getAuditLog,
 } from "../../../api/adminApi";
+import BookingDetailModal, { BookingStatusBadge } from "../../../components/admin/BookingDetailModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -62,22 +63,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const BookingStatusBadge = ({ status }) => {
-  const cfg = {
-    CONFIRMED:       { cls: "bg-green-100 text-green-700",  label: "Confirmed" },
-    COMPLETED:       { cls: "bg-blue-100 text-blue-700",    label: "Completed" },
-    CANCELLED:       { cls: "bg-red-100 text-red-600",      label: "Cancelled" },
-    REFUNDED:        { cls: "bg-gray-100 text-gray-600",    label: "Refunded" },
-    PENDING_PAYMENT: { cls: "bg-amber-100 text-amber-700",  label: "Pending Payment" },
-    PENDING:         { cls: "bg-amber-100 text-amber-700",  label: "Pending" },
-  }[status] || { cls: "bg-gray-100 text-gray-500", label: status };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
-      {cfg.label}
-    </span>
-  );
-};
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const AdminParentDetailSection = () => {
@@ -100,6 +85,8 @@ const AdminParentDetailSection = () => {
   const [actionError, setActionError]     = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
   const [showConfirm, setShowConfirm]     = useState(null);
+
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
 
   const [showGdprDelete, setShowGdprDelete] = useState(false);
   const [gdprEmail, setGdprEmail]           = useState("");
@@ -369,7 +356,11 @@ const AdminParentDetailSection = () => {
                   </thead>
                   <tbody className="divide-y divide-[#E4E7E4]">
                     {bookings.map((b) => (
-                      <tr key={b.id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={b.id}
+                        onClick={() => setSelectedBookingId(b.id)}
+                        className="hover:bg-[#F5F7F5] cursor-pointer transition-colors"
+                      >
                         <td className="px-5 py-3.5">
                           <p className="font-medium text-[#1F2933] truncate max-w-[160px]">
                             {b.service?.title || "—"}
@@ -496,6 +487,17 @@ const AdminParentDetailSection = () => {
         </div>
       </div>
 
+      {/* ── Booking detail modal ── */}
+      {selectedBookingId && (
+        <BookingDetailModal
+          bookingId={selectedBookingId}
+          onClose={() => setSelectedBookingId(null)}
+          onUpdated={() => {
+            listParentBookings(id).then(setBookings).catch(() => {});
+          }}
+        />
+      )}
+
       {/* ── Status confirm modal ─────────────────────────────────────────────── */}
       {showConfirm && (() => {
         const cfg = CONFIRM_CFG[showConfirm] || {};
@@ -538,44 +540,88 @@ const AdminParentDetailSection = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
               </svg>
             </div>
-            <h3 className="text-base font-semibold text-red-700 text-center mb-2">Permanent Account Erasure</h3>
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-700 space-y-1">
-              <p className="font-semibold">This action is irreversible. It will:</p>
-              <ul className="list-disc list-inside space-y-0.5 text-red-600">
-                <li>Cancel all future bookings and issue Stripe refunds</li>
-                <li>Wipe all personal information from the database</li>
-                <li>Invalidate all active sessions immediately</li>
-                <li>Anonymise the account record (cannot be recovered)</li>
-              </ul>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">
-              Type the parent's email address to confirm:{" "}
-              <span className="font-medium text-[#1F2933]">{parent.email}</span>
-            </p>
-            <input
-              type="email"
-              value={gdprEmail}
-              onChange={(e) => setGdprEmail(e.target.value)}
-              placeholder={parent.email}
-              className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition mb-3"
-            />
-            {gdprError && <p className="text-xs text-red-600 mb-3 px-1">{gdprError}</p>}
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
-                disabled={gdprLoading}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleGdprDelete}
-                disabled={gdprLoading || gdprEmail.trim().toLowerCase() !== parent.email?.toLowerCase()}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {gdprLoading ? "Erasing…" : "Erase Account"}
-              </button>
-            </div>
+            <h3 className="text-base font-semibold text-red-700 text-center mb-4">Permanent Account Erasure</h3>
+            {(() => {
+              const now = new Date();
+              const upcomingBookings = bookings.filter(
+                (b) => ["PENDING_PAYMENT", "CONFIRMED"].includes(b.status) && new Date(b.scheduled_at) > now
+              );
+              const overdueUnresolved = bookings.filter(
+                (b) => b.status === "CONFIRMED" && new Date(b.scheduled_at) <= now
+              );
+              const isBlocked = upcomingBookings.length > 0 || overdueUnresolved.length > 0;
+
+              if (isBlocked) {
+                return (
+                  <>
+                    <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-4 text-xs text-amber-800 space-y-2">
+                      <p className="font-semibold">This account cannot be erased until the following are resolved:</p>
+                      {upcomingBookings.length > 0 && (
+                        <p>
+                          <span className="font-medium">{upcomingBookings.length} upcoming booking{upcomingBookings.length !== 1 ? "s" : ""}</span>
+                          {" "}— cancel or reschedule before proceeding.
+                        </p>
+                      )}
+                      {overdueUnresolved.length > 0 && (
+                        <p>
+                          <span className="font-medium">{overdueUnresolved.length} confirmed booking{overdueUnresolved.length !== 1 ? "s" : ""} with a pending refund</span>
+                          {" "}— payment was captured for sessions that have now passed without resolution.
+                        </p>
+                      )}
+                      <p className="text-amber-600 mt-1">Resolve these in the Bookings tab, then return here to proceed.</p>
+                    </div>
+                    <button
+                      onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
+                      className="w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </>
+                );
+              }
+
+              return (
+                <>
+                  <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-700 space-y-1">
+                    <p className="font-semibold">This action is irreversible. It will:</p>
+                    <ul className="list-disc list-inside space-y-0.5 text-red-600">
+                      <li>Invalidate all active sessions immediately</li>
+                    </ul>
+                    <ul className="list-disc list-inside space-y-0.5 text-red-600">
+                      <li>Permanently delete all the personal data</li>
+                    </ul>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Type the parent's email address to confirm:{" "}
+                    <span className="font-medium text-[#1F2933]">{parent.email}</span>
+                  </p>
+                  <input
+                    type="email"
+                    value={gdprEmail}
+                    onChange={(e) => setGdprEmail(e.target.value)}
+                    placeholder={parent.email}
+                    className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition mb-3"
+                  />
+                  {gdprError && <p className="text-xs text-red-600 mb-3 px-1">{gdprError}</p>}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
+                      disabled={gdprLoading}
+                      className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleGdprDelete}
+                      disabled={gdprLoading || gdprEmail.trim().toLowerCase() !== parent.email?.toLowerCase()}
+                      className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {gdprLoading ? "Erasing…" : "Erase Account"}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
