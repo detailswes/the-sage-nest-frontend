@@ -19,6 +19,9 @@ export const getMyProfile = () => api.get('/experts/me').then((r) => r.data);
 export const updateMyProfile = (data) =>
   api.put('/experts/me', data).then((r) => r.data);
 
+export const getMyProfileDraft = () =>
+  api.get('/experts/me/draft').then((r) => r.data);
+
 export const uploadProfileImage = (file) => {
   const fd = new FormData();
   fd.append('profile_image', file);

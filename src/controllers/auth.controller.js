@@ -714,8 +714,11 @@ async function changePassword(req, res) {
 }
 
 // ─── Delete Account (GDPR right to erasure) ───────────────────────────────────
-// Personal data is wiped immediately. Booking records are retained in anonymised
-// form for accounting purposes as permitted under GDPR Art. 17(3)(b).
+// Profile, credentials, and uploaded files are deleted immediately.
+// For expert accounts, BusinessInfo (legal name, TIN, IBAN) and all booking /
+// earnings records are retained in identifiable form for a minimum of 5 years
+// under EU Directive 2021/514 (DAC7). This retention is mandatory and overrides
+// the GDPR Art. 17 erasure right per Art. 17(3)(b) (legal obligation exemption).
 async function deleteAccount(req, res) {
   const { password } = req.body;
 
@@ -801,10 +804,9 @@ async function deleteAccount(req, res) {
       ].filter(Boolean);
       for (const fileUrl of filesToDelete) deleteFile(fileUrl);
 
-      // 4. Hard-delete BusinessInfo (pure PII — no accounting value)
-      if (expert.business_info) {
-        await prisma.businessInfo.delete({ where: { expert_id: expert.id } });
-      }
+      // 4. BusinessInfo is intentionally retained — not deleted.
+      // Legal name, TIN, and IBAN must be kept in identifiable form for a minimum
+      // of 5 years under DAC7 (EU Directive 2021/514) for tax reporting purposes.
 
       // 5. Anonymise Expert record
       await prisma.expert.update({
@@ -835,7 +837,8 @@ async function deleteAccount(req, res) {
       console.log(`[GDPR] Expert profile ${expert.id} anonymised during self-deletion`);
     }
 
-    // Wipe all personal data immediately
+    // Anonymise the User record (display name, email, credentials).
+    // Expert financial records (BusinessInfo, bookings) are retained — see above.
     await prisma.user.update({
       where: { id: req.user.id },
       data: {

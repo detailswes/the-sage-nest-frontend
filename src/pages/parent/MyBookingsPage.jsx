@@ -105,7 +105,7 @@ const BookingCard = ({ booking, onCancel, onReschedule }) => {
   const refundTierMsg    = hrs >= 24
     ? 'You\'ll receive a full refund.'
     : 'You\'ll receive a 50% refund (cancellation is between 12 and 24 hours before your session).';
-  const expertName   = booking.expert?.user?.name || 'Expert';
+  const expertName   = booking.expert?.user?.account_deleted ? 'Deleted specialist' : (booking.expert?.user?.name || 'Expert');
   const duration     = formatDuration(booking.service?.duration_minutes);
 
   const canReschedule = booking.status === 'CONFIRMED' && isFuture && hrs >= 12;

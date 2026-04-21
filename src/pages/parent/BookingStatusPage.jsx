@@ -27,7 +27,7 @@ const SuccessBanner = ({ booking }) => (
     </div>
     <h2 className="text-xl font-bold text-[#1F2933] mb-1">Booking Confirmed!</h2>
     <p className="text-sm text-gray-500 mb-6">
-      Your session with <strong>{booking.expert?.user?.name}</strong> is confirmed.
+      Your session with <strong>{booking.expert?.user?.account_deleted ? 'Deleted specialist' : booking.expert?.user?.name}</strong> is confirmed.
     </p>
     <div className="bg-[#F5F7F5] rounded-xl border border-[#E4E7E4] p-5 text-left mb-6 space-y-2 text-sm">
       <p><span className="font-medium text-[#1F2933]">Service:</span> {booking.service?.title}</p>

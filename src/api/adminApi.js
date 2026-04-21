@@ -9,6 +9,10 @@ export const rejectExpert       = (id) => api.post(`/admin/experts/${id}/reject`
 export const suspendExpert      = (id) => api.post(`/admin/experts/${id}/suspend`).then((r) => r.data);
 export const reactivateExpert   = (id) => api.post(`/admin/experts/${id}/reactivate`).then((r) => r.data);
 
+// ── Profile draft review ──────────────────────────────────────────────────────
+export const approveProfileDraft = (id) => api.post(`/admin/experts/${id}/draft/approve`).then((r) => r.data);
+export const rejectProfileDraft  = (id, note) => api.post(`/admin/experts/${id}/draft/reject`, { note }).then((r) => r.data);
+
 // ── Moderation actions ────────────────────────────────────────────────────────
 export const requestChanges     = (id, note) => api.post(`/admin/experts/${id}/request-changes`, { note }).then((r) => r.data);
 export const unpublishExpert    = (id) => api.post(`/admin/experts/${id}/unpublish`).then((r) => r.data);
