@@ -6,6 +6,7 @@ import {
   updateBookingNote,
   adminManualRefund,
 } from "../../api/adminApi";
+import { formatBookingTime, formatFormat, formatTransferStatus } from "../../utils/formatBookingTime";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -279,11 +280,21 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Format</span>
-                  <span className="font-medium text-[#1F2933]">{booking.format || "—"}</span>
+                  <span className="font-medium text-[#1F2933]">{formatFormat(booking.format)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Date &amp; Time</span>
-                  <span className="font-medium text-[#1F2933]">{formatDateTime(booking.scheduled_at)}</span>
+                  <span className="text-right">
+                    {(() => {
+                      const { primary, utc } = formatBookingTime(booking.scheduled_at, booking.expert?.timezone);
+                      return (
+                        <>
+                          <span className="font-medium text-[#1F2933] block">{primary}</span>
+                          {utc && <span className="text-xs text-gray-400 block">{utc}</span>}
+                        </>
+                      );
+                    })()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Duration</span>
@@ -295,7 +306,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
             {/* Payment details */}
             <div className="px-6 py-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Payment</p>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Amount charged</span>
                   <span className="font-medium text-[#1F2933]">{formatCurrency(booking.amount)}</span>
@@ -305,38 +316,15 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                   <span className="font-medium text-[#1F2933]">{formatCurrency(booking.platform_fee)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Transfer status</span>
-                  <span className="font-medium text-[#1F2933] capitalize">{booking.transfer_status || "—"}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-gray-500">Payment status</span>
                   <span className="font-medium text-[#1F2933]">
                     {booking.stripe_payment_intent_id ? "Payment captured" : "No payment"}
                   </span>
                 </div>
-                {booking.refund_status && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Refund status</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      booking.refund_status === "succeeded" ? "bg-green-100 text-green-700" :
-                      booking.refund_status === "pending"   ? "bg-amber-100 text-amber-700" :
-                                                              "bg-red-100 text-red-600"
-                    }`}>
-                      {booking.refund_status.charAt(0).toUpperCase() + booking.refund_status.slice(1)}
-                    </span>
-                  </div>
-                )}
-                {booking.refund_amount != null && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Amount refunded</span>
-                    <span className="font-medium text-[#1F2933]">
-                      {formatCurrency(booking.refund_amount)}
-                      {parseFloat(booking.refund_amount) < parseFloat(booking.amount) && (
-                        <span className="ml-1 text-xs text-amber-600 font-normal">(partial)</span>
-                      )}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Transfer status</span>
+                  <span className="font-medium text-[#1F2933]">{formatTransferStatus(booking)}</span>
+                </div>
               </div>
               {booking.stripe_payment_intent_id && (
                 <p className="text-xs text-gray-400 mt-2 font-mono break-all">
@@ -345,11 +333,81 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
               )}
             </div>
 
+            {/* Refund details — always shown when booking had a payment and is cancelled/refunded */}
+            {(booking.status === "CANCELLED" || booking.status === "REFUNDED") && booking.stripe_payment_intent_id && (
+              <div className="px-6 py-4 border-t border-[#E4E7E4]">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Refund</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Refund status</span>
+                    {booking.refund_status === "succeeded" ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                        Refunded
+                      </span>
+                    ) : booking.refund_status === "pending" ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                        Refund pending
+                      </span>
+                    ) : booking.refund_status ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                        {booking.refund_status.charAt(0).toUpperCase() + booking.refund_status.slice(1)}
+                      </span>
+                    ) : booking.status === "REFUNDED" ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-green-700">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-green-100">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                          Refunded
+                        </span>
+                        <span className="text-gray-400 font-normal">(details not recorded)</span>
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-400 italic">Not refunded</span>
+                    )}
+                  </div>
+                  {booking.refund_amount != null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Amount refunded</span>
+                      <span className="font-medium text-[#1F2933]">
+                        {formatCurrency(booking.refund_amount)}
+                        {parseFloat(booking.refund_amount) < parseFloat(booking.amount) && (
+                          <span className="ml-1.5 text-xs text-amber-600 font-normal">(partial)</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {booking.refunded_at && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Refund date</span>
+                      <span className="font-medium text-[#1F2933]">{formatDate(booking.refunded_at)}</span>
+                    </div>
+                  )}
+                  {booking.stripe_refund_id && (
+                    <div className="flex justify-between items-start gap-4">
+                      <span className="text-gray-500 flex-shrink-0">Stripe Refund ID</span>
+                      <span className="text-xs text-gray-500 font-mono break-all text-right">{booking.stripe_refund_id}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Cancellation info */}
             {(booking.status === "CANCELLED" || booking.status === "REFUNDED") && (
               <div className="px-6 py-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Cancellation</p>
-                <p className="text-sm text-[#1F2933]">{booking.cancellation_reason || "No reason provided"}</p>
+                {booking.cancellation_reason ? (
+                  <p className="text-sm text-[#1F2933]">{booking.cancellation_reason}</p>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                    </svg>
+                    No reason provided — follow up may be required
+                  </span>
+                )}
                 {booking.cancelled_at && (
                   <p className="text-xs text-gray-400 mt-1">{formatDate(booking.cancelled_at)}</p>
                 )}

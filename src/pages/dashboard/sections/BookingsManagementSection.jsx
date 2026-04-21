@@ -4,9 +4,9 @@ import { listAllBookings } from "../../../api/adminApi";
 import BookingDetailModal, {
   BookingStatusBadge,
   DisputedBadge,
-  formatDateTime,
   formatCurrency,
 } from "../../../components/admin/BookingDetailModal";
+import { formatBookingTime } from "../../../utils/formatBookingTime";
 
 // ─── Filter tabs ──────────────────────────────────────────────────────────────
 
@@ -223,7 +223,17 @@ const BookingsManagementSection = () => {
                 <span className="text-sm text-[#1F2933] truncate">{b.parent?.name || "—"}</span>
                 <span className="text-sm text-[#1F2933] truncate">{b.expert?.user?.name || "—"}</span>
                 <span className="text-sm text-gray-500 truncate">{b.service?.title || "—"}</span>
-                <span className="text-sm text-gray-500">{formatDateTime(b.scheduled_at)}</span>
+                <span className="text-sm text-gray-500 leading-tight">
+                  {(() => {
+                    const { primary, utc } = formatBookingTime(b.scheduled_at, b.expert?.timezone);
+                    return (
+                      <>
+                        <span className="block">{primary}</span>
+                        {utc && <span className="block text-xs text-gray-400">{utc}</span>}
+                      </>
+                    );
+                  })()}
+                </span>
                 <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(b.amount)}</span>
                 <div className="flex flex-wrap gap-1">
                   <BookingStatusBadge status={b.status} />

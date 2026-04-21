@@ -8,8 +8,12 @@ import {
   suspendParent,
   gdprDeleteParent,
   getAuditLog,
+  sendParentPasswordReset,
+  resendParentVerification,
+  manuallyVerifyParent,
 } from "../../../api/adminApi";
 import BookingDetailModal, { BookingStatusBadge } from "../../../components/admin/BookingDetailModal";
+import { formatBookingTime } from "../../../utils/formatBookingTime";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,10 +39,20 @@ const getInitials = (name) =>
   name ? name.trim().split(/\s+/).map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "?";
 
 const ACTION_LABELS = {
-  ACTIVATE_PARENT:   "Account activated",
-  DEACTIVATE_PARENT: "Account deactivated",
-  SUSPEND_PARENT:    "Account suspended",
+  // Admin actions
+  ACTIVATE_PARENT:    "Account activated",
+  DEACTIVATE_PARENT:  "Account deactivated",
+  SUSPEND_PARENT:     "Account suspended",
   GDPR_DELETE_PARENT: "Account deleted (GDPR)",
+  SEND_PASSWORD_RESET: "Password reset sent",
+  RESEND_VERIFICATION: "Verification email resent",
+  MANUAL_VERIFY:       "Email manually verified",
+  BOOKING_CANCELLED:   "Booking cancelled",
+  REFUND_ISSUED:       "Refund issued",
+  // Parent self-service
+  BOOKING_CONFIRMED:          "Booking confirmed",
+  BOOKING_CANCELLED_BY_EXPERT: "Booking cancelled by specialist",
+  LOGIN:                       "Logged in",
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -176,6 +190,32 @@ const AdminParentDetailSection = () => {
       setGdprError(err?.response?.data?.error || "Deletion failed. Please try again.");
     } finally {
       setGdprLoading(false);
+    }
+  };
+
+  // ── Support tool actions ──────────────────────────────────────────────────
+
+  const handleSupportTool = async (action) => {
+    setActionLoading(action);
+    setActionError("");
+    setActionSuccess("");
+    try {
+      if (action === "passwordReset") {
+        await sendParentPasswordReset(id);
+        setActionSuccess("Password reset email sent.");
+      } else if (action === "resendVerification") {
+        await resendParentVerification(id);
+        setActionSuccess("Verification email resent.");
+      } else if (action === "manualVerify") {
+        await manuallyVerifyParent(id);
+        setActionSuccess("Account marked as verified.");
+        await loadParent();
+      }
+      getAuditLog(id, "PARENT", 1).then((res) => setAuditLog(res.data || [])).catch(() => {});
+    } catch (err) {
+      setActionError(err?.response?.data?.error || "Action failed. Please try again.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -370,8 +410,16 @@ const AdminParentDetailSection = () => {
                         <td className="px-5 py-3.5 text-gray-500">
                           {b.expert?.user?.name || "—"}
                         </td>
-                        <td className="px-5 py-3.5 text-gray-500 whitespace-nowrap">
-                          {formatDateTime(b.scheduled_at)}
+                        <td className="px-5 py-3.5 text-gray-500 leading-tight">
+                          {(() => {
+                            const { primary, utc } = formatBookingTime(b.scheduled_at, b.expert?.timezone);
+                            return (
+                              <>
+                                <span className="block whitespace-nowrap">{primary}</span>
+                                {utc && <span className="block text-xs text-gray-400">{utc}</span>}
+                              </>
+                            );
+                          })()}
                         </td>
                         <td className="px-5 py-3.5 font-medium text-[#1F2933]">
                           {formatCurrency(b.amount)}
@@ -463,6 +511,38 @@ const AdminParentDetailSection = () => {
                   </svg>
                   {actionLoading === "suspend" ? "Suspending…" : "Suspend Account"}
                 </button>
+              )}
+            </div>
+          </div>
+
+          {/* Support tools */}
+          <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm px-5 py-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Support Tools</p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => handleSupportTool("passwordReset")}
+                disabled={!!actionLoading}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                {actionLoading === "passwordReset" ? "Sending…" : "Send Password Reset"}
+              </button>
+              {!parent.is_verified && (
+                <>
+                  <button
+                    onClick={() => handleSupportTool("resendVerification")}
+                    disabled={!!actionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === "resendVerification" ? "Sending…" : "Resend Verification Email"}
+                  </button>
+                  <button
+                    onClick={() => handleSupportTool("manualVerify")}
+                    disabled={!!actionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === "manualVerify" ? "Verifying…" : "Mark as Verified"}
+                  </button>
+                </>
               )}
             </div>
           </div>

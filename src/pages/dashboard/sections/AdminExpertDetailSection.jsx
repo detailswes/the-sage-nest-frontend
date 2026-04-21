@@ -23,6 +23,7 @@ import {
   rejectProfileDraft,
 } from "../../../api/adminApi";
 import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
+import { formatBookingTime, formatFormat } from "../../../utils/formatBookingTime";
 import BookingDetailModal from "../../../components/admin/BookingDetailModal";
 
 // ─── Shared helpers (mirrors ExpertManagementSection constants) ───────────────
@@ -623,7 +624,7 @@ const AdminExpertDetailSection = () => {
                             ["Summary",         expert.summary,          expert.profile_draft.summary],
                             ["Bio",             expert.bio,              expert.profile_draft.bio],
                             ["Professional title", expert.position,      expert.profile_draft.position],
-                            ["Session format",  expert.session_format,   expert.profile_draft.session_format],
+                            ["Session format",  formatFormat(expert.session_format),   formatFormat(expert.profile_draft.session_format)],
                             ["Location",        [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null,
                                                 [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null],
                             ["Timezone",        expert.timezone,         expert.profile_draft.timezone],
@@ -652,7 +653,7 @@ const AdminExpertDetailSection = () => {
                             ["Summary",         expert.summary,          expert.profile_draft.summary],
                             ["Bio",             expert.bio,              expert.profile_draft.bio],
                             ["Professional title", expert.position,      expert.profile_draft.position],
-                            ["Session format",  expert.session_format,   expert.profile_draft.session_format],
+                            ["Session format",  formatFormat(expert.session_format),   formatFormat(expert.profile_draft.session_format)],
                             ["Location",        [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null,
                                                 [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null],
                             ["Timezone",        expert.timezone,         expert.profile_draft.timezone],
@@ -1031,10 +1032,15 @@ const AdminExpertDetailSection = () => {
                       >
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-[#1F2933] truncate">#{b.id} · {b.service?.title || "Session"}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {formatDate(b.scheduled_at)}
-                            {b.parent?.name ? ` · ${b.parent.name}` : ""}
-                            {b.amount ? ` · £${Number(b.amount).toFixed(2)}` : ""}
+                          <p className="text-xs text-gray-400 mt-0.5 leading-tight">
+                            <span className="block">
+                              {formatBookingTime(b.scheduled_at, expert.timezone).primary}
+                              {b.parent?.name ? ` · ${b.parent.name}` : ""}
+                              {b.amount ? ` · £${Number(b.amount).toFixed(2)}` : ""}
+                            </span>
+                            <span className="block text-gray-300">
+                              {formatBookingTime(b.scheduled_at, expert.timezone).utc}
+                            </span>
                           </p>
                         </div>
                         <BookingStatusBadge status={b.status} />
