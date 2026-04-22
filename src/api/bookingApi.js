@@ -51,3 +51,7 @@ export const expertCancelBooking = (id) =>
 /** Reconcile a stuck PENDING_PAYMENT booking by checking Stripe directly */
 export const verifyPayment = (id) =>
   api.post(`/bookings/${id}/verify-payment`).then((r) => r.data);
+
+/** Get the current T&C version and whether it has changed since the user last accepted */
+export const getCurrentTcVersion = () =>
+  api.get('/bookings/tc-version').then((r) => r.data);

@@ -175,6 +175,9 @@ export const acceptPrivacyPolicyApi = async () => {
   return response.data;
 };
 
+export const getLegalVersionsApi = () =>
+  axios.get(`${BASE_URL}/auth/legal-versions`).then((r) => r.data);
+
 // ── 2FA ───────────────────────────────────────────────────────────────────────
 export const verifyOtpApi = async ({ otp_token, code }) => {
   const response = await api.post('/auth/verify-otp', { otp_token, code });

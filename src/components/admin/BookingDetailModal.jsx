@@ -318,7 +318,19 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Payment status</span>
                   <span className="font-medium text-[#1F2933]">
-                    {booking.stripe_payment_intent_id ? "Payment captured" : "No payment"}
+                    {(() => {
+                      if (!booking.stripe_payment_intent_id) return "No payment";
+                      if (["CONFIRMED", "COMPLETED"].includes(booking.status)) {
+                        if (booking.transfer_status === "failed") return "Captured — transfer failed";
+                        return "Payment captured";
+                      }
+                      if (booking.status === "CANCELLED" || booking.status === "REFUNDED") {
+                        if (booking.refund_status === "succeeded") return "Captured — refunded";
+                        if (booking.refund_status === "pending")   return "Captured — refund pending";
+                        return "Captured — cancelled";
+                      }
+                      return "Payment captured";
+                    })()}
                   </span>
                 </div>
                 <div className="flex justify-between">

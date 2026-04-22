@@ -59,12 +59,23 @@ export function formatTransferStatus(booking) {
 
   if (ts === 'completed') return 'Payout sent';
 
+  if (ts === 'resolved') return 'Resolved — manually handled';
+
   if (ts === 'failed') return 'Failed — manual action required';
 
   if (ts === 'skipped') {
     if (bookingStatus === 'REFUNDED') return 'Skipped — booking refunded';
     if (bookingStatus === 'CANCELLED') return 'Skipped — booking cancelled';
-    if (refundStatus && refundStatus !== 'none') return 'Skipped — partial refund issued';
+    // Fall back to refund_status when booking.status doesn't indicate why (e.g. manual DB edits)
+    if (refundStatus === 'succeeded') {
+      const refundAmt = booking.refund_amount != null ? parseFloat(booking.refund_amount) : null;
+      const totalAmt  = booking.amount        != null ? parseFloat(booking.amount)        : null;
+      if (refundAmt != null && totalAmt != null && refundAmt < totalAmt)
+        return 'Skipped — partial refund issued';
+      return 'Skipped — refunded';
+    }
+    if (refundStatus === 'pending') return 'Skipped — refund pending';
+    if (refundStatus && refundStatus !== 'none') return 'Skipped — refund issued';
     return 'Skipped';
   }
 

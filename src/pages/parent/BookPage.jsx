@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listExperts, getExpertPublic } from '../../api/expertApi';
-import { getAvailableSlots, createBooking } from '../../api/bookingApi';
+import { getAvailableSlots, createBooking, getCurrentTcVersion } from '../../api/bookingApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
@@ -115,9 +115,11 @@ const BookPage = () => {
   const [slotsLoading,    setSlotsLoading]    = useState(false);
   const [selectedSlot,    setSelectedSlot]    = useState(null);
   const [selectedFormat,  setSelectedFormat]  = useState('ONLINE');
-  const [booking,         setBooking]         = useState(false);
-  const [bookErr,         setBookErr]         = useState('');
-  const [tcAccepted,      setTcAccepted]      = useState(false);
+  const [booking,          setBooking]         = useState(false);
+  const [bookErr,          setBookErr]         = useState('');
+  const [tcAccepted,       setTcAccepted]      = useState(false);
+  const [tcVersion,        setTcVersion]       = useState(null);
+  const [tcVersionUpdated, setTcVersionUpdated] = useState(false);
 
   const summaryRef = useRef(null);
 
@@ -160,7 +162,15 @@ const BookPage = () => {
   }, [selectedExpert, selectedService, selectedDate]);
 
   useEffect(() => {
-    if (step === STEPS.SLOT) loadSlots();
+    if (step === STEPS.SLOT) {
+      loadSlots();
+      getCurrentTcVersion()
+        .then(({ version, version_updated }) => {
+          setTcVersion(version);
+          setTcVersionUpdated(version_updated);
+        })
+        .catch(() => {}); // non-fatal — checkbox still works without version label
+    }
   }, [step, loadSlots]);
 
   const handleSelectExpert = (expert) => {
@@ -417,6 +427,18 @@ const BookPage = () => {
             Sage Nest is a booking platform, not a healthcare provider. Practitioners listed on this platform are independent professionals. Advice given during sessions does not constitute medical advice, diagnosis, or treatment and should not be relied upon as a substitute for professional medical care. Always seek the advice of a qualified healthcare provider if you have concerns about your or your child's health. If you believe you or your child need urgent medical care, contact emergency services immediately.
           </div>
 
+          {/* T&C updated notice */}
+          {tcVersionUpdated && (
+            <div className="mb-3 flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+              <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+              </svg>
+              <span>
+                The Terms &amp; Conditions have been updated since your last booking. Please review before accepting.
+              </span>
+            </div>
+          )}
+
           {/* T&C acceptance — required before booking */}
           <label className="flex items-start gap-3 cursor-pointer mb-4">
             <input
@@ -430,6 +452,9 @@ const BookPage = () => {
               <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
                 Terms &amp; Conditions
               </a>
+              {tcVersion && (
+                <span className="ml-1 text-xs text-gray-400 font-normal">v{tcVersion}</span>
+              )}
               <span className="text-red-500 ml-0.5">*</span>
             </span>
           </label>
