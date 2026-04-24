@@ -105,7 +105,7 @@ const BookingCard = ({ booking, onCancel, onReschedule }) => {
   const refundTierMsg    = hrs >= 24
     ? 'You\'ll receive a full refund.'
     : 'You\'ll receive a 50% refund (cancellation is between 12 and 24 hours before your session).';
-  const expertName   = booking.expert?.user?.name || 'Expert';
+  const expertName   = booking.expert?.user?.account_deleted ? 'Deleted specialist' : (booking.expert?.user?.name || 'Expert');
   const duration     = formatDuration(booking.service?.duration_minutes);
 
   const canReschedule = booking.status === 'CONFIRMED' && isFuture && hrs >= 12;
@@ -125,10 +125,14 @@ const BookingCard = ({ booking, onCancel, onReschedule }) => {
   const openCancel     = () => { setShowReschedule(false); setShowCancel(true);   };
 
   const handleConfirmCancel = async () => {
+    if (!reason.trim()) {
+      setCancelErr('Please provide a reason for your cancellation.');
+      return;
+    }
     setCancelling(true);
     setCancelErr('');
     try {
-      await onCancel(booking.id, reason || undefined);
+      await onCancel(booking.id, reason.trim());
       setShowCancel(false);
     } catch (err) {
       setCancelErr(err.response?.data?.error || 'Could not cancel. Please try again.');
@@ -333,13 +337,20 @@ const BookingCard = ({ booking, onCancel, onReschedule }) => {
                 <div className={`px-3 py-2 rounded-lg text-xs ${hrs >= 24 ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
                   {refundTierMsg}
                 </div>
-                <textarea
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Reason for cancellation (optional)"
-                  rows={2}
-                  className="w-full border border-[#E4E7E4] rounded-lg px-3 py-2 text-xs text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 resize-none"
-                />
+                <div>
+                  <label className="block text-xs font-medium text-[#1F2933] mb-1">
+                    Reason for cancellation <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={reason}
+                    onChange={(e) => { setReason(e.target.value); if (cancelErr) setCancelErr(''); }}
+                    placeholder="Please describe why you're cancelling…"
+                    rows={2}
+                    className={`w-full border rounded-lg px-3 py-2 text-xs text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 resize-none transition-colors ${
+                      cancelErr && !reason.trim() ? 'border-red-400 bg-red-50' : 'border-[#E4E7E4]'
+                    }`}
+                  />
+                </div>
                 {cancelErr && <p className="text-xs text-red-600">{cancelErr}</p>}
                 <div className="flex gap-2">
                   <button
@@ -350,8 +361,8 @@ const BookingCard = ({ booking, onCancel, onReschedule }) => {
                   </button>
                   <button
                     onClick={handleConfirmCancel}
-                    disabled={cancelling}
-                    className="flex-1 py-2 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-60"
+                    disabled={cancelling || !reason.trim()}
+                    className="flex-1 py-2 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {cancelling ? 'Cancelling…' : 'Confirm cancel'}
                   </button>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { getMyProfile, updateMyProfile, uploadProfileImage, exportMyData } from '../../../api/expertApi';
+import { getMyProfile, updateMyProfile, uploadProfileImage, exportMyData, getMyProfileDraft } from '../../../api/expertApi';
 import { getProfileImageUrl } from '../../../utils/imageUrl';
 import { createConnectLink, verifyStripeReturn } from '../../../api/stripeApi';
 import QualificationsCard from '../profile/QualificationsCard';
@@ -144,6 +144,8 @@ const ProfileSection = () => {
 
   const [customLangInput, setCustomLangInput] = useState('');
 
+  const [draft, setDraft]         = useState(undefined); // undefined = not yet loaded
+
   const [loading, setLoading]     = useState(true);
   const [saving, setSaving]       = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -151,6 +153,7 @@ const ProfileSection = () => {
   const [error, setError]         = useState('');
   const [imageError, setImageError] = useState('');
   const [success, setSuccess]     = useState(false);
+  const [savedAsDraft, setSavedAsDraft] = useState(false);
 
   // Stripe
   const [stripeStatus, setStripeStatus]     = useState('idle');
@@ -159,10 +162,11 @@ const ProfileSection = () => {
 
   useEffect(() => {
     let cancelled = false;
-    getMyProfile()
-      .then((data) => {
+    Promise.all([getMyProfile(), getMyProfileDraft().catch(() => null)])
+      .then(([data, draftData]) => {
         if (cancelled) return;
         setProfile(data);
+        setDraft(draftData);
         setForm({
           bio:              data.bio              || '',
           expertise:        data.expertise        || '',
@@ -281,8 +285,9 @@ const ProfileSection = () => {
     setSaving(true);
     setError('');
     setSuccess(false);
+    setSavedAsDraft(false);
     try {
-      const updated = await updateMyProfile({
+      const result = await updateMyProfile({
         bio:              form.bio              || null,
         expertise:        form.expertise        || null,
         summary:          form.summary          || null,
@@ -298,8 +303,14 @@ const ProfileSection = () => {
         facebook:         form.facebook  || null,
         linkedin:         form.linkedin  || null,
       });
-      setProfile((p) => ({ ...p, ...updated }));
-      setSuccess(true);
+      if (result?.draft) {
+        setDraft(result.profile_draft);
+        setSavedAsDraft(true);
+      } else {
+        setProfile((p) => ({ ...p, ...result }));
+        setDraft(null);
+        setSuccess(true);
+      }
     } catch (err) {
       setError(err?.response?.data?.error || 'Failed to save profile.');
     } finally {
@@ -400,6 +411,35 @@ const ProfileSection = () => {
           <button onClick={() => setStripeError('')} className="ml-auto p-0.5 text-red-400 hover:text-red-600 transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
           </button>
+        </div>
+      )}
+
+      {/* Pending draft banner */}
+      {draft?.status === 'PENDING_REVIEW' && !savedAsDraft && (
+        <div className="mb-5 flex items-start gap-3 px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+          <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-amber-800">Profile changes pending review</p>
+            <p className="text-xs text-amber-600 mt-0.5">Your recent edits have been submitted and are awaiting admin approval. Your live profile is unchanged until they are approved. You can save new changes at any time to update the pending submission.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Rejected draft banner */}
+      {draft?.status === 'REJECTED' && (
+        <div className="mb-5 flex items-start gap-3 px-4 py-3.5 bg-red-50 border border-red-200 rounded-xl">
+          <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-red-800">Profile changes not approved</p>
+            {draft.rejection_note && (
+              <p className="text-xs text-red-600 mt-0.5">Admin note: {draft.rejection_note}</p>
+            )}
+            <p className="text-xs text-red-500 mt-1">Please update your profile and save again to resubmit for review.</p>
+          </div>
         </div>
       )}
 
@@ -709,6 +749,17 @@ const ProfileSection = () => {
 
           {error && (
             <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>
+          )}
+          {savedAsDraft && (
+            <div className="px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+              <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-amber-800">Changes submitted for review.</p>
+                <p className="text-xs text-amber-600 mt-0.5">Your live profile is unchanged. An admin will review your edits before they go public.</p>
+              </div>
+            </div>
           )}
           {success && (
             <div className="px-4 py-3.5 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">

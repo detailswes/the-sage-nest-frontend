@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { listTransactions, exportTransactionsCsv, getBookingDetail } from "../../../api/adminApi";
+import { listTransactions, exportTransactionsCsv, getBookingDetail, adminManualRefund, adminRetryTransfer, adminMarkTransferResolved, getRefundLog } from "../../../api/adminApi";
+import { formatFormat, formatTransferStatus } from "../../../utils/formatBookingTime";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -26,29 +27,45 @@ const formatDateTime = (iso) =>
 const formatCurrency = (amount) =>
   amount != null ? `£${parseFloat(amount).toFixed(2)}` : "—";
 
-const specialistPayout = (amount, fee) => {
-  if (amount == null || fee == null) return "—";
-  return `£${(parseFloat(amount) - parseFloat(fee)).toFixed(2)}`;
+const specialistPayout = (transaction) => {
+  if (transaction.transfer_status !== "completed") return "£0.00";
+  const { amount, platform_fee } = transaction;
+  if (amount == null || platform_fee == null) return "—";
+  return `£${(parseFloat(amount) - parseFloat(platform_fee)).toFixed(2)}`;
 };
 
 // ─── Payment status helpers ───────────────────────────────────────────────────
 
 function getPaymentStatus(t) {
+  // Payment was captured but the expert transfer failed — distinct from a payment failure
+  if (["CONFIRMED", "COMPLETED"].includes(t.status) && t.transfer_status === "failed")
+    return "transfer_failed";
   if (["CONFIRMED", "COMPLETED"].includes(t.status) && t.stripe_payment_intent_id)
     return "succeeded";
-  if (t.status === "REFUNDED")        return "refunded";
+  if (t.status === "REFUNDED") return "refunded";
   if (t.status === "PENDING_PAYMENT") return "pending";
-  if (t.status === "CANCELLED")       return "failed";
+  if (t.status === "CANCELLED") {
+    // Payment was captured before the cancellation — not a payment failure
+    if (t.stripe_payment_intent_id) {
+      if (t.refund_status === "pending")   return "refund_pending";
+      if (t.refund_status === "succeeded") return "refunded";
+      return "captured_cancelled"; // captured, no refund (0% policy or refund not yet initiated)
+    }
+    return "failed"; // booking cancelled before any payment was captured
+  }
   return "failed";
 }
 
 const PaymentStatusBadge = ({ transaction }) => {
   const ps = getPaymentStatus(transaction);
   const cfg = {
-    succeeded: { cls: "bg-green-100 text-green-700",  label: "Succeeded" },
-    refunded:  { cls: "bg-gray-100 text-gray-600",    label: "Refunded" },
-    pending:   { cls: "bg-amber-100 text-amber-700",  label: "Pending" },
-    failed:    { cls: "bg-red-100 text-red-600",      label: "Failed" },
+    succeeded:          { cls: "bg-green-100 text-green-700",   label: "Succeeded" },
+    refunded:           { cls: "bg-gray-100 text-gray-600",     label: "Refunded" },
+    refund_pending:     { cls: "bg-amber-100 text-amber-700",   label: "Refund Pending" },
+    captured_cancelled: { cls: "bg-orange-100 text-orange-700", label: "Captured — No Refund" },
+    transfer_failed:    { cls: "bg-red-100 text-red-600",       label: "Captured — Transfer Failed" },
+    pending:            { cls: "bg-amber-100 text-amber-700",   label: "Pending" },
+    failed:             { cls: "bg-red-100 text-red-600",       label: "Failed" },
   }[ps] || { cls: "bg-gray-100 text-gray-500", label: ps };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
@@ -60,26 +77,204 @@ const PaymentStatusBadge = ({ transaction }) => {
 // ─── Filter tabs ──────────────────────────────────────────────────────────────
 
 const FILTERS = [
-  { key: "ALL",       label: "All" },
-  { key: "succeeded", label: "Succeeded" },
-  { key: "refunded",  label: "Refunded" },
-  { key: "pending",   label: "Pending" },
-  { key: "failed",    label: "Failed" },
+  { key: "ALL",            label: "All" },
+  { key: "succeeded",      label: "Succeeded" },
+  { key: "refunded",       label: "Refunded" },
+  { key: "pending",        label: "Pending" },
+  { key: "failed",         label: "Failed" },
+  { key: "transfer_failed", label: "Transfer Failed" },
 ];
+
+// ─── Amount cell (shows refund info inline when a refund has occurred) ────────
+
+function AmountCell({ transaction: t }) {
+  const refunded = t.refund_status === "succeeded" && t.refund_amount != null;
+  const refundPending = t.refund_status === "pending" && t.refund_amount != null;
+
+  if (refunded) {
+    const isPartial = parseFloat(t.refund_amount) < parseFloat(t.amount);
+    return (
+      <span className="flex flex-col gap-0.5 leading-tight">
+        <span className="text-sm font-medium text-gray-400 line-through">
+          {formatCurrency(t.amount)}
+        </span>
+        <span className="text-xs font-medium text-red-500">
+          −{formatCurrency(t.refund_amount)}{isPartial && <span className="text-red-400 font-normal"> (partial)</span>}
+        </span>
+      </span>
+    );
+  }
+
+  if (refundPending) {
+    return (
+      <span className="flex flex-col gap-0.5 leading-tight">
+        <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(t.amount)}</span>
+        <span className="text-xs text-amber-500">refund pending</span>
+      </span>
+    );
+  }
+
+  return <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(t.amount)}</span>;
+}
+
+// ─── Admin actions panel ──────────────────────────────────────────────────────
+
+function AdminActionsPanel({ booking, onActionComplete }) {
+  const [action, setAction]           = useState(null); // 'refund' | 'retry' | 'resolve'
+  const [loading, setLoading]         = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [reason, setReason]           = useState("");
+  const [refundAmount, setRefundAmount] = useState("");
+
+  const canRefund = booking.stripe_payment_intent_id &&
+    booking.refund_status !== "succeeded" &&
+    ["CONFIRMED", "COMPLETED", "CANCELLED"].includes(booking.status);
+  const canRetryTransfer = booking.transfer_status === "failed" &&
+    ["CONFIRMED", "COMPLETED"].includes(booking.status);
+  const canMarkResolved = booking.transfer_status === "failed" &&
+    ["CONFIRMED", "COMPLETED"].includes(booking.status);
+
+  if (!canRefund && !canRetryTransfer && !canMarkResolved) return null;
+
+  const reset = () => { setAction(null); setActionError(""); setReason(""); setRefundAmount(""); };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setActionError("");
+    try {
+      if (action === "refund")  await adminManualRefund(booking.id, reason || undefined, refundAmount || undefined);
+      if (action === "retry")   await adminRetryTransfer(booking.id);
+      if (action === "resolve") await adminMarkTransferResolved(booking.id, reason || undefined);
+      reset();
+      onActionComplete();
+    } catch (err) {
+      setActionError(err?.response?.data?.error || "Action failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const btnBase   = "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50";
+  const btnCancel = `${btnBase} border border-[#E4E7E4] text-gray-500 hover:bg-gray-50`;
+
+  return (
+    <div className="px-6 py-4 border-t border-[#E4E7E4]">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Admin Actions</p>
+
+      {action === null && (
+        <div className="flex flex-wrap gap-2">
+          {canRefund && (
+            <button onClick={() => setAction("refund")}
+              className={`${btnBase} border border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100`}>
+              Issue Refund
+            </button>
+          )}
+          {canRetryTransfer && (
+            <button onClick={() => setAction("retry")}
+              className={`${btnBase} border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100`}>
+              Retry Transfer
+            </button>
+          )}
+          {canMarkResolved && (
+            <button onClick={() => setAction("resolve")}
+              className={`${btnBase} border border-green-200 text-green-700 bg-green-50 hover:bg-green-100`}>
+              Mark as Resolved
+            </button>
+          )}
+        </div>
+      )}
+
+      {action === "refund" && (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">
+            Issue a refund for this transaction. Leave amount blank to refund the full{" "}
+            <span className="font-medium">{formatCurrency(booking.amount)}</span>.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Amount (optional)</label>
+              <input type="number" step="0.01" min="0.01" max={parseFloat(booking.amount)}
+                value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)}
+                placeholder={`Max £${parseFloat(booking.amount).toFixed(2)}`}
+                className="w-full text-sm border border-[#E4E7E4] rounded-lg px-3 py-2 outline-none focus:border-[#445446]" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Reason (optional)</label>
+              <input type="text" value={reason} onChange={(e) => setReason(e.target.value)}
+                placeholder="Reason for refund…"
+                className="w-full text-sm border border-[#E4E7E4] rounded-lg px-3 py-2 outline-none focus:border-[#445446]" />
+            </div>
+          </div>
+          {actionError && <p className="text-xs text-red-500">{actionError}</p>}
+          <div className="flex gap-2">
+            <button onClick={handleSubmit} disabled={loading}
+              className={`${btnBase} bg-amber-600 text-white hover:bg-amber-700`}>
+              {loading ? "Processing…" : "Confirm Refund"}
+            </button>
+            <button onClick={reset} disabled={loading} className={btnCancel}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {action === "retry" && (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">
+            Reset this transfer to pending so the next scheduled run will attempt the payout again.
+            Ensure the specialist's Stripe account is correctly configured before retrying.
+          </p>
+          {actionError && <p className="text-xs text-red-500">{actionError}</p>}
+          <div className="flex gap-2">
+            <button onClick={handleSubmit} disabled={loading}
+              className={`${btnBase} bg-[#445446] text-white hover:bg-[#3a4a3b]`}>
+              {loading ? "Processing…" : "Confirm Retry"}
+            </button>
+            <button onClick={reset} disabled={loading} className={btnCancel}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {action === "resolve" && (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">
+            Mark this transfer as manually resolved. Use this when the payout has been handled
+            outside the automated system (e.g. direct bank transfer).
+          </p>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Note (optional)</label>
+            <input type="text" value={reason} onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Manual bank transfer sent on 22 Apr 2026"
+              className="w-full text-sm border border-[#E4E7E4] rounded-lg px-3 py-2 outline-none focus:border-[#445446]" />
+          </div>
+          {actionError && <p className="text-xs text-red-500">{actionError}</p>}
+          <div className="flex gap-2">
+            <button onClick={handleSubmit} disabled={loading}
+              className={`${btnBase} bg-green-600 text-white hover:bg-green-700`}>
+              {loading ? "Processing…" : "Mark as Resolved"}
+            </button>
+            <button onClick={reset} disabled={loading} className={btnCancel}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Transaction detail modal ─────────────────────────────────────────────────
 
 function TransactionDetailModal({ bookingId, onClose }) {
-  const [booking, setBooking] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState("");
+  const [booking, setBooking]   = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setError("");
     getBookingDetail(bookingId)
       .then(setBooking)
       .catch(() => setError("Failed to load transaction details."))
       .finally(() => setLoading(false));
-  }, [bookingId]);
+  }, [bookingId, reloadKey]);
 
   return (
     <div
@@ -138,7 +333,7 @@ function TransactionDetailModal({ bookingId, onClose }) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Format</span>
-                  <span className="font-medium text-[#1F2933]">{booking.format || "—"}</span>
+                  <span className="font-medium text-[#1F2933]">{formatFormat(booking.format)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Date &amp; Time</span>
@@ -166,12 +361,12 @@ function TransactionDetailModal({ bookingId, onClose }) {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Specialist payout</span>
                   <span className="font-medium text-[#1F2933]">
-                    {specialistPayout(booking.amount, booking.platform_fee)}
+                    {specialistPayout(booking)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Transfer status</span>
-                  <span className="font-medium text-[#1F2933] capitalize">{booking.transfer_status || "—"}</span>
+                  <span className="font-medium text-[#1F2933]">{formatTransferStatus(booking)}</span>
                 </div>
                 {booking.refund_status && (
                   <div className="flex justify-between">
@@ -243,6 +438,12 @@ function TransactionDetailModal({ bookingId, onClose }) {
               </div>
             )}
 
+            {/* Admin actions */}
+            <AdminActionsPanel
+              booking={booking}
+              onActionComplete={() => setReloadKey((k) => k + 1)}
+            />
+
           </div>
         )}
       </div>
@@ -250,9 +451,112 @@ function TransactionDetailModal({ bookingId, onClose }) {
   );
 }
 
+// ─── Refund log view ──────────────────────────────────────────────────────────
+
+function RefundLogView() {
+  const [entries, setEntries]   = useState([]);
+  const [total, setTotal]       = useState(0);
+  const [page, setPage]         = useState(1);
+  const [loading, setLoading]   = useState(true);
+  const LIMIT = 25;
+
+  useEffect(() => {
+    setLoading(true);
+    getRefundLog({ page, limit: LIMIT })
+      .then((d) => { setEntries(d.data); setTotal(d.pagination.total); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [page]);
+
+  const totalPages = Math.ceil(total / LIMIT);
+
+  return (
+    <div>
+      <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
+        {/* Table header */}
+        <div className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
+          {["Timestamp", "Admin", "Booking", "Parent", "Original", "Refunded", "Stripe Refund ID"].map((h) => (
+            <span key={h} className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</span>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="py-16 text-center">
+            <p className="text-sm text-gray-400">No refunds have been issued yet.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#E4E7E4]">
+            {entries.map((e) => {
+              const b = e.booking;
+              const isPartial = b && b.refund_amount != null && parseFloat(b.refund_amount) < parseFloat(b.amount);
+              return (
+                <div key={e.id} className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3 items-center">
+                  <span className="text-xs text-gray-500">
+                    {new Date(e.created_at).toLocaleString("en-GB", {
+                      day: "numeric", month: "short", year: "numeric",
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </span>
+                  <span className="text-sm text-[#1F2933] truncate">{e.admin_name}</span>
+                  <span className="text-sm font-mono text-gray-500">#{e.booking_id}</span>
+                  <span className="text-sm text-[#1F2933] truncate">{b?.parent?.name || "—"}</span>
+                  <span className="text-sm text-gray-500">{b ? formatCurrency(b.amount) : "—"}</span>
+                  <span className="flex flex-col gap-0.5 leading-tight">
+                    <span className="text-sm font-medium text-red-500">
+                      −{b ? formatCurrency(b.refund_amount) : "—"}
+                    </span>
+                    {isPartial && (
+                      <span className="text-xs text-gray-400">partial</span>
+                    )}
+                  </span>
+                  <span className="text-xs font-mono text-gray-400 truncate">
+                    {b?.stripe_refund_id || "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Note row */}
+      {entries.length > 0 && (
+        <p className="text-xs text-gray-400 mt-2">
+          {total} refund{total !== 1 ? "s" : ""} recorded. Stripe Refund ID can be used to verify in the Stripe dashboard.
+        </p>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-xs text-gray-400">
+            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}
+          </p>
+          <div className="flex gap-1">
+            <button onClick={() => setPage((p) => p - 1)} disabled={page === 1 || loading}
+              className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+              Previous
+            </button>
+            <button onClick={() => setPage((p) => p + 1)} disabled={page === totalPages || loading}
+              className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main section ─────────────────────────────────────────────────────────────
 
 const PaymentsOverviewSection = () => {
+  const [view, setView]                 = useState("transactions"); // "transactions" | "refund-log"
+
   const [transactions, setTransactions] = useState([]);
   const [total, setTotal]               = useState(0);
   const [page, setPage]                 = useState(1);
@@ -366,20 +670,51 @@ const PaymentsOverviewSection = () => {
         <div>
           <h1 className="text-2xl font-bold text-[#1F2933]">Payment Overview</h1>
           <p className="text-sm text-gray-400 mt-1">
-            Platform-wide transaction list — view amounts, fees, payouts and Stripe references.
+            {view === "transactions"
+              ? "Platform-wide transaction list — view amounts, fees, payouts and Stripe references."
+              : "Audit log of all admin-initiated refunds with Stripe reference and initiating admin."}
           </p>
         </div>
-        <button
-          onClick={handleExport}
-          disabled={exporting}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[#445446] text-white rounded-xl hover:bg-[#3a4a3b] disabled:opacity-50 transition-colors flex-shrink-0"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-          </svg>
-          {exporting ? "Exporting…" : "Export CSV"}
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* View toggle */}
+          <div className="flex rounded-xl border border-[#E4E7E4] overflow-hidden bg-white">
+            <button
+              onClick={() => setView("transactions")}
+              className={`px-3 py-2 text-xs font-medium transition-colors ${
+                view === "transactions" ? "bg-[#445446] text-white" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
+              }`}
+            >
+              Transactions
+            </button>
+            <button
+              onClick={() => setView("refund-log")}
+              className={`px-3 py-2 text-xs font-medium border-l border-[#E4E7E4] transition-colors ${
+                view === "refund-log" ? "bg-[#445446] text-white" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
+              }`}
+            >
+              Refund Log
+            </button>
+          </div>
+          {view === "transactions" && (
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[#445446] text-white rounded-xl hover:bg-[#3a4a3b] disabled:opacity-50 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Refund log view */}
+      {view === "refund-log" && <RefundLogView />}
+
+      {/* Transactions view */}
+      {view === "transactions" && <>
 
       {/* Search + date range */}
       <div className="flex flex-wrap gap-3 mb-4">
@@ -471,14 +806,14 @@ const PaymentsOverviewSection = () => {
               <button
                 key={t.id}
                 onClick={() => setSelectedId(t.id)}
-                className="w-full grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_110px] gap-3 px-4 py-3 text-left hover:bg-[#F5F7F5] transition-colors"
+                className="w-full grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_110px] gap-3 px-4 py-3 text-left hover:bg-[#F5F7F5] transition-colors items-center"
               >
                 <span className="text-sm font-mono text-gray-400">#{t.id}</span>
                 <span className="text-sm text-[#1F2933] truncate">{t.parent?.name || "—"}</span>
                 <span className="text-sm text-[#1F2933] truncate">{t.expert?.user?.name || "—"}</span>
-                <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(t.amount)}</span>
+                <AmountCell transaction={t} />
                 <span className="text-sm text-gray-500">{formatCurrency(t.platform_fee)}</span>
-                <span className="text-sm text-gray-500">{specialistPayout(t.amount, t.platform_fee)}</span>
+                <span className="text-sm text-gray-500">{specialistPayout(t)}</span>
                 <span className="text-sm text-gray-500">{formatDate(t.scheduled_at)}</span>
                 <PaymentStatusBadge transaction={t} />
               </button>
@@ -537,6 +872,8 @@ const PaymentsOverviewSection = () => {
           onClose={() => setSelectedId(null)}
         />
       )}
+
+      </>}
     </div>
   );
 };

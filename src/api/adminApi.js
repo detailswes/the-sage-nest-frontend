@@ -9,6 +9,10 @@ export const rejectExpert       = (id) => api.post(`/admin/experts/${id}/reject`
 export const suspendExpert      = (id) => api.post(`/admin/experts/${id}/suspend`).then((r) => r.data);
 export const reactivateExpert   = (id) => api.post(`/admin/experts/${id}/reactivate`).then((r) => r.data);
 
+// ── Profile draft review ──────────────────────────────────────────────────────
+export const approveProfileDraft = (id) => api.post(`/admin/experts/${id}/draft/approve`).then((r) => r.data);
+export const rejectProfileDraft  = (id, note) => api.post(`/admin/experts/${id}/draft/reject`, { note }).then((r) => r.data);
+
 // ── Moderation actions ────────────────────────────────────────────────────────
 export const requestChanges     = (id, note) => api.post(`/admin/experts/${id}/request-changes`, { note }).then((r) => r.data);
 export const unpublishExpert    = (id) => api.post(`/admin/experts/${id}/unpublish`).then((r) => r.data);
@@ -66,11 +70,19 @@ export const activateParent     = (id) => api.post(`/admin/parents/${id}/activat
 export const deactivateParent   = (id) => api.post(`/admin/parents/${id}/deactivate`).then((r) => r.data);
 export const suspendParent      = (id) => api.post(`/admin/parents/${id}/suspend`).then((r) => r.data);
 
+// ── Parent support tools ──────────────────────────────────────────────────────
+export const sendParentPasswordReset  = (id) => api.post(`/admin/parents/${id}/send-password-reset`).then((r) => r.data);
+export const resendParentVerification = (id) => api.post(`/admin/parents/${id}/resend-verification`).then((r) => r.data);
+export const manuallyVerifyParent     = (id) => api.post(`/admin/parents/${id}/verify`).then((r) => r.data);
+
 // ── Parent GDPR ───────────────────────────────────────────────────────────────
 export const gdprDeleteParent   = (id, confirmEmail) =>
   api.post(`/admin/parents/${id}/gdpr-delete`, { confirm_email: confirmEmail }).then((r) => r.data);
 
 // ── Transactions (Payment Overview) ──────────────────────────────────────────
-export const listTransactions      = (params = {}) => api.get('/admin/transactions', { params }).then((r) => r.data);
-export const exportTransactionsCsv = (params = {}) =>
+export const listTransactions          = (params = {}) => api.get('/admin/transactions', { params }).then((r) => r.data);
+export const exportTransactionsCsv     = (params = {}) =>
   api.get('/admin/transactions/export', { params, responseType: 'blob' }).then((r) => r.data);
+export const adminRetryTransfer        = (id) => api.post(`/admin/bookings/${id}/retry-transfer`).then((r) => r.data);
+export const adminMarkTransferResolved = (id, note) => api.post(`/admin/bookings/${id}/mark-transfer-resolved`, { note }).then((r) => r.data);
+export const getRefundLog              = (params = {}) => api.get('/admin/refund-log', { params }).then((r) => r.data);

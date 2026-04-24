@@ -1261,8 +1261,10 @@ async function getAuditLog(req, res) {
 
 // ─── GDPR deletion ────────────────────────────────────────────────────────────
 // Admin-triggered erasure per GDPR Art. 17.
-// Personal data wiped immediately. Booking records retained in anonymised form
-// under Art. 17(3)(b) (accounting / legal obligation exemption).
+// Profile, credentials, and uploaded files are deleted immediately.
+// BusinessInfo (legal name, TIN, IBAN) and all booking / earnings records are
+// retained in identifiable form for a minimum of 5 years under EU Directive
+// 2021/514 (DAC7). Retention overrides erasure per Art. 17(3)(b).
 
 async function gdprDeleteExpert(req, res) {
   const { id } = req.params;
@@ -1380,10 +1382,9 @@ async function gdprDeleteExpert(req, res) {
       deleteFile(fileUrl);
     }
 
-    // ── 4. Delete BusinessInfo (pure PII — no accounting value) ───────────────
-    if (expert.business_info) {
-      await prisma.businessInfo.delete({ where: { expert_id: expert.id } });
-    }
+    // ── 4. BusinessInfo is intentionally retained — not deleted.
+    // Legal name, TIN, and IBAN must be kept in identifiable form for a minimum
+    // of 5 years under DAC7 (EU Directive 2021/514) for tax reporting purposes.
 
     // ── 5. Anonymise Expert record ─────────────────────────────────────────────
     await prisma.expert.update({
@@ -1670,10 +1671,7 @@ async function gdprDeleteParent(req, res) {
       where: { id: parseInt(id) },
       include: {
         bookings_as_parent: {
-          where: {
-            status: { in: ["PENDING_PAYMENT", "CONFIRMED"] },
-            scheduled_at: { gt: new Date() },
-          },
+          where: { status: { in: ["PENDING_PAYMENT", "CONFIRMED"] } },
         },
       },
     });
@@ -1687,6 +1685,17 @@ async function gdprDeleteParent(req, res) {
     if (confirm_email.trim().toLowerCase() !== user.email.toLowerCase()) {
       return res.status(400).json({
         error: "Email confirmation does not match this parent's account.",
+      });
+    }
+
+    // Hard block: account must be clean before erasure.
+    // Upcoming bookings and overdue confirmed bookings (captured payment, unresolved)
+    // must be resolved manually before this account can be erased.
+    if (user.bookings_as_parent.length > 0) {
+      const count = user.bookings_as_parent.length;
+      return res.status(409).json({
+        error: `This account has ${count} unresolved booking${count !== 1 ? "s" : ""}. Cancel or resolve all bookings before erasing the account.`,
+        code: "UNRESOLVED_BOOKINGS",
       });
     }
 

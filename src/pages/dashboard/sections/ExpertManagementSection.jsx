@@ -1462,48 +1462,74 @@ const ExpertModal = ({ expert, onClose, onActionRequest }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
               </svg>
             </div>
-            <h3 className="text-base font-semibold text-red-700 text-center mb-2">Permanent Account Erasure</h3>
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-700 space-y-1">
-              <p className="font-semibold">This action is irreversible. It will:</p>
-              <ul className="list-disc list-inside space-y-0.5 text-red-600">
-                <li>Cancel all future bookings and issue Stripe refunds</li>
-                <li>Delete all uploaded files (photos, documents)</li>
-                <li>Wipe all personal information from the database</li>
-                <li>Invalidate all active sessions immediately</li>
-                <li>Anonymise the account record (cannot be recovered)</li>
-              </ul>
-              <p className="text-red-500 mt-1">Booking records are retained in anonymised form for accounting compliance.</p>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">
-              Type the specialist{"'"}s email address to confirm:{" "}
-              <span className="font-medium text-[#1F2933]">{localExpert.user?.email}</span>
-            </p>
-            <input
-              type="email"
-              value={gdprEmail}
-              onChange={(e) => setGdprEmail(e.target.value)}
-              placeholder={localExpert.user?.email || "specialist@email.com"}
-              className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition mb-3"
-            />
-            {gdprError && (
-              <p className="text-xs text-red-600 mb-3 px-1">{gdprError}</p>
+            <h3 className="text-base font-semibold text-red-700 text-center mb-4">Permanent Account Erasure</h3>
+            {localExpert.pending_payout_count > 0 ? (
+              <>
+                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-800 space-y-1">
+                  <p className="font-semibold">This account cannot be deleted until all pending payouts have cleared.</p>
+                  <p className="text-red-700 mt-1">
+                    {localExpert.pending_payout_count} payout{localExpert.pending_payout_count !== 1 ? "s are" : " is"} still pending. Payouts typically clear within 24 hours of a completed session. Return here once all payouts have settled.
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
+                  className="w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-2 text-xs text-red-700 space-y-1">
+                  <p className="font-semibold">This action is irreversible. The following will be deleted:</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-red-600">
+                    <li>Profile, bio, photo, login credentials, and uploaded documents</li>
+                    <li>All future bookings cancelled and Stripe refunds issued</li>
+                    <li>All active sessions invalidated immediately</li>
+                    <li>Specialist name shown as "Deleted specialist" in parent booking history</li>
+                  </ul>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 text-xs text-amber-800 space-y-1">
+                  <p className="font-semibold">Retained for a minimum of 5 years under DAC7 (EU Directive 2021/514):</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-amber-700">
+                    <li>Full legal name and tax identification number (TIN)</li>
+                    <li>Bank account / IBAN</li>
+                    <li>All earnings and booking records tied to financial transactions</li>
+                  </ul>
+                  <p className="mt-1 text-amber-600">This data must remain identifiable for tax reporting and cannot be anonymised.</p>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">
+                  Type the specialist{"'"}s email address to confirm:{" "}
+                  <span className="font-medium text-[#1F2933]">{localExpert.user?.email}</span>
+                </p>
+                <input
+                  type="email"
+                  value={gdprEmail}
+                  onChange={(e) => setGdprEmail(e.target.value)}
+                  placeholder={localExpert.user?.email || "specialist@email.com"}
+                  className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition mb-3"
+                />
+                {gdprError && (
+                  <p className="text-xs text-red-600 mb-3 px-1">{gdprError}</p>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
+                    disabled={gdprLoading}
+                    className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleGdprDelete}
+                    disabled={gdprLoading || gdprEmail.trim().toLowerCase() !== localExpert.user?.email?.toLowerCase()}
+                    className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {gdprLoading ? "Erasing…" : "Erase Account"}
+                  </button>
+                </div>
+              </>
             )}
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
-                disabled={gdprLoading}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleGdprDelete}
-                disabled={gdprLoading || gdprEmail.trim().toLowerCase() !== localExpert.user?.email?.toLowerCase()}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {gdprLoading ? "Erasing…" : "Erase Account"}
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -1897,7 +1923,7 @@ const ExpertManagementSection = () => {
           }`}
         >
           {/* Header row */}
-          <div className="grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_200px] gap-3 px-5 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
+          <div className="grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
               Name
             </p>
@@ -1916,6 +1942,9 @@ const ExpertManagementSection = () => {
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
               Bookings
             </p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider" title="EU Directive 2021/514 — DAC7 reporting threshold">
+              DAC7
+            </p>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">
               Actions
             </p>
@@ -1929,7 +1958,7 @@ const ExpertManagementSection = () => {
             return (
               <div
                 key={expert.id}
-                className={`grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_200px] gap-3 px-5 py-4 items-center hover:bg-gray-50 transition-colors ${
+                className={`grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-4 items-center hover:bg-gray-50 transition-colors ${
                   idx > 0 ? "border-t border-[#E4E7E4]" : ""
                 }`}
               >
@@ -2005,6 +2034,23 @@ const ExpertManagementSection = () => {
                     <span className="text-sm text-gray-300">0</span>
                   );
                 })()}
+
+                {/* DAC7 flag */}
+                <div>
+                  {expert.dac7?.threshold_reached ? (
+                    <span
+                      title={`DAC7 threshold reached (${expert.dac7.year}): ${expert.dac7.transaction_count} transactions · £${expert.dac7.gross_earnings.toFixed(2)} gross`}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300 cursor-default"
+                    >
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                      </svg>
+                      DAC7
+                    </span>
+                  ) : (
+                    <span className="text-sm text-gray-300">—</span>
+                  )}
+                </div>
 
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-1.5">
@@ -2302,13 +2348,21 @@ const ExpertManagementSection = () => {
                 <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
                   {cfg.title}
                 </h3>
-                <p className="text-sm text-gray-500 text-center mb-6">
+                <p className="text-sm text-gray-500 text-center mb-4">
                   Are you sure you want to {cfg.verb}{" "}
                   <span className="font-medium text-[#1F2933]">
                     {expertName}
                   </span>
                   ?
                 </p>
+                {confirmAction.type === "approve" && !confirmAction.expert.insurance && (
+                  <div className="flex items-start gap-2 px-3 py-2.5 mb-4 bg-amber-50 border border-amber-200 rounded-lg text-left">
+                    <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                    </svg>
+                    <p className="text-xs text-amber-800">This expert has no insurance uploaded. Please confirm that you wish to proceed.</p>
+                  </div>
+                )}
                 <div className="flex gap-3">
                   <button
                     onClick={() => setConfirmAction(null)}

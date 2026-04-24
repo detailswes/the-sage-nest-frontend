@@ -12,7 +12,6 @@ import {
   exportTaxDataCsv,
   getExpertYearlySummary,
   listExpertBookings,
-  adminManualRefund,
   requestChanges,
   unpublishExpert,
   republishExpert,
@@ -20,8 +19,12 @@ import {
   gdprDeleteExpert,
   approveLanguage,
   rejectLanguage,
+  approveProfileDraft,
+  rejectProfileDraft,
 } from "../../../api/adminApi";
 import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
+import { formatBookingTime, formatFormat } from "../../../utils/formatBookingTime";
+import BookingDetailModal from "../../../components/admin/BookingDetailModal";
 
 // ─── Shared helpers (mirrors ExpertManagementSection constants) ───────────────
 
@@ -65,6 +68,12 @@ const ACTION_LABELS = {
   SEND_PASSWORD_RESET: "Password reset sent",
   RESEND_VERIFICATION: "Verification email resent",
   GDPR_DELETE:         "Account deleted (GDPR)",
+  APPROVE_PROFILE_DRAFT: "Profile draft approved",
+  REJECT_PROFILE_DRAFT:  "Profile draft rejected",
+  // Expert-initiated events
+  EXPERT_PROFILE_SAVED:             "Profile updated",
+  EXPERT_PROFILE_DRAFT_SUBMITTED:   "Profile draft submitted",
+  EXPERT_PROFILE_RESUBMITTED:       "Profile resubmitted",
 };
 
 const formatDate = (iso) =>
@@ -154,9 +163,7 @@ const AdminExpertDetailSection = () => {
   const [bookings, setBookings]         = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsLoaded, setBookingsLoaded]   = useState(false);
-  const [refundPending, setRefundPending]     = useState(null);
-  const [refundingId, setRefundingId]         = useState(null);
-  const [refundError, setRefundError]         = useState("");
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
 
   // Activity tab
   const [auditLog, setAuditLog]       = useState([]);
@@ -177,6 +184,12 @@ const AdminExpertDetailSection = () => {
   const [gdprEmail, setGdprEmail]           = useState("");
   const [gdprLoading, setGdprLoading]       = useState(false);
   const [gdprError, setGdprError]           = useState("");
+
+  // Profile draft review
+  const [draftRejectNote, setDraftRejectNote]   = useState("");
+  const [showDraftReject, setShowDraftReject]   = useState(false);
+  const [draftActionLoading, setDraftActionLoading] = useState(null); // 'approve' | 'reject'
+  const [draftActionError, setDraftActionError]     = useState("");
 
   // Tax export + yearly summary
   const [exportYear, setExportYear]     = useState(new Date().getFullYear());
@@ -267,6 +280,41 @@ const AdminExpertDetailSection = () => {
     }
   };
 
+  const handleApproveDraft = async () => {
+    setDraftActionLoading("approve");
+    setDraftActionError("");
+    try {
+      await approveProfileDraft(id);
+      setShowDraftReject(false);
+      setDraftRejectNote("");
+      await loadExpert(); // reload to get updated live fields and cleared draft
+      setAuditLoaded(false);
+    } catch (e) {
+      setDraftActionError(e?.response?.data?.error || "Failed to approve draft.");
+    } finally {
+      setDraftActionLoading(null);
+    }
+  };
+
+  const handleRejectDraft = async () => {
+    setDraftActionLoading("reject");
+    setDraftActionError("");
+    try {
+      await rejectProfileDraft(id, draftRejectNote.trim() || undefined);
+      setShowDraftReject(false);
+      setDraftRejectNote("");
+      setExpert((e) => ({
+        ...e,
+        profile_draft: { ...e.profile_draft, status: "REJECTED", rejection_note: draftRejectNote.trim() || null },
+      }));
+      setAuditLoaded(false);
+    } catch (e) {
+      setDraftActionError(e?.response?.data?.error || "Failed to reject draft.");
+    } finally {
+      setDraftActionLoading(null);
+    }
+  };
+
   const runAction = async (label, fn) => {
     clearFeedback();
     setActionLoading(label);
@@ -283,7 +331,16 @@ const AdminExpertDetailSection = () => {
     }
   };
 
-  const handleApprove    = () => runAction("Approved",    () => approveExpert(id));
+  const [showApproveNoInsurance, setShowApproveNoInsurance] = useState(false);
+
+  const handleApprove = () => {
+    if (!expert.insurance) { setShowApproveNoInsurance(true); return; }
+    runAction("Approved", () => approveExpert(id));
+  };
+  const confirmApproveNoInsurance = () => {
+    setShowApproveNoInsurance(false);
+    runAction("Approved", () => approveExpert(id));
+  };
   const handleReject     = () => runAction("Rejected",    () => rejectExpert(id));
   const handleSuspend    = () => runAction("Suspended",   () => suspendExpert(id));
   const handleReactivate = () => runAction("Reactivated", () => reactivateExpert(id));
@@ -345,20 +402,6 @@ const AdminExpertDetailSection = () => {
       setGdprError(e?.response?.data?.error || "Deletion failed.");
     } finally {
       setGdprLoading(false);
-    }
-  };
-
-  const handleRefund = async (booking) => {
-    setRefundPending(null);
-    setRefundingId(booking.id);
-    setRefundError("");
-    try {
-      await adminManualRefund(booking.id, "Admin manual refund");
-      setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, status: "REFUNDED" } : b));
-    } catch (e) {
-      setRefundError(e?.response?.data?.error || "Refund failed.");
-    } finally {
-      setRefundingId(null);
     }
   };
 
@@ -512,23 +555,154 @@ const AdminExpertDetailSection = () => {
               {/* ── Profile tab ── */}
               {activeTab === "profile" && (
                 <>
-                  {(expert.summary || expert.bio) && (
-                    <div className="space-y-4">
-                      {expert.summary && <div><SectionLabel>Summary</SectionLabel><p className="text-sm text-[#1F2933] leading-relaxed">{expert.summary}</p></div>}
-                      {expert.bio && <div><SectionLabel>Full Bio</SectionLabel><p className="text-sm text-[#1F2933] leading-relaxed">{expert.bio}</p></div>}
+                  {/* ── Pending draft review card ── */}
+                  {expert.profile_draft?.status === "PENDING_REVIEW" && (
+                    <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden mb-2">
+                      {/* Card header */}
+                      <div className="flex items-center justify-between gap-4 px-5 py-3.5 bg-amber-100 border-b border-amber-200">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-sm font-semibold text-amber-800">Profile edit pending review</span>
+                          <span className="text-xs text-amber-600 ml-1">
+                            · submitted {new Date(expert.profile_draft.submitted_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {draftActionError && <span className="text-xs text-red-600">{draftActionError}</span>}
+                          {showDraftReject ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={draftRejectNote}
+                                onChange={(e) => setDraftRejectNote(e.target.value)}
+                                placeholder="Rejection note (optional)…"
+                                className="text-xs px-3 py-1.5 border border-amber-300 rounded-lg bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 w-52"
+                              />
+                              <button
+                                onClick={handleRejectDraft}
+                                disabled={draftActionLoading === "reject"}
+                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 transition-colors"
+                              >
+                                {draftActionLoading === "reject" ? "…" : "Confirm reject"}
+                              </button>
+                              <button
+                                onClick={() => { setShowDraftReject(false); setDraftRejectNote(""); setDraftActionError(""); }}
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                onClick={handleApproveDraft}
+                                disabled={draftActionLoading !== null}
+                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white disabled:opacity-50 transition-colors"
+                              >
+                                {draftActionLoading === "approve" ? "Approving…" : "Approve & publish"}
+                              </button>
+                              <button
+                                onClick={() => setShowDraftReject(true)}
+                                disabled={draftActionLoading !== null}
+                                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Side-by-side diff */}
+                      <div className="grid grid-cols-2 divide-x divide-amber-200">
+                        {/* Live column */}
+                        <div className="px-5 py-4 space-y-4">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Live (current)</p>
+                          {[
+                            ["Summary",         expert.summary,          expert.profile_draft.summary],
+                            ["Bio",             expert.bio,              expert.profile_draft.bio],
+                            ["Professional title", expert.position,      expert.profile_draft.position],
+                            ["Session format",  formatFormat(expert.session_format),   formatFormat(expert.profile_draft.session_format)],
+                            ["Location",        [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null,
+                                                [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null],
+                            ["Timezone",        expert.timezone,         expert.profile_draft.timezone],
+                            ["Languages",       expert.languages?.join(", ") || null, expert.profile_draft.languages?.join(", ") || null],
+                            ["Instagram",       expert.instagram,        expert.profile_draft.instagram],
+                            ["Facebook",        expert.facebook,         expert.profile_draft.facebook],
+                            ["LinkedIn",        expert.linkedin,         expert.profile_draft.linkedin],
+                            ["Expertise",       expert.expertise,        expert.profile_draft.expertise],
+                          ].map(([label, live, proposed]) => {
+                            const changed = (live || "") !== (proposed || "");
+                            return (
+                              <div key={label}>
+                                <p className="text-xs font-medium text-gray-400 mb-0.5">{label}</p>
+                                <p className={`text-sm leading-relaxed ${changed ? "text-[#1F2933]" : "text-gray-400"}`}>
+                                  {live || <span className="italic text-gray-300">—</span>}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Proposed column */}
+                        <div className="px-5 py-4 space-y-4 bg-white">
+                          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-3">Proposed changes</p>
+                          {[
+                            ["Summary",         expert.summary,          expert.profile_draft.summary],
+                            ["Bio",             expert.bio,              expert.profile_draft.bio],
+                            ["Professional title", expert.position,      expert.profile_draft.position],
+                            ["Session format",  formatFormat(expert.session_format),   formatFormat(expert.profile_draft.session_format)],
+                            ["Location",        [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null,
+                                                [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null],
+                            ["Timezone",        expert.timezone,         expert.profile_draft.timezone],
+                            ["Languages",       expert.languages?.join(", ") || null, expert.profile_draft.languages?.join(", ") || null],
+                            ["Instagram",       expert.instagram,        expert.profile_draft.instagram],
+                            ["Facebook",        expert.facebook,         expert.profile_draft.facebook],
+                            ["LinkedIn",        expert.linkedin,         expert.profile_draft.linkedin],
+                            ["Expertise",       expert.expertise,        expert.profile_draft.expertise],
+                          ].map(([label, live, proposed]) => {
+                            const changed = (live || "") !== (proposed || "");
+                            return (
+                              <div key={label}>
+                                <p className="text-xs font-medium text-gray-400 mb-0.5">{label}</p>
+                                <p className={`text-sm leading-relaxed ${changed ? "font-medium text-amber-800 bg-amber-100/60 px-1.5 py-0.5 rounded" : "text-gray-400"}`}>
+                                  {proposed || <span className="italic text-gray-300">—</span>}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  {expert.languages?.length > 0 && (
+                  <div className="space-y-4">
                     <div>
-                      <SectionLabel>Languages Spoken</SectionLabel>
+                      <SectionLabel>Summary</SectionLabel>
+                      {expert.summary
+                        ? <p className="text-sm text-[#1F2933] leading-relaxed">{expert.summary}</p>
+                        : <p className="text-sm text-gray-400 italic">No summary added.</p>}
+                    </div>
+                    <div>
+                      <SectionLabel>Full Bio</SectionLabel>
+                      {expert.bio
+                        ? <p className="text-sm text-[#1F2933] leading-relaxed">{expert.bio}</p>
+                        : <p className="text-sm text-gray-400 italic">No bio added.</p>}
+                    </div>
+                  </div>
+
+                  <div>
+                    <SectionLabel>Languages Spoken</SectionLabel>
+                    {expert.languages?.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5">
                         {expert.languages.map((lang) => (
                           <span key={lang} className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#445446]/10 text-[#445446]">{lang}</span>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ) : <p className="text-sm text-gray-400 italic">No languages added.</p>}
+                  </div>
 
                   {expert.pending_languages?.length > 0 && (
                     <div>
@@ -597,14 +771,12 @@ const AdminExpertDetailSection = () => {
                     </div>
                   )}
 
-                  {hasAddress && (
-                    <div>
-                      <SectionLabel>Location</SectionLabel>
-                      <p className="text-sm text-[#1F2933]">
-                        {[expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ")}
-                      </p>
-                    </div>
-                  )}
+                  <div>
+                    <SectionLabel>Location</SectionLabel>
+                    {hasAddress
+                      ? <p className="text-sm text-[#1F2933]">{[expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ")}</p>
+                      : <p className="text-sm text-gray-400 italic">No location added.</p>}
+                  </div>
 
                   <div>
                     <SectionLabel>Qualifications</SectionLabel>
@@ -649,6 +821,7 @@ const AdminExpertDetailSection = () => {
                             <option key={y} value={y}>{y}</option>
                           ))}
                         </select>
+                        <span className="text-xs text-gray-400">Status</span>
                         <select value={summaryStatus} onChange={(e) => setSummaryStatus(e.target.value)}
                           className="text-xs border border-[#E4E7E4] rounded-lg px-2 py-1.5 bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30">
                           <option value="ALL">All</option>
@@ -657,6 +830,27 @@ const AdminExpertDetailSection = () => {
                         </select>
                       </div>
                     </div>
+
+                    {/* DAC7 reporting threshold flag */}
+                    {expert.dac7?.threshold_reached && (
+                      <div className="flex items-start gap-2.5 px-4 py-3 mb-3 rounded-xl border border-amber-300 bg-amber-50">
+                        <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                        </svg>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-amber-800">DAC7 reporting threshold reached ({expert.dac7.year})</p>
+                          <p className="text-xs text-amber-700 mt-0.5">
+                            {expert.dac7.transaction_count} transaction{expert.dac7.transaction_count !== 1 ? "s" : ""} &middot; £{expert.dac7.gross_earnings.toFixed(2)} gross
+                            {expert.dac7.threshold_reason === "both"
+                              ? " — exceeds both the 30-transaction and £2,000 thresholds."
+                              : expert.dac7.threshold_reason === "transactions"
+                              ? " — 30-transaction threshold met."
+                              : " — £2,000 gross earnings threshold met."}
+                            {" "}This expert may be reportable under EU Directive 2021/514 (DAC7). Confirm applicable threshold with a tax adviser.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Financial summary cards */}
                     {summaryLoading ? (
@@ -709,7 +903,6 @@ const AdminExpertDetailSection = () => {
                         ...(bi.entity_type === "COMPANY" && bi.company_reg_number ? [["Company reg. number", bi.company_reg_number]] : []),
                         ["IBAN / Bank account", bi.iban],
                         ["Email address", bi.business_email],
-                        ["Website", bi.website],
                         ...(bi.municipality ? [["Municipality", bi.municipality]] : []),
                         ...(bi.business_address ? [["Business address", bi.business_address]] : []),
                       ];
@@ -785,8 +978,37 @@ const AdminExpertDetailSection = () => {
                   <div>
                     <SectionLabel>Stripe Account</SectionLabel>
                     {expert.stripe_account_id ? (
-                      <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{expert.stripe_account_id}</span>
-                    ) : <p className="text-sm text-gray-400 italic">Not connected</p>}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                          {expert.stripe_account_id}
+                        </span>
+                        {expert.stripe_onboarding_complete ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
+                            Connected · Payouts enabled
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" /></svg>
+                            Pending · Onboarding incomplete
+                          </span>
+                        )}
+                        <a
+                          href={`https://dashboard.stripe.com/connect/accounts/${expert.stripe_account_id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-[#635BFF] hover:underline"
+                        >
+                          View in Stripe
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                        Not connected
+                      </span>
+                    )}
                   </div>
                 </>
               )}
@@ -802,27 +1024,27 @@ const AdminExpertDetailSection = () => {
                   <p className="text-sm text-gray-400 italic py-4">No bookings on record.</p>
                 ) : (
                   <div className="space-y-2">
-                    {refundError && <p className="text-xs text-red-600 mb-1">{refundError}</p>}
                     {bookings.map((b) => (
-                      <div key={b.id} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-[#E4E7E4] bg-[#FAFAFA]">
+                      <button
+                        key={b.id}
+                        onClick={() => setSelectedBookingId(b.id)}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-[#E4E7E4] bg-[#FAFAFA] hover:bg-[#F0F2F0] transition-colors text-left"
+                      >
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-[#1F2933] truncate">#{b.id} · {b.service?.title || "Session"}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {formatDate(b.scheduled_at)}
-                            {b.parent?.name ? ` · ${b.parent.name}` : ""}
-                            {b.amount ? ` · £${Number(b.amount).toFixed(2)}` : ""}
+                          <p className="text-xs text-gray-400 mt-0.5 leading-tight">
+                            <span className="block">
+                              {formatBookingTime(b.scheduled_at, expert.timezone).primary}
+                              {b.parent?.name ? ` · ${b.parent.name}` : ""}
+                              {b.amount ? ` · £${Number(b.amount).toFixed(2)}` : ""}
+                            </span>
+                            <span className="block text-gray-300">
+                              {formatBookingTime(b.scheduled_at, expert.timezone).utc}
+                            </span>
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <BookingStatusBadge status={b.status} />
-                          {b.status === "CONFIRMED" && (
-                            <button onClick={() => setRefundPending(b)} disabled={refundingId === b.id}
-                              className="text-xs font-medium px-2.5 py-1 rounded-lg border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
-                              {refundingId === b.id ? "Refunding…" : "Refund"}
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                        <BookingStatusBadge status={b.status} />
+                      </button>
                     ))}
                   </div>
                 )
@@ -839,18 +1061,62 @@ const AdminExpertDetailSection = () => {
                   <p className="text-sm text-gray-400 italic">No activity recorded yet.</p>
                 ) : (
                   <ol className="relative border-l border-[#E4E7E4] ml-2 space-y-4">
-                    {auditLog.map((entry) => (
-                      <li key={entry.id} className="ml-4">
-                        <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#445446]/20 border-2 border-[#445446]/40" />
-                        <p className="text-xs font-semibold text-[#1F2933]">{ACTION_LABELS[entry.action] || entry.action}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {entry.admin_name} · {new Date(entry.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                        {entry.note && (
-                          <p className="text-xs text-gray-500 mt-1 bg-gray-50 rounded-lg px-3 py-2 border border-[#E4E7E4] whitespace-pre-wrap">{entry.note}</p>
-                        )}
-                      </li>
-                    ))}
+                    {(() => {
+                      const latestChangeReqIdx = auditLog.findIndex(
+                        (e) => e.action === "REQUEST_CHANGES"
+                      );
+                      return auditLog.map((entry, idx) => {
+                        const isExpertAction = entry.action.startsWith("EXPERT_");
+                        const isChangeReq    = entry.action === "REQUEST_CHANGES";
+                        const isPending =
+                          isChangeReq &&
+                          idx === latestChangeReqIdx &&
+                          expert.status === "CHANGES_REQUESTED";
+                        const isResolved = isChangeReq && !isPending;
+
+                        return (
+                          <li key={entry.id} className="ml-4">
+                            {isChangeReq ? (
+                              <div className={`absolute -left-1.5 mt-1 w-3 h-3 rounded-full border-2 ${isPending ? "bg-amber-100 border-amber-400" : "bg-green-100 border-green-500"}`} />
+                            ) : isExpertAction ? (
+                              <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-blue-100 border-2 border-blue-400" />
+                            ) : (
+                              <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#445446]/20 border-2 border-[#445446]/40" />
+                            )}
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-xs font-semibold text-[#1F2933]">
+                                {ACTION_LABELS[entry.action] || entry.action}
+                              </p>
+                              {isExpertAction && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                                  Expert
+                                </span>
+                              )}
+                              {isPending && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                                  Awaiting response
+                                </span>
+                              )}
+                              {isResolved && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200">
+                                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
+                                  Resolved
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {isExpertAction ? `${entry.admin_name} (expert)` : entry.admin_name} · {new Date(entry.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                            {entry.note && (
+                              <p className="text-xs text-gray-500 mt-1 bg-gray-50 rounded-lg px-3 py-2 border border-[#E4E7E4] whitespace-pre-wrap">{entry.note}</p>
+                            )}
+                          </li>
+                        );
+                      });
+                    })()}
                   </ol>
                 )
               )}
@@ -866,10 +1132,35 @@ const AdminExpertDetailSection = () => {
             <SectionLabel>Status Actions</SectionLabel>
             <div className="flex flex-col gap-2">
               {expert.status !== "APPROVED" && expert.status !== "SUSPENDED" && (
-                <button onClick={handleApprove} disabled={!!actionLoading}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors">
-                  {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
-                </button>
+                <>
+                  {showApproveNoInsurance ? (
+                    <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 space-y-2">
+                      <p className="text-xs font-medium text-amber-800">
+                        This expert has no insurance uploaded. Please confirm that you wish to proceed.
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={confirmApproveNoInsurance}
+                          disabled={!!actionLoading}
+                          className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors"
+                        >
+                          {actionLoading === "Approved" ? "Approving…" : "Approve anyway"}
+                        </button>
+                        <button
+                          onClick={() => setShowApproveNoInsurance(false)}
+                          className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#E4E7E4] text-gray-600 bg-white hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={handleApprove} disabled={!!actionLoading}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors">
+                      {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
+                    </button>
+                  )}
+                </>
               )}
               {expert.status !== "REJECTED" && expert.status !== "SUSPENDED" && (
                 <button onClick={handleReject} disabled={!!actionLoading}
@@ -916,6 +1207,7 @@ const AdminExpertDetailSection = () => {
                 className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
                 {actionLoading === "Password reset sent" ? "Sending…" : "Send Password Reset"}
               </button>
+              {/* Verification tools are only relevant while the account is unverified. */}
               {!expert.user?.is_verified && (
                 <>
                   <button onClick={handleResendVerification} disabled={!!actionLoading}
@@ -943,21 +1235,13 @@ const AdminExpertDetailSection = () => {
         </div>
       </div>
 
-      {/* ── Refund confirmation ── */}
-      {refundPending && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setRefundPending(null); }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">Issue Refund?</h3>
-            <p className="text-sm text-gray-500 text-center mb-6">
-              Issue a full refund for booking <span className="font-medium text-[#1F2933]">#{refundPending.id} · {refundPending.service?.title || "Session"}</span>? This cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setRefundPending(null)} className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
-              <button onClick={() => handleRefund(refundPending)} className="flex-1 py-2.5 px-4 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium">Yes, refund</button>
-            </div>
-          </div>
-        </div>
+      {/* ── Booking detail modal ── */}
+      {selectedBookingId && (
+        <BookingDetailModal
+          bookingId={selectedBookingId}
+          onClose={() => setSelectedBookingId(null)}
+          onUpdated={() => { setBookingsLoaded(false); loadBookings(); }}
+        />
       )}
 
       {/* ── Request Changes modal ── */}
@@ -1015,32 +1299,60 @@ const AdminExpertDetailSection = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget && !gdprLoading) setShowGdprDelete(false); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-base font-semibold text-red-700 text-center mb-2">Permanent Account Erasure</h3>
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-700 space-y-1">
-              <p className="font-semibold">This action is irreversible. It will:</p>
-              <ul className="list-disc list-inside space-y-0.5 text-red-600">
-                <li>Cancel all future bookings and issue Stripe refunds</li>
-                <li>Delete all uploaded files (photos, documents)</li>
-                <li>Wipe all personal information from the database</li>
-                <li>Invalidate all active sessions immediately</li>
-              </ul>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">
-              Type the specialist's email to confirm: <span className="font-medium text-[#1F2933]">{expert.user?.email}</span>
-            </p>
-            <input type="email" value={gdprEmail} onChange={(e) => setGdprEmail(e.target.value)}
-              placeholder={expert.user?.email || "specialist@email.com"}
-              className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 mb-3" />
-            {gdprError && <p className="text-xs text-red-600 mb-3">{gdprError}</p>}
-            <div className="flex gap-3">
-              <button onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }} disabled={gdprLoading}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
-              <button onClick={handleGdprDelete}
-                disabled={gdprLoading || gdprEmail.trim().toLowerCase() !== expert.user?.email?.toLowerCase()}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium disabled:opacity-50">
-                {gdprLoading ? "Erasing…" : "Erase Account"}
-              </button>
-            </div>
+            <h3 className="text-base font-semibold text-red-700 text-center mb-4">Permanent Account Erasure</h3>
+            {expert.pending_payout_count > 0 ? (
+              <>
+                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-800 space-y-1">
+                  <p className="font-semibold">This account cannot be deleted until all pending payouts have cleared.</p>
+                  <p className="text-red-700 mt-1">
+                    {expert.pending_payout_count} payout{expert.pending_payout_count !== 1 ? "s are" : " is"} still pending. Payouts typically clear within 24 hours of a completed session. Return here once all payouts have settled.
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
+                  className="w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-2 text-xs text-red-700 space-y-1">
+                  <p className="font-semibold">This action is irreversible. The following will be deleted:</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-red-600">
+                    <li>Profile, bio, photo, login credentials, and uploaded documents</li>
+                    <li>All future bookings cancelled and Stripe refunds issued</li>
+                    <li>All active sessions invalidated immediately</li>
+                    <li>Specialist name shown as "Deleted specialist" in parent booking history</li>
+                  </ul>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 text-xs text-amber-800 space-y-1">
+                  <p className="font-semibold">Retained for a minimum of 5 years under DAC7 (EU Directive 2021/514):</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-amber-700">
+                    <li>Full legal name and tax identification number (TIN)</li>
+                    <li>Bank account / IBAN</li>
+                    <li>All earnings and booking records tied to financial transactions</li>
+                  </ul>
+                  <p className="mt-1 text-amber-600">This data must remain identifiable for tax reporting and cannot be anonymised.</p>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">
+                  Type the specialist's email to confirm: <span className="font-medium text-[#1F2933]">{expert.user?.email}</span>
+                </p>
+                <input type="email" value={gdprEmail} onChange={(e) => setGdprEmail(e.target.value)}
+                  placeholder={expert.user?.email || "specialist@email.com"}
+                  className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 mb-3" />
+                {gdprError && <p className="text-xs text-red-600 mb-3">{gdprError}</p>}
+                <div className="flex gap-3">
+                  <button onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }} disabled={gdprLoading}
+                    className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
+                  <button onClick={handleGdprDelete}
+                    disabled={gdprLoading || gdprEmail.trim().toLowerCase() !== expert.user?.email?.toLowerCase()}
+                    className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    {gdprLoading ? "Erasing…" : "Erase Account"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
