@@ -475,7 +475,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                   </button>
                 )}
 
-                {booking.status === "CONFIRMED" && booking.stripe_payment_intent_id && (
+                {["CONFIRMED", "COMPLETED", "CANCELLED"].includes(booking.status) && booking.stripe_payment_intent_id && booking.refund_status !== "succeeded" && (
                   <button
                     onClick={() => { setShowRefundForm((v) => !v); setShowCancelForm(false); setShowDisputeForm(false); }}
                     className="px-3 py-1.5 text-xs font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"

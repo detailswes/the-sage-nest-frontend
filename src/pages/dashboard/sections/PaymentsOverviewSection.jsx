@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { listTransactions, exportTransactionsCsv, getBookingDetail, adminManualRefund, adminRetryTransfer, adminMarkTransferResolved } from "../../../api/adminApi";
+import { listTransactions, exportTransactionsCsv, getBookingDetail, adminManualRefund, adminRetryTransfer, adminMarkTransferResolved, getRefundLog } from "../../../api/adminApi";
 import { formatFormat, formatTransferStatus } from "../../../utils/formatBookingTime";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -451,9 +451,112 @@ function TransactionDetailModal({ bookingId, onClose }) {
   );
 }
 
+// ─── Refund log view ──────────────────────────────────────────────────────────
+
+function RefundLogView() {
+  const [entries, setEntries]   = useState([]);
+  const [total, setTotal]       = useState(0);
+  const [page, setPage]         = useState(1);
+  const [loading, setLoading]   = useState(true);
+  const LIMIT = 25;
+
+  useEffect(() => {
+    setLoading(true);
+    getRefundLog({ page, limit: LIMIT })
+      .then((d) => { setEntries(d.data); setTotal(d.pagination.total); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [page]);
+
+  const totalPages = Math.ceil(total / LIMIT);
+
+  return (
+    <div>
+      <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
+        {/* Table header */}
+        <div className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
+          {["Timestamp", "Admin", "Booking", "Parent", "Original", "Refunded", "Stripe Refund ID"].map((h) => (
+            <span key={h} className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</span>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="py-16 text-center">
+            <p className="text-sm text-gray-400">No refunds have been issued yet.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#E4E7E4]">
+            {entries.map((e) => {
+              const b = e.booking;
+              const isPartial = b && b.refund_amount != null && parseFloat(b.refund_amount) < parseFloat(b.amount);
+              return (
+                <div key={e.id} className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3 items-center">
+                  <span className="text-xs text-gray-500">
+                    {new Date(e.created_at).toLocaleString("en-GB", {
+                      day: "numeric", month: "short", year: "numeric",
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </span>
+                  <span className="text-sm text-[#1F2933] truncate">{e.admin_name}</span>
+                  <span className="text-sm font-mono text-gray-500">#{e.booking_id}</span>
+                  <span className="text-sm text-[#1F2933] truncate">{b?.parent?.name || "—"}</span>
+                  <span className="text-sm text-gray-500">{b ? formatCurrency(b.amount) : "—"}</span>
+                  <span className="flex flex-col gap-0.5 leading-tight">
+                    <span className="text-sm font-medium text-red-500">
+                      −{b ? formatCurrency(b.refund_amount) : "—"}
+                    </span>
+                    {isPartial && (
+                      <span className="text-xs text-gray-400">partial</span>
+                    )}
+                  </span>
+                  <span className="text-xs font-mono text-gray-400 truncate">
+                    {b?.stripe_refund_id || "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Note row */}
+      {entries.length > 0 && (
+        <p className="text-xs text-gray-400 mt-2">
+          {total} refund{total !== 1 ? "s" : ""} recorded. Stripe Refund ID can be used to verify in the Stripe dashboard.
+        </p>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-xs text-gray-400">
+            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}
+          </p>
+          <div className="flex gap-1">
+            <button onClick={() => setPage((p) => p - 1)} disabled={page === 1 || loading}
+              className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+              Previous
+            </button>
+            <button onClick={() => setPage((p) => p + 1)} disabled={page === totalPages || loading}
+              className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main section ─────────────────────────────────────────────────────────────
 
 const PaymentsOverviewSection = () => {
+  const [view, setView]                 = useState("transactions"); // "transactions" | "refund-log"
+
   const [transactions, setTransactions] = useState([]);
   const [total, setTotal]               = useState(0);
   const [page, setPage]                 = useState(1);
@@ -567,20 +670,51 @@ const PaymentsOverviewSection = () => {
         <div>
           <h1 className="text-2xl font-bold text-[#1F2933]">Payment Overview</h1>
           <p className="text-sm text-gray-400 mt-1">
-            Platform-wide transaction list — view amounts, fees, payouts and Stripe references.
+            {view === "transactions"
+              ? "Platform-wide transaction list — view amounts, fees, payouts and Stripe references."
+              : "Audit log of all admin-initiated refunds with Stripe reference and initiating admin."}
           </p>
         </div>
-        <button
-          onClick={handleExport}
-          disabled={exporting}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[#445446] text-white rounded-xl hover:bg-[#3a4a3b] disabled:opacity-50 transition-colors flex-shrink-0"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-          </svg>
-          {exporting ? "Exporting…" : "Export CSV"}
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* View toggle */}
+          <div className="flex rounded-xl border border-[#E4E7E4] overflow-hidden bg-white">
+            <button
+              onClick={() => setView("transactions")}
+              className={`px-3 py-2 text-xs font-medium transition-colors ${
+                view === "transactions" ? "bg-[#445446] text-white" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
+              }`}
+            >
+              Transactions
+            </button>
+            <button
+              onClick={() => setView("refund-log")}
+              className={`px-3 py-2 text-xs font-medium border-l border-[#E4E7E4] transition-colors ${
+                view === "refund-log" ? "bg-[#445446] text-white" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
+              }`}
+            >
+              Refund Log
+            </button>
+          </div>
+          {view === "transactions" && (
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[#445446] text-white rounded-xl hover:bg-[#3a4a3b] disabled:opacity-50 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Refund log view */}
+      {view === "refund-log" && <RefundLogView />}
+
+      {/* Transactions view */}
+      {view === "transactions" && <>
 
       {/* Search + date range */}
       <div className="flex flex-wrap gap-3 mb-4">
@@ -738,6 +872,8 @@ const PaymentsOverviewSection = () => {
           onClose={() => setSelectedId(null)}
         />
       )}
+
+      </>}
     </div>
   );
 };

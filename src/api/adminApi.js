@@ -85,3 +85,4 @@ export const exportTransactionsCsv     = (params = {}) =>
   api.get('/admin/transactions/export', { params, responseType: 'blob' }).then((r) => r.data);
 export const adminRetryTransfer        = (id) => api.post(`/admin/bookings/${id}/retry-transfer`).then((r) => r.data);
 export const adminMarkTransferResolved = (id, note) => api.post(`/admin/bookings/${id}/mark-transfer-resolved`, { note }).then((r) => r.data);
+export const getRefundLog              = (params = {}) => api.get('/admin/refund-log', { params }).then((r) => r.data);
