@@ -23,7 +23,7 @@ export const sendPasswordReset  = (id) => api.post(`/admin/experts/${id}/send-pa
 export const resendVerification = (id) => api.post(`/admin/experts/${id}/resend-verification`).then((r) => r.data);
 export const manuallyVerify     = (id) => api.post(`/admin/experts/${id}/verify`).then((r) => r.data);
 
-// ── Tax export ────────────────────────────────────────────────────────────────
+// ── Tax export (XLSX) ─────────────────────────────────────────────────────────
 export const exportTaxDataCsv       = (id, year) =>
   api.get(`/admin/experts/${id}/tax-export`, { params: { year }, responseType: 'blob' }).then((r) => r.data);
 
@@ -41,7 +41,7 @@ export const gdprDeleteExpert   = (id, confirmEmail) =>
 // ── Bookings ──────────────────────────────────────────────────────────────────
 export const getExpertDetail       = (id) => api.get(`/admin/experts/${id}`).then((r) => r.data);
 export const listExpertBookings    = (expertId) => api.get('/admin/bookings', { params: { expertId } }).then((r) => r.data);
-export const adminManualRefund     = (bookingId, reason, amount) => api.post(`/admin/bookings/${bookingId}/refund`, { reason, ...(amount != null ? { amount } : {}) }).then((r) => r.data);
+export const adminManualRefund     = (bookingId, reason, amount, overrideReason) => api.post(`/admin/bookings/${bookingId}/refund`, { reason, ...(amount != null ? { amount } : {}), ...(overrideReason ? { override_reason: overrideReason } : {}) }).then((r) => r.data);
 export const listAllBookings       = (params = {}) => api.get('/admin/bookings/all', { params }).then((r) => r.data);
 export const getBookingDetail      = (id) => api.get(`/admin/bookings/${id}`).then((r) => r.data);
 export const adminCancelBooking    = (id, reason) => api.post(`/admin/bookings/${id}/cancel`, { reason }).then((r) => r.data);
@@ -66,9 +66,8 @@ export const getParentDetail    = (id) => api.get(`/admin/parents/${id}`).then((
 export const listParentBookings = (parentId) => api.get(`/admin/parents/${parentId}/bookings`).then((r) => r.data);
 
 // ── Parent status actions ─────────────────────────────────────────────────────
-export const activateParent     = (id) => api.post(`/admin/parents/${id}/activate`).then((r) => r.data);
-export const deactivateParent   = (id) => api.post(`/admin/parents/${id}/deactivate`).then((r) => r.data);
-export const suspendParent      = (id) => api.post(`/admin/parents/${id}/suspend`).then((r) => r.data);
+export const activateParent = (id) => api.post(`/admin/parents/${id}/activate`).then((r) => r.data);
+export const suspendParent  = (id) => api.post(`/admin/parents/${id}/suspend`).then((r) => r.data);
 
 // ── Parent support tools ──────────────────────────────────────────────────────
 export const sendParentPasswordReset  = (id) => api.post(`/admin/parents/${id}/send-password-reset`).then((r) => r.data);
@@ -86,3 +85,6 @@ export const exportTransactionsCsv     = (params = {}) =>
 export const adminRetryTransfer        = (id) => api.post(`/admin/bookings/${id}/retry-transfer`).then((r) => r.data);
 export const adminMarkTransferResolved = (id, note) => api.post(`/admin/bookings/${id}/mark-transfer-resolved`, { note }).then((r) => r.data);
 export const getRefundLog              = (params = {}) => api.get('/admin/refund-log', { params }).then((r) => r.data);
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+export const getAdminNotifications = () => api.get('/admin/notifications').then((r) => r.data);

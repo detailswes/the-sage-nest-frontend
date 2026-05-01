@@ -8,10 +8,9 @@ import {
 const PAGE_LIMIT = 10;
 
 const STATUS_FILTERS = [
-  { key: "all",         label: "All" },
-  { key: "active",      label: "Active" },
-  { key: "deactivated", label: "Deactivated" },
-  { key: "suspended",   label: "Suspended" },
+  { key: "all",       label: "All" },
+  { key: "active",    label: "Active" },
+  { key: "suspended", label: "Suspended" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -32,13 +31,6 @@ const StatusBadge = ({ status }) => {
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
         <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
         Active
-      </span>
-    );
-  if (status === "DEACTIVATED")
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-        Deactivated
       </span>
     );
   return (
@@ -120,7 +112,7 @@ const ParentManagementSection = () => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [page, setPage]                 = useState(1);
   const [pagination, setPagination]     = useState({ total: 0, totalPages: 1 });
-  const [counts, setCounts]             = useState({ all: 0, ACTIVE: 0, DEACTIVATED: 0, SUSPENDED: 0 });
+  const [counts, setCounts]             = useState({ all: 0, ACTIVE: 0, SUSPENDED: 0 });
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch]           = useState("");

@@ -95,6 +95,9 @@ export const AuthProvider = ({ children }) => {
         applyToken(data.accessToken);
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
+        if (data.pp_update_required) {
+          setTimeout(() => setPpUpdateRequired(true), 800);
+        }
       } catch (err) {
         const status = err?.response?.status;
         if (status === 401 || status === 403) {
@@ -124,6 +127,9 @@ export const AuthProvider = ({ children }) => {
     const handleTokenRefreshed = (e) => {
       applyToken(e.detail.accessToken);
       setUser(e.detail.user);
+      if (e.detail.pp_update_required) {
+        setTimeout(() => setPpUpdateRequired(true), 800);
+      }
       // interceptor already updated localStorage
     };
 
@@ -146,7 +152,7 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user);
       localStorage.setItem('user', JSON.stringify(data.user));
       if (data.pp_update_required) {
-        setPpUpdateRequired(true);
+        setTimeout(() => setPpUpdateRequired(true), 800);
       }
     },
     [applyToken]

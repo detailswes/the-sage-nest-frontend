@@ -13,8 +13,6 @@ import {
   getExpertYearlySummary,
   listExpertBookings,
   requestChanges,
-  unpublishExpert,
-  republishExpert,
   getAuditLog,
   gdprDeleteExpert,
   approveLanguage,
@@ -176,10 +174,6 @@ const AdminExpertDetailSection = () => {
   const [changesLoading, setChangesLoading]         = useState(false);
   const [changesError, setChangesError]             = useState("");
 
-  const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
-  const [publishLoading, setPublishLoading]             = useState(false);
-  const [publishError, setPublishError]                 = useState("");
-
   const [showGdprDelete, setShowGdprDelete] = useState(false);
   const [gdprEmail, setGdprEmail]           = useState("");
   const [gdprLoading, setGdprLoading]       = useState(false);
@@ -331,19 +325,16 @@ const AdminExpertDetailSection = () => {
     }
   };
 
-  const [showApproveNoInsurance, setShowApproveNoInsurance] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null); // 'approve' | 'reject' | 'suspend' | 'reactivate'
 
-  const handleApprove = () => {
-    if (!expert.insurance) { setShowApproveNoInsurance(true); return; }
-    runAction("Approved", () => approveExpert(id));
+  const handleConfirmAction = async () => {
+    const type = confirmAction;
+    setConfirmAction(null);
+    if (type === "approve")    await runAction("Approved",    () => approveExpert(id));
+    else if (type === "reject")     await runAction("Rejected",    () => rejectExpert(id));
+    else if (type === "suspend")    await runAction("Suspended",   () => suspendExpert(id));
+    else if (type === "reactivate") await runAction("Reactivated", () => reactivateExpert(id));
   };
-  const confirmApproveNoInsurance = () => {
-    setShowApproveNoInsurance(false);
-    runAction("Approved", () => approveExpert(id));
-  };
-  const handleReject     = () => runAction("Rejected",    () => rejectExpert(id));
-  const handleSuspend    = () => runAction("Suspended",   () => suspendExpert(id));
-  const handleReactivate = () => runAction("Reactivated", () => reactivateExpert(id));
   const handlePasswordReset      = () => runAction("Password reset sent",         () => sendPasswordReset(id));
   const handleResendVerification = () => runAction("Verification email resent",   () => resendVerification(id));
   const handleManualVerify       = () => runAction("Marked as verified",          () => manuallyVerify(id));
@@ -371,27 +362,6 @@ const AdminExpertDetailSection = () => {
     }
   };
 
-  const handlePublishToggle = async () => {
-    setPublishLoading(true);
-    setPublishError("");
-    try {
-      if (expert.is_published) {
-        await unpublishExpert(id);
-        setExpert((prev) => ({ ...prev, is_published: false }));
-      } else {
-        await republishExpert(id);
-        setExpert((prev) => ({ ...prev, is_published: true }));
-      }
-      setShowUnpublishConfirm(false);
-      setAuditLoaded(false);
-      setActionSuccess(expert.is_published ? "Expert unpublished." : "Expert republished.");
-    } catch (e) {
-      setPublishError(e?.response?.data?.error || "Action failed.");
-    } finally {
-      setPublishLoading(false);
-    }
-  };
-
   const handleGdprDelete = async () => {
     setGdprLoading(true);
     setGdprError("");
@@ -414,7 +384,7 @@ const AdminExpertDetailSection = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `tax_report_${safeName}_${exportYear}.csv`;
+      a.download = `tax_report_${safeName}_${exportYear}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -424,7 +394,7 @@ const AdminExpertDetailSection = () => {
     } finally {
       setExporting(false);
     }
-  };
+   };
 
   if (loading) {
     return (
@@ -897,7 +867,10 @@ const AdminExpertDetailSection = () => {
                         ["Entity type", bi.entity_type === "INDIVIDUAL" ? "Individual" : "Company / Legal Entity"],
                         ["Full legal name", bi.legal_name],
                         ...(bi.entity_type === "INDIVIDUAL" && bi.date_of_birth ? [["Date of birth", new Date(bi.date_of_birth).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })]] : []),
-                        ["Primary address", bi.primary_address],
+                        ["Street", bi.address_street],
+                        ["City", bi.address_city],
+                        ["Postal code", bi.address_postal_code],
+                        ["Country", bi.address_country],
                         ["TIN", bi.tin],
                         ...(bi.vat_number ? [["VAT number", bi.vat_number]] : []),
                         ...(bi.entity_type === "COMPANY" && bi.company_reg_number ? [["Company reg. number", bi.company_reg_number]] : []),
@@ -1131,69 +1104,61 @@ const AdminExpertDetailSection = () => {
           <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
             <SectionLabel>Status Actions</SectionLabel>
             <div className="flex flex-col gap-2">
-              {expert.status !== "APPROVED" && expert.status !== "SUSPENDED" && (
-                <>
-                  {showApproveNoInsurance ? (
-                    <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 space-y-2">
-                      <p className="text-xs font-medium text-amber-800">
-                        This expert has no insurance uploaded. Please confirm that you wish to proceed.
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={confirmApproveNoInsurance}
-                          disabled={!!actionLoading}
-                          className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors"
-                        >
-                          {actionLoading === "Approved" ? "Approving…" : "Approve anyway"}
-                        </button>
-                        <button
-                          onClick={() => setShowApproveNoInsurance(false)}
-                          className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#E4E7E4] text-gray-600 bg-white hover:bg-gray-50 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button onClick={handleApprove} disabled={!!actionLoading}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors">
-                      {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
-                    </button>
-                  )}
-                </>
-              )}
-              {expert.status !== "REJECTED" && expert.status !== "SUSPENDED" && (
-                <button onClick={handleReject} disabled={!!actionLoading}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
-                  {actionLoading === "Rejected" ? "Rejecting…" : "Reject Expert"}
-                </button>
-              )}
-              {expert.status === "APPROVED" && (
-                <button onClick={handleSuspend} disabled={!!actionLoading}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 disabled:opacity-50 transition-colors">
-                  {actionLoading === "Suspended" ? "Suspending…" : "Suspend Expert"}
-                </button>
-              )}
-              {expert.status === "SUSPENDED" && (
-                <button onClick={handleReactivate} disabled={!!actionLoading}
+              {expert.status === "SUSPENDED" ? (
+                <button onClick={() => setConfirmAction("reactivate")} disabled={!!actionLoading}
                   className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors">
                   {actionLoading === "Reactivated" ? "Reactivating…" : "Reactivate Expert"}
                 </button>
+              ) : expert.status === "APPROVED" ? (
+                <>
+                  <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
+                    {actionLoading === "Rejected" ? "Rejecting…" : "Reject Expert"}
+                  </button>
+                  <button onClick={() => setConfirmAction("suspend")} disabled={!!actionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 disabled:opacity-50 transition-colors">
+                    {actionLoading === "Suspended" ? "Suspending…" : "Suspend Expert"}
+                  </button>
+                </>
+              ) : expert.status === "REJECTED" ? (
+                <>
+                  <button
+                    onClick={() => setConfirmAction("approve")}
+                    disabled={!!actionLoading || !expert.stripe_onboarding_complete}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
+                  </button>
+                  {!expert.stripe_onboarding_complete && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                      Cannot approve — expert has not completed Stripe onboarding.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setConfirmAction("approve")}
+                    disabled={!!actionLoading || !expert.stripe_onboarding_complete}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
+                  </button>
+                  {!expert.stripe_onboarding_complete && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                      Cannot approve — expert has not completed Stripe onboarding.
+                    </p>
+                  )}
+                  <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
+                    {actionLoading === "Rejected" ? "Rejecting…" : "Reject Expert"}
+                  </button>
+                </>
               )}
               {["PENDING", "APPROVED", "CHANGES_REQUESTED"].includes(expert.status) && (
                 <button onClick={() => { setChangesNote(expert.change_request_note || ""); setShowRequestChanges(true); }}
                   className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors">
                   Request Changes
-                </button>
-              )}
-              {expert.status === "APPROVED" && (
-                <button onClick={() => setShowUnpublishConfirm(true)}
-                  className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
-                    expert.is_published
-                      ? "border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100"
-                      : "border-green-200 text-green-700 bg-green-50 hover:bg-green-100"
-                  }`}>
-                  {expert.is_published ? "Force Unpublish" : "Republish"}
                 </button>
               )}
             </div>
@@ -1268,31 +1233,69 @@ const AdminExpertDetailSection = () => {
         </div>
       )}
 
-      {/* ── Unpublish / Republish confirm ── */}
-      {showUnpublishConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget && !publishLoading) setShowUnpublishConfirm(false); }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
-              {expert.is_published ? "Hide from Search?" : "Restore to Search?"}
-            </h3>
-            <p className="text-sm text-gray-500 text-center mb-6">
-              {expert.is_published
-                ? "This specialist will no longer appear in parent search results. You can restore them at any time."
-                : "This specialist will reappear in parent search results immediately."}
-            </p>
-            {publishError && <p className="text-xs text-red-600 mb-3 text-center">{publishError}</p>}
-            <div className="flex gap-3">
-              <button onClick={() => { setShowUnpublishConfirm(false); setPublishError(""); }} disabled={publishLoading}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
-              <button onClick={handlePublishToggle} disabled={publishLoading}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-white text-sm font-medium disabled:opacity-50 ${expert.is_published ? "bg-orange-500 hover:bg-orange-600" : "bg-green-600 hover:bg-green-700"}`}>
-                {publishLoading ? "Saving…" : expert.is_published ? "Yes, Hide" : "Yes, Restore"}
-              </button>
+      {/* ── Status action confirm modal ── */}
+      {confirmAction && (() => {
+        const cfg = {
+          approve: {
+            title: "Approve Expert?",
+            body: `Are you sure you want to approve ${name}?`,
+            iconBg: "bg-green-50",
+            btnCls: "bg-green-600 hover:bg-green-700",
+            icon: <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>,
+          },
+          reject: {
+            title: "Reject Expert?",
+            body: `Are you sure you want to reject ${name}?`,
+            iconBg: "bg-red-50",
+            btnCls: "bg-red-500 hover:bg-red-600",
+            icon: <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>,
+          },
+          suspend: {
+            title: "Suspend Expert?",
+            body: `${name} will be blocked from logging in until reactivated.`,
+            iconBg: "bg-orange-50",
+            btnCls: "bg-orange-500 hover:bg-orange-600",
+            icon: <svg className="w-6 h-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>,
+          },
+          reactivate: {
+            title: "Reactivate Expert?",
+            body: `${name} will be restored to approved status and can log in again.`,
+            iconBg: "bg-green-50",
+            btnCls: "bg-green-600 hover:bg-green-700",
+            icon: <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>,
+          },
+        }[confirmAction] || {};
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setConfirmAction(null); }}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+              <div className={`flex items-center justify-center w-12 h-12 rounded-full mx-auto mb-4 ${cfg.iconBg}`}>
+                {cfg.icon}
+              </div>
+              <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">{cfg.title}</h3>
+              <p className="text-sm text-gray-500 text-center mb-4">{cfg.body}</p>
+              {confirmAction === "approve" && !expert.insurance && (
+                <div className="flex items-start gap-2 px-3 py-2.5 mb-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-xs text-amber-800">This expert has no insurance uploaded. Please confirm that you wish to proceed.</p>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button onClick={() => setConfirmAction(null)}
+                  className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={handleConfirmAction}
+                  className={`flex-1 py-2.5 px-4 rounded-lg text-white text-sm font-medium transition-colors ${cfg.btnCls}`}>
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── GDPR Delete modal ── */}
       {showGdprDelete && (

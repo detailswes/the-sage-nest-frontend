@@ -14,7 +14,10 @@ const EMPTY_FORM = {
   entity_type: "",
   legal_name: "",
   date_of_birth: "",
-  primary_address: "",
+  address_street: "",
+  address_city: "",
+  address_postal_code: "",
+  address_country: "",
   tin: "",
   vat_number: "",
   company_reg_number: "",
@@ -61,7 +64,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
           date_of_birth: initialData.date_of_birth
             ? new Date(initialData.date_of_birth).toISOString().split("T")[0]
             : "",
-          primary_address: initialData.primary_address || "",
+          address_street: initialData.address_street || "",
+          address_city: initialData.address_city || "",
+          address_postal_code: initialData.address_postal_code || "",
+          address_country: initialData.address_country || "",
           tin: initialData.tin || "",
           vat_number: initialData.vat_number || "",
           company_reg_number: initialData.company_reg_number || "",
@@ -99,7 +105,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
     if (!form.entity_type) errs.entity_type = "Entity type is required.";
     if (!form.legal_name.trim()) errs.legal_name = "Full legal name is required.";
     if (isIndividual && !form.date_of_birth) errs.date_of_birth = "Date of birth is required.";
-    if (!form.primary_address.trim()) errs.primary_address = "Primary address is required.";
+    if (!form.address_street.trim()) errs.address_street = "Street is required.";
+    if (!form.address_city.trim()) errs.address_city = "City is required.";
+    if (!form.address_postal_code.trim()) errs.address_postal_code = "Postal code is required.";
+    if (!form.address_country.trim()) errs.address_country = "Country is required.";
     if (!form.tin.trim()) errs.tin = "Tax Identification Number (TIN) is required.";
     if (isCompany && !form.company_reg_number.trim()) errs.company_reg_number = "Company registration number is required.";
     if (!form.iban.trim()) errs.iban = "IBAN / bank account is required.";
@@ -116,7 +125,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
         entity_type: form.entity_type,
         legal_name: form.legal_name.trim(),
         date_of_birth: isIndividual ? form.date_of_birth || null : null,
-        primary_address: form.primary_address.trim(),
+        address_street: form.address_street.trim(),
+        address_city: form.address_city.trim(),
+        address_postal_code: form.address_postal_code.trim(),
+        address_country: form.address_country.trim(),
         tin: form.tin.trim(),
         vat_number: form.vat_number.trim() || null,
         company_reg_number: isCompany ? form.company_reg_number.trim() : null,
@@ -208,7 +220,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 value={formatDate(data.date_of_birth)}
               />
             )}
-            <InfoRow label="Primary address" value={data.primary_address} />
+            <InfoRow label="Street" value={data.address_street} />
+            <InfoRow label="City" value={data.address_city} />
+            <InfoRow label="Postal code" value={data.address_postal_code} />
+            <InfoRow label="Country" value={data.address_country} />
             <InfoRow label="TIN" value={data.tin} />
             {data.vat_number && (
               <InfoRow label="VAT number" value={data.vat_number} />
@@ -327,24 +342,59 @@ const BusinessInfoCard = ({ initialData = null }) => {
             </div>
           )}
 
-          {/* Primary address */}
+          {/* Structured address */}
           <div>
             <label className={labelClass}>
-              Primary address <span className="text-red-500">*</span>
+              {isCompany ? "Registered address" : "Primary address"} <span className="text-red-500">*</span>
             </label>
-            <textarea
-              name="primary_address"
-              value={form.primary_address}
-              onChange={handleChange}
-              rows={3}
-              placeholder={
-                isCompany
-                  ? "Registered business address"
-                  : "Residential address"
-              }
-              className={`${inputClass("primary_address")} resize-none`}
-            />
-            {fieldErrors.primary_address && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.primary_address}</p>}
+            <div className="space-y-2">
+              <div>
+                <input
+                  type="text"
+                  name="address_street"
+                  value={form.address_street}
+                  onChange={handleChange}
+                  placeholder="Street and number"
+                  className={inputClass("address_street")}
+                />
+                {fieldErrors.address_street && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.address_street}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <input
+                    type="text"
+                    name="address_city"
+                    value={form.address_city}
+                    onChange={handleChange}
+                    placeholder="City / Municipality"
+                    className={inputClass("address_city")}
+                  />
+                  {fieldErrors.address_city && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.address_city}</p>}
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    name="address_postal_code"
+                    value={form.address_postal_code}
+                    onChange={handleChange}
+                    placeholder="Postal code"
+                    className={inputClass("address_postal_code")}
+                  />
+                  {fieldErrors.address_postal_code && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.address_postal_code}</p>}
+                </div>
+              </div>
+              <div>
+                <input
+                  type="text"
+                  name="address_country"
+                  value={form.address_country}
+                  onChange={handleChange}
+                  placeholder="Country"
+                  className={inputClass("address_country")}
+                />
+                {fieldErrors.address_country && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.address_country}</p>}
+              </div>
+            </div>
           </div>
 
           {/* TIN */}
