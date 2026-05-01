@@ -510,9 +510,10 @@ const NotificationPreferencesCard = () => {
   );
 };
 
-// ─── Delete Account card (expert) ────────────────────────────────────────────
+// ─── Delete Account card ──────────────────────────────────────────────────────
 const DeleteAccountCard = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const isParent = user?.role === "PARENT";
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -532,7 +533,13 @@ const DeleteAccountCard = () => {
     } catch (err) {
       const errData = err?.response?.data;
       setError(errData?.error || "Could not delete account. Please try again.");
-      if (errData?.has_pending_payout) {
+      // Any blocking condition — collapse back to the card-level view so the
+      // message is clearly visible rather than buried inside the confirm form.
+      if (
+        errData?.has_pending_payout ||
+        errData?.has_upcoming_bookings ||
+        errData?.has_pending_transactions
+      ) {
         setShowConfirm(false);
         setPassword("");
       }
@@ -557,23 +564,36 @@ const DeleteAccountCard = () => {
 
       {!showConfirm ? (
         <div className="mt-3 space-y-3">
-          <div className="text-xs text-gray-500 leading-relaxed space-y-2">
-            <p>The following will be <strong>permanently deleted:</strong></p>
-            <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
-              <li>Profile photo, biography, and expertise</li>
-              <li>Address, social links, and contact details</li>
-              <li>Qualifications, certifications, and insurance documents</li>
-              <li>Your password and login access</li>
-            </ul>
-            <p className="mt-2">The following will be <strong>retained for 5 years</strong> under DAC7 (EU tax reporting obligations):</p>
-            <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
-              <li>Your full name and tax identification number</li>
-              <li>Bank account details (IBAN)</li>
-              <li>Earnings and booking records tied to financial transactions</li>
-            </ul>
-          </div>
+          {isParent ? (
+            <div className="text-xs text-gray-500 leading-relaxed space-y-2">
+              <p>The following will be <strong>permanently deleted:</strong></p>
+              <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
+                <li>Your name, email, and contact details</li>
+                <li>Your password and login access</li>
+                <li>All booking history and account data</li>
+              </ul>
+            </div>
+          ) : (
+            <div className="text-xs text-gray-500 leading-relaxed space-y-2">
+              <p>The following will be <strong>permanently deleted:</strong></p>
+              <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
+                <li>Profile photo, biography, and expertise</li>
+                <li>Address, social links, and contact details</li>
+                <li>Qualifications, certifications, and insurance documents</li>
+                <li>Your password and login access</li>
+              </ul>
+              <p className="mt-2">The following will be <strong>retained for 5 years</strong> under DAC7 (EU tax reporting obligations):</p>
+              <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
+                <li>Your full name and tax identification number</li>
+                <li>Bank account details (IBAN)</li>
+                <li>Earnings and booking records tied to financial transactions</li>
+              </ul>
+            </div>
+          )}
           <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            Deletion is blocked if you have a pending payout. Please wait for it to clear first.
+            {isParent
+              ? "Deletion is blocked if you have upcoming bookings, pending refunds, or open disputes. Please resolve these first."
+              : "Deletion is blocked if you have a pending payout. Please wait for it to clear first."}
           </p>
           <button
             type="button"

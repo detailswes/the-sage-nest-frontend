@@ -1,12 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  getBookingDetail,
-  adminCancelBooking,
-  markBookingDisputed,
-  updateBookingNote,
-  adminManualRefund,
-} from "../../api/adminApi";
+import { getBookingDetail, updateBookingNote } from "../../api/adminApi";
 import { formatBookingTime, formatFormat, formatTransferStatus } from "../../utils/formatBookingTime";
+import AdminActionsPanel from "./AdminActionsPanel";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -60,27 +55,15 @@ export const DisputedBadge = () => (
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
 function BookingDetailModal({ bookingId, onClose, onUpdated }) {
-  const [booking, setBooking]             = useState(null);
-  const [loading, setLoading]             = useState(true);
-  const [actionLoading, setActionLoading] = useState(null);
-  const [actionError, setActionError]     = useState("");
-  const [actionSuccess, setActionSuccess] = useState("");
+  const [booking, setBooking]       = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [loadError, setLoadError]   = useState("");
 
-  const [showCancelForm, setShowCancelForm]   = useState(false);
-  const [cancelReason, setCancelReason]       = useState("");
-
-  const [showDisputeForm, setShowDisputeForm] = useState(false);
-  const [disputeReason, setDisputeReason]     = useState("");
-
-  const [showRefundForm, setShowRefundForm]   = useState(false);
-  const [refundReason, setRefundReason]       = useState("");
-  const [refundAmount, setRefundAmount]       = useState("");
-  const [refundAmountError, setRefundAmountError] = useState("");
-  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
-  const [pendingRefundAmount, setPendingRefundAmount] = useState(undefined);
-
-  const [note, setNote]         = useState("");
-  const [noteDirty, setNoteDirty] = useState(false);
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteError, setNoteError]   = useState("");
+  const [noteSuccess, setNoteSuccess] = useState("");
+  const [note, setNote]             = useState("");
+  const [noteDirty, setNoteDirty]   = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -89,7 +72,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
       setBooking(data);
       setNote(data.internal_admin_note || "");
     } catch {
-      setActionError("Failed to load booking details.");
+      setLoadError("Failed to load booking details.");
     } finally {
       setLoading(false);
     }
@@ -97,113 +80,18 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const clearFeedback = () => { setActionError(""); setActionSuccess(""); };
-
-  const handleCancel = async () => {
-    if (!cancelReason.trim()) return;
-    clearFeedback();
-    setActionLoading("cancel");
-    try {
-      await adminCancelBooking(bookingId, cancelReason.trim());
-      setActionSuccess("Booking cancelled successfully.");
-      setShowCancelForm(false);
-      setCancelReason("");
-      await load();
-      onUpdated();
-    } catch (e) {
-      setActionError(e?.response?.data?.error || "Failed to cancel booking.");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleDispute = async () => {
-    clearFeedback();
-    setActionLoading("dispute");
-    try {
-      await markBookingDisputed(bookingId, true, disputeReason.trim() || undefined);
-      setActionSuccess("Booking marked as disputed. Pending payout is paused.");
-      setShowDisputeForm(false);
-      setDisputeReason("");
-      await load();
-      onUpdated();
-    } catch (e) {
-      setActionError(e?.response?.data?.error || "Failed to mark as disputed.");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleResolveDispute = async () => {
-    clearFeedback();
-    setActionLoading("resolve");
-    try {
-      await markBookingDisputed(bookingId, false);
-      setActionSuccess("Dispute resolved.");
-      await load();
-      onUpdated();
-    } catch (e) {
-      setActionError(e?.response?.data?.error || "Failed to resolve dispute.");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleRefundSubmit = () => {
-    setRefundAmountError("");
-    const bookingTotal = parseFloat(booking.amount);
-    let parsedAmount = undefined;
-    if (refundAmount.trim() !== "") {
-      parsedAmount = parseFloat(refundAmount);
-      if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        setRefundAmountError("Amount must be greater than £0.00.");
-        return;
-      }
-      if (parsedAmount > bookingTotal) {
-        setRefundAmountError(`Amount cannot exceed the booking total (£${bookingTotal.toFixed(2)}).`);
-        return;
-      }
-    }
-    setPendingRefundAmount(parsedAmount);
-    setShowRefundConfirm(true);
-  };
-
-  const handleRefundConfirm = async () => {
-    setShowRefundConfirm(false);
-    clearFeedback();
-    setActionLoading("refund");
-    const bookingTotal = parseFloat(booking.amount);
-    try {
-      await adminManualRefund(bookingId, refundReason.trim() || undefined, pendingRefundAmount);
-      const isPartial = pendingRefundAmount != null && pendingRefundAmount < bookingTotal;
-      setActionSuccess(isPartial
-        ? `Partial refund of £${pendingRefundAmount.toFixed(2)} issued successfully.`
-        : "Full refund issued successfully.");
-      setShowRefundForm(false);
-      setRefundReason("");
-      setRefundAmount("");
-      setPendingRefundAmount(undefined);
-      await load();
-      onUpdated();
-    } catch (e) {
-      setActionError(e?.response?.data?.error || "Failed to issue refund. Please try again.");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const handleSaveNote = async () => {
-    clearFeedback();
-    setActionLoading("note");
+    setNoteError(""); setNoteSuccess("");
+    setNoteSaving(true);
     try {
       await updateBookingNote(bookingId, note);
-      setActionSuccess("Note saved.");
+      setNoteSuccess("Note saved.");
       setNoteDirty(false);
       onUpdated();
     } catch (e) {
-      setActionError(e?.response?.data?.error || "Failed to save note.");
+      setNoteError(e?.response?.data?.error || "Failed to save note.");
     } finally {
-      setActionLoading(null);
+      setNoteSaving(false);
     }
   };
 
@@ -237,21 +125,9 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
             <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
         ) : !booking ? (
-          <div className="p-6 text-center text-sm text-red-500">{actionError || "Booking not found."}</div>
+          <div className="p-6 text-center text-sm text-red-500">{loadError || "Booking not found."}</div>
         ) : (
           <div className="divide-y divide-[#E4E7E4]">
-
-            {/* Feedback */}
-            {(actionError || actionSuccess) && (
-              <div className="px-6 py-3">
-                {actionError && (
-                  <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>
-                )}
-                {actionSuccess && (
-                  <p className="text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">{actionSuccess}</p>
-                )}
-              </div>
-            )}
 
             {/* Parties */}
             <div className="px-6 py-4 grid grid-cols-2 gap-4">
@@ -345,9 +221,9 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
               )}
             </div>
 
-            {/* Refund details — always shown when booking had a payment and is cancelled/refunded */}
+            {/* Refund details */}
             {(booking.status === "CANCELLED" || booking.status === "REFUNDED") && booking.stripe_payment_intent_id && (
-              <div className="px-6 py-4 border-t border-[#E4E7E4]">
+              <div className="px-6 py-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Refund</p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center">
@@ -443,9 +319,15 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                 Internal Note
                 <span className="ml-1.5 text-[10px] normal-case font-normal text-gray-400">(not visible to parent or specialist)</span>
               </p>
+              {(noteError || noteSuccess) && (
+                <div className="mb-2">
+                  {noteError   && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{noteError}</p>}
+                  {noteSuccess && <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">{noteSuccess}</p>}
+                </div>
+              )}
               <textarea
                 value={note}
-                onChange={(e) => { setNote(e.target.value); setNoteDirty(true); setActionSuccess(""); }}
+                onChange={(e) => { setNote(e.target.value); setNoteDirty(true); setNoteSuccess(""); }}
                 rows={3}
                 placeholder="Add an internal note…"
                 className="w-full text-sm border border-[#E4E7E4] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] placeholder-gray-300"
@@ -453,206 +335,23 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
               {noteDirty && (
                 <button
                   onClick={handleSaveNote}
-                  disabled={actionLoading === "note"}
+                  disabled={noteSaving}
                   className="mt-2 px-4 py-1.5 text-xs font-medium bg-[#445446] text-white rounded-lg hover:bg-[#3a4a3b] disabled:opacity-50 transition-colors"
                 >
-                  {actionLoading === "note" ? "Saving…" : "Save note"}
+                  {noteSaving ? "Saving…" : "Save note"}
                 </button>
               )}
             </div>
 
             {/* Admin actions */}
-            <div className="px-6 py-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Admin Actions</p>
-              <div className="flex flex-wrap gap-2">
-
-                {["CONFIRMED", "PENDING_PAYMENT"].includes(booking.status) && (
-                  <button
-                    onClick={() => { setShowCancelForm((v) => !v); setShowDisputeForm(false); setShowRefundForm(false); }}
-                    className="px-3 py-1.5 text-xs font-medium border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                  >
-                    Cancel Booking
-                  </button>
-                )}
-
-                {["CONFIRMED", "COMPLETED", "CANCELLED"].includes(booking.status) && booking.stripe_payment_intent_id && booking.refund_status !== "succeeded" && (
-                  <button
-                    onClick={() => { setShowRefundForm((v) => !v); setShowCancelForm(false); setShowDisputeForm(false); }}
-                    className="px-3 py-1.5 text-xs font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Refund Only
-                  </button>
-                )}
-
-                {!booking.is_disputed && ["CONFIRMED", "COMPLETED"].includes(booking.status) && (
-                  <button
-                    onClick={() => { setShowDisputeForm((v) => !v); setShowCancelForm(false); setShowRefundForm(false); }}
-                    className="px-3 py-1.5 text-xs font-medium border border-orange-300 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors"
-                  >
-                    Mark as Disputed
-                  </button>
-                )}
-                {booking.is_disputed && (
-                  <button
-                    onClick={handleResolveDispute}
-                    disabled={actionLoading === "resolve"}
-                    className="px-3 py-1.5 text-xs font-medium border border-green-300 text-green-700 rounded-lg hover:bg-green-50 disabled:opacity-50 transition-colors"
-                  >
-                    {actionLoading === "resolve" ? "Resolving…" : "Resolve Dispute"}
-                  </button>
-                )}
-              </div>
-
-              {showCancelForm && (
-                <div className="mt-3 p-3 bg-red-50 rounded-xl border border-red-100">
-                  <p className="text-xs font-medium text-red-700 mb-2">
-                    {booking.status === "CONFIRMED" && booking.stripe_payment_intent_id
-                      ? "Cancel and refund this booking. A full refund will be issued to the parent."
-                      : "Cancel this booking."}
-                  </p>
-                  <textarea
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    rows={2}
-                    placeholder="Reason for cancellation (required)…"
-                    className="w-full text-sm border border-red-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-red-300 placeholder-red-300 bg-white"
-                  />
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={handleCancel}
-                      disabled={!cancelReason.trim() || actionLoading === "cancel"}
-                      className="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-                    >
-                      {actionLoading === "cancel" ? "Cancelling…" : "Confirm Cancel"}
-                    </button>
-                    <button
-                      onClick={() => { setShowCancelForm(false); setCancelReason(""); }}
-                      className="px-3 py-1.5 text-xs font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {showRefundForm && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                  <p className="text-xs font-medium text-gray-700 mb-2">
-                    Issue a refund to the parent. Leave the amount blank for a full refund, or enter a lower amount for a partial refund.
-                  </p>
-                  <div className="mb-2">
-                    <label className="text-xs font-medium text-gray-600 block mb-1">
-                      Refund amount (£) <span className="font-normal text-gray-400">— leave blank for full refund (£{parseFloat(booking.amount).toFixed(2)})</span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      max={parseFloat(booking.amount)}
-                      value={refundAmount}
-                      onChange={(e) => { setRefundAmount(e.target.value); setRefundAmountError(""); }}
-                      placeholder={parseFloat(booking.amount).toFixed(2)}
-                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 bg-white"
-                    />
-                    {refundAmountError && (
-                      <p className="text-xs text-red-600 mt-1">{refundAmountError}</p>
-                    )}
-                  </div>
-                  <textarea
-                    value={refundReason}
-                    onChange={(e) => setRefundReason(e.target.value)}
-                    rows={2}
-                    placeholder="Reason (optional)…"
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#445446]/30 placeholder-gray-300 bg-white"
-                  />
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={handleRefundSubmit}
-                      disabled={actionLoading === "refund"}
-                      className="px-3 py-1.5 text-xs font-medium bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                    >
-                      {actionLoading === "refund" ? "Refunding…" : "Confirm Refund"}
-                    </button>
-                    <button
-                      onClick={() => { setShowRefundForm(false); setRefundReason(""); setRefundAmount(""); setRefundAmountError(""); }}
-                      className="px-3 py-1.5 text-xs font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {showDisputeForm && (
-                <div className="mt-3 p-3 bg-orange-50 rounded-xl border border-orange-100">
-                  <p className="text-xs font-medium text-orange-700 mb-2">
-                    Flag this booking as disputed. Any pending payout to the specialist will be paused.
-                  </p>
-                  <textarea
-                    value={disputeReason}
-                    onChange={(e) => setDisputeReason(e.target.value)}
-                    rows={2}
-                    placeholder="Reason for dispute (optional)…"
-                    className="w-full text-sm border border-orange-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-orange-300 placeholder-orange-300 bg-white"
-                  />
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={handleDispute}
-                      disabled={actionLoading === "dispute"}
-                      className="px-3 py-1.5 text-xs font-medium bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors"
-                    >
-                      {actionLoading === "dispute" ? "Flagging…" : "Confirm Dispute"}
-                    </button>
-                    <button
-                      onClick={() => { setShowDisputeForm(false); setDisputeReason(""); }}
-                      className="px-3 py-1.5 text-xs font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <AdminActionsPanel
+              booking={booking}
+              onActionComplete={() => { load(); onUpdated(); }}
+            />
 
           </div>
         )}
       </div>
-
-      {/* Refund confirmation modal */}
-      {showRefundConfirm && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-50 mx-auto mb-4">
-              <svg className="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-              </svg>
-            </div>
-            <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
-              {pendingRefundAmount != null ? "Confirm Partial Refund" : "Confirm Full Refund"}
-            </h3>
-            <p className="text-sm text-gray-500 text-center mb-4">
-              {pendingRefundAmount != null
-                ? `Issue a partial refund of £${pendingRefundAmount.toFixed(2)} for booking #${bookingId}?`
-                : `Issue a full refund of £${parseFloat(booking.amount).toFixed(2)} for booking #${bookingId}?`}
-              {" "}This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowRefundConfirm(false)}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRefundConfirm}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-gray-700 hover:bg-gray-800 text-white text-sm font-medium transition-colors"
-              >
-                Yes, issue refund
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

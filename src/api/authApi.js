@@ -78,10 +78,10 @@ api.interceptors.response.use(
       setAuthHeader(data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Notify AuthContext of the new token
+      // Notify AuthContext of the new token (and any pending PP update)
       window.dispatchEvent(
         new CustomEvent('auth:tokenRefreshed', {
-          detail: { accessToken: data.accessToken, user: data.user },
+          detail: { accessToken: data.accessToken, user: data.user, pp_update_required: data.pp_update_required },
         })
       );
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import NotificationBell from "../../components/admin/NotificationBell";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const UsersIcon = ({ active }) => (
@@ -142,7 +143,7 @@ const AdminDashboard = () => {
             <div className="w-9 h-9 rounded-full bg-[#445446] text-white flex items-center justify-center text-xs font-bold flex-shrink-0 select-none">
               {initials}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-semibold text-[#1F2933] truncate">
                   {user?.name}
@@ -155,6 +156,7 @@ const AdminDashboard = () => {
                 {user?.email}
               </p>
             </div>
+            <NotificationBell />
           </div>
         </div>
 

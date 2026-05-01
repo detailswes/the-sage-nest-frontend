@@ -4,7 +4,6 @@ import {
   getParentDetail,
   listParentBookings,
   activateParent,
-  deactivateParent,
   suspendParent,
   gdprDeleteParent,
   getAuditLog,
@@ -41,7 +40,6 @@ const getInitials = (name) =>
 const ACTION_LABELS = {
   // Admin actions
   ACTIVATE_PARENT:    "Account activated",
-  DEACTIVATE_PARENT:  "Account deactivated",
   SUSPEND_PARENT:     "Account suspended",
   GDPR_DELETE_PARENT: "Account deleted (GDPR)",
   SEND_PASSWORD_RESET: "Password reset sent",
@@ -62,12 +60,6 @@ const StatusBadge = ({ status }) => {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />Active
-      </span>
-    );
-  if (status === "DEACTIVATED")
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-        <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />Deactivated
       </span>
     );
   return (
@@ -146,12 +138,6 @@ const AdminParentDetailSection = () => {
       btnCls: "bg-green-600 hover:bg-green-700",
       label:  "Activate",
     },
-    deactivate: {
-      title:  "Deactivate Account?",
-      body:   `${parent?.name || "This parent"} will no longer be able to log in until their account is reactivated.`,
-      btnCls: "bg-gray-700 hover:bg-gray-800",
-      label:  "Deactivate",
-    },
     suspend: {
       title:  "Suspend Account?",
       body:   `${parent?.name || "This parent"}'s account will be suspended and all active sessions will be invalidated immediately.`,
@@ -166,9 +152,8 @@ const AdminParentDetailSection = () => {
     setActionError("");
     setActionSuccess("");
     try {
-      if (type === "activate")   await activateParent(id);
-      if (type === "deactivate") await deactivateParent(id);
-      if (type === "suspend")    await suspendParent(id);
+      if (type === "activate") await activateParent(id);
+      if (type === "suspend")  await suspendParent(id);
       setActionSuccess("Account status updated successfully.");
       await loadParent();
       // Refresh audit log
@@ -488,18 +473,6 @@ const AdminParentDetailSection = () => {
                   {actionLoading === "activate" ? "Activating…" : "Activate Account"}
                 </button>
               )}
-              {status !== "DEACTIVATED" && (
-                <button
-                  onClick={() => setShowConfirm("deactivate")}
-                  disabled={!!actionLoading}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
-                  </svg>
-                  {actionLoading === "deactivate" ? "Deactivating…" : "Deactivate Account"}
-                </button>
-              )}
               {status !== "SUSPENDED" && (
                 <button
                   onClick={() => setShowConfirm("suspend")}
@@ -629,7 +602,13 @@ const AdminParentDetailSection = () => {
               const overdueUnresolved = bookings.filter(
                 (b) => b.status === "CONFIRMED" && new Date(b.scheduled_at) <= now
               );
-              const isBlocked = upcomingBookings.length > 0 || overdueUnresolved.length > 0;
+              const pendingRefunds = bookings.filter(
+                (b) => b.refund_status === "pending"
+              );
+              const openDisputes = bookings.filter(
+                (b) => b.is_disputed === true
+              );
+              const isBlocked = upcomingBookings.length > 0 || overdueUnresolved.length > 0 || pendingRefunds.length > 0 || openDisputes.length > 0;
 
               if (isBlocked) {
                 return (
@@ -646,6 +625,18 @@ const AdminParentDetailSection = () => {
                         <p>
                           <span className="font-medium">{overdueUnresolved.length} confirmed booking{overdueUnresolved.length !== 1 ? "s" : ""} with a pending refund</span>
                           {" "}— payment was captured for sessions that have now passed without resolution.
+                        </p>
+                      )}
+                      {pendingRefunds.length > 0 && (
+                        <p>
+                          <span className="font-medium">{pendingRefunds.length} pending refund{pendingRefunds.length !== 1 ? "s" : ""}</span>
+                          {" "}— wait for refunds to settle before proceeding.
+                        </p>
+                      )}
+                      {openDisputes.length > 0 && (
+                        <p>
+                          <span className="font-medium">{openDisputes.length} open dispute{openDisputes.length !== 1 ? "s" : ""}</span>
+                          {" "}— resolve all disputes before proceeding.
                         </p>
                       )}
                       <p className="text-amber-600 mt-1">Resolve these in the Bookings tab, then return here to proceed.</p>

@@ -47,14 +47,6 @@ const QUAL_OPTIONS = [
   { value: "OTHER", label: "Other" },
 ];
 
-const CLUSTER_OPTIONS = [
-  { value: "",            label: "All categories" },
-  { value: "FOR_PARENTS", label: "For Parents" },
-  { value: "FOR_BABY",    label: "For Baby" },
-  { value: "PACKAGE",     label: "Package" },
-  { value: "GIFT",        label: "Gift" },
-  { value: "EVENT",       label: "Event" },
-];
 
 const QUAL_LABEL = Object.fromEntries(
   QUAL_OPTIONS.filter((q) => q.value).map((q) => [q.value, q.label])
@@ -855,7 +847,10 @@ const ExpertModal = ({ expert, onClose, onActionRequest }) => {
                           ],
                         ]
                       : []),
-                    ["Primary address", bi.primary_address],
+                    ["Street", bi.address_street],
+                    ["City", bi.address_city],
+                    ["Postal code", bi.address_postal_code],
+                    ["Country", bi.address_country],
                     ["TIN", bi.tin],
                     ...(bi.vat_number ? [["VAT number", bi.vat_number]] : []),
                     ...(bi.entity_type === "COMPANY" && bi.company_reg_number
@@ -1566,7 +1561,6 @@ const ExpertManagementSection = () => {
   const [search, setSearch] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [qualFilter, setQualFilter] = useState("");
-  const [clusterFilter, setClusterFilter] = useState("");
   const debounceRef = useRef(null);
 
   const handleSearchChange = (val) => {
@@ -1578,14 +1572,13 @@ const ExpertManagementSection = () => {
     }, 400);
   };
 
-  const hasActiveFilters = search || cityFilter || qualFilter || clusterFilter;
+  const hasActiveFilters = search || cityFilter || qualFilter;
 
   const clearFilters = () => {
     setSearchInput("");
     setSearch("");
     setCityFilter("");
     setQualFilter("");
-    setClusterFilter("");
     setPage(1);
   };
 
@@ -1598,7 +1591,6 @@ const ExpertManagementSection = () => {
       if (search) params.search = search;
       if (cityFilter) params.city = cityFilter;
       if (qualFilter) params.qualification = qualFilter;
-      if (clusterFilter) params.cluster = clusterFilter;
 
       const result = await listExperts(params);
       setExperts(result.data);
@@ -1610,7 +1602,7 @@ const ExpertManagementSection = () => {
       setFetching(false);
       setInitialLoading(false);
     }
-  }, [page, activeFilter, search, cityFilter, qualFilter, clusterFilter]);
+  }, [page, activeFilter, search, cityFilter, qualFilter]);
 
   useEffect(() => {
     fetchExperts();
@@ -1850,22 +1842,6 @@ const ExpertManagementSection = () => {
           ))}
         </select>
 
-        {/* Cluster */}
-        <select
-          value={clusterFilter}
-          onChange={(e) => {
-            setClusterFilter(e.target.value);
-            setPage(1);
-          }}
-          className={filterInputCls}
-        >
-          {CLUSTER_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
@@ -2057,109 +2033,67 @@ const ExpertManagementSection = () => {
                   {isActioning ? (
                     <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin mx-auto" />
                   ) : expert.status === "SUSPENDED" ? (
-                    /* Suspended — only show Reactivate */
                     <button
                       onClick={() => requestAction("reactivate", expert)}
                       title="Reactivate this expert"
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400 transition-all duration-150"
                     >
-                      <svg
-                        className="w-3.5 h-3.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="m4.5 12.75 6 6 9-13.5"
-                        />
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                       </svg>
                       Reactivate
+                    </button>
+                  ) : expert.status === "APPROVED" ? (
+                    <>
+                      <button
+                        onClick={() => requestAction("reject", expert)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-400 transition-all duration-150"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => requestAction("suspend", expert)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 transition-all duration-150"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                        Suspend
+                      </button>
+                    </>
+                  ) : expert.status === "REJECTED" ? (
+                    <button
+                      onClick={() => requestAction("approve", expert)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400 transition-all duration-150"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                      </svg>
+                      Approve
                     </button>
                   ) : (
                     <>
                       <button
                         onClick={() => requestAction("approve", expert)}
-                        disabled={expert.status === "APPROVED"}
-                        title={
-                          expert.status === "APPROVED"
-                            ? "Already approved"
-                            : "Approve"
-                        }
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 ${
-                          expert.status === "APPROVED"
-                            ? "border-green-200 text-green-400 bg-green-50 cursor-not-allowed"
-                            : "border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400"
-                        }`}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400 transition-all duration-150"
                       >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2.5}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="m4.5 12.75 6 6 9-13.5"
-                          />
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                         </svg>
                         Approve
                       </button>
                       <button
                         onClick={() => requestAction("reject", expert)}
-                        disabled={expert.status === "REJECTED"}
-                        title={
-                          expert.status === "REJECTED"
-                            ? "Already rejected"
-                            : "Reject"
-                        }
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 ${
-                          expert.status === "REJECTED"
-                            ? "border-red-200 text-red-300 bg-red-50 cursor-not-allowed"
-                            : "border-red-300 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-400"
-                        }`}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-400 transition-all duration-150"
                       >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2.5}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18 18 6M6 6l12 12"
-                          />
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                         </svg>
                         Reject
                       </button>
-                      {/* Suspend icon button — only for APPROVED experts */}
-                      {expert.status === "APPROVED" && (
-                        <button
-                          onClick={() => requestAction("suspend", expert)}
-                          title="Suspend this expert"
-                          className="p-1.5 rounded-lg text-orange-400 border border-transparent hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 transition-all duration-150"
-                        >
-                          <svg
-                            className="w-3.5 h-3.5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"
-                            />
-                          </svg>
-                        </button>
-                      )}
                     </>
                   )}
                 </div>
