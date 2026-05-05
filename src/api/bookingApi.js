@@ -38,11 +38,20 @@ export const getAvailableSlots = (expertId, date, serviceId) =>
 export const getUpcomingAppointments = () =>
   api.get('/bookings/upcoming').then((r) => r.data);
 
+export const getPastAppointments = (page = 1) =>
+  api.get('/bookings/past', { params: { page } }).then((r) => r.data);
+
 export const getCalendarBookings = (from, to) =>
   api.get('/bookings/calendar', { params: { from, to } }).then((r) => r.data);
 
 export const markSessionLinkSent = (id) =>
   api.patch(`/bookings/${id}/link-sent`).then((r) => r.data);
+
+export const markBookingComplete = (id, note) =>
+  api.patch(`/bookings/${id}/complete`, { note }).then((r) => r.data);
+
+export const saveExpertNote = (id, note) =>
+  api.patch(`/bookings/${id}/expert-note`, { note }).then((r) => r.data);
 
 /** Expert cancels a confirmed booking — always triggers a full refund to the parent */
 export const expertCancelBooking = (id) =>

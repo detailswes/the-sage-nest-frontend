@@ -11,6 +11,7 @@ import ProfileSection from "./pages/dashboard/sections/ProfileSection";
 import ServicesSection from "./pages/dashboard/sections/ServicesSection";
 import AvailabilitySection from "./pages/dashboard/sections/AvailabilitySection";
 import UpcomingAppointmentsSection from "./pages/dashboard/sections/UpcomingAppointmentsSection";
+import PastAppointmentsSection from "./pages/dashboard/sections/PastAppointmentsSection";
 import CalendarSection from "./pages/dashboard/sections/CalendarSection";
 import SettingsSection from "./pages/dashboard/sections/SettingsSection";
 import StripeReturn from "./pages/stripe/StripeReturn";
@@ -83,6 +84,7 @@ function App() {
             <Route path="availability"  element={<AvailabilitySection />} />
             <Route path="calendar"      element={<CalendarSection />} />
             <Route path="appointments"  element={<UpcomingAppointmentsSection />} />
+            <Route path="history"       element={<PastAppointmentsSection />} />
             <Route path="settings"       element={<SettingsSection />} />
           </Route>
 

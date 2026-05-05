@@ -126,3 +126,4 @@ export const reorderServices = (ids) => api.put('/services/reorder', { ids }).th
 export const listAvailability = () => api.get('/availability').then((r) => r.data);
 export const addAvailabilitySlot = (data) => api.post('/availability', data).then((r) => r.data);
 export const removeAvailabilitySlot = (id) => api.delete(`/availability/${id}`).then((r) => r.data);
+export const checkAvailabilityConflicts = (id) => api.get(`/availability/${id}/conflicts`).then((r) => r.data);

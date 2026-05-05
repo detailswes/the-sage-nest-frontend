@@ -1,5 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getUpcomingAppointments, markSessionLinkSent, expertCancelBooking } from '../../../api/bookingApi';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  getUpcomingAppointments,
+  markSessionLinkSent,
+  expertCancelBooking,
+  markBookingComplete,
+  saveExpertNote,
+} from '../../../api/bookingApi';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const CalendarCheckIcon = () => (
@@ -93,16 +99,74 @@ const CancelModal = ({ booking, onConfirm, onDismiss, cancelling }) => (
   </div>
 );
 
+// ─── Note editor — shared by card and past-row ────────────────────────────────
+const NoteEditor = ({ bookingId, initialNote, onSaved }) => {
+  const [note,      setNote]      = useState(initialNote || '');
+  const [saveState, setSaveState] = useState('idle'); // idle | saving | saved | error
+  const timerRef = useRef(null);
+
+  const persist = useCallback(async (value) => {
+    setSaveState('saving');
+    try {
+      const res = await saveExpertNote(bookingId, value);
+      setSaveState('saved');
+      if (onSaved) onSaved(res.expert_note);
+      timerRef.current = setTimeout(() => setSaveState('idle'), 2000);
+    } catch {
+      setSaveState('error');
+    }
+  }, [bookingId, onSaved]);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  return (
+    <div className="px-4 pb-4">
+      <p className="text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">
+        Private notes
+        <span className="ml-1 normal-case font-normal text-gray-300">(not visible to parents)</span>
+      </p>
+      <textarea
+        value={note}
+        onChange={(e) => { setNote(e.target.value); setSaveState('idle'); }}
+        onBlur={() => persist(note)}
+        placeholder="Add session notes…"
+        rows={3}
+        className="w-full text-sm text-[#1F2933] placeholder-gray-300 border border-[#E4E7E4] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#445446] focus:border-[#445446] transition-colors"
+      />
+      <p className={`text-xs mt-1 transition-opacity ${saveState === 'idle' ? 'opacity-0' : 'opacity-100'} ${
+        saveState === 'error' ? 'text-red-500' : 'text-gray-400'
+      }`}>
+        {saveState === 'saving' && 'Saving…'}
+        {saveState === 'saved'  && 'Saved'}
+        {saveState === 'error'  && 'Could not save — please try again'}
+      </p>
+    </div>
+  );
+};
+
 // ─── Appointment card ─────────────────────────────────────────────────────────
-const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
-  const [marking, setMarking] = useState(false);
-  const isOnline = booking.format === 'ONLINE';
+const AppointmentCard = ({ booking, onMarkSent, onCancelRequest, onComplete }) => {
+  const [marking,    setMarking]    = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [note,       setNote]       = useState(booking.expert_note || '');
+  const isOnline  = booking.format === 'ONLINE';
+  const isPast    = new Date(booking.scheduled_at) < new Date();
   const needsLinkReminder = isOnline && !booking.session_link_sent;
 
   const handleMark = async () => {
     setMarking(true);
     await onMarkSent(booking.id);
     setMarking(false);
+  };
+
+  const handleComplete = async () => {
+    setCompleting(true);
+    try {
+      await markBookingComplete(booking.id, note);
+      onComplete(booking.id);
+    } catch {
+      setCompleting(false);
+    }
   };
 
   return (
@@ -177,8 +241,31 @@ const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
         </div>
       )}
 
-      {/* Cancel button */}
-      <div className="px-4 pb-4">
+      {/* Notes */}
+      <NoteEditor
+        bookingId={booking.id}
+        initialNote={note}
+        onSaved={(v) => setNote(v || '')}
+      />
+
+      {/* Actions */}
+      <div className="px-4 pb-4 flex flex-col gap-2">
+        {isPast && (
+          <button
+            onClick={handleComplete}
+            disabled={completing}
+            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[#445446] border border-[#445446]/40 bg-[#445446]/5 hover:bg-[#445446]/10 py-2 rounded-lg transition-colors disabled:opacity-60"
+          >
+            {completing ? (
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+            )}
+            {completing ? 'Marking…' : 'Mark as complete'}
+          </button>
+        )}
         <button
           onClick={() => onCancelRequest(booking)}
           className="w-full text-xs font-medium text-red-600 border border-red-200 bg-white hover:bg-red-50 py-2 rounded-lg transition-colors"
@@ -214,6 +301,10 @@ const UpcomingAppointmentsSection = () => {
     } catch {
       // non-critical — UI will just stay in reminder state
     }
+  }, []);
+
+  const handleComplete = useCallback((id) => {
+    setAppointments((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
   const handleCancelConfirm = async () => {
@@ -280,6 +371,7 @@ const UpcomingAppointmentsSection = () => {
               booking={booking}
               onMarkSent={handleMarkSent}
               onCancelRequest={setCancelTarget}
+              onComplete={handleComplete}
             />
           ))}
         </div>

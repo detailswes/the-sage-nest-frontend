@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
+import {
+  format, parse, startOfWeek, getDay,
+  startOfMonth, endOfMonth, endOfWeek, addDays,
+} from 'date-fns';
 import { enGB } from 'date-fns/locale/en-GB';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { getCalendarBookings } from '../../../api/bookingApi';
+import { listAvailability } from '../../../api/expertApi';
+import { listBlockouts } from '../../../api/blockoutApi';
 
 // ─── react-big-calendar localizer (date-fns) — Monday week start ─────────────
 const locales = { 'en-GB': enGB };
@@ -15,7 +20,116 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-// ─── Custom toolbar (matches AvailabilitySection) ─────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function parseDateLocal(dateStr) {
+  const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Compute the visible calendar range for a given view + anchor date */
+function getRangeForView(view, date) {
+  if (view === 'week') {
+    return {
+      start: startOfWeek(date, { weekStartsOn: 1 }),
+      end:   endOfWeek(date,   { weekStartsOn: 1 }),
+    };
+  }
+  if (view === 'day') {
+    const s = new Date(date); s.setHours(0, 0, 0, 0);
+    const e = new Date(date); e.setHours(23, 59, 59, 999);
+    return { start: s, end: e };
+  }
+  if (view === 'agenda') {
+    return { start: date, end: addDays(date, 30) };
+  }
+  // month — use full calendar grid (Mon-start weeks covering the month)
+  const mStart = startOfMonth(date);
+  const mEnd   = endOfMonth(date);
+  return {
+    start: startOfWeek(mStart, { weekStartsOn: 1 }),
+    end:   endOfWeek(mEnd,     { weekStartsOn: 1 }),
+  };
+}
+
+/** Expand recurring weekly availability slots into concrete events for a date range */
+function expandRecurringSlots(slots, rangeStart, rangeEnd) {
+  const events = [];
+  const cursor = new Date(rangeStart);
+  cursor.setHours(0, 0, 0, 0);
+  const end = new Date(rangeEnd);
+  end.setHours(23, 59, 59, 999);
+
+  while (cursor <= end) {
+    const dow = cursor.getDay();
+    for (const slot of slots) {
+      if (slot.day_of_week !== dow) continue;
+      const [sh, sm] = slot.start_time.split(':').map(Number);
+      const [eh, em] = slot.end_time.split(':').map(Number);
+      const start = new Date(cursor); start.setHours(sh, sm, 0, 0);
+      const evEnd = new Date(cursor); evEnd.setHours(eh, em, 0, 0);
+      events.push({
+        id:    `avail-${slot.id}-${cursor.toDateString()}`,
+        title: 'Available',
+        start,
+        end:   evEnd,
+        type:  'availability',
+        startLabel: slot.start_time,
+        endLabel:   slot.end_time,
+      });
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return events;
+}
+
+/** Convert blockout DB records into calendar events */
+function blockoutsToEvents(blockouts) {
+  return blockouts.map((b) => {
+    const date = parseDateLocal(b.date);
+    let start, end;
+    if (!b.start_time) {
+      start = new Date(date); start.setHours(0, 0, 0, 0);
+      end   = new Date(date); end.setHours(23, 59, 59, 999);
+    } else {
+      const [sh, sm] = b.start_time.split(':').map(Number);
+      const [eh, em] = b.end_time.split(':').map(Number);
+      start = new Date(date); start.setHours(sh, sm, 0, 0);
+      end   = new Date(date); end.setHours(eh, em, 0, 0);
+    }
+    return { id: `block-${b.id}`, start, end, allDay: !b.start_time, type: 'blockout' };
+  });
+}
+
+/** Strip availability event windows that overlap with bookings or blockouts */
+function subtractOccupied(availEvents, blockoutEvents, bookingEvents) {
+  const occupied = [
+    ...blockoutEvents.map((e) => ({ start: e.start, end: e.end, allDay: !!e.allDay })),
+    ...bookingEvents.map((e)  => ({ start: e.start, end: e.end, allDay: false })),
+  ];
+
+  let result = [...availEvents];
+  for (const occ of occupied) {
+    const next = [];
+    for (const avail of result) {
+      if (occ.allDay) {
+        if (avail.start.toDateString() !== occ.start.toDateString()) next.push(avail);
+      } else {
+        const overlaps = occ.start < avail.end && occ.end > avail.start;
+        if (!overlaps) {
+          next.push(avail);
+        } else {
+          if (avail.start < occ.start) next.push({ ...avail, end: occ.start,   id: avail.id + '_pre'  });
+          if (avail.end   > occ.end)   next.push({ ...avail, start: occ.end,   id: avail.id + '_post' });
+        }
+      }
+    }
+    result = next;
+  }
+  return result;
+}
+
+// ─── Custom toolbar ───────────────────────────────────────────────────────────
 const VIEWS = ['day', 'week', 'month', 'agenda'];
 const CustomToolbar = ({ label, onNavigate, onView, view }) => (
   <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -64,6 +178,51 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => (
   </div>
 );
 
+// ─── Weekend column tint (Sat + Sun get a lighter background) ────────────────
+const dayPropGetter = (date) => {
+  const dow = date.getDay();
+  if (dow === 0 || dow === 6) {
+    return { style: { backgroundColor: '#f7f8f7' } };
+  }
+  return {};
+};
+
+// ─── Event style getter ───────────────────────────────────────────────────────
+const eventPropGetter = (event) => {
+  const base = { border: 'none', borderRadius: '5px', fontSize: '11px', padding: '2px 6px' };
+  if (event.type === 'availability')
+    return { style: { ...base, backgroundColor: '#445446', opacity: 0.5, color: '#fff', cursor: 'default' } };
+  if (event.resource?.format === 'ONLINE')
+    return { style: { ...base, backgroundColor: '#2563eb', color: '#fff' } };
+  return { style: { ...base, backgroundColor: '#445446', color: '#fff' } };
+};
+
+// ─── Event components (month vs time-grid) ────────────────────────────────────
+const fmtTime = (d) =>
+  d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+const MonthEvent = ({ event }) => {
+  if (event.type === 'availability') {
+    return <span title={`Available ${event.startLabel}–${event.endLabel}`}>{event.startLabel}–{event.endLabel}</span>;
+  }
+  const b = event.resource;
+  return <span title={event.title}>{b?.parent?.name || event.title}</span>;
+};
+
+const TimeGridEvent = ({ event }) => {
+  if (event.type === 'availability') {
+    return <span title={`Available ${fmtTime(event.start)}–${fmtTime(event.end)}`}>Available</span>;
+  }
+  const b = event.resource;
+  return (
+    <div className="leading-tight overflow-hidden">
+      <p className="font-semibold truncate">{b?.parent?.name || event.title}</p>
+      <p className="truncate opacity-90">{b?.service?.title}</p>
+      <p className="truncate opacity-75">{b?.format === 'ONLINE' ? 'Online' : 'In-Person'}</p>
+    </div>
+  );
+};
+
 // ─── Appointment detail modal ─────────────────────────────────────────────────
 const AppointmentModal = ({ event, onClose }) => {
   if (!event) return null;
@@ -76,7 +235,6 @@ const AppointmentModal = ({ event, onClose }) => {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-base font-semibold text-[#1F2933]">Appointment Details</h3>
@@ -88,15 +246,13 @@ const AppointmentModal = ({ event, onClose }) => {
               {isOnline ? 'Online Session' : 'In-Person Session'}
             </span>
           </div>
-          <button onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Details */}
         <div className="space-y-3 text-sm">
           <div className="flex items-start gap-3">
             <svg className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -106,10 +262,7 @@ const AppointmentModal = ({ event, onClose }) => {
               <p className="text-xs text-gray-400">Parent</p>
               <p className="font-medium text-[#1F2933]">{b.parent?.name || '—'}</p>
               {b.parent?.email && (
-                <a
-                  href={`mailto:${b.parent.email}`}
-                  className="text-xs text-[#445446] hover:underline"
-                >
+                <a href={`mailto:${b.parent.email}`} className="text-xs text-[#445446] hover:underline">
                   {b.parent.email}
                 </a>
               )}
@@ -143,7 +296,6 @@ const AppointmentModal = ({ event, onClose }) => {
           </div>
         </div>
 
-        {/* Online session reminder */}
         {isOnline && (
           <div className="mt-5 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl">
             <div className="flex items-start gap-2">
@@ -166,41 +318,51 @@ const AppointmentModal = ({ event, onClose }) => {
   );
 };
 
-// ─── Custom event component ───────────────────────────────────────────────────
-// Shows: parent name, service, format badge — colour-coded by format
-const EventBlock = ({ event }) => {
-  const isOnline = event.resource?.format === 'ONLINE';
-  return (
-    <div className={`h-full px-1 py-0.5 rounded text-xs leading-tight overflow-hidden ${
-      isOnline
-        ? 'bg-blue-500 text-white'
-        : 'bg-[#445446] text-white'
-    }`}>
-      <p className="font-semibold truncate">{event.resource?.parent?.name || event.title}</p>
-      <p className="truncate opacity-90">{event.resource?.service?.title}</p>
-      <p className="truncate opacity-75">{isOnline ? 'Online' : 'In-Person'}</p>
-    </div>
-  );
-};
+// ─── Legend ───────────────────────────────────────────────────────────────────
+const Legend = () => (
+  <div className="flex items-center gap-4 mb-4 flex-wrap">
+    {[
+      { color: '#445446', opacity: 0.5,  label: 'Available' },
+      { color: '#2563eb', opacity: 1,    label: 'Booked (Online)' },
+      { color: '#445446', opacity: 1,    label: 'Booked (In-Person)' },
+    ].map(({ color, opacity, label }) => (
+      <div key={label} className="flex items-center gap-1.5">
+        <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color, opacity }} />
+        <span className="text-xs text-gray-500">{label}</span>
+      </div>
+    ))}
+  </div>
+);
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const CalendarSection = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view,        setView]        = useState('month');
   const [bookings,    setBookings]    = useState([]);
+  const [slots,       setSlots]       = useState([]);
+  const [blockouts,   setBlockouts]   = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState('');
   const [selected,    setSelected]    = useState(null);
 
-  const fetchBookings = useCallback(async (date, _viewMode) => {
+  // Fetch recurring availability slots once — they don't change with navigation
+  useEffect(() => {
+    listAvailability().then(setSlots).catch(() => {});
+  }, []);
+
+  // Fetch bookings + blockouts for a generous 3-month window around the current date
+  const fetchRangeData = useCallback(async (date) => {
     setLoading(true);
     setError('');
     try {
-      // Fetch a generous window around the current view
       const from = new Date(date.getFullYear(), date.getMonth() - 1, 1);
       const to   = new Date(date.getFullYear(), date.getMonth() + 2, 0, 23, 59, 59);
-      const data = await getCalendarBookings(from.toISOString(), to.toISOString());
-      setBookings(data);
+      const [bkData, blData] = await Promise.all([
+        getCalendarBookings(from.toISOString(), to.toISOString()),
+        listBlockouts(from.toISOString(), to.toISOString()),
+      ]);
+      setBookings(bkData);
+      setBlockouts(blData);
     } catch {
       setError('Could not load calendar. Please try again.');
     } finally {
@@ -209,31 +371,48 @@ const CalendarSection = () => {
   }, []);
 
   useEffect(() => {
-    fetchBookings(currentDate, view);
-  }, [currentDate, view, fetchBookings]);
+    fetchRangeData(currentDate);
+  }, [currentDate, fetchRangeData]);
 
-  // Convert bookings to react-big-calendar event objects
-  const events = useMemo(() =>
-    bookings.map((b) => {
+  // Build merged event list: clean availability windows + bookings
+  const events = useMemo(() => {
+    const range = getRangeForView(view, currentDate);
+
+    const bookingEvs = bookings.map((b) => {
       const start = new Date(b.scheduled_at);
       const end   = new Date(start.getTime() + b.duration_minutes * 60 * 1000);
-      return {
-        id:       b.id,
-        title:    b.parent?.name || 'Booking',
-        start,
-        end,
-        resource: b,
-      };
-    }),
-  [bookings]);
+      return { id: b.id, title: b.parent?.name || 'Booking', start, end, type: 'booking', resource: b };
+    });
+
+    const blockoutEvs  = blockoutsToEvents(blockouts);
+    const rawAvailEvs  = expandRecurringSlots(slots, range.start, range.end);
+    const cleanAvailEvs = subtractOccupied(rawAvailEvs, blockoutEvs, bookingEvs);
+
+    return [...cleanAvailEvs, ...bookingEvs];
+  }, [slots, blockouts, bookings, currentDate, view]);
+
+  // Scroll to earliest slot or 08:00 in time-grid views
+  const scrollToTime = useMemo(() => {
+    if (slots.length === 0) return new Date(0, 0, 0, 8, 0);
+    const earliest = slots.reduce(
+      (min, s) => (s.start_time < min ? s.start_time : min),
+      slots[0].start_time
+    );
+    const [h, m] = earliest.split(':').map(Number);
+    const totalMins = Math.max(7 * 60, h * 60 + m - 30);
+    return new Date(0, 0, 0, Math.floor(totalMins / 60), totalMins % 60);
+  }, [slots]);
 
   const handleNavigate = useCallback((date) => setCurrentDate(date), []);
   const handleView     = useCallback((v) => setView(v), []);
-  const handleSelect   = useCallback((event) => setSelected(event), []);
+
+  // Only open the detail modal for booking events
+  const handleSelect = useCallback((event) => {
+    if (event.type === 'booking') setSelected(event);
+  }, []);
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-[#1F2933]">Calendar</h2>
         <p className="text-sm text-gray-500 mt-1">
@@ -241,17 +420,7 @@ const CalendarSection = () => {
         </p>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 mb-4">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-blue-500" />
-          <span className="text-xs text-gray-500">Online</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-[#445446]" />
-          <span className="text-xs text-gray-500">In-Person</span>
-        </div>
-      </div>
+      <Legend />
 
       {error && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>
@@ -264,24 +433,32 @@ const CalendarSection = () => {
         </div>
       )}
 
-      {/* Calendar */}
-      <div className="bg-white rounded-xl border border-[#E4E7E4] overflow-hidden"
-        style={{ height: 620 }}>
+      <div className="bg-white rounded-xl border border-[#E4E7E4] overflow-hidden" style={{ height: 640 }}>
         <Calendar
           localizer={localizer}
           events={events}
           date={currentDate}
           view={view}
+          views={VIEWS}
           onNavigate={handleNavigate}
           onView={handleView}
           onSelectEvent={handleSelect}
-          components={{ toolbar: CustomToolbar, event: EventBlock }}
+          eventPropGetter={eventPropGetter}
+          dayPropGetter={dayPropGetter}
+          components={{
+            toolbar: CustomToolbar,
+            month: { event: MonthEvent },
+            week:  { event: TimeGridEvent },
+            day:   { event: TimeGridEvent },
+          }}
+          min={new Date(0, 0, 0, 7, 0)}
+          max={new Date(0, 0, 0, 22, 0)}
+          scrollToTime={scrollToTime}
           popup
           style={{ height: '100%', padding: '8px' }}
         />
       </div>
 
-      {/* Detail modal */}
       <AppointmentModal event={selected} onClose={() => setSelected(null)} />
     </div>
   );
