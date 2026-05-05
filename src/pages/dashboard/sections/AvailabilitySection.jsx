@@ -18,6 +18,7 @@ import {
   listAvailability,
   addAvailabilitySlot,
   removeAvailabilitySlot,
+  checkAvailabilityConflicts,
   getMyProfile,
   updateMyProfile,
 } from "../../../api/expertApi";
@@ -49,7 +50,8 @@ const DAYS = [
 ];
 const EMPTY_SLOT_FORM = { day_of_week: "1", start_time: "", end_time: "" };
 const EMPTY_BLOCK_FORM = {
-  date: "",
+  date_from: "",
+  date_to: "",
   block_type: "full_day",
   start_time: "",
   end_time: "",
@@ -369,15 +371,16 @@ const Legend = () => (
   </div>
 );
 
-/// ─── 15-minute time options (06:00 → 23:45) ──────────────────────────────────
+/// ─── 15-minute time options (06:00 → 22:00) ──────────────────────────────────
 const TIME_OPTIONS = [];
-for (let h = 6; h < 24; h++) {
+for (let h = 6; h < 22; h++) {
   for (let m = 0; m < 60; m += 15) {
     TIME_OPTIONS.push(
       `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
     );
   }
 }
+TIME_OPTIONS.push("22:00");
 
 // Dropdown restricted to 15-minute increments — prevents non-standard times
 const TimeSelect = ({ value, onChange, hasError }) => (
@@ -409,6 +412,19 @@ const TimeSelect = ({ value, onChange, hasError }) => (
 );
 
 // ─── Weekly schedule panel ────────────────────────────────────────────────────
+
+function fmtBookingDate(isoStr) {
+  const d = new Date(isoStr);
+  return d.toLocaleString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 const WeeklySchedulePanel = ({
   slots,
   onAdd,
@@ -419,14 +435,38 @@ const WeeklySchedulePanel = ({
 }) => {
   const [form, setForm] = useState(EMPTY_SLOT_FORM);
   const [formErrors, setFormErrors] = useState({});
-  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
+  // pendingRemove: null | { id, checking: bool, conflicts: array|null }
+  const [pendingRemove, setPendingRemove] = useState(null);
+
+  const handleStartRemove = async (slot) => {
+    setPendingRemove({ id: slot.id, checking: true, conflicts: null });
+    try {
+      const data = await checkAvailabilityConflicts(slot.id);
+      setPendingRemove({ id: slot.id, checking: false, conflicts: data.bookings });
+    } catch {
+      // If the check fails, fall back to a simple confirm with no conflict info
+      setPendingRemove({ id: slot.id, checking: false, conflicts: [] });
+    }
+  };
 
   const validate = () => {
     const errs = {};
     if (!form.start_time) errs.start_time = "Required";
     if (!form.end_time) errs.end_time = "Required";
-    if (form.start_time && form.end_time && form.start_time >= form.end_time)
+    if (form.start_time && form.end_time && form.start_time >= form.end_time) {
       errs.end_time = "Must be after start";
+    } else if (form.start_time && form.end_time) {
+      const dayInt = parseInt(form.day_of_week);
+      const conflict = slots.find(
+        (s) =>
+          s.day_of_week === dayInt &&
+          form.start_time < s.end_time &&
+          form.end_time > s.start_time
+      );
+      if (conflict) {
+        errs.end_time = `Overlaps with existing slot ${conflict.start_time}–${conflict.end_time}`;
+      }
+    }
     return errs;
   };
 
@@ -572,63 +612,89 @@ const WeeklySchedulePanel = ({
                 {label}
               </p>
               <div className="space-y-1">
-                {ds.map((slot) => (
-                  <div
-                    key={slot.id}
-                    className="flex items-center justify-between px-3 py-1.5 bg-[#445446]/5 rounded-lg"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#445446] flex-shrink-0" />
-                      <span className="text-xs font-medium text-[#1F2933]">
-                        {slot.start_time} – {slot.end_time}
-                      </span>
-                    </div>
-                    {confirmRemoveId === slot.id ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setConfirmRemoveId(null)}
-                          className="text-xs text-gray-500 px-1.5 py-0.5 rounded hover:bg-gray-100 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => {
-                            setConfirmRemoveId(null);
-                            onRemove(slot.id);
-                          }}
-                          disabled={removingId === slot.id}
-                          className="text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-2 py-0.5 rounded transition-colors"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmRemoveId(slot.id)}
-                        disabled={removingId === slot.id}
-                        className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors disabled:opacity-40"
-                      >
-                        {removingId === slot.id ? (
-                          <div className="w-3 h-3 rounded-full border-2 border-red-400 border-t-transparent animate-spin" />
+                {ds.map((slot) => {
+                  const isPending = pendingRemove?.id === slot.id;
+                  const isChecking = isPending && pendingRemove.checking;
+                  const conflicts = isPending && !isChecking ? pendingRemove.conflicts : null;
+                  const hasConflicts = conflicts && conflicts.length > 0;
+
+                  return (
+                    <div key={slot.id}>
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-[#445446]/5 rounded-lg">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-[#445446] flex-shrink-0" />
+                          <span className="text-xs font-medium text-[#1F2933]">
+                            {slot.start_time} – {slot.end_time}
+                          </span>
+                        </div>
+
+                        {isChecking ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-400">Checking…</span>
+                            <div className="w-3 h-3 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" />
+                          </div>
+                        ) : isPending ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setPendingRemove(null)}
+                              className="text-xs text-gray-500 px-1.5 py-0.5 rounded hover:bg-gray-100 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => { setPendingRemove(null); onRemove(slot.id); }}
+                              disabled={removingId === slot.id}
+                              className={`text-xs font-medium text-white disabled:opacity-60 px-2 py-0.5 rounded transition-colors ${
+                                hasConflicts
+                                  ? "bg-amber-600 hover:bg-amber-700"
+                                  : "bg-red-500 hover:bg-red-600"
+                              }`}
+                            >
+                              {hasConflicts ? "Remove Anyway" : "Remove"}
+                            </button>
+                          </div>
                         ) : (
-                          <svg
-                            className="w-3.5 h-3.5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
+                          <button
+                            onClick={() => handleStartRemove(slot)}
+                            disabled={removingId === slot.id}
+                            className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors disabled:opacity-40"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M6 18 18 6M6 6l12 12"
-                            />
-                          </svg>
+                            {removingId === slot.id ? (
+                              <div className="w-3 h-3 rounded-full border-2 border-red-400 border-t-transparent animate-spin" />
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                              </svg>
+                            )}
+                          </button>
                         )}
-                      </button>
-                    )}
-                  </div>
-                ))}
+                      </div>
+
+                      {hasConflicts && (
+                        <div className="mt-1 mb-1 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs">
+                          <div className="flex items-start gap-1.5 mb-1.5">
+                            <svg className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                            </svg>
+                            <p className="font-semibold text-amber-800">
+                              Removing this slot affects {conflicts.length} confirmed booking{conflicts.length !== 1 ? "s" : ""}:
+                            </p>
+                          </div>
+                          <ul className="space-y-0.5 text-amber-700 ml-5">
+                            {conflicts.map((bk) => (
+                              <li key={bk.id}>
+                                {fmtBookingDate(bk.scheduled_at)} · {bk.parent?.name} · {bk.service?.title}
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-1.5 ml-5 text-amber-600">
+                            These bookings will not be cancelled automatically — you must manage them separately.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -663,15 +729,15 @@ const BlockoutPanel = ({
   const [formErrors, setFormErrors] = useState({});
   const [confirmRestoreId, setConfirmRestoreId] = useState(null);
 
-  // Inline warning: time-slot block on a day with no weekly availability
+  // Inline warning: time-slot block on a single day with no weekly availability
   const noAvailabilityWarning = useMemo(() => {
-    if (form.block_type !== "time_slot" || !form.date) return "";
-    const [y, m, d] = form.date.split("-").map(Number);
+    if (form.block_type !== "time_slot" || !form.date_from || form.date_from !== form.date_to) return "";
+    const [y, m, d] = form.date_from.split("-").map(Number);
     const dayOfWeek = new Date(y, m - 1, d).getDay(); // local date — no UTC shift
     const hasSlots = slots.some((s) => s.day_of_week === dayOfWeek);
     if (hasSlots) return "";
     return `You have no availability set for ${DAY_NAMES[dayOfWeek]}s. This block will be rejected — add ${DAY_NAMES[dayOfWeek]} availability to your Weekly Schedule first, or use a Full Day block instead.`;
-  }, [form.date, form.block_type, slots]);
+  }, [form.date_from, form.date_to, form.block_type, slots]);
 
   const inputClass = (hasErr) =>
     `w-full px-3 py-2 rounded-lg border text-sm text-[#1F2933] bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
@@ -680,7 +746,10 @@ const BlockoutPanel = ({
 
   const validate = () => {
     const errs = {};
-    if (!form.date) errs.date = "Required";
+    if (!form.date_from) errs.date_from = "Required";
+    if (!form.date_to) errs.date_to = "Required";
+    if (form.date_from && form.date_to && form.date_from > form.date_to)
+      errs.date_to = "Must be on or after the start date";
     if (form.block_type === "time_slot") {
       if (!form.start_time) errs.start_time = "Required";
       if (!form.end_time) errs.end_time = "Required";
@@ -697,7 +766,7 @@ const BlockoutPanel = ({
       setFormErrors(errs);
       return;
     }
-    const payload = { date: form.date };
+    const payload = { date_from: form.date_from, date_to: form.date_to };
     if (form.block_type === "time_slot") {
       payload.start_time = form.start_time;
       payload.end_time = form.end_time;
@@ -743,29 +812,55 @@ const BlockoutPanel = ({
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Date
-          </label>
-          <input
-            type="date"
-            value={form.date}
-            onChange={(e) => {
-              setForm((f) => ({ ...f, date: e.target.value }));
-              setFormErrors((fe) => ({ ...fe, date: "" }));
-            }}
-            className={inputClass(!!formErrors.date)}
-            min={new Date().toISOString().split("T")[0]}
-          />
-          {formErrors.date && (
-            <p className="mt-0.5 text-xs text-red-500">{formErrors.date}</p>
-          )}
-          {noAvailabilityWarning && (
-            <p className="mt-1.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-              {noAvailabilityWarning}
-            </p>
-          )}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              From
+            </label>
+            <input
+              type="date"
+              value={form.date_from}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm((f) => ({
+                  ...f,
+                  date_from: val,
+                  // Auto-advance date_to if it would become before date_from
+                  date_to: f.date_to && f.date_to < val ? val : f.date_to,
+                }));
+                setFormErrors((fe) => ({ ...fe, date_from: "", date_to: "" }));
+              }}
+              className={inputClass(!!formErrors.date_from)}
+              min={new Date().toISOString().split("T")[0]}
+            />
+            {formErrors.date_from && (
+              <p className="mt-0.5 text-xs text-red-500">{formErrors.date_from}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              To
+            </label>
+            <input
+              type="date"
+              value={form.date_to}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, date_to: e.target.value }));
+                setFormErrors((fe) => ({ ...fe, date_to: "" }));
+              }}
+              className={inputClass(!!formErrors.date_to)}
+              min={form.date_from || new Date().toISOString().split("T")[0]}
+            />
+            {formErrors.date_to && (
+              <p className="mt-0.5 text-xs text-red-500">{formErrors.date_to}</p>
+            )}
+          </div>
         </div>
+        {noAvailabilityWarning && (
+          <p className="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+            {noAvailabilityWarning}
+          </p>
+        )}
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -849,7 +944,7 @@ const BlockoutPanel = ({
             {creating && (
               <div className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
             )}
-            {creating ? "Blocking…" : "Block Date"}
+            {creating ? "Blocking…" : "Block Dates"}
           </button>
         </div>
       </form>
@@ -1073,6 +1168,18 @@ const AvailabilitySection = () => {
     [refreshRangeData]
   );
 
+  // ── Initial scroll position — earliest slot start minus 30 min, floor 07:00 ─
+  const scrollToTime = useMemo(() => {
+    if (slots.length === 0) return new Date(0, 0, 0, 8, 0);
+    const earliest = slots.reduce(
+      (min, s) => (s.start_time < min ? s.start_time : min),
+      slots[0].start_time
+    );
+    const [h, m] = earliest.split(":").map(Number);
+    const totalMins = Math.max(7 * 60, h * 60 + m - 30);
+    return new Date(0, 0, 0, Math.floor(totalMins / 60), totalMins % 60);
+  }, [slots]);
+
   // ── Build merged event list — available slots trimmed around occupied ranges ─
   const events = useMemo(() => {
     const blockoutEvs = blockoutsToEvents(blockouts);
@@ -1124,26 +1231,33 @@ const AvailabilitySection = () => {
     setBlockError("");
     setBlockInfo("");
     try {
-      const created = await createBlockout(data);
+      const { blockouts: newBlockouts, removedCount, skipped } = await createBlockout(data);
 
-      if (created.removedCount > 0) {
-        // Backend auto-removed time-slot blocks superseded by this Full Day block.
-        // Sync local state: drop those time-slot entries for the same date, then add the new one.
-        const createdDate = new Date(created.date).toDateString();
-        setBlockouts((prev) => [
-          ...prev.filter(
-            (b) =>
-              !(b.start_time && new Date(b.date).toDateString() === createdDate)
-          ),
-          created,
-        ]);
-        setBlockInfo(
-          `${created.removedCount} existing time-slot block${
-            created.removedCount > 1 ? "s were" : " was"
-          } automatically removed because the Full Day block supersedes them.`
+      if (newBlockouts.length === 0) {
+        setBlockError(
+          skipped > 0
+            ? `No new blocks were created — all ${skipped} day${skipped !== 1 ? "s" : ""} in the range are already blocked or have no availability.`
+            : "No new blocks were created."
         );
       } else {
-        setBlockouts((prev) => [...prev, created]);
+        setBlockouts((prev) => {
+          if (removedCount > 0) {
+            // Drop superseded time-slot blocks for dates covered by the new full-day blocks
+            const newDates = new Set(newBlockouts.map((b) => new Date(b.date).toDateString()));
+            return [
+              ...prev.filter((b) => !(b.start_time && newDates.has(new Date(b.date).toDateString()))),
+              ...newBlockouts,
+            ];
+          }
+          return [...prev, ...newBlockouts];
+        });
+
+        const parts = [];
+        if (removedCount > 0)
+          parts.push(`${removedCount} existing time-slot block${removedCount !== 1 ? "s" : ""} automatically removed`);
+        if (skipped > 0)
+          parts.push(`${skipped} day${skipped !== 1 ? "s" : ""} skipped (already blocked or no availability)`);
+        if (parts.length) setBlockInfo(parts.join(" · ") + ".");
       }
     } catch (err) {
       setBlockError(
@@ -1281,6 +1395,7 @@ const AvailabilitySection = () => {
             timeslots={2}
             min={new Date(0, 0, 0, 7, 0)}
             max={new Date(0, 0, 0, 21, 0)}
+            scrollToTime={scrollToTime}
             showMultiDayTimes
             popup
           />
@@ -1438,6 +1553,17 @@ const AvailabilitySection = () => {
             </span>
           )}
         </div>
+
+        {noticeHours === 12 && (
+          <div className="mt-3 flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+            <svg className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            <p>
+              <span className="font-semibold">Within the no-refund window.</span> The platform's cancellation policy does not issue refunds for bookings cancelled within 24 hours of the session. With a 12h notice period, parents can book sessions that fall inside this window — meaning a cancellation on either side may not be eligible for a refund. Consider setting at least 24h to stay outside this zone.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Settings panels */}

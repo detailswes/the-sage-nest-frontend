@@ -664,7 +664,6 @@ const TwoFactorCard = () => {
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const codeInputRef = useRef(null);
@@ -675,13 +674,6 @@ const TwoFactorCard = () => {
       .catch(() => {})
       .finally(() => setLoadingStatus(false));
   }, []);
-
-  // OTP expiry countdown
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-    const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [timeLeft]);
 
   // Resend cooldown ticker
   useEffect(() => {
@@ -700,8 +692,7 @@ const TwoFactorCard = () => {
       setIntent(intentType);
       setStep("entering_code");
       setCode("");
-      setTimeLeft(60);
-      setResendCooldown(30);
+      setResendCooldown(60);
       setTimeout(() => codeInputRef.current?.focus(), 50);
     } catch (err) {
       const msg =
@@ -719,8 +710,7 @@ const TwoFactorCard = () => {
         purpose: intent === "enable" ? "enable_2fa" : "disable_2fa",
       });
       setCode("");
-      setTimeLeft(60);
-      setResendCooldown(30);
+      setResendCooldown(60);
     } catch (err) {
       setCodeError(
         err?.response?.data?.error || "Failed to resend. Try again."
@@ -728,21 +718,17 @@ const TwoFactorCard = () => {
     }
   };
 
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    if (code.length !== 6) {
-      setCodeError("Enter the 6-digit code from your email.");
-      return;
-    }
+  const doVerify = async (codeVal) => {
+    if (saving || codeVal.length !== 6) return;
     setSaving(true);
     setCodeError("");
     try {
       if (intent === "enable") {
-        await enable2FAApi({ code });
+        await enable2FAApi({ code: codeVal });
         setEnabled(true);
         setSuccessMsg("Two-factor authentication enabled.");
       } else {
-        await disable2FAApi({ code });
+        await disable2FAApi({ code: codeVal });
         setEnabled(false);
         setSuccessMsg("Two-factor authentication disabled.");
       }
@@ -753,7 +739,6 @@ const TwoFactorCard = () => {
       const errData = err?.response?.data;
       if (errData?.expired) {
         setCodeError("Code expired. Please request a new one.");
-        setTimeLeft(0);
       } else {
         setCodeError(errData?.error || "Incorrect code. Please try again.");
       }
@@ -762,11 +747,15 @@ const TwoFactorCard = () => {
     }
   };
 
+  const handleVerify = (e) => {
+    e.preventDefault();
+    doVerify(code);
+  };
+
   const handleCancel = () => {
     setStep("idle");
     setCode("");
     setCodeError("");
-    setTimeLeft(0);
     setIntent(null);
   };
 
@@ -871,25 +860,13 @@ const TwoFactorCard = () => {
                 if (codeError) setCodeError("");
               }}
               placeholder="000000"
-              disabled={timeLeft === 0}
               className={`w-full px-4 py-3 rounded-lg border text-sm text-center tracking-[0.5em] font-mono text-[#1F2933] placeholder-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${
                 codeError ? "border-red-400" : "border-[#E4E7E4]"
-              } ${timeLeft === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+              }`}
             />
             <div className="flex items-center justify-between mt-1.5">
-              {codeError ? (
+              {codeError && (
                 <p className="text-xs text-red-500">{codeError}</p>
-              ) : (
-                <span />
-              )}
-              {timeLeft > 0 && (
-                <p
-                  className={`text-xs ${
-                    timeLeft <= 10 ? "text-red-500" : "text-gray-400"
-                  }`}
-                >
-                  Expires in {timeLeft}s
-                </p>
               )}
             </div>
           </div>
@@ -897,7 +874,7 @@ const TwoFactorCard = () => {
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              disabled={saving || code.length !== 6 || timeLeft === 0}
+              disabled={saving || code.length !== 6}
               className="flex items-center gap-2 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors"
             >
               {saving && (

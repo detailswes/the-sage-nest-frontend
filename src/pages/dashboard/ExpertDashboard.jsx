@@ -118,16 +118,13 @@ const LogoutIcon = () => (
 
 // ─── Nav config ──────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: "profile", label: "Profile", Icon: UserIcon },
-  { key: "services", label: "Services", Icon: BriefcaseIcon },
-  { key: "availability", label: "Availability", Icon: CalendarIcon },
-  { key: "calendar", label: "Calendar", Icon: CalendarIcon },
-  {
-    key: "appointments",
-    label: "Upcoming Appointments",
-    Icon: AppointmentsIcon,
-  },
-  { key: "settings", label: "Settings", Icon: SettingsIcon },
+  { key: "profile",      label: "Profile",               Icon: UserIcon },
+  { key: "services",     label: "Services",              Icon: BriefcaseIcon },
+  { key: "availability", label: "Availability",          Icon: CalendarIcon },
+  { key: "calendar",     label: "Calendar",              Icon: CalendarIcon },
+  { key: "appointments", label: "Upcoming Appointments", Icon: AppointmentsIcon },
+  { key: "history",      label: "Session History",       Icon: AppointmentsIcon },
+  { key: "settings",     label: "Settings",              Icon: SettingsIcon },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -137,6 +134,7 @@ const VALID_SECTIONS = [
   "availability",
   "calendar",
   "appointments",
+  "history",
   "settings",
 ];
 
