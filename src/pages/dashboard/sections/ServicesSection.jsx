@@ -5,6 +5,26 @@ const FORMAT_OPTIONS  = [
   { value: 'ONLINE',    label: 'Online' },
   { value: 'IN_PERSON', label: 'In-Person' },
 ];
+const CURRENCY_OPTIONS = [
+  { value: 'EUR', label: 'EUR (€)' },
+  { value: 'GBP', label: 'GBP (£)' },
+  { value: 'DKK', label: 'DKK (kr)' },
+  { value: 'SEK', label: 'SEK (kr)' },
+  { value: 'NOK', label: 'NOK (kr)' },
+  { value: 'CHF', label: 'CHF (Fr)' },
+];
+const PRICE_LIMITS = {
+  EUR: { min: 5,   max: 2000  },
+  GBP: { min: 5,   max: 2000  },
+  DKK: { min: 50,  max: 10000 },
+  SEK: { min: 50,  max: 20000 },
+  NOK: { min: 50,  max: 20000 },
+  CHF: { min: 5,   max: 2000  },
+};
+
+function formatPrice(price, currency = 'EUR') {
+  return new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(price));
+}
 const CLUSTER_OPTIONS = [
   { value: 'FOR_PARENTS', label: 'For Parents' },
   { value: 'FOR_BABY',    label: 'For Baby' },
@@ -27,7 +47,7 @@ const CLUSTER_BADGE = {
 
 const EMPTY_FORM = {
   title: '', description: '',
-  duration_minutes: '', price: '',
+  duration_minutes: '', price: '', currency: 'EUR',
   format: '', cluster: '',
 };
 
@@ -107,12 +127,16 @@ const ServicesSection = () => {
       errs.title = 'Title is required';
     if (!form.description.trim())
       errs.description = 'Description is required';
-    const dur = parseInt(form.duration_minutes);
-    if (!form.duration_minutes || isNaN(dur) || dur < 15 || dur > 480)
-      errs.duration_minutes = 'Duration must be between 15 and 480 minutes';
-    const price = parseFloat(form.price);
-    if (!form.price || isNaN(price) || price < 1.00)
-      errs.price = 'Price must be at least €1.00';
+    if (![30, 45, 60, 90, 120].includes(parseInt(form.duration_minutes)))
+      errs.duration_minutes = 'Please select a duration';
+    const price  = parseFloat(form.price);
+    const limits = PRICE_LIMITS[form.currency] || PRICE_LIMITS.EUR;
+    if (!form.currency)
+      errs.currency = 'Please select a currency';
+    if (!form.price || isNaN(price) || price < limits.min)
+      errs.price = `Minimum price is ${formatPrice(limits.min, form.currency || 'EUR')}`;
+    else if (price > limits.max)
+      errs.price = `Maximum price is ${formatPrice(limits.max, form.currency || 'EUR')}`;
     if (!form.format)
       errs.format = 'Please select a format';
     if (!form.cluster)
@@ -122,6 +146,7 @@ const ServicesSection = () => {
 
   const openAdd = () => {
     setEditingId(null);
+    setIsDuplicating(false);
     setForm(EMPTY_FORM);
     setFormErrors({});
     setFormError('');
@@ -136,6 +161,7 @@ const ServicesSection = () => {
       description:      svc.description  || '',
       duration_minutes: String(svc.duration_minutes),
       price:            String(svc.price),
+      currency:         svc.currency     || 'EUR',
       format:           svc.format       || '',
       cluster:          svc.cluster      || '',
     });
@@ -151,6 +177,7 @@ const ServicesSection = () => {
       description:      svc.description  || '',
       duration_minutes: String(svc.duration_minutes),
       price:            String(svc.price),
+      currency:         svc.currency     || 'EUR',
       format:           svc.format       || '',
       cluster:          svc.cluster      || '',
     });
@@ -180,6 +207,7 @@ const ServicesSection = () => {
         description:      form.description.trim() || null,
         duration_minutes: parseInt(form.duration_minutes),
         price:            parseFloat(form.price),
+        currency:         form.currency,
         format:           form.format  || null,
         cluster:          form.cluster || null,
       };
@@ -258,7 +286,7 @@ const ServicesSection = () => {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold text-[#1F2933]">Services</h2>
-          <p className="text-sm text-gray-500 mt-1">Manage the services you offer to parents. All prices in EUR (€).</p>
+          <p className="text-sm text-gray-500 mt-1">Manage the services you offer to parents.</p>
         </div>
         {!showForm && (
           <button
@@ -350,16 +378,31 @@ const ServicesSection = () => {
               </div>
             </div>
 
-            {/* Duration + Price */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Duration + Currency + Price */}
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Duration (min)</label>
-                <input type="number" name="duration_minutes" value={form.duration_minutes} onChange={handleChange}
-                  placeholder="60" min="15" max="480" className={inputClass(!!formErrors.duration_minutes)} />
+                <select name="duration_minutes" value={form.duration_minutes} onChange={handleChange}
+                  className={inputClass(!!formErrors.duration_minutes)}>
+                  <option value="">Select duration</option>
+                  {[30, 45, 60, 90, 120].map(d => (
+                    <option key={d} value={String(d)}>{d} min</option>
+                  ))}
+                </select>
                 {formErrors.duration_minutes && <p className="mt-1.5 text-xs text-red-500">{formErrors.duration_minutes}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Price (€)</label>
+                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Currency</label>
+                <select name="currency" value={form.currency} onChange={handleChange}
+                  className={inputClass(!!formErrors.currency)}>
+                  {CURRENCY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                {formErrors.currency && <p className="mt-1.5 text-xs text-red-500">{formErrors.currency}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Price</label>
                 <input type="number" name="price" value={form.price} onChange={handleChange}
                   placeholder="75.00" min="1.00" step="0.01" className={inputClass(!!formErrors.price)} />
                 {formErrors.price && <p className="mt-1.5 text-xs text-red-500">{formErrors.price}</p>}
@@ -373,7 +416,7 @@ const ServicesSection = () => {
               </button>
               <button type="submit" disabled={formLoading}
                 className="bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200 text-sm">
-                {formLoading ? 'Saving…' : editingId ? 'Save Changes' : 'Add Service'}
+                {formLoading ? 'Saving…' : editingId ? 'Save Changes' : isDuplicating ? 'Duplicate Service' : 'Add Service'}
               </button>
             </div>
           </form>
@@ -416,7 +459,7 @@ const ServicesSection = () => {
                     <p className="text-xs text-gray-500 mb-1 line-clamp-2">{svc.description}</p>
                   )}
                   <p className="text-xs text-gray-400">
-                    {svc.duration_minutes} min &middot; €{parseFloat(svc.price).toFixed(2)}
+                    {svc.duration_minutes} min &middot; {formatPrice(svc.price, svc.currency || 'EUR')}
                   </p>
                 </div>
 

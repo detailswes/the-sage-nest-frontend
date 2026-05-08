@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isValidIBAN, electronicFormatIBAN } from "ibantools";
 import { saveBusinessInfo } from "../../../api/expertApi";
 
 const Spinner = () => (
@@ -110,9 +111,19 @@ const BusinessInfoCard = ({ initialData = null }) => {
     if (!form.address_postal_code.trim()) errs.address_postal_code = "Postal code is required.";
     if (!form.address_country.trim()) errs.address_country = "Country is required.";
     if (!form.tin.trim()) errs.tin = "Tax Identification Number (TIN) is required.";
+    if (isCompany && !form.vat_number.trim()) errs.vat_number = "VAT number is required for companies.";
     if (isCompany && !form.company_reg_number.trim()) errs.company_reg_number = "Company registration number is required.";
-    if (!form.iban.trim()) errs.iban = "IBAN / bank account is required.";
+    if (!form.iban.trim()) {
+      errs.iban = "IBAN / bank account is required.";
+    } else if (!isValidIBAN(electronicFormatIBAN(form.iban.trim()) ?? "")) {
+      errs.iban = "Please enter a valid IBAN (e.g. IE64IRCE92050112345678).";
+    }
     if (!form.business_email.trim()) errs.business_email = "Email address is required.";
+    if (form.website.trim()) {
+      try { new URL(form.website.trim()); } catch {
+        errs.website = "Please enter a valid URL (e.g. https://example.com).";
+      }
+    }
 
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
@@ -130,7 +141,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
         address_postal_code: form.address_postal_code.trim(),
         address_country: form.address_country.trim(),
         tin: form.tin.trim(),
-        vat_number: form.vat_number.trim() || null,
+        vat_number: isCompany ? form.vat_number.trim() : null,
         company_reg_number: isCompany ? form.company_reg_number.trim() : null,
         iban: form.iban.trim(),
         business_email: form.business_email.trim(),
@@ -158,8 +169,8 @@ const BusinessInfoCard = ({ initialData = null }) => {
       {/* Header */}
       <div className="flex items-start justify-between mb-1">
         <div>
-          <h3 className="text-base font-semibold text-[#1F2933] flex items-center gap-1.5">
-            Business Information <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-gray-100 text-gray-500 border border-gray-200 align-middle">Internal</span>
+          <h3 className="text-base font-semibold text-[#1F2933]">
+            Business Information
           </h3>
           <p className="text-xs text-gray-400 mt-0.5">
             Information collected for compliance purposes
@@ -225,7 +236,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
             <InfoRow label="Postal code" value={data.address_postal_code} />
             <InfoRow label="Country" value={data.address_country} />
             <InfoRow label="TIN" value={data.tin} />
-            {data.vat_number && (
+            {data.entity_type === "COMPANY" && (
               <InfoRow label="VAT number" value={data.vat_number} />
             )}
             {data.entity_type === "COMPANY" && (
@@ -414,21 +425,23 @@ const BusinessInfoCard = ({ initialData = null }) => {
             {fieldErrors.tin && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.tin}</p>}
           </div>
 
-          {/* VAT number — optional */}
-          <div>
-            <label className={labelClass}>
-              VAT number{" "}
-              <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              name="vat_number"
-              value={form.vat_number}
-              onChange={handleChange}
-              placeholder="Leave blank if not applicable"
-              className={inputClass("vat_number")}
-            />
-          </div>
+          {/* VAT number — company only, required */}
+          {isCompany && (
+            <div>
+              <label className={labelClass}>
+                VAT number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="vat_number"
+                value={form.vat_number}
+                onChange={handleChange}
+                placeholder="e.g. IE1234567T"
+                className={inputClass("vat_number")}
+              />
+              {fieldErrors.vat_number && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.vat_number}</p>}
+            </div>
+          )}
 
           {/* Company reg number — company only */}
           {isCompany && (
@@ -496,6 +509,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 placeholder="https://www.example.com"
                 className={inputClass("website")}
               />
+              {fieldErrors.website && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.website}</p>}
             </div>
           </div>
 

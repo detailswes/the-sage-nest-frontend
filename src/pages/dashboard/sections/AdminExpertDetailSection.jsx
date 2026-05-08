@@ -829,14 +829,18 @@ const AdminExpertDetailSection = () => {
                       </div>
                     ) : summary ? (
                       <div className="grid grid-cols-3 gap-2 mb-4">
-                        {[
-                          { label: "Gross Earnings",     value: `£${summary.total_gross.toFixed(2)}` },
-                          { label: "Fees Deducted",      value: `£${summary.total_fees.toFixed(2)}` },
-                          { label: "Net Earnings",       value: `£${summary.total_net.toFixed(2)}`, highlight: true },
-                          { label: "Completed Sessions", value: summary.completed_sessions },
-                          { label: "Refunds Issued",     value: summary.refund_count },
-                          { label: "Total Refunded",     value: `£${summary.total_refunded.toFixed(2)}` },
-                        ].map(({ label, value, highlight }) => (
+                        {(() => {
+                          const cur = expert.services?.find(s => s.currency)?.currency || 'EUR';
+                          const fmt = (n) => new Intl.NumberFormat('en', { style: 'currency', currency: cur }).format(n);
+                          return [
+                            { label: "Gross Earnings",     value: fmt(summary.total_gross) },
+                            { label: "Fees Deducted",      value: fmt(summary.total_fees) },
+                            { label: "Net Earnings",       value: fmt(summary.total_net), highlight: true },
+                            { label: "Completed Sessions", value: summary.completed_sessions },
+                            { label: "Refunds Issued",     value: summary.refund_count },
+                            { label: "Total Refunded",     value: fmt(summary.total_refunded) },
+                          ];
+                        })().map(({ label, value, highlight }) => (
                           <div key={label} className={`rounded-xl p-3 border ${highlight ? "bg-[#445446]/5 border-[#445446]/20" : "bg-[#F5F7F5] border-[#E4E7E4]"}`}>
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{label}</p>
                             <p className={`text-sm font-bold ${highlight ? "text-[#445446]" : "text-[#1F2933]"}`}>{value}</p>
@@ -854,7 +858,7 @@ const AdminExpertDetailSection = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                           </svg>
                         )}
-                        {exporting ? "Exporting…" : "Export CSV"}
+                        {exporting ? "Exporting…" : "Export .xlsx"}
                       </button>
                       {!expert.business_info && (
                         <span className="text-xs text-gray-400">CSV export requires business info on file</span>
@@ -941,7 +945,7 @@ const AdminExpertDetailSection = () => {
                               </div>
                             </div>
                             {svc.description && <p className="text-xs text-gray-500 mb-1">{svc.description}</p>}
-                            <p className="text-xs text-gray-400">{svc.duration_minutes} min · £{parseFloat(svc.price).toFixed(2)}</p>
+                            <p className="text-xs text-gray-400">{svc.duration_minutes} min · {new Intl.NumberFormat('en', { style: 'currency', currency: svc.currency || 'EUR' }).format(parseFloat(svc.price))}</p>
                           </div>
                         ))}
                       </div>
@@ -1009,7 +1013,7 @@ const AdminExpertDetailSection = () => {
                             <span className="block">
                               {formatBookingTime(b.scheduled_at, expert.timezone).primary}
                               {b.parent?.name ? ` · ${b.parent.name}` : ""}
-                              {b.amount ? ` · £${Number(b.amount).toFixed(2)}` : ""}
+                              {b.amount ? ` · ${new Intl.NumberFormat('en', { style: 'currency', currency: b.currency || 'EUR' }).format(Number(b.amount))}` : ""}
                             </span>
                             <span className="block text-gray-300">
                               {formatBookingTime(b.scheduled_at, expert.timezone).utc}

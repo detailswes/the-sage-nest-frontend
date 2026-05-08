@@ -51,8 +51,8 @@ const TcModal = ({ isFirstBooking, onAccept, onDecline }) => (
 );
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function formatPrice(price) {
-  return `£${Number(price).toFixed(2)}`;
+function formatPrice(price, currency = 'EUR') {
+  return new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(price));
 }
 
 function formatDuration(mins) {
@@ -127,12 +127,15 @@ const ExpertCard = ({ expert, onSelect }) => {
               </span>
             )}
           </div>
-          {expert.services?.length > 0 && (
-            <p className="text-xs text-gray-400 mt-2">
-              {expert.services.length} service{expert.services.length !== 1 ? 's' : ''} ·
-              from {formatPrice(Math.min(...expert.services.map((s) => Number(s.price))))}
-            </p>
-          )}
+          {expert.services?.length > 0 && (() => {
+            const cheapest = expert.services.reduce((a, b) => Number(a.price) <= Number(b.price) ? a : b);
+            return (
+              <p className="text-xs text-gray-400 mt-2">
+                {expert.services.length} service{expert.services.length !== 1 ? 's' : ''} ·
+                from {formatPrice(cheapest.price, cheapest.currency || 'EUR')}
+              </p>
+            );
+          })()}
         </div>
       </div>
     </button>
@@ -260,6 +263,7 @@ const BookPage = () => {
           expertName:      selectedExpert.user?.name,
           serviceTitle:    selectedService.title,
           amount:          selectedService.price,
+          currency:        result.currency || selectedService.currency || 'EUR',
           scheduledAt:     selectedSlot.start,
           format:          selectedFormat,
           sessionLocation,
@@ -370,7 +374,7 @@ const BookPage = () => {
                     </div>
                   </div>
                   <div className="flex-shrink-0 text-right">
-                    <p className="text-lg font-bold text-[#1F2933]">{formatPrice(service.price)}</p>
+                    <p className="text-lg font-bold text-[#1F2933]">{formatPrice(service.price, service.currency || 'EUR')}</p>
                   </div>
                 </div>
               </button>
@@ -405,7 +409,7 @@ const BookPage = () => {
         <h2 className="text-xl font-semibold text-[#1F2933]">Choose a time</h2>
         <p className="text-sm text-gray-500 mt-1">
           {selectedService?.title} · {formatDuration(selectedService?.duration_minutes)} ·{' '}
-          <span className="font-medium text-[#1F2933]">{formatPrice(selectedService?.price)}</span>
+          <span className="font-medium text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR')}</span>
         </p>
       </div>
 
@@ -486,7 +490,12 @@ const BookPage = () => {
               return loc ? <p><span className="font-medium text-[#1F2933]">Location:</span> {loc}</p> : null;
             })()}
             <p><span className="font-medium text-[#1F2933]">Duration:</span> {formatDuration(selectedService?.duration_minutes)}</p>
-            <p className="text-base font-semibold text-[#1F2933] mt-2">{formatPrice(selectedService?.price)}</p>
+            <p className="text-base font-semibold text-[#1F2933] mt-2">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR')}</p>
+          </div>
+
+          {/* Currency notice */}
+          <div className="mb-4 p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
+            Prices are set by the expert in their local currency ({selectedService?.currency || 'EUR'}). Your bank may apply a conversion fee if this differs from your card currency.
           </div>
 
           {/* Health disclaimer */}

@@ -25,14 +25,17 @@ const formatDateTime = (iso) =>
       })
     : "—";
 
-const formatCurrency = (amount) =>
-  amount != null ? `£${parseFloat(amount).toFixed(2)}` : "—";
+const formatCurrency = (amount, currency = 'EUR') =>
+  amount != null
+    ? new Intl.NumberFormat('en', { style: 'currency', currency }).format(parseFloat(amount))
+    : "—";
 
 const specialistPayout = (transaction) => {
-  if (transaction.transfer_status !== "completed") return "£0.00";
-  const { amount, platform_fee } = transaction;
+  if (transaction.transfer_status !== "completed")
+    return new Intl.NumberFormat('en', { style: 'currency', currency: transaction.currency || 'EUR' }).format(0);
+  const { amount, platform_fee, currency = 'EUR' } = transaction;
   if (amount == null || platform_fee == null) return "—";
-  return `£${(parseFloat(amount) - parseFloat(platform_fee)).toFixed(2)}`;
+  return new Intl.NumberFormat('en', { style: 'currency', currency }).format(parseFloat(amount) - parseFloat(platform_fee));
 };
 
 // ─── Payment status helpers ───────────────────────────────────────────────────
@@ -97,10 +100,10 @@ function AmountCell({ transaction: t }) {
     return (
       <span className="flex flex-col gap-0.5 leading-tight">
         <span className="text-sm font-medium text-gray-400 line-through">
-          {formatCurrency(t.amount)}
+          {formatCurrency(t.amount, t.currency)}
         </span>
         <span className="text-xs font-medium text-red-500">
-          −{formatCurrency(t.refund_amount)}{isPartial && <span className="text-red-400 font-normal"> (partial)</span>}
+          −{formatCurrency(t.refund_amount, t.currency)}{isPartial && <span className="text-red-400 font-normal"> (partial)</span>}
         </span>
       </span>
     );
@@ -109,13 +112,13 @@ function AmountCell({ transaction: t }) {
   if (refundPending) {
     return (
       <span className="flex flex-col gap-0.5 leading-tight">
-        <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(t.amount)}</span>
+        <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(t.amount, t.currency)}</span>
         <span className="text-xs text-amber-500">refund pending</span>
       </span>
     );
   }
 
-  return <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(t.amount)}</span>;
+  return <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(t.amount, t.currency)}</span>;
 }
 
 // ─── Transaction detail modal ─────────────────────────────────────────────────
@@ -211,11 +214,11 @@ function TransactionDetailModal({ bookingId, onClose }) {
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Amount charged</span>
-                  <span className="font-medium text-[#1F2933]">{formatCurrency(booking.amount)}</span>
+                  <span className="font-medium text-[#1F2933]">{formatCurrency(booking.amount, booking.currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Platform fee (Sage Nest)</span>
-                  <span className="font-medium text-[#1F2933]">{formatCurrency(booking.platform_fee)}</span>
+                  <span className="font-medium text-[#1F2933]">{formatCurrency(booking.platform_fee, booking.currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Specialist payout</span>
@@ -243,7 +246,7 @@ function TransactionDetailModal({ bookingId, onClose }) {
                   <div className="flex justify-between">
                     <span className="text-gray-500">Amount refunded</span>
                     <span className="font-medium text-[#1F2933]">
-                      {formatCurrency(booking.refund_amount)}
+                      {formatCurrency(booking.refund_amount, booking.currency)}
                       {parseFloat(booking.refund_amount) < parseFloat(booking.amount) && (
                         <span className="ml-1 text-xs text-amber-600 font-normal">(partial)</span>
                       )}
@@ -363,10 +366,10 @@ function RefundLogView() {
                   <span className="text-sm text-[#1F2933] truncate">{e.admin_name}</span>
                   <span className="text-sm font-mono text-gray-500">#{e.booking_id}</span>
                   <span className="text-sm text-[#1F2933] truncate">{b?.parent?.name || "—"}</span>
-                  <span className="text-sm text-gray-500">{b ? formatCurrency(b.amount) : "—"}</span>
+                  <span className="text-sm text-gray-500">{b ? formatCurrency(b.amount, b.currency) : "—"}</span>
                   <span className="flex flex-col gap-0.5 leading-tight">
                     <span className="text-sm font-medium text-red-500">
-                      −{b ? formatCurrency(b.refund_amount) : "—"}
+                      −{b ? formatCurrency(b.refund_amount, b.currency) : "—"}
                     </span>
                     {isPartial && (
                       <span className="text-xs text-gray-400">partial</span>
@@ -462,6 +465,7 @@ const PaymentsOverviewSection = () => {
   }, [page, search, activeFilter, fromDate, toDate]);
 
   useEffect(() => { load({ initial: true }); }, []); // eslint-disable-line
+
 
   const handleSearchChange = (e) => {
     const val = e.target.value;
@@ -671,7 +675,7 @@ const PaymentsOverviewSection = () => {
                 <span className="text-sm text-[#1F2933] truncate">{t.parent?.name || "—"}</span>
                 <span className="text-sm text-[#1F2933] truncate">{t.expert?.user?.name || "—"}</span>
                 <AmountCell transaction={t} />
-                <span className="text-sm text-gray-500">{formatCurrency(t.platform_fee)}</span>
+                <span className="text-sm text-gray-500">{formatCurrency(t.platform_fee, t.currency)}</span>
                 <span className="text-sm text-gray-500">{specialistPayout(t)}</span>
                 <span className="text-sm text-gray-500">{formatDate(t.scheduled_at)}</span>
                 <PaymentStatusBadge transaction={t} />

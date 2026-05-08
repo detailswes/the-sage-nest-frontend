@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
         applyToken(data.accessToken);
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
-        if (data.pp_update_required) {
+        if (data.pp_update_required && data.user?.role !== 'ADMIN') {
           setTimeout(() => setPpUpdateRequired(true), 800);
         }
       } catch (err) {
@@ -115,6 +115,15 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, [applyToken]);
 
+  // ─── Cross-tab PP acceptance sync ──────────────────────────────────────────
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === 'pp_accepted') setPpUpdateRequired(false);
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   // ─── Events from axios interceptor ─────────────────────────────────────────
   useEffect(() => {
     const handleLogout = () => {
@@ -127,7 +136,7 @@ export const AuthProvider = ({ children }) => {
     const handleTokenRefreshed = (e) => {
       applyToken(e.detail.accessToken);
       setUser(e.detail.user);
-      if (e.detail.pp_update_required) {
+      if (e.detail.pp_update_required && e.detail.user?.role !== 'ADMIN') {
         setTimeout(() => setPpUpdateRequired(true), 800);
       }
       // interceptor already updated localStorage
@@ -151,7 +160,7 @@ export const AuthProvider = ({ children }) => {
       applyToken(data.accessToken);
       setUser(data.user);
       localStorage.setItem('user', JSON.stringify(data.user));
-      if (data.pp_update_required) {
+      if (data.pp_update_required && data.user?.role !== 'ADMIN') {
         setTimeout(() => setPpUpdateRequired(true), 800);
       }
     },
@@ -175,6 +184,8 @@ export const AuthProvider = ({ children }) => {
     try {
       await acceptPrivacyPolicyApi();
       setPpUpdateRequired(false);
+      // Signal other open tabs to dismiss their modals too
+      localStorage.setItem('pp_accepted', Date.now().toString());
     } catch {
       // Keep modal open on failure — user can retry
     } finally {
@@ -194,7 +205,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ user, accessToken, login, logout, loading, updateUser }}>
       {children}
-      {ppUpdateRequired && (
+      {ppUpdateRequired && window.location.pathname !== '/privacy-policy' && (
         <PrivacyPolicyUpdateModal
           onAccept={handlePpAccept}
           onDecline={logout}
