@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
 
-function formatPrice(price) {
-  return `£${Number(price).toFixed(2)}`;
+function formatPrice(price, currency = 'EUR') {
+  return new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(price));
 }
 function formatSlotTime(isoStr) {
   return new Date(isoStr).toLocaleString('en-GB', {
@@ -19,7 +19,7 @@ const CheckoutPage = () => {
 
   const {
     bookingId, clientSecret,
-    expertName, serviceTitle, amount, scheduledAt, format, sessionLocation,
+    expertName, serviceTitle, amount, currency = 'EUR', scheduledAt, format, sessionLocation,
   } = state || {};
 
   const [stripeReady, setStripeReady]   = useState(false);
@@ -147,7 +147,7 @@ const CheckoutPage = () => {
             }`}>
               {format === 'ONLINE' ? 'Online' : 'In-Person'}
             </span>
-            <span className="text-xl font-bold text-[#1F2933]">{formatPrice(amount)}</span>
+            <span className="text-xl font-bold text-[#1F2933]">{formatPrice(amount, currency)}</span>
           </div>
         </div>
 
@@ -178,10 +178,15 @@ const CheckoutPage = () => {
             <CancellationPolicy />
           </div>
 
+          {/* Currency notice */}
+          <div className="mb-4 p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
+            Prices are set by the expert in their local currency ({currency}). Your bank may apply a conversion fee if this differs from your card currency.
+          </div>
+
           <button type="submit"
             disabled={!stripeReady || paying}
             className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-            {paying ? 'Processing…' : `Pay ${formatPrice(amount)}`}
+            {paying ? 'Processing…' : `Pay ${formatPrice(amount, currency)}`}
           </button>
 
           <p className="text-xs text-gray-400 text-center mt-3">

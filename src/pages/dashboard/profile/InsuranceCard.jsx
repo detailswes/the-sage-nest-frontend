@@ -14,12 +14,18 @@ const formatDate = (iso) =>
 
 const isExpired = (iso) => new Date(iso) <= new Date();
 
+const daysUntil = (iso) => {
+  const diff = new Date(iso).setHours(0,0,0,0) - new Date().setHours(0,0,0,0);
+  return Math.ceil(diff / 86_400_000);
+};
+
 const InsuranceCard = ({ initialData = null }) => {
   const [insurance, setInsurance]   = useState(initialData);
   const [showForm, setShowForm]     = useState(!initialData);
   const [form, setForm]             = useState({ policy_expires_at: '', document: null });
   const [docName, setDocName]       = useState('');
   const [formError, setFormError]   = useState('');
+  const [dateWarning, setDateWarning] = useState('');
   const [saving, setSaving]         = useState(false);
   const [deleting, setDeleting]     = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -61,6 +67,7 @@ const InsuranceCard = ({ initialData = null }) => {
       setInsurance(updated);
       setForm({ policy_expires_at: '', document: null });
       setDocName('');
+      setDateWarning('');
       setShowForm(false);
     } catch (err) {
       setFormError(err?.response?.data?.error || 'Failed to save insurance record.');
@@ -86,7 +93,7 @@ const InsuranceCard = ({ initialData = null }) => {
     <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mt-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-base font-semibold text-[#1F2933] flex items-center gap-1.5">Professional Insurance <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-gray-100 text-gray-500 border border-gray-200 align-middle">Internal</span></h3>
+          <h3 className="text-base font-semibold text-[#1F2933]">Professional Insurance</h3>
           <p className="text-xs text-gray-500 mt-0.5">
             Required before your profile can be approved. Upload proof of Public Liability or Professional Indemnity Insurance.
           </p>
@@ -94,7 +101,7 @@ const InsuranceCard = ({ initialData = null }) => {
         {insurance && !showForm && (
           <button
             type="button"
-            onClick={() => { setShowForm(true); setForm({ policy_expires_at: '', document: null }); setDocName(''); setFormError(''); }}
+            onClick={() => { setShowForm(true); setForm({ policy_expires_at: '', document: null }); setDocName(''); setFormError(''); setDateWarning(''); }}
             className="flex-shrink-0 ml-4 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-1.5 rounded-lg transition-colors"
           >
             Update
@@ -202,9 +209,27 @@ const InsuranceCard = ({ initialData = null }) => {
               type="date"
               value={form.policy_expires_at}
               min={new Date().toISOString().split('T')[0]}
-              onChange={(e) => { setForm((f) => ({ ...f, policy_expires_at: e.target.value })); setFormError(''); }}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm((f) => ({ ...f, policy_expires_at: val }));
+                setFormError('');
+                if (val) {
+                  const days = daysUntil(val);
+                  setDateWarning(days <= 30 && days > 0 ? `This policy expires in ${days} day${days === 1 ? '' : 's'} — consider uploading a renewed policy soon.` : '');
+                } else {
+                  setDateWarning('');
+                }
+              }}
               className={inputClass(!form.policy_expires_at && !!formError)}
             />
+            {dateWarning && (
+              <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                </svg>
+                {dateWarning}
+              </p>
+            )}
           </div>
 
           <div>
@@ -233,7 +258,7 @@ const InsuranceCard = ({ initialData = null }) => {
             {insurance && (
               <button
                 type="button"
-                onClick={() => { setShowForm(false); setForm({ policy_expires_at: '', document: null }); setDocName(''); setFormError(''); }}
+                onClick={() => { setShowForm(false); setForm({ policy_expires_at: '', document: null }); setDocName(''); setFormError(''); setDateWarning(''); }}
                 className="text-sm text-gray-500 hover:text-[#1F2933] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel

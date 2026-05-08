@@ -441,12 +441,12 @@ const PastBookingCard = ({ booking }) => {
               {/* Amount paid */}
               {booking.amount && booking.status !== 'REFUNDED' && (
                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                  £{Number(booking.amount).toFixed(2)} paid
+                  {new Intl.NumberFormat('en', { style: 'currency', currency: booking.currency || 'EUR' }).format(Number(booking.amount))} paid
                 </span>
               )}
               {booking.amount && booking.status === 'REFUNDED' && (
                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full line-through">
-                  £{Number(booking.amount).toFixed(2)} refunded
+                  {new Intl.NumberFormat('en', { style: 'currency', currency: booking.currency || 'EUR' }).format(Number(booking.amount))} refunded
                 </span>
               )}
             </div>

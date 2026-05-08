@@ -2,6 +2,7 @@ import { api } from './authApi';
 
 // ── Expert list ───────────────────────────────────────────────────────────────
 export const listExperts        = (params = {}) => api.get('/admin/experts', { params }).then((r) => r.data);
+export const exportExpertsXlsx  = (params = {}) => api.get('/admin/experts/export', { params, responseType: 'blob' }).then((r) => r.data);
 
 // ── Status actions ────────────────────────────────────────────────────────────
 export const approveExpert      = (id) => api.post(`/admin/experts/${id}/approve`).then((r) => r.data);
@@ -58,6 +59,7 @@ export const getAuditLog        = (entityId, entityType = 'EXPERT', page = 1) =>
 
 // ── Parent list ───────────────────────────────────────────────────────────────
 export const listParents        = (params = {}) => api.get('/admin/parents', { params }).then((r) => r.data);
+export const exportParentsXlsx  = (params = {}) => api.get('/admin/parents/export', { params, responseType: 'blob' }).then((r) => r.data);
 
 // ── Parent detail (single) ────────────────────────────────────────────────────
 export const getParentDetail    = (id) => api.get(`/admin/parents/${id}`).then((r) => r.data);

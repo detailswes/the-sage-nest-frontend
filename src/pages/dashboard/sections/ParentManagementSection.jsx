@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   listParents,
+  exportParentsXlsx,
 } from "../../../api/adminApi";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -114,6 +115,8 @@ const ParentManagementSection = () => {
   const [pagination, setPagination]     = useState({ total: 0, totalPages: 1 });
   const [counts, setCounts]             = useState({ all: 0, ACTIVE: 0, SUSPENDED: 0 });
 
+  const [exporting, setExporting]     = useState(false);
+
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch]           = useState("");
   const [fromDate, setFromDate]       = useState("");
@@ -162,6 +165,29 @@ const ParentManagementSection = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const params = {};
+      if (activeFilter !== "all") params.status = activeFilter.toUpperCase();
+      if (search)   params.search = search;
+      if (fromDate) params.from   = fromDate;
+      if (toDate)   params.to     = toDate;
+
+      const blob = await exportParentsXlsx(params);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `parents_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const tabCount = (key) =>
     key === "all" ? counts.all : counts[key.toUpperCase()] ?? 0;
 
@@ -179,11 +205,27 @@ const ParentManagementSection = () => {
   return (
     <>
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">Parent Management</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Review and manage parent accounts on the platform.
-        </p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-[#1F2933]">Parent Management</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Review and manage parent accounts on the platform.
+          </p>
+        </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-2 text-sm font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 disabled:opacity-50 px-3.5 py-2 rounded-lg transition-colors flex-shrink-0 ml-4"
+        >
+          {exporting ? (
+            <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+          ) : (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+          )}
+          {exporting ? "Exporting…" : "Export .xlsx"}
+        </button>
       </div>
 
       {error && (

@@ -380,7 +380,6 @@ const ProfileSection = () => {
         {stripeStatus !== 'idle' && (
           <div className="flex-shrink-0 mt-0.5 flex flex-col items-end gap-1">
             <StripeButton status={stripeStatus} onConnect={handleConnectStripe} />
-            <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-gray-100 text-gray-500 border border-gray-200 align-middle">Internal</span>
           </div>
         )}
       </div>

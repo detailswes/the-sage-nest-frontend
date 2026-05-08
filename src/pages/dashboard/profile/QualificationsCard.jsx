@@ -131,6 +131,10 @@ const QualificationsCard = ({ initialData = [] }) => {
       setFormError("Please enter the qualification name.");
       return;
     }
+    if (!form.document) {
+      setFormError("Please upload a supporting document for this qualification.");
+      return;
+    }
     setSaving(true);
     try {
       const created = await addQualification({
@@ -242,11 +246,11 @@ const QualificationsCard = ({ initialData = [] }) => {
             </span>
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Select your qualifications and upload supporting documents for admin
-            review.
+            At least one qualification with a supporting document must be added
+            before your profile can be submitted for review.
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            Supporting documents optional · PDF, JPG, PNG · max 5 MB
+            PDF, JPG, PNG · max 5 MB per document
           </p>
         </div>
         {!showForm && (
@@ -527,6 +531,10 @@ const QualificationsCard = ({ initialData = [] }) => {
           )}
 
           <div>
+            <label className="block text-xs font-medium text-[#1F2933] mb-1">
+              Supporting document <span className="text-red-400">*</span>{" "}
+              <span className="font-normal text-gray-400">PDF, JPG, PNG · max 5 MB</span>
+            </label>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -547,12 +555,6 @@ const QualificationsCard = ({ initialData = [] }) => {
               onChange={handleFileChange}
             />
           </div>
-
-          {!form.document && (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              Adding a supporting document helps admins verify this entry faster.
-            </p>
-          )}
 
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
