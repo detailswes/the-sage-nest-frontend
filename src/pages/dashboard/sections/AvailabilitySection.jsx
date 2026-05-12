@@ -287,6 +287,12 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => (
 );
 
 // ─── Event style getter ───────────────────────────────────────────────────────
+const dayPropGetter = (date) => {
+  const dow = date.getDay();
+  if (dow === 0 || dow === 6) return { style: { backgroundColor: '#f7f8f7' } };
+  return {};
+};
+
 const eventStyleGetter = (event) => {
   const base = {
     border: "none",
@@ -1168,15 +1174,15 @@ const AvailabilitySection = () => {
     [refreshRangeData]
   );
 
-  // ── Initial scroll position — earliest slot start minus 30 min, floor 07:00 ─
+  // ── Initial scroll position — earliest slot start minus 30 min, floor 06:00 ─
   const scrollToTime = useMemo(() => {
-    if (slots.length === 0) return new Date(0, 0, 0, 8, 0);
+    if (slots.length === 0) return new Date(0, 0, 0, 6, 0);
     const earliest = slots.reduce(
       (min, s) => (s.start_time < min ? s.start_time : min),
       slots[0].start_time
     );
     const [h, m] = earliest.split(":").map(Number);
-    const totalMins = Math.max(7 * 60, h * 60 + m - 30);
+    const totalMins = Math.max(6 * 60, h * 60 + m - 30);
     return new Date(0, 0, 0, Math.floor(totalMins / 60), totalMins % 60);
   }, [slots]);
 
@@ -1383,6 +1389,7 @@ const AvailabilitySection = () => {
             onNavigate={handleNavigate}
             onView={handleViewChange}
             onRangeChange={handleRangeChange}
+            dayPropGetter={dayPropGetter}
             eventPropGetter={eventStyleGetter}
             components={{
               toolbar: () => null,
@@ -1393,8 +1400,8 @@ const AvailabilitySection = () => {
             }}
             step={30}
             timeslots={2}
-            min={new Date(0, 0, 0, 7, 0)}
-            max={new Date(0, 0, 0, 21, 0)}
+            min={new Date(0, 0, 0, 6, 0)}
+            max={new Date(0, 0, 0, 22, 30)}
             scrollToTime={scrollToTime}
             showMultiDayTimes
             popup

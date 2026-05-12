@@ -120,12 +120,6 @@ const ExpertCard = ({ expert, onSelect }) => {
                 {expert.address_city}
               </span>
             )}
-            {expert.session_format && (
-              <span className="text-xs bg-[#445446]/10 text-[#445446] px-2 py-0.5 rounded-full">
-                {expert.session_format === 'BOTH' ? 'Online & In-Person'
-                  : expert.session_format === 'ONLINE' ? 'Online' : 'In-Person'}
-              </span>
-            )}
           </div>
           {expert.services?.length > 0 && (() => {
             const cheapest = expert.services.reduce((a, b) => Number(a.price) <= Number(b.price) ? a : b);
