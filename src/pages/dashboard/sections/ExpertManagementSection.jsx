@@ -62,7 +62,16 @@ const getInitials = (name) =>
     : "?";
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
+const StatusBadge = ({ status, deleted }) => {
+  if (deleted)
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 3.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" />
+        </svg>
+        Deleted
+      </span>
+    );
   if (status === "APPROVED")
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -693,8 +702,9 @@ const ExpertManagementSection = () => {
           </div>
 
           {experts.map((expert, idx) => {
-            const name = expert.user?.name || "—";
-            const email = expert.user?.email || "—";
+            const isDeleted = !!expert.user?.account_deleted;
+            const name  = isDeleted ? "Deleted Account" : (expert.user?.name  || "—");
+            const email = isDeleted ? null               : (expert.user?.email || "—");
             const isActioning = actionLoading === expert.id;
 
             return (
@@ -737,12 +747,16 @@ const ExpertManagementSection = () => {
                 </button>
 
                 {/* Email */}
-                <a
-                  href={`mailto:${email}`}
-                  className="text-sm text-gray-500 truncate hover:text-[#445446] hover:underline"
-                >
-                  {email}
-                </a>
+                {email ? (
+                  <a
+                    href={`mailto:${email}`}
+                    className="text-sm text-gray-500 truncate hover:text-[#445446] hover:underline"
+                  >
+                    {email}
+                  </a>
+                ) : (
+                  <span className="text-sm text-gray-300 italic">—</span>
+                )}
 
                 {/* Position */}
                 <p className="text-sm text-gray-500 truncate">
@@ -753,7 +767,7 @@ const ExpertManagementSection = () => {
 
                 {/* Status */}
                 <div>
-                  <StatusBadge status={expert.status} />
+                  <StatusBadge status={expert.status} deleted={isDeleted} />
                 </div>
 
                 {/* Joined */}
@@ -796,7 +810,9 @@ const ExpertManagementSection = () => {
 
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-1.5">
-                  {isActioning ? (
+                  {isDeleted ? (
+                    <span className="text-xs text-gray-300 italic">—</span>
+                  ) : isActioning ? (
                     <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin mx-auto" />
                   ) : expert.status === "SUSPENDED" ? (
                     <button

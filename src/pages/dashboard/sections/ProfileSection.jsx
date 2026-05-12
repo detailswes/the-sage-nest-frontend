@@ -13,12 +13,6 @@ import InsuranceCard from '../profile/InsuranceCard';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMG_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
-const SESSION_FORMAT_OPTIONS = [
-  { value: 'ONLINE',    label: 'Online only' },
-  { value: 'IN_PERSON', label: 'In-person only' },
-  { value: 'BOTH',      label: 'Both online & in-person' },
-];
-
 const LANGUAGES = [
   'English', 'Danish', 'Swedish', 'Norwegian', 'Finnish',
   'German', 'French', 'Italian', 'Spanish', 'Portuguese',
@@ -118,7 +112,7 @@ const LangChip = ({ label, selected, onToggle }) => (
 const EMPTY_FORM = {
   bio: '', expertise: '',
   summary: '', position: '',
-  session_format: '',
+  // session_format: '',  // managed per-service via Service.format
   timezone: 'Europe/Rome',
   address_street: '', address_city: '', address_postcode: '',
   languages: [],
@@ -172,7 +166,7 @@ const ProfileSection = () => {
           expertise:        data.expertise        || '',
           summary:          data.summary          || '',
           position:         data.position         || '',
-          session_format:   data.session_format   || '',
+          // session_format: data.session_format || '',  // managed per-service
           timezone:         data.timezone         || 'Europe/Rome',
           address_street:   data.address_street   || '',
           address_city:     data.address_city     || '',
@@ -282,6 +276,15 @@ const ProfileSection = () => {
     if (form.summary.length > SUMMARY_MAX) {
       setError(`Summary must be ${SUMMARY_MAX} characters or fewer.`); return;
     }
+    if (!form.address_street?.trim()) {
+      setError('Street address is required.'); return;
+    }
+    if (!form.address_city?.trim()) {
+      setError('City is required.'); return;
+    }
+    if (!form.address_postcode?.trim()) {
+      setError('Postcode is required.'); return;
+    }
     setSaving(true);
     setError('');
     setSuccess(false);
@@ -292,7 +295,7 @@ const ProfileSection = () => {
         expertise:        form.expertise        || null,
         summary:          form.summary          || null,
         position:         form.position         || null,
-        session_format:   form.session_format   || null,
+        // session_format: form.session_format || null,  // managed per-service
         timezone:         form.timezone         || 'Europe/Rome',
         address_street:   form.address_street   || null,
         address_city:     form.address_city     || null,
@@ -366,7 +369,7 @@ const ProfileSection = () => {
     ? new Date(profile.user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null;
   const displayImage = imagePreview || imageUrl;
-  const showAddress  = form.session_format === 'IN_PERSON' || form.session_format === 'BOTH';
+  const showAddress  = true; // always show — format is managed per-service
   const inputClass   = 'w-full px-4 py-3 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]';
 
   return (
@@ -568,17 +571,7 @@ const ProfileSection = () => {
             </p>
           </div>
 
-          {/* Session format */}
-          <div>
-            <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Session format <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-green-50 text-green-700 border border-green-200 align-middle">Public</span></label>
-            <select name="session_format" value={form.session_format} onChange={handleChange} className={inputClass}>
-              <option value="">Select format…</option>
-              {SESSION_FORMAT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-400">Controls which booking buttons appear on your profile page.</p>
-          </div>
+          {/* session_format field removed — format is managed per-service (Service.format) */}
 
           {/* Address — only for in-person */}
           {showAddress && (

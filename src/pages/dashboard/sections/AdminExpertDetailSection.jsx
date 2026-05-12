@@ -21,7 +21,7 @@ import {
   rejectProfileDraft,
 } from "../../../api/adminApi";
 import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
-import { formatBookingTime, formatFormat } from "../../../utils/formatBookingTime";
+import { formatBookingTime } from "../../../utils/formatBookingTime";
 import BookingDetailModal from "../../../components/admin/BookingDetailModal";
 
 // ─── Shared helpers (mirrors ExpertManagementSection constants) ───────────────
@@ -480,11 +480,7 @@ const AdminExpertDetailSection = () => {
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Unverified</span>
                   )}
-                  {expert.session_format && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-[#445446]/10 text-[#445446] font-medium">
-                      {expert.session_format === "ONLINE" ? "Online" : expert.session_format === "IN_PERSON" ? "In-Person" : "Online & In-Person"}
-                    </span>
-                  )}
+                  {/* session_format badge removed — format is managed per-service */}
                   {expert.user?.login_attempts > 0 && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                       {expert.user.login_attempts} failed login{expert.user.login_attempts !== 1 ? "s" : ""}
@@ -594,7 +590,7 @@ const AdminExpertDetailSection = () => {
                             ["Summary",         expert.summary,          expert.profile_draft.summary],
                             ["Bio",             expert.bio,              expert.profile_draft.bio],
                             ["Professional title", expert.position,      expert.profile_draft.position],
-                            ["Session format",  formatFormat(expert.session_format),   formatFormat(expert.profile_draft.session_format)],
+                            // ["Session format", ...],  // managed per-service
                             ["Location",        [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null,
                                                 [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null],
                             ["Timezone",        expert.timezone,         expert.profile_draft.timezone],
@@ -623,7 +619,7 @@ const AdminExpertDetailSection = () => {
                             ["Summary",         expert.summary,          expert.profile_draft.summary],
                             ["Bio",             expert.bio,              expert.profile_draft.bio],
                             ["Professional title", expert.position,      expert.profile_draft.position],
-                            ["Session format",  formatFormat(expert.session_format),   formatFormat(expert.profile_draft.session_format)],
+                            // ["Session format", ...],  // managed per-service
                             ["Location",        [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null,
                                                 [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null],
                             ["Timezone",        expert.timezone,         expert.profile_draft.timezone],
@@ -1104,103 +1100,117 @@ const AdminExpertDetailSection = () => {
         {/* ── Right column: actions ── */}
         <div className="space-y-4">
 
-          {/* Status actions */}
-          <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
-            <SectionLabel>Status Actions</SectionLabel>
-            <div className="flex flex-col gap-2">
-              {expert.status === "SUSPENDED" ? (
-                <button onClick={() => setConfirmAction("reactivate")} disabled={!!actionLoading}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors">
-                  {actionLoading === "Reactivated" ? "Reactivating…" : "Reactivate Expert"}
-                </button>
-              ) : expert.status === "APPROVED" ? (
-                <>
-                  <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
-                    {actionLoading === "Rejected" ? "Rejecting…" : "Reject Expert"}
-                  </button>
-                  <button onClick={() => setConfirmAction("suspend")} disabled={!!actionLoading}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 disabled:opacity-50 transition-colors">
-                    {actionLoading === "Suspended" ? "Suspending…" : "Suspend Expert"}
-                  </button>
-                </>
-              ) : expert.status === "REJECTED" ? (
-                <>
-                  <button
-                    onClick={() => setConfirmAction("approve")}
-                    disabled={!!actionLoading || !expert.stripe_onboarding_complete}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
-                  </button>
-                  {!expert.stripe_onboarding_complete && (
-                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
-                      Cannot approve — expert has not completed Stripe onboarding.
-                    </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setConfirmAction("approve")}
-                    disabled={!!actionLoading || !expert.stripe_onboarding_complete}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
-                  </button>
-                  {!expert.stripe_onboarding_complete && (
-                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
-                      Cannot approve — expert has not completed Stripe onboarding.
-                    </p>
-                  )}
-                  <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
-                    {actionLoading === "Rejected" ? "Rejecting…" : "Reject Expert"}
-                  </button>
-                </>
-              )}
-              {["PENDING", "APPROVED", "CHANGES_REQUESTED"].includes(expert.status) && (
-                <button onClick={() => { setChangesNote(expert.change_request_note || ""); setShowRequestChanges(true); }}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors">
-                  Request Changes
-                </button>
-              )}
+          {expert.user?.account_deleted ? (
+            /* ── Account has been GDPR-erased — no actions available ── */
+            <div className="bg-gray-50 rounded-2xl border border-[#E4E7E4] p-5 text-center">
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-3">
+                <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 3.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-gray-500 mb-1">Account Deleted</p>
+              <p className="text-xs text-gray-400 leading-relaxed">This account has been permanently erased (GDPR). No further actions are available.</p>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Status actions */}
+              <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
+                <SectionLabel>Status Actions</SectionLabel>
+                <div className="flex flex-col gap-2">
+                  {expert.status === "SUSPENDED" ? (
+                    <button onClick={() => setConfirmAction("reactivate")} disabled={!!actionLoading}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors">
+                      {actionLoading === "Reactivated" ? "Reactivating…" : "Reactivate Expert"}
+                    </button>
+                  ) : expert.status === "APPROVED" ? (
+                    <>
+                      <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
+                        {actionLoading === "Rejected" ? "Rejecting…" : "Reject Expert"}
+                      </button>
+                      <button onClick={() => setConfirmAction("suspend")} disabled={!!actionLoading}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 disabled:opacity-50 transition-colors">
+                        {actionLoading === "Suspended" ? "Suspending…" : "Suspend Expert"}
+                      </button>
+                    </>
+                  ) : expert.status === "REJECTED" ? (
+                    <>
+                      <button
+                        onClick={() => setConfirmAction("approve")}
+                        disabled={!!actionLoading || !expert.stripe_onboarding_complete}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
+                      </button>
+                      {!expert.stripe_onboarding_complete && (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                          Cannot approve — expert has not completed Stripe onboarding.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setConfirmAction("approve")}
+                        disabled={!!actionLoading || !expert.stripe_onboarding_complete}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
+                      </button>
+                      {!expert.stripe_onboarding_complete && (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                          Cannot approve — expert has not completed Stripe onboarding.
+                        </p>
+                      )}
+                      <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
+                        {actionLoading === "Rejected" ? "Rejecting…" : "Reject Expert"}
+                      </button>
+                    </>
+                  )}
+                  {["PENDING", "APPROVED", "CHANGES_REQUESTED"].includes(expert.status) && (
+                    <button onClick={() => { setChangesNote(expert.change_request_note || ""); setShowRequestChanges(true); }}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors">
+                      Request Changes
+                    </button>
+                  )}
+                </div>
+              </div>
 
-          {/* Support tools */}
-          <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
-            <SectionLabel>Support Tools</SectionLabel>
-            <div className="flex flex-col gap-2">
-              <button onClick={handlePasswordReset} disabled={!!actionLoading}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-                {actionLoading === "Password reset sent" ? "Sending…" : "Send Password Reset"}
-              </button>
-              {/* Verification tools are only relevant while the account is unverified. */}
-              {!expert.user?.is_verified && (
-                <>
-                  <button onClick={handleResendVerification} disabled={!!actionLoading}
+              {/* Support tools */}
+              <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
+                <SectionLabel>Support Tools</SectionLabel>
+                <div className="flex flex-col gap-2">
+                  <button onClick={handlePasswordReset} disabled={!!actionLoading}
                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-                    {actionLoading === "Verification email resent" ? "Sending…" : "Resend Verification Email"}
+                    {actionLoading === "Password reset sent" ? "Sending…" : "Send Password Reset"}
                   </button>
-                  <button onClick={handleManualVerify} disabled={!!actionLoading}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 transition-colors">
-                    {actionLoading === "Marked as verified" ? "Verifying…" : "Mark as Verified"}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+                  {!expert.user?.is_verified && (
+                    <>
+                      <button onClick={handleResendVerification} disabled={!!actionLoading}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                        {actionLoading === "Verification email resent" ? "Sending…" : "Resend Verification Email"}
+                      </button>
+                      <button onClick={handleManualVerify} disabled={!!actionLoading}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 transition-colors">
+                        {actionLoading === "Marked as verified" ? "Verifying…" : "Mark as Verified"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
 
-          {/* Danger zone */}
-          <div className="bg-white rounded-2xl border-2 border-dashed border-red-100 p-5">
-            <SectionLabel>Danger Zone</SectionLabel>
-            <p className="text-xs text-gray-400 mb-3">Permanently erase all personal data. This cannot be undone.</p>
-            <button onClick={() => { setGdprEmail(""); setShowGdprDelete(true); }}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
-              Delete Account (GDPR Erasure)
-            </button>
-          </div>
+              {/* Danger zone */}
+              <div className="bg-white rounded-2xl border-2 border-dashed border-red-100 p-5">
+                <SectionLabel>Danger Zone</SectionLabel>
+                <p className="text-xs text-gray-400 mb-3">Permanently erase all personal data. This cannot be undone.</p>
+                <button onClick={() => { setGdprEmail(""); setShowGdprDelete(true); }}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
+                  Delete Account (GDPR Erasure)
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -1325,22 +1335,24 @@ const AdminExpertDetailSection = () => {
             ) : (
               <>
                 <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-2 text-xs text-red-700 space-y-1">
-                  <p className="font-semibold">This action is irreversible. The following will be deleted:</p>
+                  <p className="font-semibold">This action is irreversible. The following will be erased:</p>
                   <ul className="list-disc list-inside space-y-0.5 text-red-600">
                     <li>Profile, bio, photo, login credentials, and uploaded documents</li>
+                    <li>Business contact email and website</li>
                     <li>All future bookings cancelled and Stripe refunds issued</li>
                     <li>All active sessions invalidated immediately</li>
-                    <li>Specialist name shown as "Deleted specialist" in parent booking history</li>
+                    <li>Specialist shown as "Deleted specialist" in parent booking history</li>
                   </ul>
                 </div>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 text-xs text-amber-800 space-y-1">
                   <p className="font-semibold">Retained for a minimum of 5 years under DAC7 (EU Directive 2021/514):</p>
                   <ul className="list-disc list-inside space-y-0.5 text-amber-700">
-                    <li>Full legal name and tax identification number (TIN)</li>
-                    <li>Bank account / IBAN</li>
+                    <li>Full legal name, date of birth, and entity type</li>
+                    <li>Tax identification number (TIN) and VAT / company registration number</li>
+                    <li>Registered address and bank account (IBAN)</li>
                     <li>All earnings and booking records tied to financial transactions</li>
                   </ul>
-                  <p className="mt-1 text-amber-600">This data must remain identifiable for tax reporting and cannot be anonymised.</p>
+                  <p className="mt-1 text-amber-600">GDPR Art. 17(3)(b) — this data must remain identifiable for tax reporting and cannot be anonymised.</p>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">
                   Type the specialist's email to confirm: <span className="font-medium text-[#1F2933]">{expert.user?.email}</span>

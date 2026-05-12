@@ -23,14 +23,6 @@ const formatDate = (iso) =>
       })
     : "—";
 
-const formatDateTime = (iso) =>
-  iso
-    ? new Date(iso).toLocaleString("en-GB", {
-        day: "numeric", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      })
-    : "—";
-
 const formatCurrency = (amount) =>
   amount != null ? `£${parseFloat(amount).toFixed(2)}` : "—";
 

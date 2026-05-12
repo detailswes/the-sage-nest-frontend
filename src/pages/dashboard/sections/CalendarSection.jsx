@@ -391,15 +391,15 @@ const CalendarSection = () => {
     return [...cleanAvailEvs, ...bookingEvs];
   }, [slots, blockouts, bookings, currentDate, view]);
 
-  // Scroll to earliest slot or 08:00 in time-grid views
+  // Scroll to earliest slot or 06:00 in time-grid views
   const scrollToTime = useMemo(() => {
-    if (slots.length === 0) return new Date(0, 0, 0, 8, 0);
+    if (slots.length === 0) return new Date(0, 0, 0, 6, 0);
     const earliest = slots.reduce(
       (min, s) => (s.start_time < min ? s.start_time : min),
       slots[0].start_time
     );
     const [h, m] = earliest.split(':').map(Number);
-    const totalMins = Math.max(7 * 60, h * 60 + m - 30);
+    const totalMins = Math.max(6 * 60, h * 60 + m - 30);
     return new Date(0, 0, 0, Math.floor(totalMins / 60), totalMins % 60);
   }, [slots]);
 
@@ -436,6 +436,12 @@ const CalendarSection = () => {
       <div className="bg-white rounded-xl border border-[#E4E7E4] overflow-hidden" style={{ height: 640 }}>
         <Calendar
           localizer={localizer}
+          culture="en-GB"
+          formats={{
+            agendaDateFormat:   'dd/MM/yyyy',
+            agendaHeaderFormat: ({ start, end }) =>
+              `${format(start, 'dd/MM/yyyy')} – ${format(end, 'dd/MM/yyyy')}`,
+          }}
           events={events}
           date={currentDate}
           view={view}
@@ -451,8 +457,8 @@ const CalendarSection = () => {
             week:  { event: TimeGridEvent },
             day:   { event: TimeGridEvent },
           }}
-          min={new Date(0, 0, 0, 7, 0)}
-          max={new Date(0, 0, 0, 22, 0)}
+          min={new Date(0, 0, 0, 6, 0)}
+          max={new Date(0, 0, 0, 22, 30)}
           scrollToTime={scrollToTime}
           popup
           style={{ height: '100%', padding: '8px' }}
