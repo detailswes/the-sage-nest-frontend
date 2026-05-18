@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { validatePhone } from "../../utils/validation";
 import {
   getProfileApi,
   updateProfileApi,
@@ -58,20 +59,29 @@ const Banner = ({ type, message }) => {
 const PersonalInfoSection = ({ profile, onUpdated }) => {
   const [name, setName] = useState(profile.name || "");
   const [phone, setPhone] = useState(profile.phone || "");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState(null);
 
   const handleSave = async () => {
-    if (!name.trim()) {
-      setBanner({ type: "error", message: "Name is required." });
+    const errs = {};
+    if (!name.trim()) errs.name = "Name is required.";
+    if (!phone.trim()) {
+      errs.phone = "Phone number is required.";
+    } else if (!validatePhone(phone)) {
+      errs.phone = "Please enter a valid phone number (e.g. +44 7700 900000).";
+    }
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
       return;
     }
+    setFieldErrors({});
     setLoading(true);
     setBanner(null);
     try {
       const updated = await updateProfileApi({
         name: name.trim(),
-        phone: phone.trim() || null,
+        phone: phone.trim(),
       });
       onUpdated(updated);
       setBanner({ type: "success", message: "Profile updated successfully." });
@@ -96,18 +106,29 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
           <Input
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); setFieldErrors((p) => ({ ...p, name: undefined })); }}
             placeholder="Jane Smith"
+            error={!!fieldErrors.name}
           />
+          {fieldErrors.name && <p className="mt-1 text-xs text-red-500">{fieldErrors.name}</p>}
         </Field>
-        <Field label="Phone number">
+        <div>
+          <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+            Phone number 
+          </label>
           <Input
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => { setPhone(e.target.value); setFieldErrors((p) => ({ ...p, phone: undefined })); }}
             placeholder="+44 7700 900000"
+            error={!!fieldErrors.phone}
           />
-        </Field>
+          {fieldErrors.phone ? (
+            <p className="mt-1 text-xs text-red-500">{fieldErrors.phone}</p>
+          ) : (
+            <p className="mt-1 text-xs text-gray-400">So your expert can reach you about your session.</p>
+          )}
+        </div>
         <div className="flex justify-end pt-1">
           <button
             onClick={handleSave}

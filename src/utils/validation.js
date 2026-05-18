@@ -3,6 +3,17 @@ export const validateEmail = (email) => {
   return re.test(email);
 };
 
+// European phone: international (+3x/+4x E.164) or local format (7–15 digits)
+export const validatePhone = (phone) => {
+  const normalized = phone.trim().replace(/[\s\-().]/g, '');
+  if (normalized.startsWith('+')) {
+    // All European ITU country codes start with +3x or +4x (e.g. +44 UK, +39 Italy, +353 Ireland)
+    return /^\+[34]\d{7,13}$/.test(normalized);
+  }
+  // Local format: 7–15 digits, optional leading 0
+  return /^0?\d{6,14}$/.test(normalized);
+};
+
 // Returns array of unmet criteria labels (empty = all passed)
 export const checkPasswordStrength = (password) => [
   { label: 'At least 8 characters',        ok: password.length >= 8 },
@@ -59,8 +70,8 @@ export const validateRegisterForm = ({ name, email, password, confirmPassword, p
   if (role === 'PARENT') {
     if (!phone || !phone.trim()) {
       errors.phone = 'Phone number is required.';
-    } else if (!/^\+?[\d\s\-().]{7,20}$/.test(phone.trim())) {
-      errors.phone = 'Please enter a valid phone number.';
+    } else if (!validatePhone(phone)) {
+      errors.phone = 'Please enter a valid phone number (e.g. +44 7700 900000).';
     }
   }
 

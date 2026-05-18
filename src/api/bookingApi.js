@@ -33,6 +33,12 @@ export const getAvailableSlots = (expertId, date, serviceId) =>
     .get(`${BASE_URL}/availability/slots`, { params: { expertId, date, serviceId } })
     .then((r) => r.data);
 
+/** Returns the set of dates in a given month that have ≥1 available slot */
+export const getAvailableDatesInMonth = (expertId, year, month, serviceId) =>
+  axios
+    .get(`${BASE_URL}/availability/available-dates`, { params: { expertId, year, month, serviceId } })
+    .then((r) => new Set(r.data.available_dates));
+
 // ─── Expert dashboard ─────────────────────────────────────────────────────────
 
 export const getUpcomingAppointments = () =>
@@ -60,6 +66,10 @@ export const expertCancelBooking = (id) =>
 /** Reconcile a stuck PENDING_PAYMENT booking by checking Stripe directly */
 export const verifyPayment = (id) =>
   api.post(`/bookings/${id}/verify-payment`).then((r) => r.data);
+
+/** Abandon a PENDING_PAYMENT booking — cancels the PaymentIntent and frees the slot */
+export const abandonBooking = (id) =>
+  api.post(`/bookings/${id}/abandon`).then((r) => r.data);
 
 /** Get the current T&C version and whether it has changed since the user last accepted */
 export const getCurrentTcVersion = () =>

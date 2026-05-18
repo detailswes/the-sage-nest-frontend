@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, addMonths, subMonths,
   isSameDay, isSameMonth, isToday, isAfter, isBefore,
-  format, parseISO, startOfDay,
+  format, parseISO, startOfDay, getYear, getMonth,
 } from 'date-fns';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -27,17 +27,33 @@ function ChevronRight() {
  * BookingCalendar
  *
  * Props:
- *   selectedDate  — ISO date string "YYYY-MM-DD"
- *   onSelect      — (isoString: string) => void
- *   minDateISO    — ISO date string, defaults to today
- *   maxDateISO    — ISO date string or undefined
+ *   selectedDate   — ISO date string "YYYY-MM-DD"
+ *   onSelect       — (isoString: string) => void
+ *   minDateISO     — ISO date string, defaults to today
+ *   maxDateISO     — ISO date string or undefined
+ *   availableDates — Set<"YYYY-MM-DD"> of dates that have ≥1 slot (undefined = loading/unknown)
+ *   loadingDates   — boolean, true while fetching availability for this month
+ *   onMonthChange  — (year: number, month: number) => void, called on mount + navigation
  */
-const BookingCalendar = ({ selectedDate, onSelect, minDateISO, maxDateISO }) => {
+const BookingCalendar = ({
+  selectedDate,
+  onSelect,
+  minDateISO,
+  maxDateISO,
+  availableDates,
+  loadingDates = false,
+  onMonthChange,
+}) => {
   const selected = selectedDate ? parseISO(selectedDate) : null;
   const minDate  = minDateISO  ? parseISO(minDateISO)  : startOfDay(new Date());
   const maxDate  = maxDateISO  ? parseISO(maxDateISO)  : null;
 
   const [viewDate, setViewDate] = useState(selected || minDate);
+
+  // Notify parent of the current view month on mount and every navigation
+  useEffect(() => {
+    onMonthChange?.(getYear(viewDate), getMonth(viewDate) + 1);
+  }, [viewDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(viewDate), { weekStartsOn: 0 }),
@@ -55,7 +71,7 @@ const BookingCalendar = ({ selectedDate, onSelect, minDateISO, maxDateISO }) => 
     <div className="bg-white border border-[#E4E7E4] rounded-xl p-4 max-w-sm select-none">
 
       {/* Month header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <button
           type="button"
           onClick={() => setViewDate((v) => subMonths(v, 1))}
@@ -65,9 +81,14 @@ const BookingCalendar = ({ selectedDate, onSelect, minDateISO, maxDateISO }) => 
           <ChevronLeft />
         </button>
 
-        <span className="text-sm font-semibold text-[#1F2933]">
-          {format(viewDate, 'MMMM yyyy')}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-[#1F2933]">
+            {format(viewDate, 'MMMM yyyy')}
+          </span>
+          {loadingDates && (
+            <div className="w-3 h-3 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+          )}
+        </div>
 
         <button
           type="button"
@@ -78,6 +99,20 @@ const BookingCalendar = ({ selectedDate, onSelect, minDateISO, maxDateISO }) => 
           <ChevronRight />
         </button>
       </div>
+
+      {/* Legend */}
+      {availableDates !== undefined && !loadingDates && (
+        <div className="flex items-center gap-3 mb-3 px-1">
+          <span className="flex items-center gap-1 text-xs text-gray-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#445446] inline-block" />
+            Available
+          </span>
+          <span className="flex items-center gap-1 text-xs text-gray-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block" />
+            No slots
+          </span>
+        </div>
+      )}
 
       {/* Weekday labels */}
       <div className="grid grid-cols-7 mb-1">
@@ -91,13 +126,18 @@ const BookingCalendar = ({ selectedDate, onSelect, minDateISO, maxDateISO }) => 
       {/* Day grid */}
       <div className="grid grid-cols-7">
         {days.map((day) => {
-          const outside   = !isSameMonth(day, viewDate);
-          const disabled  = isDisabled(day);
+          const outside    = !isSameMonth(day, viewDate);
+          const disabled   = isDisabled(day);
           const isSelected = selected && isSameDay(day, selected);
-          const today     = isToday(day);
+          const today      = isToday(day);
+          const isoDay     = format(day, 'yyyy-MM-dd');
+
+          // Availability state (only meaningful when data has loaded and day is not disabled)
+          const dataReady  = availableDates !== undefined && !loadingDates;
+          const hasSlots   = dataReady && availableDates.has(isoDay);
+          const noSlots    = dataReady && !disabled && !hasSlots;
 
           if (outside) {
-            // Keep the cell for grid alignment but invisible
             return <div key={day.toISOString()} className="h-9" />;
           }
 
@@ -108,6 +148,8 @@ const BookingCalendar = ({ selectedDate, onSelect, minDateISO, maxDateISO }) => 
             btnCls += ' bg-[#445446] text-white font-semibold';
           } else if (disabled) {
             btnCls += ' text-gray-300 cursor-not-allowed';
+          } else if (noSlots) {
+            btnCls += ' text-gray-300 cursor-not-allowed';
           } else {
             btnCls += ' text-[#1F2933] cursor-pointer hover:bg-[#445446]/10 hover:text-[#445446]';
             if (today) btnCls += ' font-semibold';
@@ -117,13 +159,20 @@ const BookingCalendar = ({ selectedDate, onSelect, minDateISO, maxDateISO }) => 
             <div key={day.toISOString()} className="flex items-center justify-center py-0.5">
               <button
                 type="button"
-                disabled={disabled}
-                onClick={() => !disabled && onSelect(format(day, 'yyyy-MM-dd'))}
+                disabled={disabled || noSlots}
+                onClick={() => onSelect(isoDay)}
                 className={btnCls}
+                title={noSlots ? 'No availability on this date' : undefined}
               >
                 {format(day, 'd')}
-                {/* Dot indicator for today (when not selected) */}
-                {today && !isSelected && (
+
+                {/* Green dot — date has available slots */}
+                {hasSlots && !isSelected && (
+                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#445446]" />
+                )}
+
+                {/* Today marker when not selected and has slots (or data not yet loaded) */}
+                {today && !isSelected && !hasSlots && !noSlots && (
                   <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#445446]" />
                 )}
               </button>

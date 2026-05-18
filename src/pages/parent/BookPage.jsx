@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { listExperts, getExpertPublic } from '../../api/expertApi';
-import { getAvailableSlots, createBooking, getCurrentTcVersion } from '../../api/bookingApi';
+import { getAvailableSlots, getAvailableDatesInMonth, createBooking, getCurrentTcVersion } from '../../api/bookingApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
@@ -49,6 +49,15 @@ const TcModal = ({ isFirstBooking, onAccept, onDecline }) => (
     </div>
   </div>
 );
+
+// ─── Cluster tags ─────────────────────────────────────────────────────────────
+const CLUSTER_BADGE = {
+  FOR_PARENTS: { label: 'For the Parents', cls: 'bg-pink-100 text-pink-700' },
+  FOR_BABY:    { label: 'For the Baby',    cls: 'bg-cyan-100 text-cyan-700' },
+  PACKAGE:     { label: 'Package',         cls: 'bg-amber-100 text-amber-700' },
+  GIFT:        { label: 'Gift',            cls: 'bg-green-100 text-green-700' },
+  EVENT:       { label: 'Event',           cls: 'bg-violet-100 text-violet-700' },
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatPrice(price, currency = 'EUR') {
@@ -136,11 +145,20 @@ const ExpertCard = ({ expert, onSelect }) => {
   );
 };
 
+const DESCRIPTION_WORD_LIMIT = 20;
+
+function truncateWords(text, limit) {
+  const words = text.split(' ');
+  if (words.length <= limit) return { short: text, truncated: false };
+  return { short: words.slice(0, limit).join(' ') + '…', truncated: true };
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 const STEPS = { BROWSE: 'browse', SERVICE: 'service', SLOT: 'slot' };
 
 const BookPage = () => {
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
+  const { state: locationState } = useLocation();
 
   const [step, setStep]           = useState(STEPS.BROWSE);
   const [experts, setExperts]     = useState([]);
@@ -158,11 +176,24 @@ const BookPage = () => {
   const [selectedFormat,  setSelectedFormat]  = useState('ONLINE');
   const [booking,              setBooking]              = useState(false);
   const [bookErr,              setBookErr]              = useState('');
+  const [expandedDesc,         setExpandedDesc]         = useState({});
+  const [availableDates,       setAvailableDates]       = useState(undefined);
+  const [loadingDates,         setLoadingDates]         = useState(false);
   const [tcAcceptanceRequired, setTcAcceptanceRequired] = useState(false);
   const [tcIsFirstBooking,     setTcIsFirstBooking]     = useState(false);
   const [tcModalOpen,          setTcModalOpen]          = useState(false);
 
   const summaryRef = useRef(null);
+
+  // Restore state when returning from checkout via "Edit booking"
+  useEffect(() => {
+    if (!locationState?.restore) return;
+    const { expert, service, format: fmt } = locationState.restore;
+    if (expert)   setSelectedExpert(expert);
+    if (service)  setSelectedService(service);
+    if (fmt)      setSelectedFormat(fmt);
+    if (expert && service) setStep(STEPS.SLOT);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll the booking summary into view whenever a slot is selected
   useEffect(() => {
@@ -226,8 +257,24 @@ const BookPage = () => {
     setStep(STEPS.SERVICE);
   };
 
+  const fetchAvailableDates = useCallback(async (year, month) => {
+    if (!selectedExpert) return;
+    setLoadingDates(true);
+    try {
+      const dates = await getAvailableDatesInMonth(
+        selectedExpert.id, year, month, selectedService?.id,
+      );
+      setAvailableDates(dates);
+    } catch {
+      setAvailableDates(undefined); // fall back to unmarked calendar on error
+    } finally {
+      setLoadingDates(false);
+    }
+  }, [selectedExpert, selectedService]);
+
   const handleSelectService = (service) => {
     setSelectedService(service);
+    setAvailableDates(undefined); // reset until calendar fires onMonthChange
     // Auto-set format based on service format
     if (service.format) setSelectedFormat(service.format);
     setStep(STEPS.SLOT);
@@ -261,6 +308,12 @@ const BookPage = () => {
           scheduledAt:     selectedSlot.start,
           format:          selectedFormat,
           sessionLocation,
+          // Passed back to BookPage when the parent clicks "Edit booking"
+          restore: {
+            expert:  selectedExpert,
+            service: selectedService,
+            format:  selectedFormat,
+          },
         },
       });
     } catch (err) {
@@ -349,9 +402,26 @@ const BookPage = () => {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="font-semibold text-[#1F2933]">{service.title}</p>
-                    {service.description && (
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{service.description}</p>
-                    )}
+                    {service.description && (() => {
+                      const { short, truncated } = truncateWords(service.description, DESCRIPTION_WORD_LIMIT);
+                      const isExpanded = !!expandedDesc[service.id];
+                      return (
+                        <p className="text-sm text-gray-500 mt-1">
+                          {isExpanded ? service.description : short}
+                          {truncated && (
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}}
+                              className="ml-1 text-[#445446] font-medium cursor-pointer hover:underline"
+                            >
+                              {isExpanded ? 'Show less' : 'Read more'}
+                            </span>
+                          )}
+                        </p>
+                      );
+                    })()}
                     <div className="flex flex-wrap gap-2 mt-2">
                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                         {formatDuration(service.duration_minutes)}
@@ -363,6 +433,11 @@ const BookPage = () => {
                             : 'bg-[#445446]/10 text-[#445446]'
                         }`}>
                           {service.format === 'ONLINE' ? 'Online' : 'In-Person'}
+                        </span>
+                      )}
+                      {service.cluster && CLUSTER_BADGE[service.cluster] && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CLUSTER_BADGE[service.cluster].cls}`}>
+                          {CLUSTER_BADGE[service.cluster].label}
                         </span>
                       )}
                     </div>
@@ -431,6 +506,9 @@ const BookPage = () => {
           onSelect={setSelectedDate}
           minDateISO={minDate()}
           maxDateISO={maxDate(expertDetail?.advance_booking_days)}
+          availableDates={availableDates}
+          loadingDates={loadingDates}
+          onMonthChange={fetchAvailableDates}
         />
       </div>
 
@@ -463,10 +541,12 @@ const BookPage = () => {
         </>
       )}
 
-      {/* Cancellation policy — always visible on slot step */}
-      <div className="mt-5">
-        <CancellationPolicy />
-      </div>
+      {/* Cancellation policy — full version, hidden once a slot is selected */}
+      {!selectedSlot && (
+        <div className="mt-5">
+          <CancellationPolicy />
+        </div>
+      )}
 
       {/* Summary + Book button */}
       {selectedSlot && (
@@ -485,6 +565,11 @@ const BookPage = () => {
             })()}
             <p><span className="font-medium text-[#1F2933]">Duration:</span> {formatDuration(selectedService?.duration_minutes)}</p>
             <p className="text-base font-semibold text-[#1F2933] mt-2">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR')}</p>
+          </div>
+
+          {/* Cancellation policy — compact one-liner in the summary */}
+          <div className="mb-4">
+            <CancellationPolicy compact />
           </div>
 
           {/* Currency notice */}

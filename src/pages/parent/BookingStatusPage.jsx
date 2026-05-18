@@ -12,42 +12,104 @@ function formatLocation(expert) {
 
 function formatDate(isoStr) {
   return new Date(isoStr).toLocaleString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
 }
 
+function formatPrice(amount, currency = 'EUR') {
+  return new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(amount));
+}
+
+function formatDuration(mins) {
+  if (!mins) return '';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m} min`;
+  return m ? `${h}h ${m}min` : `${h}h`;
+}
+
+function bookingRef(booking) {
+  const year = new Date(booking.created_at).getFullYear();
+  return `SN-${year}-${String(booking.id).padStart(5, '0')}`;
+}
+
 // ─── Status icons / banners ───────────────────────────────────────────────────
-const SuccessBanner = ({ booking }) => (
-  <div className="text-center">
-    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-      <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-      </svg>
-    </div>
-    <h2 className="text-xl font-bold text-[#1F2933] mb-1">Booking Confirmed!</h2>
-    <p className="text-sm text-gray-500 mb-6">
-      Your session with <strong>{booking.expert?.user?.account_deleted ? 'Deleted specialist' : booking.expert?.user?.name}</strong> is confirmed.
-    </p>
-    <div className="bg-[#F5F7F5] rounded-xl border border-[#E4E7E4] p-5 text-left mb-6 space-y-2 text-sm">
-      <p><span className="font-medium text-[#1F2933]">Service:</span> {booking.service?.title}</p>
-      <p><span className="font-medium text-[#1F2933]">Date & Time:</span> {formatDate(booking.scheduled_at)}</p>
-      <p><span className="font-medium text-[#1F2933]">Format:</span> {booking.format === 'ONLINE' ? 'Online' : 'In-Person'}</p>
-      {booking.format === 'IN_PERSON' && formatLocation(booking.expert) && (
-        <p><span className="font-medium text-[#1F2933]">Location:</span> {formatLocation(booking.expert)}</p>
-      )}
-      {booking.format === 'ONLINE' && (
-        <div className="mt-3 px-3 py-2.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
-          Your expert will send you a meeting link (Zoom / Teams) before the session.
+const SuccessBanner = ({ booking }) => {
+  const expertName = booking.expert?.user?.account_deleted
+    ? 'Deleted specialist'
+    : booking.expert?.user?.name;
+  const location = formatLocation(booking.expert);
+  const formatLabel = booking.format === 'ONLINE' ? 'Online' : 'In-Person';
+  const duration = formatDuration(booking.duration_minutes);
+
+  return (
+    <div className="text-center">
+      {/* Icon */}
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#445446]/10 mb-4">
+        <svg className="w-8 h-8 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      </div>
+
+      <h2 className="text-xl font-bold text-[#1F2933] mb-2">Booking confirmed</h2>
+
+      {/* Booking reference chip */}
+      <span className="inline-block text-xs font-medium text-gray-500 bg-gray-100 border border-[#E4E7E4] px-3 py-1 rounded-full mb-6">
+        Booking ref: {bookingRef(booking)}
+      </span>
+
+      {/* Detail table */}
+      <div className="border border-[#E4E7E4] rounded-xl overflow-hidden mb-4 text-sm text-left">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7E4]">
+          <span className="text-gray-500">Expert</span>
+          <span className="font-medium text-[#1F2933] text-right">{expertName}</span>
         </div>
-      )}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7E4]">
+          <span className="text-gray-500">Service</span>
+          <span className="font-medium text-[#1F2933] text-right max-w-[60%]">{booking.service?.title}</span>
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7E4]">
+          <span className="text-gray-500">Date &amp; time</span>
+          <span className="font-medium text-[#1F2933] text-right">{formatDate(booking.scheduled_at)}</span>
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7E4]">
+          <span className="text-gray-500">Format</span>
+          <span className="font-medium text-[#1F2933]">
+            {formatLabel}{duration ? ` · ${duration}` : ''}
+          </span>
+        </div>
+        {booking.format === 'IN_PERSON' && location && (
+          <div className="flex items-start justify-between px-4 py-3 border-b border-[#E4E7E4]">
+            <span className="text-gray-500 flex-shrink-0">Location</span>
+            <span className="font-medium text-[#1F2933] text-right ml-4">{location}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between px-4 py-3">
+          <span className="text-gray-500">Total paid</span>
+          <span className="font-semibold text-[#445446]">
+            {formatPrice(booking.amount, booking.currency || 'EUR')}
+          </span>
+        </div>
+      </div>
+
+      {/* Email + session link notice */}
+      <div className="flex items-start gap-3 px-4 py-3 bg-[#445446]/5 border border-[#445446]/20 rounded-xl mb-6 text-left">
+        <svg className="w-4 h-4 text-[#445446] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+        </svg>
+        <p className="text-xs text-[#445446] leading-relaxed">
+          Confirmation email sent. Your expert will share a meeting link at least 24 hours before your session.
+        </p>
+      </div>
+
+      <Link to="/dashboard/parent/upcoming"
+        className="block w-full bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold py-3 rounded-lg transition-colors text-center">
+        View my bookings
+      </Link>
     </div>
-    <Link to="/dashboard/parent/upcoming"
-      className="inline-block bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold px-6 py-3 rounded-lg transition-colors">
-      View My Bookings
-    </Link>
-  </div>
-);
+  );
+};
 
 const FailedBanner = ({ status }) => (
   <div className="text-center">

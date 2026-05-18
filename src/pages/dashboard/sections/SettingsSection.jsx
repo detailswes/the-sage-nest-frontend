@@ -377,7 +377,6 @@ const NotificationPreferencesCard = () => {
   const [prefs, setPrefs] = useState({
     notify_new_booking: true,
     notify_cancellation: true,
-    notify_reminder: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -452,12 +451,6 @@ const NotificationPreferencesCard = () => {
             description="Receive an email when a parent cancels a booking."
             checked={prefs.notify_cancellation}
             onChange={(v) => handleToggle("notify_cancellation", v)}
-          />
-          <ToggleRow
-            label="Session reminders"
-            description="Receive reminder emails 24 hours and 1 hour before each session."
-            checked={prefs.notify_reminder}
-            onChange={(v) => handleToggle("notify_reminder", v)}
           />
           <ToggleRow
             label="Message received"
