@@ -340,16 +340,16 @@ const ServicesSection = () => {
               <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Description</label>
               <textarea name="description" value={form.description} onChange={handleChange} rows={2}
                 placeholder="Brief description of what this service includes…"
-                maxLength={300}
+                maxLength={500}
                 className={`${inputClass(!!formErrors.description)} resize-none`} />
               {formErrors.description && <p className="mt-1.5 text-xs text-red-500">{formErrors.description}</p>}
               <div className="flex justify-end mt-1.5">
                 <p className={`text-xs tabular-nums ${
-                  form.description.length >= 280 ? 'text-red-500' :
-                  form.description.length >= 240 ? 'text-amber-500' :
+                  form.description.length >= 480 ? 'text-red-500' :
+                  form.description.length >= 400 ? 'text-amber-500' :
                   'text-gray-400'
                 }`}>
-                  {form.description.length}/300
+                  {form.description.length}/500
                 </p>
               </div>
             </div>

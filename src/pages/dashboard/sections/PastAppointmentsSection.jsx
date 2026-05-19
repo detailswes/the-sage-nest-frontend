@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getPastAppointments, saveExpertNote, markBookingComplete } from '../../../api/bookingApi';
+import { getPastAppointments, saveExpertNote } from '../../../api/bookingApi';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(iso) {
@@ -117,30 +117,12 @@ const InlineNoteEditor = ({ bookingId, initialNote, onSaved }) => {
 };
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
-const Row = ({ booking, onComplete }) => {
-  const [expanded,   setExpanded]   = useState(false);
-  const [completing, setCompleting] = useState(false);
-  const [note,       setNote]       = useState(booking.expert_note || '');
-  const [status,     setStatus]     = useState(resolveStatus(booking));
+const Row = ({ booking }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [note,     setNote]     = useState(booking.expert_note || '');
+  const status = resolveStatus(booking);
 
   const isOnline = booking.format === 'ONLINE';
-  // True when the session is past but the expert hasn't explicitly marked it complete yet
-  const canMarkComplete = booking.status === 'CONFIRMED' && status === 'COMPLETED';
-
-  const handleComplete = async () => {
-    setCompleting(true);
-    try {
-      const res = await markBookingComplete(booking.id, note);
-      setStatus('COMPLETED');
-      if (res.expert_note !== undefined) setNote(res.expert_note || '');
-      if (onComplete) onComplete(booking.id);
-    } catch {
-      // leave state as-is
-    } finally {
-      setCompleting(false);
-    }
-  };
-
   const duration = booking.duration_minutes || booking.service?.duration_minutes || 0;
 
   return (
@@ -193,23 +175,6 @@ const Row = ({ booking, onComplete }) => {
         {/* Actions */}
         <td className="px-4 py-3 whitespace-nowrap">
           <div className="flex items-center gap-2">
-            {canMarkComplete && (
-              <button
-                onClick={handleComplete}
-                disabled={completing}
-                title="Mark as complete"
-                className="flex items-center gap-1 text-xs font-medium text-[#445446] border border-[#445446]/30 bg-[#445446]/5 hover:bg-[#445446]/10 px-2 py-1 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {completing ? (
-                  <span className="w-3 h-3 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-                ) : (
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                  </svg>
-                )}
-                Complete
-              </button>
-            )}
             <button
               onClick={() => setExpanded((v) => !v)}
               title={note ? 'View / edit notes' : 'Add notes'}

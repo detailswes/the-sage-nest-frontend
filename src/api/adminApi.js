@@ -80,6 +80,10 @@ export const manuallyVerifyParent     = (id) => api.post(`/admin/parents/${id}/v
 export const gdprDeleteParent   = (id, confirmEmail) =>
   api.post(`/admin/parents/${id}/gdpr-delete`, { confirm_email: confirmEmail }).then((r) => r.data);
 
+// ── Compliance ────────────────────────────────────────────────────────────────
+export const getParentComplianceList = (params = {}) =>
+  api.get('/admin/compliance/parents', { params }).then((r) => r.data);
+
 // ── Transactions (Payment Overview) ──────────────────────────────────────────
 export const listTransactions          = (params = {}) => api.get('/admin/transactions', { params }).then((r) => r.data);
 export const exportTransactionsCsv     = (params = {}) =>

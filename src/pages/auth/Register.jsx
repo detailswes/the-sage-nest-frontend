@@ -46,6 +46,7 @@ const Register = () => {
   } = useAuthForm({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
 
   const [privacyPolicyAccepted, setPrivacyPolicyAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted]                 = useState(false);
   const [marketingConsent, setMarketingConsent]           = useState(false);
 
   const handleSubmit = async (e) => {
@@ -61,16 +62,26 @@ const Register = () => {
       setErrors((prev) => ({ ...prev, privacyPolicy: 'You must accept the Privacy Policy to continue.' }));
       return;
     }
+    if (!termsAccepted) {
+      setErrors((prev) => ({ ...prev, termsConditions: 'You must accept the Terms & Conditions to continue.' }));
+      return;
+    }
 
     setLoading(true);
     try {
+      const detectedTz = (() => {
+        try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; }
+      })();
+
       const payload = {
         name: form.name,
         email: form.email,
         password: form.password,
         role: activeRole,
         privacyPolicyAccepted: true,
+        termsAccepted: true,
         marketingConsent,
+        timezone: detectedTz,
       };
       if (activeRole === 'PARENT') payload.phone = form.phone.trim();
 
@@ -242,9 +253,7 @@ const Register = () => {
                 errors.phone ? 'border-red-400' : 'border-[#E4E7E4]'
               }`}
             />
-            {errors.phone && (
               <p className="mt-1.5 text-xs text-red-500">{errors.phone}</p>
-            )}
           </div>
         )}
 
@@ -303,8 +312,9 @@ const Register = () => {
           )}
         </div>
 
-        {/* Privacy Policy — required */}
+        {/* Required consents + optional marketing */}
         <div className="space-y-3 pt-1">
+          {/* Privacy Policy — required */}
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -324,7 +334,30 @@ const Register = () => {
             </span>
           </label>
           {errors.privacyPolicy && (
-            <p className="text-xs text-red-500 -mt-1">{errors.privacyPolicy}</p>
+            <p className="text-xs text-red-500 -mt-1 ml-7">{errors.privacyPolicy}</p>
+          )}
+
+          {/* Terms & Conditions — required */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => {
+                setTermsAccepted(e.target.checked);
+                if (e.target.checked) setErrors((prev) => { const { termsConditions: _, ...rest } = prev; return rest; });
+              }}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+            />
+            <span className="text-sm text-[#1F2933] leading-snug">
+              I have read and agree to the{' '}
+              <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
+                Terms &amp; Conditions
+              </a>
+              <span className="text-red-500 ml-0.5">*</span>
+            </span>
+          </label>
+          {errors.termsConditions && (
+            <p className="text-xs text-red-500 -mt-1 ml-7">{errors.termsConditions}</p>
           )}
 
           {/* Marketing consent — optional */}
@@ -343,7 +376,7 @@ const Register = () => {
 
         <button
           type="submit"
-          disabled={loading || !privacyPolicyAccepted}
+          disabled={loading || !privacyPolicyAccepted || !termsAccepted}
           className="w-full bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors duration-200 text-sm mt-2"
         >
           {loading

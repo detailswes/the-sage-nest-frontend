@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
-import CancellationPolicy from '../../components/booking/CancellationPolicy';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { abandonBooking } from '../../api/bookingApi';
 
 function formatPrice(price, currency = 'EUR') {
   return new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(price));
@@ -20,11 +20,13 @@ const CheckoutPage = () => {
   const {
     bookingId, clientSecret,
     expertName, serviceTitle, amount, currency = 'EUR', scheduledAt, format, sessionLocation,
+    restore,
   } = state || {};
 
-  const [stripeReady, setStripeReady]   = useState(false);
-  const [paying,      setPaying]        = useState(false);
-  const [payError,    setPayError]      = useState('');
+  const [stripeReady,  setStripeReady]  = useState(false);
+  const [paying,       setPaying]       = useState(false);
+  const [payError,     setPayError]     = useState('');
+  const [abandoning,   setAbandoning]   = useState(false);
   const stripeRef         = useRef(null);
   const elementsRef       = useRef(null);
   const paymentElementRef = useRef(null);
@@ -84,6 +86,16 @@ const CheckoutPage = () => {
     };
   }, [clientSecret]);
 
+  const handleEditBooking = async () => {
+    setAbandoning(true);
+    try {
+      await abandonBooking(bookingId);
+    } catch {
+      // If abandon fails the PI will expire naturally — don't block the user
+    }
+    navigate('/dashboard/parent/browse', { state: { restore } });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!stripeRef.current || !elementsRef.current) return;
@@ -116,13 +128,21 @@ const CheckoutPage = () => {
     <div className="min-h-screen bg-[#F5F7F5] flex flex-col items-center justify-start py-10 px-4">
       {/* Header */}
       <div className="w-full max-w-lg mb-6 flex items-center gap-3">
-        <Link to="/dashboard/parent/browse"
-          className="text-sm text-gray-500 hover:text-[#1F2933] flex items-center gap-1 transition-colors">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
-          Cancel
-        </Link>
+        <button
+          type="button"
+          onClick={handleEditBooking}
+          disabled={abandoning || paying}
+          className="text-sm text-gray-500 hover:text-[#1F2933] flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {abandoning ? (
+            <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin inline-block" />
+          ) : (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+          )}
+          {abandoning ? 'Releasing slot…' : 'Edit booking'}
+        </button>
         <span className="text-[#1F2933] font-bold text-lg tracking-tight ml-auto">Sage Nest</span>
       </div>
 
@@ -173,18 +193,13 @@ const CheckoutPage = () => {
             </div>
           )}
 
-          {/* Cancellation policy — visible before payment is committed */}
-          <div className="mb-4">
-            <CancellationPolicy />
-          </div>
-
           {/* Currency notice */}
           <div className="mb-4 p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
             Prices are set by the expert in their local currency ({currency}). Your bank may apply a conversion fee if this differs from your card currency.
           </div>
 
           <button type="submit"
-            disabled={!stripeReady || paying}
+            disabled={!stripeReady || paying || abandoning}
             className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
             {paying ? 'Processing…' : `Pay ${formatPrice(amount, currency)}`}
           </button>

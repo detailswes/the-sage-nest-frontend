@@ -377,7 +377,6 @@ const NotificationPreferencesCard = () => {
   const [prefs, setPrefs] = useState({
     notify_new_booking: true,
     notify_cancellation: true,
-    notify_reminder: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -452,12 +451,6 @@ const NotificationPreferencesCard = () => {
             description="Receive an email when a parent cancels a booking."
             checked={prefs.notify_cancellation}
             onChange={(v) => handleToggle("notify_cancellation", v)}
-          />
-          <ToggleRow
-            label="Session reminders"
-            description="Receive reminder emails 24 hours and 1 hour before each session."
-            checked={prefs.notify_reminder}
-            onChange={(v) => handleToggle("notify_reminder", v)}
           />
           <ToggleRow
             label="Message received"
@@ -858,6 +851,7 @@ const TwoFactorCard = () => {
                 const val = e.target.value.replace(/\D/g, "").slice(0, 6);
                 setCode(val);
                 if (codeError) setCodeError("");
+                if (val.length === 6) doVerify(val);
               }}
               placeholder="000000"
               className={`w-full px-4 py-3 rounded-lg border text-sm text-center tracking-[0.5em] font-mono text-[#1F2933] placeholder-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${

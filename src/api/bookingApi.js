@@ -33,6 +33,12 @@ export const getAvailableSlots = (expertId, date, serviceId) =>
     .get(`${BASE_URL}/availability/slots`, { params: { expertId, date, serviceId } })
     .then((r) => r.data);
 
+/** Returns the set of dates in a given month that have ≥1 available slot */
+export const getAvailableDatesInMonth = (expertId, year, month, serviceId) =>
+  axios
+    .get(`${BASE_URL}/availability/available-dates`, { params: { expertId, year, month, serviceId } })
+    .then((r) => new Set(r.data.available_dates));
+
 // ─── Expert dashboard ─────────────────────────────────────────────────────────
 
 export const getUpcomingAppointments = () =>
@@ -61,6 +67,24 @@ export const expertCancelBooking = (id) =>
 export const verifyPayment = (id) =>
   api.post(`/bookings/${id}/verify-payment`).then((r) => r.data);
 
+/** Abandon a PENDING_PAYMENT booking — cancels the PaymentIntent and frees the slot */
+export const abandonBooking = (id) =>
+  api.post(`/bookings/${id}/abandon`).then((r) => r.data);
+
 /** Get the current T&C version and whether it has changed since the user last accepted */
 export const getCurrentTcVersion = () =>
   api.get('/bookings/tc-version').then((r) => r.data);
+
+/** Record acceptance of the current T&C version — idempotent */
+export const acceptTcApi = () =>
+  api.post('/bookings/accept-tc').then((r) => r.data);
+
+// ─── Slot locking ─────────────────────────────────────────────────────────────
+
+/** Reserve a slot for SLOT_LOCK_MINUTES; returns { lockId, expiresAt } */
+export const lockSlotApi = (expertId, slotStart) =>
+  api.post('/availability/lock-slot', { expertId, slotStart }).then((r) => r.data);
+
+/** Release a previously acquired slot lock */
+export const releaseLockApi = (lockId) =>
+  api.delete(`/availability/lock-slot/${lockId}`).then((r) => r.data);
