@@ -35,6 +35,7 @@ import BookingsManagementSection from "./pages/dashboard/sections/BookingsManage
 import AdminExpertDetailSection from "./pages/dashboard/sections/AdminExpertDetailSection";
 import AdminParentDetailSection from "./pages/dashboard/sections/AdminParentDetailSection";
 import PaymentsOverviewSection from "./pages/dashboard/sections/PaymentsOverviewSection";
+import AdminComplianceSection from "./pages/dashboard/sections/AdminComplianceSection";
 
 function App() {
   return (
@@ -148,6 +149,7 @@ function App() {
             <Route path="bookings"        element={<BookingsManagementSection />} />
             <Route path="payments"        element={<PaymentsOverviewSection />} />
             <Route path="legal-documents" element={<LegalDocumentsSection />} />
+            <Route path="compliance"      element={<AdminComplianceSection />} />
           </Route>
 
           {/* Stripe redirect pages — require EXPERT auth */}

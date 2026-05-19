@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getMyBookings, cancelBooking, rescheduleBooking, verifyPayment, getAvailableSlots, getAvailableDatesInMonth } from '../../api/bookingApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
+import CancellationPolicy from '../../components/booking/CancellationPolicy';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(isoStr) {
@@ -67,6 +68,193 @@ function statusKey(booking) {
   return booking.status;
 }
 
+// ─── Detail sheet sub-components ─────────────────────────────────────────────
+const DetailRow = ({ label, value, valueClass }) => (
+  <div className="flex items-start justify-between gap-4">
+    <span className="text-xs text-gray-400 flex-shrink-0 pt-px">{label}</span>
+    <span className={`text-sm text-right leading-snug ${valueClass || 'text-[#1F2933]'}`}>{value}</span>
+  </div>
+);
+
+// ─── Booking Detail Sheet ─────────────────────────────────────────────────────
+const BookingDetailSheet = ({ booking, onClose }) => {
+  const [copied, setCopied] = useState(false);
+
+  const ref       = `SN-${new Date(booking.created_at).getFullYear()}-${String(booking.id).padStart(5, '0')}`;
+  const currency  = booking.currency || 'EUR';
+  const expertName = booking.expert?.user?.account_deleted
+    ? 'Deleted specialist'
+    : (booking.expert?.user?.name || 'Expert');
+  const duration  = formatDuration(booking.service?.duration_minutes);
+  const hrs       = hoursUntil(booking.scheduled_at);
+  const isUpcoming = booking.status === 'CONFIRMED' && hrs > 0;
+  const sk        = statusKey(booking);
+  const location  = [
+    booking.expert?.address_street,
+    booking.expert?.address_city,
+    booking.expert?.address_postcode,
+  ].filter(Boolean).join(', ');
+
+  const fmtCurrency = (n) =>
+    n ? new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(n)) : null;
+
+  const paymentStatusLabel =
+    booking.status === 'PENDING_PAYMENT' ? 'Awaiting payment'
+    : booking.status === 'CANCELLED'     ? 'Not charged'
+    : 'Paid';
+
+  const copy = () => {
+    navigator.clipboard?.writeText(ref)
+      .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })
+      .catch(() => {});
+  };
+
+  // Lock body scroll while sheet is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="relative w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[#E4E7E4] flex-shrink-0">
+          <h2 className="text-base font-semibold text-[#1F2933]">Booking Details</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-5 py-5 pb-8 space-y-6">
+
+          {/* Booking reference */}
+          <div className="flex items-center justify-between px-4 py-3 bg-[#F5F7F5] rounded-xl border border-[#E4E7E4]">
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Booking reference</p>
+              <p className="text-sm font-mono font-bold text-[#1F2933] tracking-widest">{ref}</p>
+            </div>
+            <button
+              onClick={copy}
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
+                copied
+                  ? 'text-green-700 border-green-200 bg-green-50'
+                  : 'text-[#445446] border-[#445446]/30 hover:bg-[#445446]/5'
+              }`}
+            >
+              {copied ? (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                  </svg>
+                  Copied
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.621c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
+                  </svg>
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Status */}
+          <div>
+            <span className={`inline-flex text-xs font-medium px-2.5 py-1 rounded-full border ${STATUS_STYLES[sk] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+              {STATUS_LABELS[sk] || booking.status}
+            </span>
+          </div>
+
+          {/* Specialist */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-[#F5F7F5] rounded-xl border border-[#E4E7E4]">
+            <ExpertAvatar name={expertName} profileImage={booking.expert?.profile_image} size="md" />
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Specialist</p>
+              <p className="text-sm font-semibold text-[#1F2933]">{expertName}</p>
+            </div>
+          </div>
+
+          {/* Session details */}
+          <div>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Session</p>
+            <div className="space-y-3">
+              <DetailRow label="Service"  value={booking.service?.title || 'Session'} />
+              <DetailRow label="Date"     value={formatDate(booking.scheduled_at)} />
+              <DetailRow label="Time"     value={formatTime(booking.scheduled_at)} />
+              {duration && <DetailRow label="Duration" value={duration} />}
+              <DetailRow
+                label="Format"
+                value={booking.format === 'ONLINE' ? 'Online' : 'In-Person'}
+              />
+              {booking.format === 'IN_PERSON' && location && (
+                <DetailRow label="Location" value={location} />
+              )}
+            </div>
+          </div>
+
+          {/* Payment */}
+          {(booking.amount || booking.status === 'PENDING_PAYMENT') && (
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Payment</p>
+              <div className="space-y-3">
+                {booking.amount && (
+                  <DetailRow label="Amount paid" value={fmtCurrency(booking.amount)} />
+                )}
+                <DetailRow label="Payment status" value={paymentStatusLabel} />
+                {(booking.status === 'REFUNDED' || booking.refund_amount) && (
+                  <DetailRow
+                    label="Refund issued"
+                    value={fmtCurrency(booking.refund_amount || booking.amount)}
+                    valueClass="text-green-600 font-medium"
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Cancellation reason */}
+          {booking.cancellation_reason && (
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Cancellation</p>
+              <p className="text-sm text-gray-600 leading-relaxed">{booking.cancellation_reason}</p>
+            </div>
+          )}
+
+          {/* Cancellation policy — only for upcoming confirmed sessions */}
+          {isUpcoming && (
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Cancellation policy</p>
+              <CancellationPolicy compact />
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Expert Avatar ────────────────────────────────────────────────────────────
 const ExpertAvatar = ({ name, profileImage, size = 'md' }) => {
   const [imgError, setImgError] = useState(false);
@@ -91,7 +279,7 @@ const ExpertAvatar = ({ name, profileImage, size = 'md' }) => {
 };
 
 // ─── Booking Card ─────────────────────────────────────────────────────────────
-const BookingCard = ({ booking, onCancel, onReschedule }) => {
+const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
   // ── Cancel state ────────────────────────────────────────────────────────
   const [showCancel,  setShowCancel]  = useState(false);
   const [reason,      setReason]      = useState('');
@@ -197,8 +385,8 @@ const BookingCard = ({ booking, onCancel, onReschedule }) => {
   return (
     <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
 
-      {/* ── Card body ── */}
-      <div className="p-5">
+      {/* ── Card body — tappable to open detail sheet ── */}
+      <div className="p-5 cursor-pointer hover:bg-[#F5F7F5]/60 transition-colors" onClick={() => onViewDetails(booking)}>
         <div className="flex items-start gap-4">
 
           {/* Expert avatar */}
@@ -280,6 +468,14 @@ const BookingCard = ({ booking, onCancel, onReschedule }) => {
             </div>
           ) : null;
         })()}
+
+        {/* View details hint */}
+        <div className="mt-4 flex items-center justify-end gap-1 text-xs text-gray-400">
+          <span>View details</span>
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+        </div>
       </div>
 
       {/* ── Reschedule success banner ── */}
@@ -489,7 +685,7 @@ const BookingCard = ({ booking, onCancel, onReschedule }) => {
 };
 
 // ─── Past Booking Card ────────────────────────────────────────────────────────
-const PastBookingCard = ({ booking }) => {
+const PastBookingCard = ({ booking, onViewDetails }) => {
   const navigate   = useNavigate();
   const expertName = booking.expert?.user?.name || 'Expert';
   const duration   = formatDuration(booking.service?.duration_minutes);
@@ -514,8 +710,8 @@ const PastBookingCard = ({ booking }) => {
   return (
     <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden opacity-90">
 
-      {/* ── Card body ── */}
-      <div className="p-5">
+      {/* ── Card body — tappable to open detail sheet ── */}
+      <div className="p-5 cursor-pointer hover:bg-[#F5F7F5]/60 transition-colors" onClick={() => onViewDetails(booking)}>
         <div className="flex items-start gap-4">
 
           {/* Expert avatar */}
@@ -622,6 +818,14 @@ const PastBookingCard = ({ booking }) => {
                 </p>
               </div>
             )}
+
+            {/* View details hint */}
+            <div className="mt-3 flex items-center justify-end gap-1 text-xs text-gray-400">
+              <span>View details</span>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -674,9 +878,10 @@ const PastBookingCard = ({ booking }) => {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 const MyBookingsPage = ({ view = 'upcoming' }) => {
-  const [bookings, setBookings] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState('');
+  const [bookings,        setBookings]        = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState('');
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   useEffect(() => {
     getMyBookings()
@@ -780,10 +985,17 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
       ) : (
         <div className="space-y-4">
           {isUpcoming
-            ? displayed.map((b) => <BookingCard key={b.id} booking={b} onCancel={handleCancel} onReschedule={handleReschedule} />)
-            : displayed.map((b) => <PastBookingCard key={b.id} booking={b} />)
+            ? displayed.map((b) => <BookingCard key={b.id} booking={b} onCancel={handleCancel} onReschedule={handleReschedule} onViewDetails={setSelectedBooking} />)
+            : displayed.map((b) => <PastBookingCard key={b.id} booking={b} onViewDetails={setSelectedBooking} />)
           }
         </div>
+      )}
+
+      {selectedBooking && (
+        <BookingDetailSheet
+          booking={selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+        />
       )}
     </div>
   );

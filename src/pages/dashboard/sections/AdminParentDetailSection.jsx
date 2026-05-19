@@ -223,6 +223,7 @@ const AdminParentDetailSection = () => {
   const TABS = [
     { key: "overview",  label: "Overview" },
     { key: "bookings",  label: `Bookings (${parent._count?.bookings_as_parent ?? bookings.length})` },
+    { key: "consents",  label: "Legal Consents" },
     { key: "activity",  label: "Activity" },
   ];
 
@@ -350,6 +351,122 @@ const AdminParentDetailSection = () => {
               </div>
             </div>
           )}
+
+          {/* ── Legal Consents tab ───────────────────────────────────── */}
+          {activeTab === "consents" && (() => {
+            const lc = parent.legal_consents;
+            if (!lc) return <p className="text-sm text-gray-400 py-8 text-center">No consent data available.</p>;
+
+            const fmtDate = (iso) =>
+              iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+
+            const ComplianceBadge = ({ ok }) =>
+              ok ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                  Up to date
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
+                  Needs update
+                </span>
+              );
+
+            return (
+              <div className="space-y-5">
+                {/* Summary cards */}
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: "Privacy Policy", current: lc.current_pp_version, accepted: lc.pp_acceptances[0]?.version ?? null, at: lc.pp_acceptances[0]?.accepted_at ?? null, ok: lc.pp_compliant },
+                    { label: "Terms & Conditions", current: lc.current_tc_version, accepted: lc.tc_acceptances[0]?.version ?? lc.tc_at_registration?.tc_version ?? null, at: lc.tc_acceptances[0]?.accepted_at ?? lc.tc_at_registration?.accepted_at ?? null, ok: lc.tc_compliant },
+                  ].map(({ label, current, accepted, at, ok }) => (
+                    <div key={label} className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm px-5 py-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-semibold text-[#1F2933]">{label}</p>
+                        <ComplianceBadge ok={ok} />
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Current version</span>
+                          <span className="font-medium text-[#1F2933]">{current ?? "—"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Accepted version</span>
+                          <span className={`font-medium ${accepted && accepted === current ? "text-green-700" : "text-red-600"}`}>
+                            {accepted ?? "Never accepted"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Accepted on</span>
+                          <span className="font-medium text-[#1F2933]">{fmtDate(at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Privacy Policy history */}
+                <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm px-5 py-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Privacy Policy — Acceptance History</p>
+                  {lc.pp_acceptances.length === 0 ? (
+                    <p className="text-sm text-gray-400">No Privacy Policy acceptances recorded.</p>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead><tr className="border-b border-[#E4E7E4]">
+                        {["Version", "Accepted on", "Marketing consent"].map((h) => (
+                          <th key={h} className="text-left text-gray-400 font-semibold pb-2 pr-4">{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody className="divide-y divide-[#F0F2F0]">
+                        {lc.pp_acceptances.map((a, i) => (
+                          <tr key={i}>
+                            <td className="py-2 pr-4 font-medium text-[#1F2933]">{a.version}</td>
+                            <td className="py-2 pr-4 text-gray-500">{fmtDate(a.accepted_at)}</td>
+                            <td className="py-2">
+                              {a.marketing_consent
+                                ? <span className="text-green-700 font-medium">Granted {a.marketing_accepted_at ? `· ${fmtDate(a.marketing_accepted_at)}` : ""}</span>
+                                : <span className="text-gray-400">Not granted</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                {/* T&C history */}
+                <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm px-5 py-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Terms & Conditions — Acceptance History</p>
+                  {lc.tc_at_registration && (
+                    <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                      Accepted at registration: <span className="font-medium">{lc.tc_at_registration.tc_version}</span> on {fmtDate(lc.tc_at_registration.accepted_at)}
+                    </div>
+                  )}
+                  {lc.tc_acceptances.length === 0 && !lc.tc_at_registration ? (
+                    <p className="text-sm text-gray-400">No Terms & Conditions acceptances recorded.</p>
+                  ) : lc.tc_acceptances.length === 0 ? null : (
+                    <table className="w-full text-xs">
+                      <thead><tr className="border-b border-[#E4E7E4]">
+                        {["Version", "Accepted on", "Source"].map((h) => (
+                          <th key={h} className="text-left text-gray-400 font-semibold pb-2 pr-4">{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody className="divide-y divide-[#F0F2F0]">
+                        {lc.tc_acceptances.map((a, i) => (
+                          <tr key={i}>
+                            <td className="py-2 pr-4 font-medium text-[#1F2933]">{a.version}</td>
+                            <td className="py-2 pr-4 text-gray-500">{fmtDate(a.accepted_at)}</td>
+                            <td className="py-2 text-gray-500">Version update</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── Bookings tab ─────────────────────────────────────────── */}
           {activeTab === "bookings" && (

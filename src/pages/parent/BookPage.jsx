@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { listExperts, getExpertPublic } from '../../api/expertApi';
-import { getAvailableSlots, getAvailableDatesInMonth, createBooking, getCurrentTcVersion } from '../../api/bookingApi';
+import { getAvailableSlots, getAvailableDatesInMonth, createBooking, getCurrentTcVersion, acceptTcApi, lockSlotApi, releaseLockApi } from '../../api/bookingApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
@@ -183,6 +183,14 @@ const BookPage = () => {
   const [tcIsFirstBooking,     setTcIsFirstBooking]     = useState(false);
   const [tcModalOpen,          setTcModalOpen]          = useState(false);
 
+  // Slot locking
+  const [lockId,        setLockId]        = useState(null);
+  const [lockExpiresAt, setLockExpiresAt] = useState(null);
+  const [lockSecsLeft,  setLockSecsLeft]  = useState(null);
+  const [locking,       setLocking]       = useState(false);
+  const [lockErr,       setLockErr]       = useState('');
+  const lockIdRef = useRef(null); // stable ref for cleanup callbacks
+
   const summaryRef = useRef(null);
 
   // Restore state when returning from checkout via "Edit booking"
@@ -194,6 +202,35 @@ const BookPage = () => {
     if (fmt)      setSelectedFormat(fmt);
     if (expert && service) setStep(STEPS.SLOT);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Release any active lock when component unmounts (page navigation)
+  useEffect(() => {
+    return () => {
+      if (lockIdRef.current) {
+        releaseLockApi(lockIdRef.current).catch(() => {});
+        lockIdRef.current = null;
+      }
+    };
+  }, []);
+
+  // Countdown timer — ticks every second while a lock is held
+  useEffect(() => {
+    if (!lockExpiresAt) { setLockSecsLeft(null); return; }
+    const tick = () => {
+      const secs = Math.max(0, Math.round((lockExpiresAt.getTime() - Date.now()) / 1000));
+      setLockSecsLeft(secs);
+      if (secs === 0) {
+        lockIdRef.current = null;
+        setLockId(null);
+        setLockExpiresAt(null);
+        setSelectedSlot(null);
+        setLockErr('Your slot reservation expired. Please select a time again.');
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [lockExpiresAt]);
 
   // Scroll the booking summary into view whenever a slot is selected
   useEffect(() => {
@@ -232,6 +269,14 @@ const BookPage = () => {
   // Load slots when date or service changes (step = SLOT)
   const loadSlots = useCallback(async () => {
     if (!selectedExpert || !selectedService || !selectedDate) return;
+    // Release active lock whenever the date (or service) changes
+    if (lockIdRef.current) {
+      releaseLockApi(lockIdRef.current).catch(() => {});
+      lockIdRef.current = null;
+      setLockId(null);
+      setLockExpiresAt(null);
+      setLockErr('');
+    }
     setSlotsLoading(true);
     setSelectedSlot(null);
     try {
@@ -254,6 +299,39 @@ const BookPage = () => {
     setSelectedExpert(expert);
     setSelectedService(null);
     setSelectedSlot(null);
+    setStep(STEPS.SERVICE);
+  };
+
+  const handleSelectSlot = async (slot) => {
+    if (locking) return;
+    setLocking(true);
+    setLockErr('');
+    try {
+      const { lockId: id, expiresAt } = await lockSlotApi(selectedExpert.id, slot.start);
+      lockIdRef.current = id;
+      setLockId(id);
+      setLockExpiresAt(new Date(expiresAt));
+      setSelectedSlot(slot);
+    } catch (err) {
+      if (err.response?.status === 409) {
+        setLockErr('This slot was just reserved by another parent. Please select a different time.');
+      } else {
+        setLockErr('Could not reserve this slot. Please try again.');
+      }
+      setSelectedSlot(null);
+    } finally {
+      setLocking(false);
+    }
+  };
+
+  const handleBackToServices = () => {
+    if (lockIdRef.current) {
+      releaseLockApi(lockIdRef.current).catch(() => {});
+      lockIdRef.current = null;
+      setLockId(null);
+      setLockExpiresAt(null);
+      setLockErr('');
+    }
     setStep(STEPS.SERVICE);
   };
 
@@ -289,8 +367,12 @@ const BookPage = () => {
         serviceId:   selectedService.id,
         scheduledAt: selectedSlot.start,
         format:      selectedFormat,
-        tcAccepted:  true,
+        lockId,
       });
+      // Lock was consumed atomically inside createBooking — clear local state
+      lockIdRef.current = null;
+      setLockId(null);
+      setLockExpiresAt(null);
       const detail = expertDetail || selectedExpert;
       const sessionLocation = selectedFormat === 'IN_PERSON'
         ? [detail?.address_street, detail?.address_city, detail?.address_postcode]
@@ -331,8 +413,13 @@ const BookPage = () => {
     proceedToPayment();
   };
 
-  const handleTcAccept = () => {
+  const handleTcAccept = async () => {
     setTcModalOpen(false);
+    try {
+      await acceptTcApi();
+    } catch {
+      // Non-fatal — createBooking will reject if acceptance wasn't recorded
+    }
     setTcAcceptanceRequired(false);
     proceedToPayment();
   };
@@ -466,7 +553,7 @@ const BookPage = () => {
         />
       )}
       {/* Back */}
-      <button onClick={() => setStep(STEPS.SERVICE)}
+      <button onClick={handleBackToServices}
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
@@ -526,15 +613,19 @@ const BookPage = () => {
       ) : (
         <>
         <p className="text-xs text-gray-400 mb-2">Times shown in your local timezone.</p>
+        {lockErr && (
+          <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{lockErr}</div>
+        )}
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
           {slots.map((slot) => (
-            <button key={slot.start} onClick={() => setSelectedSlot(slot)}
-              className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all duration-150 ${
+            <button key={slot.start} onClick={() => handleSelectSlot(slot)}
+              disabled={locking}
+              className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all duration-150 disabled:opacity-60 ${
                 selectedSlot?.start === slot.start
                   ? 'bg-[#445446] text-white border-[#445446]'
                   : 'bg-white text-[#1F2933] border-[#E4E7E4] hover:border-[#445446]'
               }`}>
-              {formatSlotTime(slot.start)}
+              {locking && selectedSlot?.start !== slot.start ? formatSlotTime(slot.start) : formatSlotTime(slot.start)}
             </button>
           ))}
         </div>
@@ -552,6 +643,20 @@ const BookPage = () => {
       {selectedSlot && (
         <div ref={summaryRef} className="bg-white rounded-xl border border-[#E4E7E4] p-5 mt-2">
           <h3 className="text-sm font-semibold text-[#1F2933] mb-3">Booking summary</h3>
+
+          {/* Slot reservation countdown */}
+          {lockSecsLeft !== null && (
+            <div className={`mb-4 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
+              lockSecsLeft > 120 ? 'bg-green-50 border-green-200 text-green-700'
+              : lockSecsLeft > 30 ? 'bg-amber-50 border-amber-200 text-amber-700'
+              : 'bg-red-50 border-red-200 text-red-700'
+            }`}>
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
+              </svg>
+              Slot reserved for you — expires in {Math.floor(lockSecsLeft / 60)}:{String(lockSecsLeft % 60).padStart(2, '0')}
+            </div>
+          )}
           <div className="space-y-1 text-sm text-gray-600 mb-4">
             <p><span className="font-medium text-[#1F2933]">Expert:</span> {selectedExpert?.user?.name}</p>
             <p><span className="font-medium text-[#1F2933]">Service:</span> {selectedService?.title}</p>

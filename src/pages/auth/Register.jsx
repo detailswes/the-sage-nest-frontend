@@ -69,6 +69,10 @@ const Register = () => {
 
     setLoading(true);
     try {
+      const detectedTz = (() => {
+        try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; }
+      })();
+
       const payload = {
         name: form.name,
         email: form.email,
@@ -77,6 +81,7 @@ const Register = () => {
         privacyPolicyAccepted: true,
         termsAccepted: true,
         marketingConsent,
+        timezone: detectedTz,
       };
       if (activeRole === 'PARENT') payload.phone = form.phone.trim();
 

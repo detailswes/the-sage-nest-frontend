@@ -851,6 +851,7 @@ const TwoFactorCard = () => {
                 const val = e.target.value.replace(/\D/g, "").slice(0, 6);
                 setCode(val);
                 if (codeError) setCodeError("");
+                if (val.length === 6) doVerify(val);
               }}
               placeholder="000000"
               className={`w-full px-4 py-3 rounded-lg border text-sm text-center tracking-[0.5em] font-mono text-[#1F2933] placeholder-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${

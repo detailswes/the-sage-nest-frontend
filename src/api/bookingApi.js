@@ -74,3 +74,17 @@ export const abandonBooking = (id) =>
 /** Get the current T&C version and whether it has changed since the user last accepted */
 export const getCurrentTcVersion = () =>
   api.get('/bookings/tc-version').then((r) => r.data);
+
+/** Record acceptance of the current T&C version — idempotent */
+export const acceptTcApi = () =>
+  api.post('/bookings/accept-tc').then((r) => r.data);
+
+// ─── Slot locking ─────────────────────────────────────────────────────────────
+
+/** Reserve a slot for SLOT_LOCK_MINUTES; returns { lockId, expiresAt } */
+export const lockSlotApi = (expertId, slotStart) =>
+  api.post('/availability/lock-slot', { expertId, slotStart }).then((r) => r.data);
+
+/** Release a previously acquired slot lock */
+export const releaseLockApi = (lockId) =>
+  api.delete(`/availability/lock-slot/${lockId}`).then((r) => r.data);
