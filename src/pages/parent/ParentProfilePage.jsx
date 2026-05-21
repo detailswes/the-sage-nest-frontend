@@ -1206,13 +1206,28 @@ const DeleteAccountSection = ({ onLogout }) => {
         )}
         {!showConfirm ? (
           <div className="space-y-4">
-            <div className="text-sm text-gray-600 leading-relaxed space-y-2">
-              <p>Deleting your account will immediately and permanently remove:</p>
-              <ul className="list-disc list-inside text-gray-500 space-y-1 pl-2">
-                <li>Your name, email address, and phone number</li>
-                <li>Your password and login access</li>
-              </ul>
-              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3">
+            <div className="text-sm text-gray-600 leading-relaxed space-y-3">
+              <div>
+                <p className="font-medium text-gray-700 mb-1">Permanently deleted:</p>
+                <ul className="list-disc list-inside text-gray-500 space-y-1 pl-2">
+                  <li>Your name, email address, and phone number</li>
+                  <li>Your password and account credentials</li>
+                  <li>Any free-text content you submitted (e.g. cancellation reasons)</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-medium text-gray-700 mb-1">Retained in anonymised form:</p>
+                <ul className="list-disc list-inside text-gray-500 space-y-1 pl-2">
+                  <li>Booking records (date, service, duration, amount paid, payment reference)</li>
+                  <li>Transaction records (payment intent ID, amount, refund status)</li>
+                </ul>
+              </div>
+              <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                Your personal details will be permanently deleted. Anonymised booking
+                and payment records are retained for legal and tax purposes — these
+                cannot be used to identify you.
+              </p>
+              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 You must cancel any upcoming bookings and wait for all transactions
                 to be settled before your account can be deleted.
               </p>
@@ -1226,9 +1241,13 @@ const DeleteAccountSection = ({ onLogout }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              This action is <strong>permanent and irreversible</strong>. All
-              your personal data will be erased immediately.
+            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 space-y-1">
+              <p>This action is <strong>permanent and irreversible</strong>.</p>
+              <p className="text-red-600">
+                Your personal details will be permanently deleted. Anonymised booking
+                and payment records are retained for legal and tax purposes — these
+                cannot be used to identify you.
+              </p>
             </div>
             <Field label="Enter your password to confirm">
               <Input
