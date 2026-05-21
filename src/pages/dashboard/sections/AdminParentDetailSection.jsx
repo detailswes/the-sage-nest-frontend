@@ -762,14 +762,29 @@ const AdminParentDetailSection = () => {
 
               return (
                 <>
-                  <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-700 space-y-1">
-                    <p className="font-semibold">This action is irreversible. It will:</p>
-                    <ul className="list-disc list-inside space-y-0.5 text-red-600">
-                      <li>Invalidate all active sessions immediately</li>
-                    </ul>
-                    <ul className="list-disc list-inside space-y-0.5 text-red-600">
-                      <li>Permanently delete all the personal data</li>
-                    </ul>
+                  <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-700 space-y-2">
+                    <p className="font-semibold">This action is irreversible.</p>
+                    <div>
+                      <p className="font-medium mb-0.5">Permanently deleted:</p>
+                      <ul className="list-disc list-inside space-y-0.5 text-red-600">
+                        <li>Name, email address, and phone number</li>
+                        <li>Password and account credentials</li>
+                        <li>Free-text content (e.g. cancellation reasons)</li>
+                        <li>All active sessions</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium mb-0.5">Retained in anonymised form:</p>
+                      <ul className="list-disc list-inside space-y-0.5 text-red-600">
+                        <li>Booking records (date, service, duration, amount, payment reference)</li>
+                        <li>Transaction records (payment intent ID, amount, refund status)</li>
+                      </ul>
+                    </div>
+                    <p className="text-red-600 border-t border-red-200 pt-2">
+                      Your personal details will be permanently deleted. Anonymised booking
+                      and payment records are retained for legal and tax purposes — these
+                      cannot be used to identify you.
+                    </p>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
                     Type the parent's email address to confirm:{" "}
