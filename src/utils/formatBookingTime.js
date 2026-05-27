@@ -1,14 +1,8 @@
-const FORMAT_LABELS = {
-  ONLINE:    'Online',
-  IN_PERSON: 'In-Person',
-  BOTH:      'Online & In-Person',
-};
-
 // Maps a raw ServiceFormat / SessionFormat enum value to a display label.
 // Returns the value unchanged if unrecognised, and '—' for null/undefined.
-export function formatFormat(val) {
+export function formatFormat(val, t) {
   if (!val) return '—';
-  return FORMAT_LABELS[val] ?? val;
+  return t(`sessionFormat.${val}`, { defaultValue: val });
 }
 
 // Format a booking's scheduled_at in the expert's timezone with a UTC reference.
@@ -44,50 +38,50 @@ export function formatBookingTime(iso, expertTimezone) {
 // Returns a human-readable transfer/payout status label for a booking object.
 // Takes the full booking so it can inspect status, refund_status, is_disputed,
 // scheduled_at, and transfer_due_at for context-aware messaging.
-export function formatTransferStatus(booking) {
+export function formatTransferStatus(booking, t) {
   if (!booking) return '—';
 
-  const ts           = booking.transfer_status;
+  const ts            = booking.transfer_status;
   const bookingStatus = booking.status;
   const refundStatus  = booking.refund_status;
   const isDisputed    = booking.is_disputed;
-  const scheduledAt   = booking.scheduled_at ? new Date(booking.scheduled_at) : null;
+  const scheduledAt   = booking.scheduled_at  ? new Date(booking.scheduled_at)  : null;
   const transferDueAt = booking.transfer_due_at ? new Date(booking.transfer_due_at) : null;
   const now           = new Date();
 
   if (!ts) return '—';
 
-  if (ts === 'completed') return 'Payout sent';
+  if (ts === 'completed') return t('transferStatus.payoutSent');
 
-  if (ts === 'resolved') return 'Resolved — manually handled';
+  if (ts === 'resolved') return t('transferStatus.resolved');
 
-  if (ts === 'failed') return 'Failed — manual action required';
+  if (ts === 'failed') return t('transferStatus.failed');
 
   if (ts === 'skipped') {
-    if (bookingStatus === 'REFUNDED') return 'Skipped — booking refunded';
-    if (bookingStatus === 'CANCELLED') return 'Skipped — booking cancelled';
+    if (bookingStatus === 'REFUNDED') return t('transferStatus.skippedRefunded');
+    if (bookingStatus === 'CANCELLED') return t('transferStatus.skippedCancelled');
     // Fall back to refund_status when booking.status doesn't indicate why (e.g. manual DB edits)
     if (refundStatus === 'succeeded') {
       const refundAmt = booking.refund_amount != null ? parseFloat(booking.refund_amount) : null;
       const totalAmt  = booking.amount        != null ? parseFloat(booking.amount)        : null;
       if (refundAmt != null && totalAmt != null && refundAmt < totalAmt)
-        return 'Skipped — partial refund issued';
-      return 'Skipped — refunded';
+        return t('transferStatus.skippedPartialRefund');
+      return t('transferStatus.skippedRefund');
     }
-    if (refundStatus === 'pending') return 'Skipped — refund pending';
-    if (refundStatus && refundStatus !== 'none') return 'Skipped — refund issued';
-    return 'Skipped';
+    if (refundStatus === 'pending') return t('transferStatus.skippedRefundPending');
+    if (refundStatus && refundStatus !== 'none') return t('transferStatus.skippedRefundIssued');
+    return t('transferStatus.skipped');
   }
 
   if (ts === 'pending') {
-    if (isDisputed) return 'On hold — disputed';
-    if (scheduledAt && scheduledAt > now) return 'Pending — awaiting session';
+    if (isDisputed) return t('transferStatus.onHoldDisputed');
+    if (scheduledAt && scheduledAt > now) return t('transferStatus.pendingAwaitingSession');
     if (transferDueAt && transferDueAt > now) {
       const dueLabel = transferDueAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-      return `Pending — payout due ${dueLabel}`;
+      return t('transferStatus.pendingPayoutDue', { date: dueLabel });
     }
-    if (transferDueAt && transferDueAt <= now) return 'Pending — payout overdue';
-    return 'Pending transfer';
+    if (transferDueAt && transferDueAt <= now) return t('transferStatus.pendingPayoutOverdue');
+    return t('transferStatus.pendingTransfer');
   }
 
   return ts;

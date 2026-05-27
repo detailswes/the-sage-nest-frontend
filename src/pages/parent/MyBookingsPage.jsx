@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation, Trans } from 'react-i18next';
 import { getMyBookings, cancelBooking, rescheduleBooking, verifyPayment, getAvailableSlots, getAvailableDatesInMonth } from '../../api/bookingApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatDate(isoStr) {
-  return new Date(isoStr).toLocaleDateString('en-GB', {
+function formatDate(isoStr, lng = 'en') {
+  return new Date(isoStr).toLocaleDateString(lng === 'it' ? 'it-IT' : 'en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 }
@@ -38,9 +39,23 @@ function formatSlotTime(isoStr) {
   return new Date(isoStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
+function formatLocaleStr(isoStr, lng = 'en') {
+  return new Date(isoStr).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
 function expertInitials(name) {
   if (!name) return '?';
   return name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function fmtCurrency(n, currency, lng = 'en') {
+  if (!n) return null;
+  return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', {
+    style: 'currency', currency,
+  }).format(Number(n));
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -51,14 +66,6 @@ const STATUS_STYLES = {
   REFUNDED:             'bg-gray-100 text-gray-600 border-gray-200',
   REFUNDED_BY_EXPERT:   'bg-green-50 text-green-700 border-green-200',
   COMPLETED:            'bg-blue-50 text-blue-700 border-blue-200',
-};
-const STATUS_LABELS = {
-  PENDING_PAYMENT:      'Awaiting payment',
-  CONFIRMED:            'Confirmed',
-  CANCELLED:            'Cancelled',
-  REFUNDED:             'Refunded',
-  REFUNDED_BY_EXPERT:   'Cancelled by expert',
-  COMPLETED:            'Completed',
 };
 
 function statusKey(booking) {
@@ -78,30 +85,29 @@ const DetailRow = ({ label, value, valueClass }) => (
 
 // ─── Booking Detail Sheet ─────────────────────────────────────────────────────
 const BookingDetailSheet = ({ booking, onClose }) => {
+  const { t, i18n } = useTranslation('parentBookings');
+  const lng = i18n.language;
   const [copied, setCopied] = useState(false);
 
-  const ref       = `SN-${new Date(booking.created_at).getFullYear()}-${String(booking.id).padStart(5, '0')}`;
-  const currency  = booking.currency || 'EUR';
+  const ref        = `SN-${new Date(booking.created_at).getFullYear()}-${String(booking.id).padStart(5, '0')}`;
+  const currency   = booking.currency || 'EUR';
   const expertName = booking.expert?.user?.account_deleted
-    ? 'Deleted specialist'
-    : (booking.expert?.user?.name || 'Expert');
-  const duration  = formatDuration(booking.service?.duration_minutes);
-  const hrs       = hoursUntil(booking.scheduled_at);
+    ? t('detailSheet.deletedSpecialist')
+    : (booking.expert?.user?.name || t('detailSheet.deletedSpecialist'));
+  const duration   = formatDuration(booking.service?.duration_minutes);
+  const hrs        = hoursUntil(booking.scheduled_at);
   const isUpcoming = booking.status === 'CONFIRMED' && hrs > 0;
-  const sk        = statusKey(booking);
-  const location  = [
+  const sk         = statusKey(booking);
+  const location   = [
     booking.expert?.address_street,
     booking.expert?.address_city,
     booking.expert?.address_postcode,
   ].filter(Boolean).join(', ');
 
-  const fmtCurrency = (n) =>
-    n ? new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(n)) : null;
-
   const paymentStatusLabel =
-    booking.status === 'PENDING_PAYMENT' ? 'Awaiting payment'
-    : booking.status === 'CANCELLED'     ? 'Not charged'
-    : 'Paid';
+    booking.status === 'PENDING_PAYMENT' ? t('detailSheet.paymentAwaiting')
+    : booking.status === 'CANCELLED'     ? t('detailSheet.paymentNotCharged')
+    : t('detailSheet.paymentPaid');
 
   const copy = () => {
     navigator.clipboard?.writeText(ref)
@@ -109,13 +115,11 @@ const BookingDetailSheet = ({ booking, onClose }) => {
       .catch(() => {});
   };
 
-  // Lock body scroll while sheet is open
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  // Close on Escape
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handleKey);
@@ -124,15 +128,13 @@ const BookingDetailSheet = ({ booking, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Panel */}
       <div className="relative w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[#E4E7E4] flex-shrink-0">
-          <h2 className="text-base font-semibold text-[#1F2933]">Booking Details</h2>
+          <h2 className="text-base font-semibold text-[#1F2933]">{t('detailSheet.title')}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -150,7 +152,7 @@ const BookingDetailSheet = ({ booking, onClose }) => {
           {/* Booking reference */}
           <div className="flex items-center justify-between px-4 py-3 bg-[#F5F7F5] rounded-xl border border-[#E4E7E4]">
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Booking reference</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{t('detailSheet.referenceLabel')}</p>
               <p className="text-sm font-mono font-bold text-[#1F2933] tracking-widest">{ref}</p>
             </div>
             <button
@@ -166,14 +168,14 @@ const BookingDetailSheet = ({ booking, onClose }) => {
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                   </svg>
-                  Copied
+                  {t('detailSheet.copied')}
                 </>
               ) : (
                 <>
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.621c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
                   </svg>
-                  Copy
+                  {t('detailSheet.copy')}
                 </>
               )}
             </button>
@@ -182,7 +184,7 @@ const BookingDetailSheet = ({ booking, onClose }) => {
           {/* Status */}
           <div>
             <span className={`inline-flex text-xs font-medium px-2.5 py-1 rounded-full border ${STATUS_STYLES[sk] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-              {STATUS_LABELS[sk] || booking.status}
+              {t(`status.${sk}`, { defaultValue: booking.status })}
             </span>
           </div>
 
@@ -190,25 +192,25 @@ const BookingDetailSheet = ({ booking, onClose }) => {
           <div className="flex items-center gap-3 px-4 py-3 bg-[#F5F7F5] rounded-xl border border-[#E4E7E4]">
             <ExpertAvatar name={expertName} profileImage={booking.expert?.profile_image} size="md" />
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Specialist</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{t('detailSheet.specialistSection')}</p>
               <p className="text-sm font-semibold text-[#1F2933]">{expertName}</p>
             </div>
           </div>
 
           {/* Session details */}
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Session</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">{t('detailSheet.sessionSection')}</p>
             <div className="space-y-3">
-              <DetailRow label="Service"  value={booking.service?.title || 'Session'} />
-              <DetailRow label="Date"     value={formatDate(booking.scheduled_at)} />
-              <DetailRow label="Time"     value={formatTime(booking.scheduled_at)} />
-              {duration && <DetailRow label="Duration" value={duration} />}
+              <DetailRow label={t('detailSheet.serviceLabel')}  value={booking.service?.title || t('detailSheet.sessionSection')} />
+              <DetailRow label={t('detailSheet.dateLabel')}     value={formatDate(booking.scheduled_at, lng)} />
+              <DetailRow label={t('detailSheet.timeLabel')}     value={formatTime(booking.scheduled_at)} />
+              {duration && <DetailRow label={t('detailSheet.durationLabel')} value={duration} />}
               <DetailRow
-                label="Format"
-                value={booking.format === 'ONLINE' ? 'Online' : 'In-Person'}
+                label={t('detailSheet.formatLabel')}
+                value={booking.format === 'ONLINE' ? t('detailSheet.formatOnline') : t('detailSheet.formatInPerson')}
               />
               {booking.format === 'IN_PERSON' && location && (
-                <DetailRow label="Location" value={location} />
+                <DetailRow label={t('detailSheet.locationLabel')} value={location} />
               )}
             </div>
           </div>
@@ -216,16 +218,16 @@ const BookingDetailSheet = ({ booking, onClose }) => {
           {/* Payment */}
           {(booking.amount || booking.status === 'PENDING_PAYMENT') && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Payment</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">{t('detailSheet.paymentSection')}</p>
               <div className="space-y-3">
                 {booking.amount && (
-                  <DetailRow label="Amount paid" value={fmtCurrency(booking.amount)} />
+                  <DetailRow label={t('detailSheet.amountPaid')} value={fmtCurrency(booking.amount, currency, lng)} />
                 )}
-                <DetailRow label="Payment status" value={paymentStatusLabel} />
+                <DetailRow label={t('detailSheet.paymentStatus')} value={paymentStatusLabel} />
                 {(booking.status === 'REFUNDED' || booking.refund_amount) && (
                   <DetailRow
-                    label="Refund issued"
-                    value={fmtCurrency(booking.refund_amount || booking.amount)}
+                    label={t('detailSheet.refundIssued')}
+                    value={fmtCurrency(booking.refund_amount || booking.amount, currency, lng)}
                     valueClass="text-green-600 font-medium"
                   />
                 )}
@@ -236,7 +238,7 @@ const BookingDetailSheet = ({ booking, onClose }) => {
           {/* Cancellation reason */}
           {booking.cancellation_reason && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Cancellation</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('detailSheet.cancellationSection')}</p>
               <p className="text-sm text-gray-600 leading-relaxed">{booking.cancellation_reason}</p>
             </div>
           )}
@@ -244,7 +246,7 @@ const BookingDetailSheet = ({ booking, onClose }) => {
           {/* Cancellation policy — only for upcoming confirmed sessions */}
           {isUpcoming && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Cancellation policy</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('detailSheet.policySection')}</p>
               <CancellationPolicy compact />
             </div>
           )}
@@ -278,17 +280,17 @@ const ExpertAvatar = ({ name, profileImage, size = 'md' }) => {
   );
 };
 
-// ─── Booking Card ─────────────────────────────────────────────────────────────
+// ─── Booking Card (upcoming) ──────────────────────────────────────────────────
 const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
-  // ── Cancel state ────────────────────────────────────────────────────────
+  const { t, i18n } = useTranslation('parentBookings');
+  const lng = i18n.language;
+
   const [showCancel,  setShowCancel]  = useState(false);
   const [reason,      setReason]      = useState('');
   const [cancelling,  setCancelling]  = useState(false);
   const [cancelErr,   setCancelErr]   = useState('');
 
-  // ── Reschedule state ─────────────────────────────────────────────────────
   const [showReschedule,    setShowReschedule]    = useState(false);
-  // Start at the booking's own date so the calendar opens on the right month
   const [rescheduleDate,    setRescheduleDate]    = useState(
     () => new Date(booking.scheduled_at).toISOString().slice(0, 10)
   );
@@ -301,23 +303,22 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
   const [availableDates,    setAvailableDates]    = useState(undefined);
   const [loadingDates,      setLoadingDates]      = useState(false);
 
-  const hrs              = hoursUntil(booking.scheduled_at);
-  const isFuture         = hrs > 0;
-  const canCancel        = booking.status === 'CONFIRMED' && isFuture && hrs >= 12;
-  const inLockoutWindow  = booking.status === 'CONFIRMED' && isFuture && hrs < 12;
-  // Refund tier shown inside the cancel form
-  const currency     = booking.currency || 'EUR';
-  const fullAmount   = booking.amount ? new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(booking.amount)) : null;
-  const halfAmount   = booking.amount ? new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(booking.amount) / 2) : null;
-  const refundTierMsg = hrs >= 24
-    ? `You'll receive a full refund${fullAmount ? ` (${fullAmount})` : ''}.`
-    : `You'll receive a 50% refund${halfAmount ? ` (${halfAmount})` : ''} — cancellation is between 12 and 24 hours before your session.`;
-  const expertName   = booking.expert?.user?.account_deleted ? 'Deleted specialist' : (booking.expert?.user?.name || 'Expert');
-  const duration     = formatDuration(booking.service?.duration_minutes);
+  const hrs             = hoursUntil(booking.scheduled_at);
+  const isFuture        = hrs > 0;
+  const canCancel       = booking.status === 'CONFIRMED' && isFuture && hrs >= 12;
+  const inLockoutWindow = booking.status === 'CONFIRMED' && isFuture && hrs < 12;
+  const currency        = booking.currency || 'EUR';
+  const fullAmount      = fmtCurrency(booking.amount, currency, lng);
+  const halfAmount      = booking.amount ? fmtCurrency(Number(booking.amount) / 2, currency, lng) : null;
+  const refundTierMsg   = hrs >= 24
+    ? t('card.refundFull',  { amount: fullAmount  ? ` (${fullAmount})`  : '' })
+    : t('card.refundHalf',  { amount: halfAmount  ? ` (${halfAmount})`  : '' });
+  const expertName      = booking.expert?.user?.account_deleted
+    ? t('detailSheet.deletedSpecialist')
+    : (booking.expert?.user?.name || 'Expert');
+  const duration        = formatDuration(booking.service?.duration_minutes);
+  const canReschedule   = booking.status === 'CONFIRMED' && isFuture && hrs >= 12;
 
-  const canReschedule = booking.status === 'CONFIRMED' && isFuture && hrs >= 12;
-
-  // Load available slots whenever the reschedule panel is open or the date changes
   useEffect(() => {
     if (!showReschedule) return;
     setSlotsLoading(true);
@@ -328,7 +329,6 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
       .finally(() => setSlotsLoading(false));
   }, [showReschedule, rescheduleDate, booking.expert_id, booking.service_id]);
 
-  // Load available dates for the calendar month (same logic as booking flow)
   const fetchAvailableDates = useCallback(async (year, month) => {
     setLoadingDates(true);
     try {
@@ -345,14 +345,14 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
 
   const openReschedule = () => {
     setShowCancel(false);
-    setAvailableDates(undefined); // reset so calendar fetches fresh on mount
+    setAvailableDates(undefined);
     setShowReschedule(true);
   };
   const openCancel = () => { setShowReschedule(false); setShowCancel(true); };
 
   const handleConfirmCancel = async () => {
     if (!reason.trim()) {
-      setCancelErr('Please provide a reason for your cancellation.');
+      setCancelErr(t('card.reasonRequired'));
       return;
     }
     setCancelling(true);
@@ -361,7 +361,7 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
       await onCancel(booking.id, reason.trim());
       setShowCancel(false);
     } catch (err) {
-      setCancelErr(err.response?.data?.error || 'Could not cancel. Please try again.');
+      setCancelErr(err.response?.data?.error || t('card.cancelError'));
       setCancelling(false);
     }
   };
@@ -377,85 +377,71 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
       setRescheduling(false);
       setRescheduleSuccess(true);
     } catch (err) {
-      setRescheduleErr(err.response?.data?.error || 'Could not reschedule. Please try again.');
+      setRescheduleErr(err.response?.data?.error || t('card.rescheduleError'));
       setRescheduling(false);
     }
   };
 
+  const sk = statusKey(booking);
+
   return (
     <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
 
-      {/* ── Card body — tappable to open detail sheet ── */}
+      {/* Card body */}
       <div className="p-5 cursor-pointer hover:bg-[#F5F7F5]/60 transition-colors" onClick={() => onViewDetails(booking)}>
         <div className="flex items-start gap-4">
-
-          {/* Expert avatar */}
-          <ExpertAvatar
-            name={expertName}
-            profileImage={booking.expert?.profile_image}
-            size="lg"
-          />
-
-          {/* Main info */}
+          <ExpertAvatar name={expertName} profileImage={booking.expert?.profile_image} size="lg" />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
                 <p className="text-base font-semibold text-[#1F2933] leading-snug">{expertName}</p>
-                <p className="text-sm text-gray-500 mt-0.5">{booking.service?.title || 'Session'}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{booking.service?.title || t('detailSheet.sessionSection')}</p>
               </div>
-              <span className={`text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${STATUS_STYLES[statusKey(booking)] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                {STATUS_LABELS[statusKey(booking)] || booking.status}
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${STATUS_STYLES[sk] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                {t(`status.${sk}`, { defaultValue: booking.status })}
               </span>
             </div>
 
-            {/* Meta row */}
             <div className="flex flex-wrap items-center gap-2 mt-3">
-              {/* Date */}
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                 </svg>
-                <span>{formatDate(booking.scheduled_at)}</span>
+                <span>{formatDate(booking.scheduled_at, lng)}</span>
               </div>
-
-              {/* Time */}
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
                 <span>{formatTime(booking.scheduled_at)}</span>
               </div>
-
-              {/* Duration */}
               {duration && (
                 <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                   {duration}
                 </span>
               )}
-
-              {/* Format */}
               <span className={`text-xs px-2 py-0.5 rounded-full ${
                 booking.format === 'ONLINE'
                   ? 'bg-blue-50 text-blue-600'
                   : 'bg-[#445446]/10 text-[#445446]'
               }`}>
-                {booking.format === 'ONLINE' ? 'Online' : 'In-Person'}
+                {booking.format === 'ONLINE' ? t('detailSheet.formatOnline') : t('detailSheet.formatInPerson')}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Online reminder for confirmed future sessions */}
+        {/* Online reminder */}
         {booking.status === 'CONFIRMED' && booking.format === 'ONLINE' && isFuture && (
           <div className="mt-4 px-3 py-2.5 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700 flex items-start gap-2">
             <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
             </svg>
-            Your expert will share a meeting link (Zoom / Teams) before the session.
+            {t('card.onlineReminder')}
           </div>
         )}
 
-        {/* In-person location for confirmed future sessions */}
+        {/* In-person address */}
         {booking.status === 'CONFIRMED' && booking.format === 'IN_PERSON' && isFuture && (() => {
           const address = [booking.expert?.address_street, booking.expert?.address_city, booking.expert?.address_postcode].filter(Boolean).join(', ');
           return address ? (
@@ -464,21 +450,21 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
               </svg>
-              <span><span className="font-medium">Address:</span> {address}</span>
+              <span><span className="font-medium">{t('card.addressLabel')}</span> {address}</span>
             </div>
           ) : null;
         })()}
 
         {/* View details hint */}
         <div className="mt-4 flex items-center justify-end gap-1 text-xs text-gray-400">
-          <span>View details</span>
+          <span>{t('card.viewDetails')}</span>
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
         </div>
       </div>
 
-      {/* ── Reschedule success banner ── */}
+      {/* Reschedule success banner */}
       {rescheduleSuccess && (
         <div className="px-5 pb-5 pt-0">
           <div className="border-t border-[#E4E7E4] pt-4">
@@ -487,16 +473,14 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-green-800">Session rescheduled</p>
+                <p className="text-xs font-semibold text-green-800">{t('card.rescheduledTitle')}</p>
                 <p className="text-xs text-green-700 mt-0.5">
-                  Your session is now booked for{' '}
-                  <span className="font-medium">
-                    {new Date(booking.scheduled_at).toLocaleString('en-GB', {
-                      weekday: 'short', day: 'numeric', month: 'short',
-                      hour: '2-digit', minute: '2-digit',
-                    })}
-                  </span>
-                  . Confirmation emails have been sent to you and your expert.
+                  <Trans
+                    i18nKey="card.rescheduledMessage"
+                    ns="parentBookings"
+                    values={{ datetime: formatLocaleStr(booking.scheduled_at, lng) }}
+                    components={[<span />, <span className="font-medium" />]}
+                  />
                 </p>
               </div>
               <button
@@ -513,27 +497,25 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
         </div>
       )}
 
-      {/* ── Actions footer ── */}
+      {/* Actions footer */}
       {!rescheduleSuccess && (canCancel || canReschedule || inLockoutWindow) && (
         <div className="px-5 pb-5 pt-0">
           <div className="border-t border-[#E4E7E4] pt-4 space-y-3">
 
-            {/* Within 12h lockout — both actions unavailable */}
+            {/* Lockout notice */}
             {inLockoutWindow && (
               <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
                 <svg className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" />
                 </svg>
                 <div>
-                  <p className="text-xs font-medium text-amber-800">Changes no longer possible</p>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    Cancellations and reschedules are not accepted within 12 hours of your session. Please contact support if you need assistance.
-                  </p>
+                  <p className="text-xs font-medium text-amber-800">{t('card.lockoutTitle')}</p>
+                  <p className="text-xs text-amber-700 mt-0.5">{t('card.lockoutMessage')}</p>
                 </div>
               </div>
             )}
 
-            {/* ── Default action row: Reschedule + Cancel buttons ── */}
+            {/* Action row */}
             {!showReschedule && !showCancel && (canCancel || canReschedule) && (
               <div className="flex items-center gap-3 justify-end">
                 {canReschedule && (
@@ -544,7 +526,7 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                     </svg>
-                    Reschedule
+                    {t('card.rescheduleBtn')}
                   </button>
                 )}
                 {canCancel && (
@@ -552,30 +534,28 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
                     onClick={openCancel}
                     className="text-xs text-gray-400 hover:text-red-500 underline underline-offset-2 transition-colors"
                   >
-                    Cancel booking
+                    {t('card.cancelBookingBtn')}
                   </button>
                 )}
               </div>
             )}
 
-            {/* ── Reschedule panel ── */}
+            {/* Reschedule panel */}
             {showReschedule && (
               <div className="space-y-3">
-                <p className="text-xs font-semibold text-[#1F2933]">Select a new date and time</p>
+                <p className="text-xs font-semibold text-[#1F2933]">{t('card.rescheduleTitle')}</p>
 
-                {/* Current booking reference */}
                 <div className="flex items-center gap-2 px-3 py-2 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500">
                   <svg className="w-3.5 h-3.5 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                   </svg>
                   <span>
-                    Currently booked:{' '}
-                    <span className="font-medium text-[#1F2933]">
-                      {new Date(booking.scheduled_at).toLocaleString('en-GB', {
-                        weekday: 'short', day: 'numeric', month: 'short',
-                        hour: '2-digit', minute: '2-digit',
-                      })}
-                    </span>
+                    <Trans
+                      i18nKey="card.currentlyBooked"
+                      ns="parentBookings"
+                      values={{ datetime: formatLocaleStr(booking.scheduled_at, lng) }}
+                      components={[<span />, <span className="font-medium text-[#1F2933]" />]}
+                    />
                   </span>
                 </div>
 
@@ -588,14 +568,13 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
                   onMonthChange={fetchAvailableDates}
                 />
 
-                {/* Slot grid */}
                 {slotsLoading ? (
                   <div className="flex items-center gap-2 py-2">
                     <div className="w-4 h-4 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-                    <span className="text-xs text-gray-500">Loading times…</span>
+                    <span className="text-xs text-gray-500">{t('card.loadingTimes')}</span>
                   </div>
                 ) : rescheduleSlots.length === 0 ? (
-                  <p className="text-xs text-gray-400 py-1">No available slots on this date — try another day.</p>
+                  <p className="text-xs text-gray-400 py-1">{t('card.noSlotsOnDate')}</p>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {rescheduleSlots.map((slot) => (
@@ -621,20 +600,20 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
                     onClick={() => { setShowReschedule(false); setRescheduleSlot(null); setRescheduleErr(''); }}
                     className="flex-1 py-2 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                   >
-                    Keep current time
+                    {t('card.keepCurrentTime')}
                   </button>
                   <button
                     onClick={handleConfirmReschedule}
                     disabled={!rescheduleSlot || rescheduling}
                     className="flex-1 py-2 text-xs font-medium bg-[#445446] hover:bg-[#3a4a3b] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {rescheduling ? 'Rescheduling…' : 'Confirm reschedule'}
+                    {rescheduling ? t('card.rescheduling') : t('card.confirmReschedule')}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* ── Cancel panel ── */}
+            {/* Cancel panel */}
             {showCancel && (
               <div className="space-y-2">
                 <div className={`px-3 py-2 rounded-lg text-xs ${hrs >= 24 ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
@@ -642,12 +621,12 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#1F2933] mb-1">
-                    Reason for cancellation <span className="text-red-500">*</span>
+                    {t('card.reasonLabel')} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={reason}
                     onChange={(e) => { setReason(e.target.value.slice(0, 200)); if (cancelErr) setCancelErr(''); }}
-                    placeholder="Please describe why you're cancelling…"
+                    placeholder={t('card.reasonPlaceholder')}
                     maxLength={200}
                     rows={2}
                     className={`w-full border rounded-lg px-3 py-2 text-xs text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 resize-none transition-colors ${
@@ -664,14 +643,14 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
                     onClick={() => { setShowCancel(false); setCancelErr(''); setReason(''); }}
                     className="flex-1 py-2 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                   >
-                    Keep booking
+                    {t('card.keepBooking')}
                   </button>
                   <button
                     onClick={handleConfirmCancel}
                     disabled={cancelling || !reason.trim()}
                     className="flex-1 py-2 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {cancelling ? 'Cancelling…' : 'Confirm cancel'}
+                    {cancelling ? t('card.cancelling') : t('card.confirmCancel')}
                   </button>
                 </div>
               </div>
@@ -686,15 +665,18 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
 
 // ─── Past Booking Card ────────────────────────────────────────────────────────
 const PastBookingCard = ({ booking, onViewDetails }) => {
-  const navigate   = useNavigate();
-  const expertName = booking.expert?.user?.name || 'Expert';
-  const duration   = formatDuration(booking.service?.duration_minutes);
+  const navigate = useNavigate();
+  const { t, i18n } = useTranslation('parentBookings');
+  const lng = i18n.language;
 
+  const expertName       = booking.expert?.user?.name || 'Expert';
+  const duration         = formatDuration(booking.service?.duration_minutes);
   const isCompleted      = booking.status === 'COMPLETED';
   const expertDeleted    = !!booking.expert?.user?.account_deleted;
   const serviceInactive  = booking.service?.is_active === false;
   const canBookAgain     = isCompleted && !expertDeleted && !serviceInactive;
   const bookAgainBlocked = isCompleted && (expertDeleted || serviceInactive);
+  const sk               = statusKey(booking);
 
   const handleBookAgain = () => {
     navigate('/dashboard/parent/browse', {
@@ -710,91 +692,77 @@ const PastBookingCard = ({ booking, onViewDetails }) => {
   return (
     <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden opacity-90">
 
-      {/* ── Card body — tappable to open detail sheet ── */}
+      {/* Card body */}
       <div className="p-5 cursor-pointer hover:bg-[#F5F7F5]/60 transition-colors" onClick={() => onViewDetails(booking)}>
         <div className="flex items-start gap-4">
-
-          {/* Expert avatar */}
-          <ExpertAvatar
-            name={expertName}
-            profileImage={booking.expert?.profile_image}
-            size="lg"
-          />
-
-          {/* Main info */}
+          <ExpertAvatar name={expertName} profileImage={booking.expert?.profile_image} size="lg" />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
                 <p className="text-base font-semibold text-[#1F2933] leading-snug">{expertName}</p>
-                <p className="text-sm text-gray-500 mt-0.5">{booking.service?.title || 'Session'}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{booking.service?.title || t('detailSheet.sessionSection')}</p>
               </div>
-              <span className={`text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${STATUS_STYLES[statusKey(booking)] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                {STATUS_LABELS[statusKey(booking)] || booking.status}
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${STATUS_STYLES[sk] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                {t(`status.${sk}`, { defaultValue: booking.status })}
               </span>
             </div>
 
-            {/* Meta row */}
             <div className="flex flex-wrap items-center gap-2 mt-3">
-              {/* Date */}
               <div className="flex items-center gap-1.5 text-xs text-gray-400">
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                 </svg>
-                <span>{formatDate(booking.scheduled_at)}</span>
+                <span>{formatDate(booking.scheduled_at, lng)}</span>
               </div>
-
-              {/* Time */}
               <div className="flex items-center gap-1.5 text-xs text-gray-400">
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
                 <span>{formatTime(booking.scheduled_at)}</span>
               </div>
-
-              {/* Duration */}
               {duration && (
                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
                   {duration}
                 </span>
               )}
-
-              {/* Format */}
               <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                {booking.format === 'ONLINE' ? 'Online' : 'In-Person'}
+                {booking.format === 'ONLINE' ? t('detailSheet.formatOnline') : t('detailSheet.formatInPerson')}
               </span>
 
-              {/* Amount paid */}
+              {/* Amount paid chip */}
               {booking.amount && booking.status !== 'REFUNDED' && booking.status !== 'CANCELLED' && (
                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                  {new Intl.NumberFormat('en', { style: 'currency', currency: booking.currency || 'EUR' }).format(Number(booking.amount))} paid
+                  {t('pastCard.paidChip', { amount: fmtCurrency(booking.amount, booking.currency || 'EUR', lng) })}
                 </span>
               )}
 
               {/* Refund chip */}
               {booking.status === 'REFUNDED' && booking.amount && (() => {
-                const cur = booking.currency || 'EUR';
+                const cur      = booking.currency || 'EUR';
                 const refundAmt = booking.refund_amount || booking.amount;
-                const isFull = !booking.refund_amount || Number(booking.refund_amount) >= Number(booking.amount);
-                const formatted = new Intl.NumberFormat('en', { style: 'currency', currency: cur }).format(Number(refundAmt));
+                const isFull   = !booking.refund_amount || Number(booking.refund_amount) >= Number(booking.amount);
+                const formatted = fmtCurrency(refundAmt, cur, lng);
                 return (
                   <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">
-                    {isFull ? `Full refund issued — ${formatted} returned` : `${formatted} refunded`}
+                    {isFull
+                      ? t('pastCard.refundFullChip', { amount: formatted })
+                      : t('pastCard.refundPartialChip', { amount: formatted })}
                   </span>
                 );
               })()}
             </div>
 
-            {/* Expert-cancelled: prominent green refund notice */}
+            {/* Expert-cancelled refund notice */}
             {booking.status === 'REFUNDED' && booking.cancellation_reason === 'Cancelled by expert' && (
               <div className="mt-3 flex items-start gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl">
                 <svg className="w-3.5 h-3.5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
                 <p className="text-xs text-green-700 leading-relaxed">
-                  <span className="font-semibold">Cancelled by your expert.</span>
+                  <span className="font-semibold">{t('pastCard.expertCancelledTitle')}</span>
                   {booking.amount
-                    ? ` A full refund of ${new Intl.NumberFormat('en', { style: 'currency', currency: booking.currency || 'EUR' }).format(Number(booking.amount))} has been issued. Please allow 5–10 business days to appear in your account.`
-                    : ' A full refund has been issued.'}
+                    ? t('pastCard.expertCancelledRefund', { amount: fmtCurrency(booking.amount, booking.currency || 'EUR', lng) })
+                    : t('pastCard.expertCancelledSimple')}
                 </p>
               </div>
             )}
@@ -802,26 +770,26 @@ const PastBookingCard = ({ booking, onViewDetails }) => {
             {/* Parent-cancelled reason */}
             {booking.status === 'CANCELLED' && booking.cancellation_reason && booking.cancellation_reason !== 'Cancelled by expert' && (
               <div className="mt-3 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
-                <p className="text-xs font-medium text-gray-500 mb-1">Cancellation reason</p>
+                <p className="text-xs font-medium text-gray-500 mb-1">{t('pastCard.cancellationReasonLabel')}</p>
                 <p className="text-xs text-gray-600 leading-relaxed">{booking.cancellation_reason}</p>
               </div>
             )}
 
-            {/* Partial refund (parent-cancelled within 12–24 h window) */}
+            {/* Partial refund notice */}
             {booking.status === 'REFUNDED' && booking.cancellation_reason !== 'Cancelled by expert' && booking.refund_amount && (
               <div className="mt-3 flex items-start gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl">
                 <svg className="w-3.5 h-3.5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
                 <p className="text-xs text-green-700 leading-relaxed">
-                  {new Intl.NumberFormat('en', { style: 'currency', currency: booking.currency || 'EUR' }).format(Number(booking.refund_amount))} refunded to your original payment method.
+                  {t('pastCard.partialRefundMsg', { amount: fmtCurrency(booking.refund_amount, booking.currency || 'EUR', lng) })}
                 </p>
               </div>
             )}
 
             {/* View details hint */}
             <div className="mt-3 flex items-center justify-end gap-1 text-xs text-gray-400">
-              <span>View details</span>
+              <span>{t('pastCard.viewDetails')}</span>
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
               </svg>
@@ -830,38 +798,34 @@ const PastBookingCard = ({ booking, onViewDetails }) => {
         </div>
       </div>
 
-      {/* ── Book again footer (completed sessions only) ── */}
+      {/* Book again footer */}
       {(canBookAgain || bookAgainBlocked) && (
         <div className="px-5 pb-5 pt-0">
           <div className="border-t border-[#E4E7E4] pt-4">
 
-            {/* Blocked: service deactivated or expert deleted */}
             {bookAgainBlocked && (
               <div className="flex items-start gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
                 <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                 </svg>
                 <div>
-                  <p className="text-xs font-medium text-gray-600">Booking unavailable</p>
+                  <p className="text-xs font-medium text-gray-600">{t('pastCard.unavailableTitle')}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {expertDeleted
-                      ? 'This expert is no longer on the platform.'
-                      : 'This service is no longer offered by the expert.'}
-                    {' '}You can browse other available experts.
+                    {expertDeleted ? t('pastCard.expertDeleted') : t('pastCard.serviceInactive')}
+                    {t('pastCard.unavailableSuffix')}
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Active: book again */}
             {canBookAgain && (
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-400">Enjoyed this session?</p>
+                <p className="text-xs text-gray-400">{t('pastCard.enjoyedSession')}</p>
                 <button
                   onClick={handleBookAgain}
                   className="flex items-center gap-1.5 text-xs font-medium text-[#445446] border border-[#445446]/40 hover:bg-[#445446]/8 px-3 py-1.5 rounded-lg transition-colors"
                 >
-                  Book again
+                  {t('pastCard.bookAgain')}
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                   </svg>
@@ -878,6 +842,7 @@ const PastBookingCard = ({ booking, onViewDetails }) => {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 const MyBookingsPage = ({ view = 'upcoming' }) => {
+  const { t } = useTranslation('parentBookings');
   const [bookings,        setBookings]        = useState([]);
   const [loading,         setLoading]         = useState(true);
   const [error,           setError]           = useState('');
@@ -887,11 +852,6 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
     getMyBookings()
       .then((data) => {
         setBookings(data);
-
-        // Silently reconcile any PENDING_PAYMENT bookings older than 2 minutes.
-        // These are stuck — the Stripe webhook was likely missed. verifyPayment
-        // checks the PaymentIntent status directly with Stripe and self-confirms
-        // if the payment already went through.
         const stale = data.filter(
           (b) =>
             b.status === 'PENDING_PAYMENT' &&
@@ -906,11 +866,12 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
                 );
               }
             })
-            .catch(() => {}); // non-fatal — badge stays amber, no crash
+            .catch(() => {});
         });
       })
-      .catch(() => setError('Could not load your bookings.'))
+      .catch(() => setError(t('page.loadError')))
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCancel = useCallback(async (id, reason) => {
@@ -928,8 +889,6 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
   }, []);
 
   const now = new Date();
-  // Use session END time (start + duration) so an in-progress session stays in
-  // Upcoming until it's actually over, not just after it begins.
   const sessionEndTime = (b) =>
     new Date(b.scheduled_at).getTime() + (b.duration_minutes || 0) * 60 * 1000;
 
@@ -951,19 +910,15 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
 
   const isUpcoming = view === 'upcoming';
   const displayed  = isUpcoming ? upcoming : past;
-  const title      = isUpcoming ? 'Upcoming Bookings' : 'Past Bookings';
-  const emptyMsg   = isUpcoming
-    ? 'You have no upcoming sessions — find an expert to get started.'
-    : 'No past sessions yet.';
 
   return (
     <div>
       <div className="mb-7">
-        <h2 className="text-xl font-semibold text-[#1F2933]">{title}</h2>
+        <h2 className="text-xl font-semibold text-[#1F2933]">
+          {isUpcoming ? t('page.upcomingTitle') : t('page.pastTitle')}
+        </h2>
         <p className="text-sm text-gray-500 mt-1">
-          {isUpcoming
-            ? 'Your confirmed upcoming sessions.'
-            : 'Completed, cancelled, and refunded sessions.'}
+          {isUpcoming ? t('page.upcomingSubtitle') : t('page.pastSubtitle')}
         </p>
       </div>
 
@@ -980,7 +935,9 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
             </svg>
           </div>
-          <p className="text-sm text-gray-400 mt-1">{emptyMsg}</p>
+          <p className="text-sm text-gray-400 mt-1">
+            {isUpcoming ? t('page.emptyUpcoming') : t('page.emptyPast')}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">

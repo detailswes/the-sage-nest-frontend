@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   listExperts,
   exportExpertsXlsx,
@@ -16,28 +17,22 @@ import { getProfileImageUrl } from "../../../utils/imageUrl";
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAGE_LIMIT = 10;
 
-const STATUS_FILTERS = [
-  { key: "all",               label: "All" },
-  { key: "pending",           label: "Pending" },
-  { key: "approved",          label: "Approved" },
-  { key: "rejected",          label: "Rejected" },
-  { key: "suspended",         label: "Suspended" },
-  { key: "changes_requested", label: "Changes Requested" },
-];
+// Keys only — labels resolved via t() at render time
+const STATUS_FILTER_KEYS = ["all", "pending", "approved", "rejected", "suspended", "changes_requested"];
 
-const QUAL_OPTIONS = [
-  { value: "", label: "All qualifications" },
-  { value: "LACTATION_CONSULTANT", label: "Lactation Consultant (IBCLC)" },
-  { value: "BREASTFEEDING_COUNSELLOR", label: "Breastfeeding Counsellor" },
-  { value: "INFANT_SLEEP_CONSULTANT", label: "Infant Sleep Consultant" },
-  { value: "DOULA", label: "Doula" },
-  { value: "MIDWIFE", label: "Midwife" },
-  { value: "BABY_OSTEOPATH", label: "Baby Osteopath" },
-  { value: "PAEDIATRIC_NUTRITIONIST", label: "Paediatric Nutritionist" },
-  { value: "EARLY_YEARS_SPECIALIST", label: "Early Years Specialist" },
-  { value: "POSTNATAL_PHYSIOTHERAPIST", label: "Postnatal Physiotherapist" },
-  { value: "PARENTING_COACH", label: "Parenting Coach" },
-  { value: "OTHER", label: "Other" },
+const QUAL_OPTION_VALUES = [
+  "",
+  "LACTATION_CONSULTANT",
+  "BREASTFEEDING_COUNSELLOR",
+  "INFANT_SLEEP_CONSULTANT",
+  "DOULA",
+  "MIDWIFE",
+  "BABY_OSTEOPATH",
+  "PAEDIATRIC_NUTRITIONIST",
+  "EARLY_YEARS_SPECIALIST",
+  "POSTNATAL_PHYSIOTHERAPIST",
+  "PARENTING_COACH",
+  "OTHER",
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -63,13 +58,14 @@ const getInitials = (name) =>
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status, deleted }) => {
+  const { t } = useTranslation("adminDashboard");
   if (deleted)
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 3.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" />
         </svg>
-        Deleted
+        {t("expertMgmt.badge.deleted")}
       </span>
     );
   if (status === "APPROVED")
@@ -82,7 +78,7 @@ const StatusBadge = ({ status, deleted }) => {
             clipRule="evenodd"
           />
         </svg>
-        Approved
+        {t("expertMgmt.badge.APPROVED")}
       </span>
     );
   if (status === "REJECTED")
@@ -95,7 +91,7 @@ const StatusBadge = ({ status, deleted }) => {
             clipRule="evenodd"
           />
         </svg>
-        Rejected
+        {t("expertMgmt.badge.REJECTED")}
       </span>
     );
   if (status === "SUSPENDED")
@@ -108,7 +104,7 @@ const StatusBadge = ({ status, deleted }) => {
             clipRule="evenodd"
           />
         </svg>
-        Suspended
+        {t("expertMgmt.badge.SUSPENDED")}
       </span>
     );
   if (status === "CHANGES_REQUESTED")
@@ -117,7 +113,7 @@ const StatusBadge = ({ status, deleted }) => {
         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
           <path d="M2.695 14.763l-1.262 3.154a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.885 1.343Z" />
         </svg>
-        Changes Requested
+        {t("expertMgmt.badge.CHANGES_REQUESTED")}
       </span>
     );
   return (
@@ -129,13 +125,13 @@ const StatusBadge = ({ status, deleted }) => {
           clipRule="evenodd"
         />
       </svg>
-      Pending
+      {t("expertMgmt.badge.PENDING")}
     </span>
   );
 };
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
-const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
+const PaginationBar = ({ page, totalPages, total, limit, onPageChange, t }) => {
   if (totalPages <= 1) return null;
   const from = (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
@@ -159,12 +155,13 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
   return (
     <div className="flex items-center justify-between mt-4 px-1">
       <p className="text-sm text-gray-500">
-        Showing{" "}
+        {t("expertMgmt.pagination.showing")}{" "}
         <span className="font-medium text-[#1F2933]">
           {from}–{to}
         </span>{" "}
-        of <span className="font-medium text-[#1F2933]">{total}</span> expert
-        {total !== 1 ? "s" : ""}
+        {t("expertMgmt.pagination.of")}{" "}
+        <span className="font-medium text-[#1F2933]">{total}</span>{" "}
+        {t("expertMgmt.pagination.expert", { count: total })}
       </p>
       <div className="flex items-center gap-1">
         <button
@@ -189,7 +186,7 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
               d="M15.75 19.5 8.25 12l7.5-7.5"
             />
           </svg>
-          Prev
+          {t("expertMgmt.pagination.prev")}
         </button>
         {buildPages().map((p, i) =>
           p === "…" ? (
@@ -222,7 +219,7 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
               : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-100"
           }`}
         >
-          Next
+          {t("expertMgmt.pagination.next")}
           <svg
             className="w-4 h-4"
             fill="none"
@@ -245,6 +242,8 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
 // ─── Main component ───────────────────────────────────────────────────────────
 const ExpertManagementSection = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("adminDashboard");
+
   const [experts, setExperts] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
@@ -362,7 +361,6 @@ const ExpertManagementSection = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Close modal first so the confirm dialog stacks cleanly above nothing
   const requestAction = (type, expert) => {
     if (type === "_refresh") {
       fetchExperts();
@@ -371,10 +369,9 @@ const ExpertManagementSection = () => {
     setConfirmAction({ type, expert });
   };
 
-  // Success messages for non-status-changing actions
   const SUCCESS_MSG = {
-    "password-reset": "Password reset email sent successfully.",
-    "resend-verification": "Verification email resent successfully.",
+    "password-reset":       t("expertMgmt.success.passwordReset"),
+    "resend-verification":  t("expertMgmt.success.resendVerification"),
   };
 
   const handleConfirm = async () => {
@@ -394,7 +391,6 @@ const ExpertManagementSection = () => {
       else if (type === "resend-verification")
         await resendVerification(expert.id);
 
-      // Email-only actions: show success banner, no refetch needed
       if (SUCCESS_MSG[type]) {
         setActionSuccess(SUCCESS_MSG[type]);
       } else {
@@ -428,9 +424,9 @@ const ExpertManagementSection = () => {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-[#1F2933]">Expert Management</h2>
+          <h2 className="text-xl font-semibold text-[#1F2933]">{t("expertMgmt.pageTitle")}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Review and manage expert accounts on the platform.
+            {t("expertMgmt.pageSubtitle")}
           </p>
         </div>
         <button
@@ -445,7 +441,7 @@ const ExpertManagementSection = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
           )}
-          {exporting ? "Exporting…" : "Export .xlsx"}
+          {exporting ? t("expertMgmt.exporting") : t("expertMgmt.exportBtn")}
         </button>
       </div>
 
@@ -514,7 +510,7 @@ const ExpertManagementSection = () => {
           type="text"
           value={searchInput}
           onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder="Search experts by name…"
+          placeholder={t("expertMgmt.searchPlaceholder")}
           className="w-full pl-10 pr-10 py-2.5 text-sm border border-[#E4E7E4] rounded-xl bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
         />
         {searchInput && (
@@ -542,7 +538,7 @@ const ExpertManagementSection = () => {
       {/* Status tabs + filter controls */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="inline-flex items-center bg-white border border-[#E4E7E4] rounded-xl p-1 gap-0.5">
-          {STATUS_FILTERS.map(({ key, label }) => {
+          {STATUS_FILTER_KEYS.map((key) => {
             const isActive = activeFilter === key;
             return (
               <button
@@ -554,7 +550,7 @@ const ExpertManagementSection = () => {
                     : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
                 }`}
               >
-                {label}
+                {t(`expertMgmt.filter.${key}`)}
                 <span
                   className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
                     isActive
@@ -573,7 +569,7 @@ const ExpertManagementSection = () => {
         <input
           type="text"
           value={cityFilter}
-          placeholder="Filter by city…"
+          placeholder={t("expertMgmt.cityPlaceholder")}
           onChange={(e) => {
             setCityFilter(e.target.value);
             setPage(1);
@@ -590,16 +586,16 @@ const ExpertManagementSection = () => {
           }}
           className={`${filterInputCls} max-w-[200px]`}
         >
-          {QUAL_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
+          {QUAL_OPTION_VALUES.map((value) => (
+            <option key={value} value={value}>
+              {value === "" ? t("expertMgmt.qual.all") : t(`expertMgmt.qual.${value}`)}
             </option>
           ))}
         </select>
 
         {/* Registration date range */}
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500 whitespace-nowrap">Registered from</label>
+          <label className="text-xs text-gray-500 whitespace-nowrap">{t("expertMgmt.registeredFrom")}</label>
           <input
             type="date"
             value={fromDate}
@@ -608,7 +604,7 @@ const ExpertManagementSection = () => {
           />
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500">to</label>
+          <label className="text-xs text-gray-500">{t("expertMgmt.to")}</label>
           <input
             type="date"
             value={toDate}
@@ -635,7 +631,7 @@ const ExpertManagementSection = () => {
                 d="M6 18 18 6M6 6l12 12"
               />
             </svg>
-            Clear
+            {t("expertMgmt.clear")}
           </button>
         )}
 
@@ -660,11 +656,11 @@ const ExpertManagementSection = () => {
               d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"
             />
           </svg>
-          <p className="text-sm font-medium text-gray-500">No experts found</p>
+          <p className="text-sm font-medium text-gray-500">{t("expertMgmt.noExpertsTitle")}</p>
           <p className="text-xs text-gray-400 mt-1">
             {hasActiveFilters || activeFilter !== "all"
-              ? "Try adjusting your search or filters."
-              : "No expert accounts registered yet."}
+              ? t("expertMgmt.noExpertsFiltered")
+              : t("expertMgmt.noExpertsYet")}
           </p>
         </div>
       ) : (
@@ -675,35 +671,19 @@ const ExpertManagementSection = () => {
         >
           {/* Header row */}
           <div className="grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Name
-            </p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Email
-            </p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Position
-            </p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Status
-            </p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Joined
-            </p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Bookings
-            </p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider" title="EU Directive 2021/514 — DAC7 reporting threshold">
-              DAC7
-            </p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">
-              Actions
-            </p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.name")}</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.email")}</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.position")}</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.status")}</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.joined")}</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.bookings")}</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider" title="EU Directive 2021/514 — DAC7 reporting threshold">{t("expertMgmt.col.dac7")}</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">{t("expertMgmt.col.actions")}</p>
           </div>
 
           {experts.map((expert, idx) => {
             const isDeleted = !!expert.user?.account_deleted;
-            const name  = isDeleted ? "Deleted Account" : (expert.user?.name  || "—");
+            const name  = isDeleted ? t("expertMgmt.badge.deleted") : (expert.user?.name  || "—");
             const email = isDeleted ? null               : (expert.user?.email || "—");
             const isActioning = actionLoading === expert.id;
 
@@ -718,7 +698,7 @@ const ExpertManagementSection = () => {
                 <button
                   onClick={() => navigate(`/dashboard/admin/experts/${expert.id}`)}
                   className="flex items-center gap-2.5 text-left group"
-                  title="View full profile"
+                  title={t("expertMgmt.col.name")}
                 >
                   {getProfileImageUrl(expert.profile_image) ? (
                     <img
@@ -739,7 +719,7 @@ const ExpertManagementSection = () => {
                         : "flex",
                     }}
                   >
-                    {getInitials(name)}
+                    {getInitials(isDeleted ? "D" : expert.user?.name)}
                   </div>
                   <span className="text-sm font-medium text-[#1F2933] group-hover:text-[#445446] group-hover:underline underline-offset-2 truncate transition-colors">
                     {name}
@@ -782,7 +762,7 @@ const ExpertManagementSection = () => {
                     <button
                       onClick={() => navigate(`/dashboard/admin/bookings?search=${encodeURIComponent(expert.user?.name || "")}`)}
                       className="text-sm font-medium text-[#445446] hover:underline text-left"
-                      title="View bookings for this expert"
+                      title={t("expertMgmt.col.bookings")}
                     >
                       {count}
                     </button>
@@ -801,7 +781,7 @@ const ExpertManagementSection = () => {
                       <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                       </svg>
-                      DAC7
+                      {t("expertMgmt.col.dac7")}
                     </span>
                   ) : (
                     <span className="text-sm text-gray-300">—</span>
@@ -817,13 +797,12 @@ const ExpertManagementSection = () => {
                   ) : expert.status === "SUSPENDED" ? (
                     <button
                       onClick={() => requestAction("reactivate", expert)}
-                      title="Reactivate this expert"
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400 transition-all duration-150"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                       </svg>
-                      Reactivate
+                      {t("expertMgmt.action.reactivate")}
                     </button>
                   ) : expert.status === "APPROVED" ? (
                     <>
@@ -834,7 +813,7 @@ const ExpertManagementSection = () => {
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                         </svg>
-                        Reject
+                        {t("expertMgmt.action.reject")}
                       </button>
                       <button
                         onClick={() => requestAction("suspend", expert)}
@@ -843,7 +822,7 @@ const ExpertManagementSection = () => {
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
                         </svg>
-                        Suspend
+                        {t("expertMgmt.action.suspend")}
                       </button>
                     </>
                   ) : expert.status === "REJECTED" ? (
@@ -854,7 +833,7 @@ const ExpertManagementSection = () => {
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                       </svg>
-                      Approve
+                      {t("expertMgmt.action.approve")}
                     </button>
                   ) : (
                     <>
@@ -865,7 +844,7 @@ const ExpertManagementSection = () => {
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                         </svg>
-                        Approve
+                        {t("expertMgmt.action.approve")}
                       </button>
                       <button
                         onClick={() => requestAction("reject", expert)}
@@ -874,7 +853,7 @@ const ExpertManagementSection = () => {
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                         </svg>
-                        Reject
+                        {t("expertMgmt.action.reject")}
                       </button>
                     </>
                   )}
@@ -891,163 +870,95 @@ const ExpertManagementSection = () => {
         total={pagination.total}
         limit={PAGE_LIMIT}
         onPageChange={handlePageChange}
+        t={t}
       />
-
 
       {confirmAction &&
         (() => {
-          const cfg =
-            {
-              approve: {
-                title: "Approve Expert?",
-                verb: "approve",
-                iconBg: "bg-green-50",
-                btnCls: "bg-green-600 hover:bg-green-700",
-                icon: (
-                  <svg
-                    className="w-6 h-6 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="m4.5 12.75 6 6 9-13.5"
-                    />
-                  </svg>
-                ),
-              },
-              reject: {
-                title: "Reject Expert?",
-                verb: "reject",
-                iconBg: "bg-red-50",
-                btnCls: "bg-red-500 hover:bg-red-600",
-                icon: (
-                  <svg
-                    className="w-6 h-6 text-red-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18 18 6M6 6l12 12"
-                    />
-                  </svg>
-                ),
-              },
-              suspend: {
-                title: "Suspend Expert?",
-                verb: "suspend",
-                iconBg: "bg-orange-50",
-                btnCls: "bg-orange-500 hover:bg-orange-600",
-                icon: (
-                  <svg
-                    className="w-6 h-6 text-orange-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"
-                    />
-                  </svg>
-                ),
-              },
-              reactivate: {
-                title: "Reactivate Expert?",
-                verb: "reactivate",
-                iconBg: "bg-green-50",
-                btnCls: "bg-green-600 hover:bg-green-700",
-                icon: (
-                  <svg
-                    className="w-6 h-6 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="m4.5 12.75 6 6 9-13.5"
-                    />
-                  </svg>
-                ),
-              },
-              "password-reset": {
-                title: "Send Password Reset?",
-                verb: "send a reset email to",
-                iconBg: "bg-gray-50",
-                btnCls: "bg-[#445446] hover:bg-[#3F4E41]",
-                icon: (
-                  <svg
-                    className="w-6 h-6 text-gray-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
-                    />
-                  </svg>
-                ),
-              },
-              "resend-verification": {
-                title: "Resend Verification Email?",
-                verb: "resend verification to",
-                iconBg: "bg-gray-50",
-                btnCls: "bg-[#445446] hover:bg-[#3F4E41]",
-                icon: (
-                  <svg
-                    className="w-6 h-6 text-gray-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
-                    />
-                  </svg>
-                ),
-              },
-              "manual-verify": {
-                title: "Mark Account as Verified?",
-                verb: "manually verify",
-                iconBg: "bg-blue-50",
-                btnCls: "bg-blue-600 hover:bg-blue-700",
-                icon: (
-                  <svg
-                    className="w-6 h-6 text-blue-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"
-                    />
-                  </svg>
-                ),
-              },
-            }[confirmAction.type] || {};
+          const type = confirmAction.type;
+          const cfg = {
+            approve: {
+              title: t("expertMgmt.confirmModal.approve_title"),
+              prefix: t("expertMgmt.confirmModal.approve_prefix"),
+              iconBg: "bg-green-50",
+              btnCls: "bg-green-600 hover:bg-green-700",
+              icon: (
+                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+              ),
+            },
+            reject: {
+              title: t("expertMgmt.confirmModal.reject_title"),
+              prefix: t("expertMgmt.confirmModal.reject_prefix"),
+              iconBg: "bg-red-50",
+              btnCls: "bg-red-500 hover:bg-red-600",
+              icon: (
+                <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              ),
+            },
+            suspend: {
+              title: t("expertMgmt.confirmModal.suspend_title"),
+              prefix: t("expertMgmt.confirmModal.suspend_prefix"),
+              iconBg: "bg-orange-50",
+              btnCls: "bg-orange-500 hover:bg-orange-600",
+              icon: (
+                <svg className="w-6 h-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              ),
+            },
+            reactivate: {
+              title: t("expertMgmt.confirmModal.reactivate_title"),
+              prefix: t("expertMgmt.confirmModal.reactivate_prefix"),
+              iconBg: "bg-green-50",
+              btnCls: "bg-green-600 hover:bg-green-700",
+              icon: (
+                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+              ),
+            },
+            "password-reset": {
+              title: t("expertMgmt.confirmModal.password-reset_title"),
+              prefix: t("expertMgmt.confirmModal.password-reset_prefix"),
+              iconBg: "bg-gray-50",
+              btnCls: "bg-[#445446] hover:bg-[#3F4E41]",
+              icon: (
+                <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+              ),
+            },
+            "resend-verification": {
+              title: t("expertMgmt.confirmModal.resend-verification_title"),
+              prefix: t("expertMgmt.confirmModal.resend-verification_prefix"),
+              iconBg: "bg-gray-50",
+              btnCls: "bg-[#445446] hover:bg-[#3F4E41]",
+              icon: (
+                <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                </svg>
+              ),
+            },
+            "manual-verify": {
+              title: t("expertMgmt.confirmModal.manual-verify_title"),
+              prefix: t("expertMgmt.confirmModal.manual-verify_prefix"),
+              iconBg: "bg-blue-50",
+              btnCls: "bg-blue-600 hover:bg-blue-700",
+              icon: (
+                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                </svg>
+              ),
+            },
+          }[type] || {};
+
           const expertName =
             confirmAction.expert.user?.name || confirmAction.expert.user?.email;
+
           return (
             <div
               className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
@@ -1065,18 +976,18 @@ const ExpertManagementSection = () => {
                   {cfg.title}
                 </h3>
                 <p className="text-sm text-gray-500 text-center mb-4">
-                  Are you sure you want to {cfg.verb}{" "}
+                  {cfg.prefix}{" "}
                   <span className="font-medium text-[#1F2933]">
                     {expertName}
                   </span>
                   ?
                 </p>
-                {confirmAction.type === "approve" && !confirmAction.expert.insurance && (
+                {type === "approve" && !confirmAction.expert.insurance && (
                   <div className="flex items-start gap-2 px-3 py-2.5 mb-4 bg-amber-50 border border-amber-200 rounded-lg text-left">
                     <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
                     </svg>
-                    <p className="text-xs text-amber-800">This expert has no insurance uploaded. Please confirm that you wish to proceed.</p>
+                    <p className="text-xs text-amber-800">{t("expertMgmt.confirmModal.noInsurance")}</p>
                   </div>
                 )}
                 <div className="flex gap-3">
@@ -1084,13 +995,13 @@ const ExpertManagementSection = () => {
                     onClick={() => setConfirmAction(null)}
                     className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                   >
-                    Cancel
+                    {t("expertMgmt.confirmModal.cancel")}
                   </button>
                   <button
                     onClick={handleConfirm}
                     className={`flex-1 py-2.5 px-4 rounded-lg text-white text-sm font-medium transition-colors ${cfg.btnCls}`}
                   >
-                    Confirm
+                    {t("expertMgmt.confirmModal.confirm")}
                   </button>
                 </div>
               </div>

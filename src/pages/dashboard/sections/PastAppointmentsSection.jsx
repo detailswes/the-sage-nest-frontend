@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { getPastAppointments, saveExpertNote } from '../../../api/bookingApi';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-GB', {
+function formatDate(iso, lng = 'en') {
+  return new Date(iso).toLocaleDateString(lng === 'it' ? 'it-IT' : 'en-GB', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
   });
 }
 
-function formatTime(iso) {
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+function formatTime(iso, lng = 'en') {
+  return new Date(iso).toLocaleTimeString(lng === 'it' ? 'it-IT' : 'en-GB', {
+    hour: '2-digit', minute: '2-digit',
+  });
 }
 
 function formatDuration(minutes) {
@@ -30,12 +33,6 @@ const STATUS_STYLES = {
   COMPLETED: 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20',
   CANCELLED: 'bg-gray-100 text-gray-500 border border-gray-200',
   REFUNDED:  'bg-amber-50 text-amber-700 border border-amber-200',
-};
-
-const STATUS_LABELS = {
-  COMPLETED: 'Completed',
-  CANCELLED: 'Cancelled',
-  REFUNDED:  'Refunded',
 };
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
@@ -60,7 +57,12 @@ const Pagination = ({ page, pages, onChange }) => {
         </svg>
       </button>
       <span className="text-sm text-gray-500">
-        Page <span className="font-semibold text-[#1F2933]">{page}</span> of {pages}
+        <Trans
+          i18nKey="history.pagination.pageOf"
+          ns="expertDashboard"
+          values={{ page, pages }}
+          components={{ bold: <span className="font-semibold text-[#1F2933]" /> }}
+        />
       </span>
       <button
         onClick={() => onChange(page + 1)}
@@ -77,6 +79,7 @@ const Pagination = ({ page, pages, onChange }) => {
 
 // ─── Inline note editor ───────────────────────────────────────────────────────
 const InlineNoteEditor = ({ bookingId, initialNote, onSaved }) => {
+  const { t } = useTranslation('expertDashboard');
   const [note,      setNote]      = useState(initialNote || '');
   const [saveState, setSaveState] = useState('idle');
   const timerRef = useRef(null);
@@ -101,16 +104,16 @@ const InlineNoteEditor = ({ bookingId, initialNote, onSaved }) => {
         value={note}
         onChange={(e) => { setNote(e.target.value); setSaveState('idle'); }}
         onBlur={() => persist(note)}
-        placeholder="Add session notes…"
+        placeholder={t('history.notes.placeholder')}
         rows={3}
         className="w-full text-sm text-[#1F2933] placeholder-gray-300 border border-[#E4E7E4] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#445446] focus:border-[#445446] transition-colors"
       />
       <p className={`text-xs mt-1 transition-opacity ${saveState === 'idle' ? 'opacity-0' : 'opacity-100'} ${
         saveState === 'error' ? 'text-red-500' : 'text-gray-400'
       }`}>
-        {saveState === 'saving' && 'Saving…'}
-        {saveState === 'saved'  && 'Saved'}
-        {saveState === 'error'  && 'Could not save — please try again'}
+        {saveState === 'saving' && t('history.notes.saving')}
+        {saveState === 'saved'  && t('history.notes.saved')}
+        {saveState === 'error'  && t('history.notes.saveFailed')}
       </p>
     </div>
   );
@@ -118,6 +121,8 @@ const InlineNoteEditor = ({ bookingId, initialNote, onSaved }) => {
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
 const Row = ({ booking }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
   const [expanded, setExpanded] = useState(false);
   const [note,     setNote]     = useState(booking.expert_note || '');
   const status = resolveStatus(booking);
@@ -130,8 +135,8 @@ const Row = ({ booking }) => {
       <tr className="border-b border-[#E4E7E4] hover:bg-[#F5F7F5] transition-colors">
         {/* Date / time */}
         <td className="px-4 py-3 whitespace-nowrap">
-          <p className="text-sm font-medium text-[#1F2933]">{formatDate(booking.scheduled_at)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{formatTime(booking.scheduled_at)}</p>
+          <p className="text-sm font-medium text-[#1F2933]">{formatDate(booking.scheduled_at, lng)}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{formatTime(booking.scheduled_at, lng)}</p>
         </td>
 
         {/* Parent */}
@@ -161,14 +166,14 @@ const Row = ({ booking }) => {
               ? 'bg-blue-50 text-blue-600 border border-blue-100'
               : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
           }`}>
-            {isOnline ? 'Online' : 'In-Person'}
+            {isOnline ? t('history.formats.ONLINE') : t('history.formats.IN_PERSON')}
           </span>
         </td>
 
         {/* Status */}
         <td className="px-4 py-3 whitespace-nowrap">
           <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLES[status] || STATUS_STYLES.CANCELLED}`}>
-            {STATUS_LABELS[status] || status}
+            {t('history.status.' + status, { defaultValue: status })}
           </span>
         </td>
 
@@ -177,7 +182,7 @@ const Row = ({ booking }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setExpanded((v) => !v)}
-              title={note ? 'View / edit notes' : 'Add notes'}
+              title={note ? t('history.notes.hasNoteBtn') : t('history.notes.addNoteBtn')}
               className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border transition-colors ${
                 note
                   ? 'text-[#445446] border-[#445446]/30 bg-[#445446]/5 hover:bg-[#445446]/10'
@@ -187,7 +192,7 @@ const Row = ({ booking }) => {
               <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
               </svg>
-              {note ? 'Notes' : 'Add note'}
+              {note ? t('history.notes.hasNoteBtn') : t('history.notes.addNoteBtn')}
             </button>
           </div>
         </td>
@@ -198,8 +203,8 @@ const Row = ({ booking }) => {
         <tr className="bg-[#F5F7F5] border-b border-[#E4E7E4]">
           <td colSpan={7} className="px-4 pb-4 pt-2">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">
-              Private notes
-              <span className="ml-1 normal-case font-normal text-gray-300">(not visible to parents)</span>
+              {t('history.notes.privateLabel')}
+              <span className="ml-1 normal-case font-normal text-gray-300">{t('history.notes.privateSub')}</span>
             </p>
             <InlineNoteEditor
               bookingId={booking.id}
@@ -215,6 +220,7 @@ const Row = ({ booking }) => {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const PastAppointmentsSection = () => {
+  const { t } = useTranslation('expertDashboard');
   const [data,    setData]    = useState({ bookings: [], total: 0, page: 1, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
@@ -226,11 +232,11 @@ const PastAppointmentsSection = () => {
       const result = await getPastAppointments(page);
       setData(result);
     } catch {
-      setError('Failed to load session history. Please try again.');
+      setError(t('history.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(1); }, [load]);
 
@@ -240,10 +246,10 @@ const PastAppointmentsSection = () => {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">Session History</h2>
+        <h2 className="text-xl font-semibold text-[#1F2933]">{t('history.heading')}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          All past sessions — completed, cancelled, and refunded.
-          {total > 0 && <span className="ml-1 text-gray-400">({total} total)</span>}
+          {t('history.subheading')}
+          {total > 0 && <span className="ml-1 text-gray-400">{t('history.totalCount', { count: total })}</span>}
         </p>
       </div>
 
@@ -260,10 +266,8 @@ const PastAppointmentsSection = () => {
       ) : bookings.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <HistoryIcon />
-          <p className="mt-4 text-sm font-medium text-gray-500">No session history yet.</p>
-          <p className="mt-1 text-sm text-gray-400">
-            Completed and cancelled sessions will appear here.
-          </p>
+          <p className="mt-4 text-sm font-medium text-gray-500">{t('history.empty.title')}</p>
+          <p className="mt-1 text-sm text-gray-400">{t('history.empty.body')}</p>
         </div>
       ) : (
         <>
@@ -272,13 +276,13 @@ const PastAppointmentsSection = () => {
               <table className="w-full min-w-[720px]">
                 <thead>
                   <tr className="border-b border-[#E4E7E4] bg-[#F5F7F5]">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date &amp; Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Parent</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Service</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Duration</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Format</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('history.table.dateTime')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('history.table.parent')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('history.table.service')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('history.table.duration')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('history.table.format')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('history.table.status')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('history.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>

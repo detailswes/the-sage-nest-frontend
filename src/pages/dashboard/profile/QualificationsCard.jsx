@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   addQualification,
   updateQualification,
@@ -7,22 +8,18 @@ import {
 import { getDocumentUrl } from "../../../utils/imageUrl";
 
 const QUAL_TYPES = [
-  { value: "LACTATION_CONSULTANT", label: "Lactation Consultant (IBCLC)" },
-  { value: "BREASTFEEDING_COUNSELLOR", label: "Breastfeeding Counsellor" },
-  { value: "INFANT_SLEEP_CONSULTANT", label: "Infant Sleep Consultant" },
-  { value: "DOULA", label: "Doula" },
-  { value: "MIDWIFE", label: "Midwife" },
-  { value: "BABY_OSTEOPATH", label: "Baby Osteopath" },
-  { value: "PAEDIATRIC_NUTRITIONIST", label: "Paediatric Nutritionist" },
-  { value: "EARLY_YEARS_SPECIALIST", label: "Early Years Specialist" },
-  { value: "POSTNATAL_PHYSIOTHERAPIST", label: "Postnatal Physiotherapist" },
-  { value: "PARENTING_COACH", label: "Parenting Coach" },
-  { value: "OTHER", label: "Other" },
+  { value: "LACTATION_CONSULTANT" },
+  { value: "BREASTFEEDING_COUNSELLOR" },
+  { value: "INFANT_SLEEP_CONSULTANT" },
+  { value: "DOULA" },
+  { value: "MIDWIFE" },
+  { value: "BABY_OSTEOPATH" },
+  { value: "PAEDIATRIC_NUTRITIONIST" },
+  { value: "EARLY_YEARS_SPECIALIST" },
+  { value: "POSTNATAL_PHYSIOTHERAPIST" },
+  { value: "PARENTING_COACH" },
+  { value: "OTHER" },
 ];
-
-const QUAL_LABEL = Object.fromEntries(
-  QUAL_TYPES.map((q) => [q.value, q.label])
-);
 
 const DOC_TYPES = "application/pdf,image/jpeg,image/jpg,image/png";
 const DOC_MAX = 5 * 1024 * 1024;
@@ -35,8 +32,9 @@ const Spinner = () => (
 );
 
 const DocBadge = ({ url }) => {
+  const { t } = useTranslation("expertDashboard");
   if (!url)
-    return <span className="text-xs text-gray-400 italic">No document</span>;
+    return <span className="text-xs text-gray-400 italic">{t("profile.quals.noDocument")}</span>;
   const full = getDocumentUrl(url);
   const isPdf = url.toLowerCase().endsWith(".pdf");
   return (
@@ -74,13 +72,14 @@ const DocBadge = ({ url }) => {
           />
         </svg>
       )}
-      View document
+      {t("profile.quals.viewDocument")}
     </a>
   );
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const QualificationsCard = ({ initialData = [] }) => {
+  const { t } = useTranslation("expertDashboard");
   const [items, setItems] = useState(initialData);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -112,7 +111,7 @@ const QualificationsCard = ({ initialData = [] }) => {
     e.target.value = "";
     if (!file) return;
     if (file.size > DOC_MAX) {
-      setFormError("Document must be 5 MB or smaller.");
+      setFormError(t("profile.quals.errors.docSize"));
       return;
     }
     setForm((f) => ({ ...f, document: file }));
@@ -124,15 +123,15 @@ const QualificationsCard = ({ initialData = [] }) => {
     e.preventDefault();
     setFormError("");
     if (!form.type) {
-      setFormError("Please select a qualification type.");
+      setFormError(t("profile.quals.errors.typeRequired"));
       return;
     }
     if (form.type === "OTHER" && !form.custom_name.trim()) {
-      setFormError("Please enter the qualification name.");
+      setFormError(t("profile.quals.errors.nameRequired"));
       return;
     }
     if (!form.document) {
-      setFormError("Please upload a supporting document for this qualification.");
+      setFormError(t("profile.quals.errors.docRequired"));
       return;
     }
     setSaving(true);
@@ -149,7 +148,7 @@ const QualificationsCard = ({ initialData = [] }) => {
       setShowForm(false);
     } catch (err) {
       setFormError(
-        err?.response?.data?.error || "Failed to add qualification."
+        err?.response?.data?.error || t("profile.quals.errors.addFailed")
       );
     } finally {
       setSaving(false);
@@ -170,7 +169,7 @@ const QualificationsCard = ({ initialData = [] }) => {
     e.target.value = "";
     if (!file) return;
     if (file.size > DOC_MAX) {
-      setEditError("Document must be 5 MB or smaller.");
+      setEditError(t("profile.quals.errors.docSize"));
       return;
     }
     setEditForm((f) => ({ ...f, document: file }));
@@ -197,7 +196,7 @@ const QualificationsCard = ({ initialData = [] }) => {
     e.preventDefault();
     setEditError("");
     if (q.type === "OTHER" && !editForm.custom_name.trim()) {
-      setEditError("Qualification name is required.");
+      setEditError(t("profile.quals.errors.nameEditRequired"));
       return;
     }
     setEditSaving(true);
@@ -213,7 +212,7 @@ const QualificationsCard = ({ initialData = [] }) => {
       cancelEdit();
     } catch (err) {
       setEditError(
-        err?.response?.data?.error || "Failed to update qualification."
+        err?.response?.data?.error || t("profile.quals.errors.updateFailed")
       );
     } finally {
       setEditSaving(false);
@@ -240,17 +239,16 @@ const QualificationsCard = ({ initialData = [] }) => {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-base font-semibold text-[#1F2933] flex items-center gap-1.5">
-            Qualifications{" "}
+            {t("profile.quals.title")}{" "}
             <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-green-50 text-green-700 border border-green-200 align-middle">
-              Public
+              {t("profile.publicBadge")}
             </span>
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            At least one qualification with a supporting document must be added
-            before your profile can be submitted for review.
+            {t("profile.quals.subtitle")}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            PDF, JPG, PNG · max 5 MB per document
+            {t("profile.quals.docHint")}
           </p>
         </div>
         {!showForm && (
@@ -272,7 +270,7 @@ const QualificationsCard = ({ initialData = [] }) => {
                 d="M12 4.5v15m7.5-7.5h-15"
               />
             </svg>
-            Add
+            {t("profile.quals.addBtn")}
           </button>
         )}
       </div>
@@ -289,11 +287,11 @@ const QualificationsCard = ({ initialData = [] }) => {
                   className="border border-[#445446]/30 rounded-xl p-4 space-y-3 bg-[#F5F7F5]"
                 >
                   <p className="text-xs font-medium text-[#1F2933]">
-                    Editing:{" "}
+                    {t("profile.quals.editingLabel")}{" "}
                     <span className="text-[#445446]">
                       {q.type === "OTHER"
-                        ? "Other"
-                        : QUAL_LABEL[q.type] || q.type}
+                        ? t("profile.quals.otherLabel")
+                        : t("profile.quals.types." + q.type)}
                     </span>
                   </p>
 
@@ -306,7 +304,7 @@ const QualificationsCard = ({ initialData = [] }) => {
                   {q.type === "OTHER" && (
                     <div>
                       <label className="block text-xs font-medium text-[#1F2933] mb-1">
-                        Qualification name
+                        {t("profile.quals.form.nameLabel")}
                       </label>
                       <input
                         type="text"
@@ -318,7 +316,7 @@ const QualificationsCard = ({ initialData = [] }) => {
                           }));
                           setEditError("");
                         }}
-                        placeholder="Enter your qualification"
+                        placeholder={t("profile.quals.form.namePlaceholder")}
                         className={inputClass(
                           !editForm.custom_name.trim() && !!editError
                         )}
@@ -328,10 +326,9 @@ const QualificationsCard = ({ initialData = [] }) => {
 
                   <div>
                     <label className="block text-xs font-medium text-[#1F2933] mb-1">
-                      Replace document{" "}
+                      {t("profile.quals.form.replaceDocLabel")}{" "}
                       <span className="font-normal text-gray-400">
-                        (leave empty to keep existing · PDF, JPG, PNG · max 5
-                        MB)
+                        {t("profile.quals.form.replaceDocHint")}
                       </span>
                     </label>
                     {q.document_url && !editDocName && (
@@ -345,10 +342,10 @@ const QualificationsCard = ({ initialData = [] }) => {
                         onClick={() => editFileRef.current?.click()}
                         className="flex-shrink-0 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-2 rounded-lg transition-colors"
                       >
-                        Choose file
+                        {t("profile.quals.chooseFile")}
                       </button>
                       <span className="text-xs text-gray-500 truncate">
-                        {editDocName || (q.document_url ? q.document_url.split("/").pop() : "No file chosen")}
+                        {editDocName || (q.document_url ? q.document_url.split("/").pop() : t("profile.quals.noFile"))}
                       </span>
                     </div>
                     <input
@@ -362,7 +359,7 @@ const QualificationsCard = ({ initialData = [] }) => {
 
                   {!q.document_url && !editForm.document && (
                     <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      Adding a supporting document helps admins verify this entry faster.
+                      {t("profile.quals.docUploadHint")}
                     </p>
                   )}
 
@@ -372,7 +369,7 @@ const QualificationsCard = ({ initialData = [] }) => {
                       onClick={cancelEdit}
                       className="text-sm text-gray-500 hover:text-[#1F2933] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                      Cancel
+                      {t("profile.quals.form.cancelBtn")}
                     </button>
                     <button
                       type="submit"
@@ -380,7 +377,7 @@ const QualificationsCard = ({ initialData = [] }) => {
                       className="flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                     >
                       {editSaving && <Spinner />}
-                      {editSaving ? "Saving…" : "Save Changes"}
+                      {editSaving ? t("profile.quals.form.savingBtn") : t("profile.quals.form.saveBtn")}
                     </button>
                   </div>
                 </form>
@@ -391,7 +388,7 @@ const QualificationsCard = ({ initialData = [] }) => {
                     <p className="text-sm font-medium text-[#1F2933] truncate">
                       {q.type === "OTHER"
                         ? q.custom_name
-                        : QUAL_LABEL[q.type] || q.type}
+                        : t("profile.quals.types." + q.type)}
                     </p>
                     <div className="mt-0.5">
                       <DocBadge url={q.document_url} />
@@ -406,18 +403,8 @@ const QualificationsCard = ({ initialData = [] }) => {
                           className="p-1.5 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/5 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"
-                            />
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
                           </svg>
                         </button>
                         <button
@@ -426,18 +413,8 @@ const QualificationsCard = ({ initialData = [] }) => {
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="Remove"
                         >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
-                            />
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                           </svg>
                         </button>
                       </>
@@ -448,7 +425,7 @@ const QualificationsCard = ({ initialData = [] }) => {
                           onClick={() => setConfirmId(null)}
                           className="text-xs text-gray-500 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
                         >
-                          Keep
+                          {t("profile.quals.form.keepBtn")}
                         </button>
                         <button
                           type="button"
@@ -457,7 +434,7 @@ const QualificationsCard = ({ initialData = [] }) => {
                           className="flex items-center gap-1 text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-2.5 py-1 rounded-lg transition-colors"
                         >
                           {deletingId === q.id && <Spinner />}
-                          {deletingId === q.id ? "Removing…" : "Remove"}
+                          {deletingId === q.id ? t("profile.quals.form.removingBtn") : t("profile.quals.form.removeBtn")}
                         </button>
                       </div>
                     )}
@@ -471,7 +448,7 @@ const QualificationsCard = ({ initialData = [] }) => {
 
       {items.length === 0 && !showForm && (
         <p className="text-sm text-gray-400 py-2">
-          No qualifications added yet.
+          {t("profile.quals.empty")}
         </p>
       )}
 
@@ -489,7 +466,7 @@ const QualificationsCard = ({ initialData = [] }) => {
 
           <div>
             <label className="block text-xs font-medium text-[#1F2933] mb-1">
-              Qualification type
+              {t("profile.quals.form.typeLabel")}
             </label>
             <select
               value={form.type}
@@ -503,10 +480,10 @@ const QualificationsCard = ({ initialData = [] }) => {
               }}
               className={inputClass(!form.type && !!formError)}
             >
-              <option value="">Select type…</option>
+              <option value="">{t("profile.quals.form.typeSelect")}</option>
               {QUAL_TYPES.map((qt) => (
                 <option key={qt.value} value={qt.value}>
-                  {qt.label}
+                  {t("profile.quals.types." + qt.value)}
                 </option>
               ))}
             </select>
@@ -515,7 +492,7 @@ const QualificationsCard = ({ initialData = [] }) => {
           {form.type === "OTHER" && (
             <div>
               <label className="block text-xs font-medium text-[#1F2933] mb-1">
-                Qualification name
+                {t("profile.quals.form.nameLabel")}
               </label>
               <input
                 type="text"
@@ -524,7 +501,7 @@ const QualificationsCard = ({ initialData = [] }) => {
                   setForm((f) => ({ ...f, custom_name: e.target.value }));
                   setFormError("");
                 }}
-                placeholder="Enter your qualification"
+                placeholder={t("profile.quals.form.namePlaceholder")}
                 className={inputClass(!form.custom_name.trim() && !!formError)}
               />
             </div>
@@ -532,8 +509,8 @@ const QualificationsCard = ({ initialData = [] }) => {
 
           <div>
             <label className="block text-xs font-medium text-[#1F2933] mb-1">
-              Supporting document <span className="text-red-400">*</span>{" "}
-              <span className="font-normal text-gray-400">PDF, JPG, PNG · max 5 MB</span>
+              {t("profile.quals.form.supportingDocLabel")} <span className="text-red-400">*</span>{" "}
+              <span className="font-normal text-gray-400">{t("profile.quals.docHint")}</span>
             </label>
             <div className="flex items-center gap-2">
               <button
@@ -541,10 +518,10 @@ const QualificationsCard = ({ initialData = [] }) => {
                 onClick={() => fileRef.current?.click()}
                 className="flex-shrink-0 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-2 rounded-lg transition-colors"
               >
-                Choose file
+                {t("profile.quals.chooseFile")}
               </button>
               <span className="text-xs text-gray-500 truncate">
-                {docName || "No file chosen"}
+                {docName || t("profile.quals.noFile")}
               </span>
             </div>
             <input
@@ -562,7 +539,7 @@ const QualificationsCard = ({ initialData = [] }) => {
               onClick={cancelForm}
               className="text-sm text-gray-500 hover:text-[#1F2933] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {t("profile.quals.form.cancelBtn")}
             </button>
             <button
               type="submit"
@@ -570,7 +547,7 @@ const QualificationsCard = ({ initialData = [] }) => {
               className="flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               {saving && <Spinner />}
-              {saving ? "Adding…" : "Add Qualification"}
+              {saving ? t("profile.quals.form.addingBtn") : t("profile.quals.form.addQualBtn")}
             </button>
           </div>
         </form>

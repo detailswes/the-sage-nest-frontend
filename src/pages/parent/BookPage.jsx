@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation, Trans } from 'react-i18next';
 import { listExperts, getExpertPublic } from '../../api/expertApi';
 import { getAvailableSlots, getAvailableDatesInMonth, createBooking, getCurrentTcVersion, acceptTcApi, lockSlotApi, releaseLockApi } from '../../api/bookingApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
@@ -7,48 +8,52 @@ import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
 
 // ─── T&C acceptance modal — blocks booking until parent accepts ───────────────
-const TcModal = ({ isFirstBooking, onAccept, onDecline }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-    <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-xl w-full max-w-md p-8">
-      <div className="text-center mb-6">
-        <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z" />
-          </svg>
+const TcModal = ({ isFirstBooking, onAccept, onDecline }) => {
+  const { t } = useTranslation('parentBookings');
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-xl w-full max-w-md p-8">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-[#1F2933] mb-2">
+            {isFirstBooking ? t('tcModal.titleFirst') : t('tcModal.titleUpdated')}
+          </h2>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            {isFirstBooking ? t('tcModal.bodyFirst') : t('tcModal.bodyUpdated')}
+          </p>
         </div>
-        <h2 className="text-lg font-semibold text-[#1F2933] mb-2">
-          {isFirstBooking ? 'Terms & Conditions' : 'Terms & Conditions Updated'}
-        </h2>
-        <p className="text-sm text-gray-500 leading-relaxed">
-          {isFirstBooking
-            ? 'Please review and accept our Terms & Conditions before making a booking.'
-            : 'Our Terms & Conditions have been updated since your last booking. You must review and accept the new version before making a new booking.'}
-        </p>
-      </div>
 
-      <div className="bg-[#F5F7F5] rounded-xl border border-[#E4E7E4] p-4 mb-6 text-sm text-gray-600 leading-relaxed">
-        You can read the full{' '}
-        <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
-          Terms &amp; Conditions
-        </a>{' '}
-        before accepting.
-      </div>
+        <div className="bg-[#F5F7F5] rounded-xl border border-[#E4E7E4] p-4 mb-6 text-sm text-gray-600 leading-relaxed">
+          <Trans
+            i18nKey="tcModal.readFull"
+            ns="parentBookings"
+            components={[
+              // eslint-disable-next-line jsx-a11y/anchor-has-content
+              <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+            ]}
+          />
+        </div>
 
-      <button
-        onClick={onAccept}
-        className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors mb-3"
-      >
-        I accept the Terms &amp; Conditions
-      </button>
-      <button
-        onClick={onDecline}
-        className="w-full py-2 px-4 text-sm text-gray-500 hover:text-[#1F2933] transition-colors"
-      >
-        Cancel and go back
-      </button>
+        <button
+          onClick={onAccept}
+          className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors mb-3"
+        >
+          {t('tcModal.acceptBtn')}
+        </button>
+        <button
+          onClick={onDecline}
+          className="w-full py-2 px-4 text-sm text-gray-500 hover:text-[#1F2933] transition-colors"
+        >
+          {t('tcModal.cancelBtn')}
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Cluster tags ─────────────────────────────────────────────────────────────
 const CLUSTER_BADGE = {
@@ -60,19 +65,25 @@ const CLUSTER_BADGE = {
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function formatPrice(price, currency = 'EUR') {
-  return new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(price));
+function formatPrice(price, currency = 'EUR', lng = 'en') {
+  return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', { style: 'currency', currency }).format(Number(price));
 }
 
-function formatDuration(mins) {
-  if (mins < 60) return `${mins} min`;
+function formatDuration(mins, t = null) {
+  if (!t) {
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h}h ${m}min` : `${h}h`;
+  }
+  if (mins < 60) return t('slotStep.duration.minutes', { count: mins });
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return m ? `${h}h ${m}min` : `${h}h`;
+  return m ? t('slotStep.duration.hoursMinutes', { h, m }) : t('slotStep.duration.hours', { h });
 }
 
-function formatSlotTime(isoString) {
-  return new Date(isoString).toLocaleTimeString('en-GB', {
+function formatSlotTime(isoString, lng = 'en') {
+  return new Date(isoString).toLocaleTimeString(lng === 'it' ? 'it-IT' : 'en-GB', {
     hour: '2-digit', minute: '2-digit',
   });
 }
@@ -159,6 +170,8 @@ const STEPS = { BROWSE: 'browse', SERVICE: 'service', SLOT: 'slot' };
 const BookPage = () => {
   const navigate      = useNavigate();
   const { state: locationState } = useLocation();
+  const { t, i18n }  = useTranslation('parentBookings');
+  const lng           = i18n.language;
 
   const [step, setStep]           = useState(STEPS.BROWSE);
   const [experts, setExperts]     = useState([]);
@@ -224,13 +237,13 @@ const BookPage = () => {
         setLockId(null);
         setLockExpiresAt(null);
         setSelectedSlot(null);
-        setLockErr('Your slot reservation expired. Please select a time again.');
+        setLockErr(t('slotStep.lockExpired'));
       }
     };
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [lockExpiresAt]);
+  }, [lockExpiresAt, t]);
 
   // Scroll the booking summary into view whenever a slot is selected
   useEffect(() => {
@@ -314,9 +327,9 @@ const BookPage = () => {
       setSelectedSlot(slot);
     } catch (err) {
       if (err.response?.status === 409) {
-        setLockErr('This slot was just reserved by another parent. Please select a different time.');
+        setLockErr(t('slotStep.lockConflict'));
       } else {
-        setLockErr('Could not reserve this slot. Please try again.');
+        setLockErr(t('slotStep.lockError'));
       }
       setSelectedSlot(null);
     } finally {
@@ -399,7 +412,7 @@ const BookPage = () => {
         },
       });
     } catch (err) {
-      setBookErr(err.response?.data?.error || 'Could not create booking. Please try again.');
+      setBookErr(err.response?.data?.error || t('slotStep.bookError'));
       setBooking(false);
     }
   };
@@ -558,14 +571,14 @@ const BookPage = () => {
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
         </svg>
-        Back to services
+        {t('slotStep.backToServices')}
       </button>
 
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">Choose a time</h2>
+        <h2 className="text-xl font-semibold text-[#1F2933]">{t('slotStep.title')}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          {selectedService?.title} · {formatDuration(selectedService?.duration_minutes)} ·{' '}
-          <span className="font-medium text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR')}</span>
+          {selectedService?.title} · {formatDuration(selectedService?.duration_minutes, t)} ·{' '}
+          <span className="font-medium text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
         </p>
       </div>
 
@@ -579,7 +592,7 @@ const BookPage = () => {
                   ? 'bg-[#445446] text-white border-[#445446]'
                   : 'bg-white text-gray-600 border-[#E4E7E4] hover:border-[#445446]'
               }`}>
-              {f === 'ONLINE' ? 'Online' : 'In-Person'}
+              {f === 'ONLINE' ? t('slotStep.formatOnline') : t('slotStep.formatInPerson')}
             </button>
           ))}
         </div>
@@ -587,7 +600,7 @@ const BookPage = () => {
 
       {/* Date picker */}
       <div className="mb-5">
-        <label className="block text-sm font-medium text-[#1F2933] mb-2">Select date</label>
+        <label className="block text-sm font-medium text-[#1F2933] mb-2">{t('slotStep.selectDate')}</label>
         <BookingCalendar
           selectedDate={selectedDate}
           onSelect={setSelectedDate}
@@ -603,16 +616,16 @@ const BookPage = () => {
       {slotsLoading ? (
         <div className="flex items-center gap-2 py-4">
           <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-          <span className="text-sm text-gray-500">Loading available times…</span>
+          <span className="text-sm text-gray-500">{t('slotStep.loadingSlots')}</span>
         </div>
       ) : slots.length === 0 ? (
         <div className="py-6 text-center bg-white rounded-xl border border-[#E4E7E4]">
-          <p className="text-sm font-medium text-gray-500">No available slots on this date.</p>
-          <p className="text-xs text-gray-400 mt-1">Try selecting a different date.</p>
+          <p className="text-sm font-medium text-gray-500">{t('slotStep.noSlots')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('slotStep.noSlotsHint')}</p>
         </div>
       ) : (
         <>
-        <p className="text-xs text-gray-400 mb-2">Times shown in your local timezone.</p>
+        <p className="text-xs text-gray-400 mb-2">{t('slotStep.timezone')}</p>
         {lockErr && (
           <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{lockErr}</div>
         )}
@@ -625,7 +638,7 @@ const BookPage = () => {
                   ? 'bg-[#445446] text-white border-[#445446]'
                   : 'bg-white text-[#1F2933] border-[#E4E7E4] hover:border-[#445446]'
               }`}>
-              {locking && selectedSlot?.start !== slot.start ? formatSlotTime(slot.start) : formatSlotTime(slot.start)}
+              {formatSlotTime(slot.start, lng)}
             </button>
           ))}
         </div>
@@ -642,7 +655,7 @@ const BookPage = () => {
       {/* Summary + Book button */}
       {selectedSlot && (
         <div ref={summaryRef} className="bg-white rounded-xl border border-[#E4E7E4] p-5 mt-2">
-          <h3 className="text-sm font-semibold text-[#1F2933] mb-3">Booking summary</h3>
+          <h3 className="text-sm font-semibold text-[#1F2933] mb-3">{t('slotStep.summary.title')}</h3>
 
           {/* Slot reservation countdown */}
           {lockSecsLeft !== null && (
@@ -654,22 +667,24 @@ const BookPage = () => {
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
               </svg>
-              Slot reserved for you — expires in {Math.floor(lockSecsLeft / 60)}:{String(lockSecsLeft % 60).padStart(2, '0')}
+              {t('slotStep.summary.reserved', {
+                time: `${Math.floor(lockSecsLeft / 60)}:${String(lockSecsLeft % 60).padStart(2, '0')}`,
+              })}
             </div>
           )}
           <div className="space-y-1 text-sm text-gray-600 mb-4">
-            <p><span className="font-medium text-[#1F2933]">Expert:</span> {selectedExpert?.user?.name}</p>
-            <p><span className="font-medium text-[#1F2933]">Service:</span> {selectedService?.title}</p>
-            <p><span className="font-medium text-[#1F2933]">Date:</span> {new Date(selectedSlot.start).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
-            <p><span className="font-medium text-[#1F2933]">Time:</span> {formatSlotTime(selectedSlot.start)} <span className="text-xs text-gray-400">(your local time)</span></p>
-            <p><span className="font-medium text-[#1F2933]">Format:</span> {selectedFormat === 'ONLINE' ? 'Online' : 'In-Person'}</p>
+            <p><span className="font-medium text-[#1F2933]">{t('slotStep.summary.expertLabel')}</span> {selectedExpert?.user?.name}</p>
+            <p><span className="font-medium text-[#1F2933]">{t('slotStep.summary.serviceLabel')}</span> {selectedService?.title}</p>
+            <p><span className="font-medium text-[#1F2933]">{t('slotStep.summary.dateLabel')}</span> {new Date(selectedSlot.start).toLocaleDateString(lng === 'it' ? 'it-IT' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p><span className="font-medium text-[#1F2933]">{t('slotStep.summary.timeLabel')}</span> {formatSlotTime(selectedSlot.start, lng)} <span className="text-xs text-gray-400">{t('slotStep.summary.localTime')}</span></p>
+            <p><span className="font-medium text-[#1F2933]">{t('slotStep.summary.formatLabel')}</span> {selectedFormat === 'ONLINE' ? t('slotStep.formatOnline') : t('slotStep.formatInPerson')}</p>
             {selectedFormat === 'IN_PERSON' && (() => {
               const d = expertDetail || selectedExpert;
               const loc = [d?.address_street, d?.address_city, d?.address_postcode].filter(Boolean).join(', ');
-              return loc ? <p><span className="font-medium text-[#1F2933]">Location:</span> {loc}</p> : null;
+              return loc ? <p><span className="font-medium text-[#1F2933]">{t('slotStep.summary.locationLabel')}</span> {loc}</p> : null;
             })()}
-            <p><span className="font-medium text-[#1F2933]">Duration:</span> {formatDuration(selectedService?.duration_minutes)}</p>
-            <p className="text-base font-semibold text-[#1F2933] mt-2">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR')}</p>
+            <p><span className="font-medium text-[#1F2933]">{t('slotStep.summary.durationLabel')}</span> {formatDuration(selectedService?.duration_minutes, t)}</p>
+            <p className="text-base font-semibold text-[#1F2933] mt-2">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</p>
           </div>
 
           {/* Cancellation policy — compact one-liner in the summary */}
@@ -679,12 +694,12 @@ const BookPage = () => {
 
           {/* Currency notice */}
           <div className="mb-4 p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
-            Prices are set by the expert in their local currency ({selectedService?.currency || 'EUR'}). Your bank may apply a conversion fee if this differs from your card currency.
+            {t('slotStep.summary.currencyNotice', { currency: selectedService?.currency || 'EUR' })}
           </div>
 
           {/* Health disclaimer */}
           <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
-            Sage Nest is a booking platform, not a healthcare provider. Practitioners listed on this platform are independent professionals. Advice given during sessions does not constitute medical advice, diagnosis, or treatment and should not be relied upon as a substitute for professional medical care. Always seek the advice of a qualified healthcare provider if you have concerns about your or your child's health. If you believe you or your child need urgent medical care, contact emergency services immediately.
+            {t('slotStep.summary.healthDisclaimer')}
           </div>
 
           {bookErr && (
@@ -693,10 +708,10 @@ const BookPage = () => {
 
           <button onClick={handleBook} disabled={booking}
             className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-            {booking ? 'Creating booking…' : 'Proceed to payment'}
+            {booking ? t('slotStep.summary.creatingBtn') : t('slotStep.summary.proceedBtn')}
           </button>
           <p className="text-xs text-gray-400 text-center mt-2">
-            You won't be charged until payment is confirmed on the next step.
+            {t('slotStep.summary.noChargeYet')}
           </p>
         </div>
       )}

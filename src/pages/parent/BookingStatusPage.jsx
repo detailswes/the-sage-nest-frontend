@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getBookingById, verifyPayment } from '../../api/bookingApi';
 
 const POLL_INTERVAL_MS = 3000;
@@ -10,23 +11,29 @@ function formatLocation(expert) {
     .filter(Boolean).join(', ');
 }
 
-function formatDate(isoStr) {
-  return new Date(isoStr).toLocaleString('en-GB', {
+function formatDate(isoStr, lng = 'en') {
+  return new Date(isoStr).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
 }
 
-function formatPrice(amount, currency = 'EUR') {
-  return new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(amount));
+function formatPrice(amount, currency = 'EUR', lng = 'en') {
+  return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', { style: 'currency', currency }).format(Number(amount));
 }
 
-function formatDuration(mins) {
+function formatDuration(mins, t) {
   if (!mins) return '';
+  if (!t) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m} min`;
+    return m ? `${h}h ${m}min` : `${h}h`;
+  }
+  if (mins < 60) return t('slotStep.duration.minutes', { count: mins });
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  if (h === 0) return `${m} min`;
-  return m ? `${h}h ${m}min` : `${h}h`;
+  return m ? t('slotStep.duration.hoursMinutes', { h, m }) : t('slotStep.duration.hours', { h });
 }
 
 function bookingRef(booking) {
@@ -36,12 +43,14 @@ function bookingRef(booking) {
 
 // ─── Status icons / banners ───────────────────────────────────────────────────
 const SuccessBanner = ({ booking }) => {
+  const { t, i18n } = useTranslation('parentBookings');
+  const lng = i18n.language;
   const expertName = booking.expert?.user?.account_deleted
-    ? 'Deleted specialist'
+    ? t('bookingStatus.success.deletedSpecialist')
     : booking.expert?.user?.name;
-  const location = formatLocation(booking.expert);
-  const formatLabel = booking.format === 'ONLINE' ? 'Online' : 'In-Person';
-  const duration = formatDuration(booking.duration_minutes);
+  const location    = formatLocation(booking.expert);
+  const formatLabel = booking.format === 'ONLINE' ? t('slotStep.formatOnline') : t('slotStep.formatInPerson');
+  const duration    = formatDuration(booking.duration_minutes, t);
 
   return (
     <div className="text-center">
@@ -52,43 +61,43 @@ const SuccessBanner = ({ booking }) => {
         </svg>
       </div>
 
-      <h2 className="text-xl font-bold text-[#1F2933] mb-2">Booking confirmed</h2>
+      <h2 className="text-xl font-bold text-[#1F2933] mb-2">{t('bookingStatus.success.title')}</h2>
 
       {/* Booking reference chip */}
       <span className="inline-block text-xs font-medium text-gray-500 bg-gray-100 border border-[#E4E7E4] px-3 py-1 rounded-full mb-6">
-        Booking ref: {bookingRef(booking)}
+        {t('bookingStatus.success.refChip', { ref: bookingRef(booking) })}
       </span>
 
       {/* Detail table */}
       <div className="border border-[#E4E7E4] rounded-xl overflow-hidden mb-4 text-sm text-left">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7E4]">
-          <span className="text-gray-500">Expert</span>
+          <span className="text-gray-500">{t('bookingStatus.success.expertLabel')}</span>
           <span className="font-medium text-[#1F2933] text-right">{expertName}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7E4]">
-          <span className="text-gray-500">Service</span>
+          <span className="text-gray-500">{t('bookingStatus.success.serviceLabel')}</span>
           <span className="font-medium text-[#1F2933] text-right max-w-[60%]">{booking.service?.title}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7E4]">
-          <span className="text-gray-500">Date &amp; time</span>
-          <span className="font-medium text-[#1F2933] text-right">{formatDate(booking.scheduled_at)}</span>
+          <span className="text-gray-500">{t('bookingStatus.success.dateLabel')}</span>
+          <span className="font-medium text-[#1F2933] text-right">{formatDate(booking.scheduled_at, lng)}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7E4]">
-          <span className="text-gray-500">Format</span>
+          <span className="text-gray-500">{t('bookingStatus.success.formatLabel')}</span>
           <span className="font-medium text-[#1F2933]">
             {formatLabel}{duration ? ` · ${duration}` : ''}
           </span>
         </div>
         {booking.format === 'IN_PERSON' && location && (
           <div className="flex items-start justify-between px-4 py-3 border-b border-[#E4E7E4]">
-            <span className="text-gray-500 flex-shrink-0">Location</span>
+            <span className="text-gray-500 flex-shrink-0">{t('bookingStatus.success.locationLabel')}</span>
             <span className="font-medium text-[#1F2933] text-right ml-4">{location}</span>
           </div>
         )}
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-gray-500">Total paid</span>
+          <span className="text-gray-500">{t('bookingStatus.success.totalLabel')}</span>
           <span className="font-semibold text-[#445446]">
-            {formatPrice(booking.amount, booking.currency || 'EUR')}
+            {formatPrice(booking.amount, booking.currency || 'EUR', lng)}
           </span>
         </div>
       </div>
@@ -99,56 +108,63 @@ const SuccessBanner = ({ booking }) => {
           <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
         </svg>
         <p className="text-xs text-[#445446] leading-relaxed">
-          Confirmation email sent. Your expert will share a meeting link at least 24 hours before your session.
+          {t('bookingStatus.success.emailNotice')}
         </p>
       </div>
 
       <Link to="/dashboard/parent/upcoming"
         className="block w-full bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold py-3 rounded-lg transition-colors text-center">
-        View my bookings
+        {t('bookingStatus.success.viewBtn')}
       </Link>
     </div>
   );
 };
 
-const FailedBanner = ({ status }) => (
-  <div className="text-center">
-    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-      <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-      </svg>
+const FailedBanner = ({ status }) => {
+  const { t } = useTranslation('parentBookings');
+  return (
+    <div className="text-center">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+        <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </div>
+      <h2 className="text-xl font-bold text-[#1F2933] mb-1">
+        {status === 'CANCELLED' ? t('bookingStatus.failed.titleCancelled') : t('bookingStatus.failed.titleFailed')}
+      </h2>
+      <p className="text-sm text-gray-500 mb-6">
+        {status === 'REFUNDED'
+          ? t('bookingStatus.failed.bodyRefunded')
+          : t('bookingStatus.failed.bodyFailed')}
+      </p>
+      <Link to="/dashboard/parent/browse"
+        className="inline-block bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold px-6 py-3 rounded-lg transition-colors">
+        {t('bookingStatus.failed.tryAgainBtn')}
+      </Link>
     </div>
-    <h2 className="text-xl font-bold text-[#1F2933] mb-1">
-      {status === 'CANCELLED' ? 'Booking Cancelled' : 'Payment Failed'}
-    </h2>
-    <p className="text-sm text-gray-500 mb-6">
-      {status === 'REFUNDED'
-        ? 'Your booking has been refunded. Funds will appear in 5–10 business days.'
-        : 'Your payment did not go through. Please try again.'}
-    </p>
-    <Link to="/dashboard/parent/browse"
-      className="inline-block bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold px-6 py-3 rounded-lg transition-colors">
-      Try Again
-    </Link>
-  </div>
-);
+  );
+};
 
-const PendingBanner = () => (
-  <div className="text-center">
-    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 mb-4">
-      <div className="w-8 h-8 rounded-full border-3 border-amber-500 border-t-transparent animate-spin" style={{ borderWidth: 3 }} />
+const PendingBanner = () => {
+  const { t } = useTranslation('parentBookings');
+  return (
+    <div className="text-center">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 mb-4">
+        <div className="w-8 h-8 rounded-full border-3 border-amber-500 border-t-transparent animate-spin" style={{ borderWidth: 3 }} />
+      </div>
+      <h2 className="text-xl font-bold text-[#1F2933] mb-1">{t('bookingStatus.pending.title')}</h2>
+      <p className="text-sm text-gray-500">
+        {t('bookingStatus.pending.body')}
+      </p>
     </div>
-    <h2 className="text-xl font-bold text-[#1F2933] mb-1">Confirming your booking…</h2>
-    <p className="text-sm text-gray-500">
-      We're waiting for payment confirmation. This usually takes a few seconds.
-    </p>
-  </div>
-);
+  );
+};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const BookingStatusPage = () => {
   const { id: paramId }   = useParams();
   const [searchParams]    = useSearchParams();
+  const { t }             = useTranslation('parentBookings');
   // Support both /booking/status/:id (paramId) and /booking-confirmed?bookingId=X (query param)
   const id = paramId || searchParams.get('bookingId');
   const [booking,  setBooking]  = useState(null);
@@ -169,7 +185,7 @@ const BookingStatusPage = () => {
         clearInterval(timer.current);
       }
     } catch (err) {
-      setError('Could not load booking status.');
+      setError(t('bookingStatus.loadError'));
       clearInterval(timer.current);
     }
   };
@@ -206,7 +222,7 @@ const BookingStatusPage = () => {
           <div className="text-center">
             <p className="text-sm text-red-600 mb-4">{error}</p>
             <Link to="/dashboard/parent/upcoming" className="text-sm text-[#445446] underline">
-              Go to My Bookings
+              {t('bookingStatus.goToBookings')}
             </Link>
           </div>
         ) : !booking ? (
@@ -220,16 +236,16 @@ const BookingStatusPage = () => {
             <PendingBanner />
             {redirectStatus === 'succeeded' && (
               <p className="text-xs text-gray-400 text-center mt-4">
-                Payment received — finalising confirmation…
+                {t('bookingStatus.pending.paymentReceived')}
               </p>
             )}
             {pollCount.current >= MAX_POLLS && (
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-500 mb-2">
-                  This is taking longer than usual.
+                  {t('bookingStatus.pending.takingLonger')}
                 </p>
                 <Link to="/dashboard/parent/upcoming" className="text-sm text-[#445446] underline">
-                  Check My Bookings
+                  {t('bookingStatus.pending.checkBookings')}
                 </Link>
               </div>
             )}

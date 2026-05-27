@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { it as dateFnsIt } from 'date-fns/locale';
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, addMonths, subMonths,
   isSameDay, isSameMonth, isToday, isAfter, isBefore,
   format, parseISO, startOfDay, getYear, getMonth,
 } from 'date-fns';
-
-const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 function ChevronLeft() {
   return (
@@ -44,6 +44,10 @@ const BookingCalendar = ({
   loadingDates = false,
   onMonthChange,
 }) => {
+  const { t, i18n } = useTranslation('parentBookings');
+  const weekdays = t('calendar.weekdays', { returnObjects: true });
+  const dateFnsLocale = i18n.language === 'it' ? dateFnsIt : undefined;
+
   const selected = selectedDate ? parseISO(selectedDate) : null;
   const minDate  = minDateISO  ? parseISO(minDateISO)  : startOfDay(new Date());
   const maxDate  = maxDateISO  ? parseISO(maxDateISO)  : null;
@@ -83,7 +87,7 @@ const BookingCalendar = ({
 
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-[#1F2933]">
-            {format(viewDate, 'MMMM yyyy')}
+            {format(viewDate, 'MMMM yyyy', { locale: dateFnsLocale })}
           </span>
           {loadingDates && (
             <div className="w-3 h-3 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -105,18 +109,18 @@ const BookingCalendar = ({
         <div className="flex items-center gap-3 mb-3 px-1">
           <span className="flex items-center gap-1 text-xs text-gray-400">
             <span className="w-1.5 h-1.5 rounded-full bg-[#445446] inline-block" />
-            Available
+            {t('calendar.available')}
           </span>
           <span className="flex items-center gap-1 text-xs text-gray-400">
             <span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block" />
-            No slots
+            {t('calendar.noSlots')}
           </span>
         </div>
       )}
 
       {/* Weekday labels */}
       <div className="grid grid-cols-7 mb-1">
-        {WEEKDAYS.map((d) => (
+        {weekdays.map((d) => (
           <div key={d} className="text-xs font-medium text-gray-400 text-center py-1">
             {d}
           </div>
@@ -162,7 +166,7 @@ const BookingCalendar = ({
                 disabled={disabled || noSlots}
                 onClick={() => onSelect(isoDay)}
                 className={btnCls}
-                title={noSlots ? 'No availability on this date' : undefined}
+                title={noSlots ? t('calendar.noAvailabilityTitle') : undefined}
               >
                 {format(day, 'd')}
 

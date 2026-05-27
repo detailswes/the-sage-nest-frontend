@@ -1,0 +1,762 @@
+{
+  "nav": {
+    "profile":      "Profilo",
+    "services":     "Servizi",
+    "availability": "Disponibilità",
+    "calendar":     "Calendario",
+    "appointments": "Appuntamenti futuri",
+    "history":      "Storico sessioni",
+    "settings":     "Impostazioni"
+  },
+  "signOut": "Esci",
+  "signOutModal": {
+    "title":   "Uscire?",
+    "body":    "Sei sicuro di voler uscire dal tuo account?",
+    "cancel":  "Annulla",
+    "confirm": "Sì, esci"
+  },
+  "banners": {
+    "changesRequested": {
+      "title":  "Modifiche al profilo richieste",
+      "footer": "Aggiorna il tuo profilo e salva — verrà reinviato per la revisione."
+    },
+    "noAvailability": {
+      "title": "Aggiungi la tua disponibilità per ricevere prenotazioni",
+      "body":  "Il tuo profilo è attivo ma non hai disponibilità impostata per i prossimi 14 giorni — i genitori non potranno prenotare una sessione finché non lo farai.",
+      "cta":   "Imposta la tua disponibilità →"
+    },
+    "unpublished": {
+      "title": "Il tuo profilo è attualmente nascosto dalla ricerca",
+      "body":  "Il tuo account è approvato ma è stato temporaneamente rimosso dai risultati di ricerca dei genitori dal team di Sage Nest. Contatta l'assistenza per ulteriori informazioni."
+    }
+  },
+  "upcomingAppointments": {
+    "title":       "Appuntamenti futuri",
+    "subtitle":    "Le tue prossime sessioni con i genitori.",
+    "loadError":   "Impossibile caricare gli appuntamenti.",
+    "cancelError": "Impossibile cancellare l'appuntamento. Riprova.",
+    "empty": {
+      "title":    "Nessun appuntamento futuro.",
+      "subtitle": "La tua disponibilità è attiva e i genitori possono prenotarti."
+    },
+    "cancelModal": {
+      "title":         "Cancellare questo appuntamento?",
+      "at":            "alle",
+      "warningBold":   "Questa azione non può essere annullata.",
+      "warningBody":   " Il genitore riceverà un rimborso completo e un'email di notifica della cancellazione.",
+      "keepBtn":       "Mantieni appuntamento",
+      "cancelBtn":     "Sì, cancella",
+      "cancellingBtn": "Cancellazione…"
+    },
+    "noteEditor": {
+      "label":       "Note private",
+      "parentNote":  "(non visibili ai genitori)",
+      "placeholder": "Aggiungi note di sessione…",
+      "saving":      "Salvataggio…",
+      "saved":       "Salvato",
+      "error":       "Impossibile salvare — riprova"
+    },
+    "card": {
+      "online":          "Online",
+      "inPerson":        "Di persona",
+      "linkReminder":    "Link di sessione non ancora inviato al genitore",
+      "markSent":        "Segna inviato",
+      "markSentSaving":  "Salvataggio…",
+      "markComplete":    "Segna come completato",
+      "markingComplete": "Completamento…",
+      "cancelBtn":       "Cancella appuntamento"
+    },
+    "duration": {
+      "minutes":      "{{count}} min",
+      "hours":        "{{h}}h",
+      "hoursMinutes": "{{h}}h {{m}}min"
+    }
+  },
+  "profile": {
+    "heading":    "Profilo",
+    "subheading": "Gestisci le informazioni del tuo profilo esperto.",
+    "loadError":  "Impossibile caricare il profilo.",
+    "publicBadge": "Pubblico",
+    "stripe": {
+      "checking":   "Verifica Stripe…",
+      "connected":  "Stripe connesso",
+      "connecting": "Connessione…",
+      "incomplete": "Completa configurazione Stripe",
+      "connect":    "Connetti con Stripe"
+    },
+    "stripeSuccess": {
+      "title": "Account Stripe connesso!",
+      "body":  "Puoi ora ricevere pagamenti quando le prenotazioni vengono completate."
+    },
+    "pendingDraft": {
+      "title": "Modifiche al profilo in attesa di revisione",
+      "body":  "Le tue modifiche recenti sono state inviate e sono in attesa di approvazione da parte dell'amministratore. Il tuo profilo live rimane invariato finché non vengono approvate. Puoi salvare nuove modifiche in qualsiasi momento per aggiornare la bozza in attesa."
+    },
+    "rejectedDraft": {
+      "title":     "Modifiche al profilo non approvate",
+      "adminNote": "Nota dell'admin: ",
+      "body":      "Aggiorna il tuo profilo e salva di nuovo per reinviarlo alla revisione."
+    },
+    "photo": {
+      "uploading":   "Caricamento foto…",
+      "hint":        "Clicca sulla tua foto per cambiarla · JPEG, PNG o WebP · max 5 MB ·",
+      "typeError":   "Carica un'immagine JPEG, PNG o WebP.",
+      "sizeError":   "La tua foto è di {{size}} MB — max 5 MB. Prova a caricare una foto di dimensioni inferiori.",
+      "uploadError": "Caricamento non riuscito. Riprova."
+    },
+    "identityCard": {
+      "statusApproved": "Approvato",
+      "statusRejected": "Rifiutato",
+      "statusPending":  "In attesa di approvazione",
+      "memberSince":    "Membro da {{date}}"
+    },
+    "details": {
+      "title":                "Dettagli profilo",
+      "positionLabel":        "Titolo professionale",
+      "positionPlaceholder":  "es. Specialista in allattamento infantile",
+      "positionHint":         "Visualizzato sotto il tuo nome nel profilo pubblico.",
+      "summaryLabel":         "Breve descrizione",
+      "summaryPlaceholder":   "Una descrizione di 1–2 frasi mostrata in cima al tuo profilo pubblico…",
+      "bioLabel":             "Bio completa",
+      "bioPlaceholder":       "Racconta ai genitori il tuo background, la tua esperienza e il tuo approccio…",
+      "addressLabel":         "Indirizzo dello studio",
+      "streetPlaceholder":    "Indirizzo",
+      "cityPlaceholder":      "Città",
+      "postcodePlaceholder":  "CAP",
+      "addressHint":          "Mostrato ai genitori nella pagina del tuo profilo pubblico.",
+      "timezoneLabel":        "Fuso orario",
+      "timezoneHint":         "Utilizzato per visualizzare correttamente i tuoi slot di disponibilità.",
+      "languagesLabel":       "Lingue parlate",
+      "languagePlaceholder":  "Aggiungi una lingua non presente nell'elenco…",
+      "languageAddBtn":       "Aggiungi",
+      "languageApproved":     "Approvato",
+      "languagePendingReview":"· in revisione",
+      "languageHint":         "Le lingue personalizzate vengono esaminate da un admin prima di apparire pubblicamente.",
+      "socialLabel":          "Social Media",
+      "socialHint":           "Tutti i campi sono facoltativi. I link appariranno sul tuo profilo pubblico.",
+      "saveBtn":              "Salva profilo",
+      "savingBtn":            "Salvataggio…"
+    },
+    "validation": {
+      "bioTooLong":       "La bio completa deve essere di {{max}} caratteri o meno.",
+      "summaryTooLong":   "La descrizione deve essere di {{max}} caratteri o meno.",
+      "streetRequired":   "L'indirizzo è obbligatorio.",
+      "cityRequired":     "La città è obbligatoria.",
+      "postcodeRequired": "Il CAP è obbligatorio.",
+      "saveFailed":       "Impossibile salvare il profilo."
+    },
+    "savedAsDraft": {
+      "title": "Modifiche inviate per revisione.",
+      "body":  "Il tuo profilo live rimane invariato. Un admin esaminerà le tue modifiche prima che vengano pubblicate."
+    },
+    "saveSuccess": {
+      "title": "Profilo salvato con successo.",
+      "body":  "Le tue modifiche sono attive. Puoi tornare e modificare il tuo profilo in qualsiasi momento."
+    },
+    "gdpr": {
+      "title":       "I tuoi dati",
+      "body":        "Scarica una copia di tutti i dati personali e professionali che Sage Nest detiene su di te — inclusi profilo, servizi, prenotazioni e informazioni aziendali. Fornito ai sensi dell'articolo 20 del GDPR (diritto alla portabilità dei dati).",
+      "preparing":   "Preparazione download…",
+      "downloadBtn": "Scarica i miei dati"
+    },
+    "quals": {
+      "title":        "Qualifiche",
+      "subtitle":     "Almeno una qualifica con un documento di supporto deve essere aggiunta prima che il tuo profilo possa essere inviato per la revisione.",
+      "docHint":      "PDF, JPG, PNG · max 5 MB per documento",
+      "addBtn":       "Aggiungi",
+      "empty":        "Nessuna qualifica aggiunta.",
+      "noDocument":   "Nessun documento",
+      "viewDocument": "Visualizza documento",
+      "editingLabel": "Modifica:",
+      "otherLabel":   "Altro",
+      "chooseFile":   "Scegli file",
+      "noFile":       "Nessun file selezionato",
+      "docUploadHint":"L'aggiunta di un documento di supporto aiuta gli admin a verificare questa voce più rapidamente.",
+      "form": {
+        "typeLabel":         "Tipo di qualifica",
+        "typeSelect":        "Seleziona tipo…",
+        "nameLabel":         "Nome della qualifica",
+        "namePlaceholder":   "Inserisci la tua qualifica",
+        "replaceDocLabel":   "Sostituisci documento",
+        "replaceDocHint":    "(lascia vuoto per mantenere quello esistente · PDF, JPG, PNG · max 5 MB)",
+        "supportingDocLabel":"Documento di supporto",
+        "cancelBtn":         "Annulla",
+        "keepBtn":           "Mantieni",
+        "addingBtn":         "Aggiunta…",
+        "addQualBtn":        "Aggiungi qualifica",
+        "savingBtn":         "Salvataggio…",
+        "saveBtn":           "Salva modifiche",
+        "removingBtn":       "Rimozione…",
+        "removeBtn":         "Rimuovi"
+      },
+      "errors": {
+        "docSize":         "Il documento deve essere di 5 MB o meno.",
+        "typeRequired":    "Seleziona un tipo di qualifica.",
+        "nameRequired":    "Inserisci il nome della qualifica.",
+        "docRequired":     "Carica un documento di supporto per questa qualifica.",
+        "addFailed":       "Impossibile aggiungere la qualifica.",
+        "nameEditRequired":"Il nome della qualifica è obbligatorio.",
+        "updateFailed":    "Impossibile aggiornare la qualifica."
+      },
+      "types": {
+        "LACTATION_CONSULTANT":     "Consulente per l'allattamento (IBCLC)",
+        "BREASTFEEDING_COUNSELLOR": "Consulente per l'allattamento al seno",
+        "INFANT_SLEEP_CONSULTANT":  "Consulente per il sonno del neonato",
+        "DOULA":                    "Doula",
+        "MIDWIFE":                  "Ostetrica",
+        "BABY_OSTEOPATH":           "Osteopata per neonati",
+        "PAEDIATRIC_NUTRITIONIST":  "Nutrizionista pediatrico",
+        "EARLY_YEARS_SPECIALIST":   "Specialista della prima infanzia",
+        "POSTNATAL_PHYSIOTHERAPIST":"Fisioterapista post-natale",
+        "PARENTING_COACH":          "Coach genitoriale",
+        "OTHER":                    "Altro"
+      }
+    },
+    "certs": {
+      "title":        "Certificazioni",
+      "subtitle":     "Formazione aggiuntiva o certificazioni che aumentano la fiducia dei genitori.",
+      "docHint":      "Documenti di supporto facoltativi · PDF, JPG, PNG · max 5 MB",
+      "addBtn":       "Aggiungi",
+      "empty":        "Nessuna certificazione aggiunta.",
+      "noDocument":   "Nessun documento",
+      "viewDocument": "Visualizza documento",
+      "docUploadHint":"L'aggiunta di un documento di supporto aiuta gli admin a verificare questa voce più rapidamente.",
+      "chooseFile":   "Scegli file",
+      "noFile":       "Nessun file selezionato",
+      "form": {
+        "nameLabel":       "Nome della certificazione",
+        "namePlaceholder": "es. Certificato di primo soccorso",
+        "replaceDocLabel": "Sostituisci documento",
+        "replaceDocHint":  "(lascia vuoto per mantenere quello esistente · PDF, JPG, PNG · max 5 MB)",
+        "cancelBtn":       "Annulla",
+        "keepBtn":         "Mantieni",
+        "addingBtn":       "Aggiunta…",
+        "addCertBtn":      "Aggiungi certificazione",
+        "savingBtn":       "Salvataggio…",
+        "saveBtn":         "Salva modifiche",
+        "removingBtn":     "Rimozione…",
+        "removeBtn":       "Rimuovi"
+      },
+      "errors": {
+        "docSize":      "Il documento deve essere di 5 MB o meno.",
+        "nameRequired": "Il nome della certificazione è obbligatorio.",
+        "addFailed":    "Impossibile aggiungere la certificazione.",
+        "updateFailed": "Impossibile aggiornare la certificazione."
+      }
+    },
+    "insurance": {
+      "title":          "Assicurazione professionale",
+      "subtitle":       "Richiesta prima che il tuo profilo possa essere approvato. Carica la prova di Responsabilità Civile o Assicurazione di Responsabilità Professionale.",
+      "updateBtn":      "Aggiorna",
+      "expired":        "Assicurazione scaduta",
+      "active":         "Assicurazione attiva",
+      "expiresLabel":   "Scadenza polizza:",
+      "viewDocument":   "Visualizza documento",
+      "expiredWarning": "La tua assicurazione è scaduta. Carica una polizza valida prima che il tuo profilo possa essere approvato.",
+      "missingMsg":     "L'assicurazione è richiesta per l'approvazione del profilo. Carica la tua polizza.",
+      "uploadNow":      "Carica ora",
+      "keepBtn":        "Mantieni",
+      "removingBtn":    "Rimozione…",
+      "removeBtn":      "Rimuovi",
+      "form": {
+        "expiryLabel":         "Data di scadenza della polizza",
+        "expiryWarning_one":   "Questa polizza scade tra {{count}} giorno — considera di caricare presto una polizza rinnovata.",
+        "expiryWarning_other": "Questa polizza scade tra {{count}} giorni — considera di caricare presto una polizza rinnovata.",
+        "docLabel":            "Documento assicurativo",
+        "keepExisting":        "(lascia vuoto per mantenere quello esistente)",
+        "chooseFile":          "Scegli file",
+        "noFile":              "Nessun file selezionato",
+        "cancelBtn":           "Annulla",
+        "savingBtn":           "Salvataggio…",
+        "saveBtn":             "Salva assicurazione",
+        "updateBtn":           "Aggiorna assicurazione"
+      },
+      "errors": {
+        "docSize":        "Il documento deve essere di 5 MB o meno.",
+        "expiryRequired": "La data di scadenza della polizza è obbligatoria.",
+        "expiryFuture":   "La data di scadenza deve essere futura.",
+        "docRequired":    "Il documento assicurativo è obbligatorio per la configurazione iniziale.",
+        "saveFailed":     "Impossibile salvare il registro assicurativo."
+      }
+    },
+    "business": {
+      "title":     "Informazioni aziendali",
+      "subtitle":  "Informazioni raccolte per scopi di conformità",
+      "editBtn":   "Modifica",
+      "savedMsg":  "Informazioni aziendali salvate.",
+      "missingMsg":"Le informazioni aziendali sono necessarie per l'onboarding. Completa questa sezione.",
+      "addNow":    "Aggiungi ora",
+      "infoRows": {
+        "entityType":     "Tipo di entità",
+        "legalName":      "Nome legale completo",
+        "dateOfBirth":    "Data di nascita",
+        "street":         "Via",
+        "city":           "Città",
+        "postalCode":     "CAP",
+        "country":        "Paese",
+        "tin":            "Codice fiscale",
+        "vatNumber":      "Partita IVA",
+        "companyReg":     "Numero reg. aziendale",
+        "iban":           "IBAN / Conto bancario",
+        "email":          "Indirizzo email",
+        "website":        "Sito web",
+        "municipality":   "Comune",
+        "businessAddress":"Indirizzo aziendale"
+      },
+      "entityTypes": {
+        "INDIVIDUAL": "Privato",
+        "COMPANY":    "Società / Persona giuridica"
+      },
+      "form": {
+        "entityTypeLabel":          "Tipo di entità",
+        "entityTypePlaceholder":    "Seleziona tipo…",
+        "legalNameLabel":           "Nome legale completo",
+        "legalNamePlaceholder":     "Nome individuale o aziendale come ufficialmente registrato",
+        "dobLabel":                 "Data di nascita",
+        "registeredAddress":        "Indirizzo legale",
+        "primaryAddress":           "Indirizzo principale",
+        "streetPlaceholder":        "Via e numero",
+        "cityPlaceholder":          "Città / Comune",
+        "postalCodePlaceholder":    "CAP",
+        "countryPlaceholder":       "Paese",
+        "tinLabel":                 "Codice Fiscale (TIN)",
+        "tinPlaceholder":           "CPR (Danimarca), PPS (Irlanda) o equivalente nazionale",
+        "vatLabel":                 "Partita IVA",
+        "vatPlaceholder":           "es. IT12345678901",
+        "companyRegLabel":          "Numero di iscrizione al registro imprese",
+        "companyRegPlaceholder":    "Numero ufficiale di iscrizione al registro imprese",
+        "ibanLabel":                "IBAN / Conto bancario",
+        "ibanPlaceholder":          "es. IT60X0542811101000000123456",
+        "ibanNote":                 "Richiesto per la rendicontazione fiscale ai sensi della DAC7 — Direttiva UE 2021/514. Memorizzato in forma crittografata.",
+        "emailLabel":               "Email",
+        "emailPlaceholder":         "azienda@esempio.com",
+        "websiteLabel":             "Sito web",
+        "websiteOptional":          "(facoltativo)",
+        "websitePlaceholder":       "https://www.esempio.com",
+        "municipalityLabel":        "Comune di residenza",
+        "municipalityHint":         "(richiesto per esperti danesi)",
+        "municipalityPlaceholder":  "es. Copenhagen",
+        "businessAddressLabel":     "Indirizzo aziendale",
+        "businessAddressHint":      "(facoltativo — solo se diverso dall'indirizzo principale)",
+        "businessAddressPlaceholder":"Lascia vuoto se uguale all'indirizzo principale",
+        "cancelBtn":                "Annulla",
+        "savingBtn":                "Salvataggio…",
+        "saveBtn":                  "Salva",
+        "updateBtn":                "Aggiorna"
+      },
+      "errors": {
+        "entityTypeRequired": "Il tipo di entità è obbligatorio.",
+        "legalNameRequired":  "Il nome legale completo è obbligatorio.",
+        "dobRequired":        "La data di nascita è obbligatoria.",
+        "streetRequired":     "La via è obbligatoria.",
+        "cityRequired":       "La città è obbligatoria.",
+        "postalCodeRequired": "Il CAP è obbligatorio.",
+        "countryRequired":    "Il paese è obbligatorio.",
+        "tinRequired":        "Il Codice Fiscale (TIN) è obbligatorio.",
+        "vatRequired":        "La partita IVA è obbligatoria per le società.",
+        "companyRegRequired": "Il numero di registrazione aziendale è obbligatorio.",
+        "ibanRequired":       "IBAN / conto bancario è obbligatorio.",
+        "ibanInvalid":        "Inserisci un IBAN valido (es. IT60X0542811101000000123456).",
+        "emailRequired":      "L'indirizzo email è obbligatorio.",
+        "websiteInvalid":     "Inserisci un URL valido (es. https://esempio.com).",
+        "saveFailed":         "Impossibile salvare le informazioni aziendali."
+      }
+    }
+  },
+  "services": {
+    "heading":       "Servizi",
+    "subheading":    "Gestisci i servizi che offri ai genitori.",
+    "addServiceBtn": "Aggiungi servizio",
+    "formats": {
+      "ONLINE":    "Online",
+      "IN_PERSON": "Di persona"
+    },
+    "clusters": {
+      "FOR_PARENTS": "Per genitori",
+      "FOR_BABY":    "Per il bambino",
+      "PACKAGE":     "Pacchetto",
+      "GIFT":        "Regalo",
+      "EVENT":       "Evento"
+    },
+    "errors": {
+      "loadFailed":    "Impossibile caricare i servizi.",
+      "deleteFailed":  "Impossibile eliminare il servizio.",
+      "reorderFailed": "Impossibile salvare il nuovo ordine.",
+      "updateFailed":  "Impossibile aggiornare il servizio.",
+      "saveFailed":    "Impossibile salvare il servizio."
+    },
+    "form": {
+      "addTitle":             "Aggiungi nuovo servizio",
+      "editTitle":            "Modifica servizio",
+      "duplicateTitle":       "Duplica servizio",
+      "titleLabel":           "Titolo del servizio",
+      "titlePlaceholder":     "es. Consulenza nutrizionale di 1 ora",
+      "descriptionLabel":     "Descrizione",
+      "descriptionPlaceholder":"Breve descrizione di cosa include questo servizio…",
+      "formatLabel":          "Formato",
+      "formatSelect":         "Seleziona un formato…",
+      "categoryLabel":        "Categoria",
+      "categorySelect":       "Seleziona una categoria…",
+      "durationLabel":        "Durata (min)",
+      "durationSelect":       "Seleziona durata",
+      "currencyLabel":        "Valuta",
+      "priceLabel":           "Prezzo",
+      "cancelBtn":            "Annulla",
+      "savingBtn":            "Salvataggio…",
+      "saveChangesBtn":       "Salva modifiche",
+      "duplicateBtn":         "Duplica servizio",
+      "addBtn":               "Aggiungi servizio"
+    },
+    "validation": {
+      "titleRequired":       "Il titolo è obbligatorio",
+      "descriptionRequired": "La descrizione è obbligatoria",
+      "durationRequired":    "Seleziona una durata",
+      "currencyRequired":    "Seleziona una valuta",
+      "priceMin":            "Prezzo minimo: {{min}}",
+      "priceMax":            "Prezzo massimo: {{max}}",
+      "formatRequired":      "Seleziona un formato",
+      "categoryRequired":    "Seleziona una categoria"
+    },
+    "empty": {
+      "title": "Nessun servizio ancora",
+      "body":  "Aggiungi il tuo primo servizio per iniziare."
+    },
+    "card": {
+      "active":        "Attivo",
+      "inactive":      "Inattivo",
+      "deleteConfirm": "Eliminare?",
+      "cancelBtn":     "Annulla",
+      "deleteBtn":     "Elimina"
+    }
+  },
+
+  "availability": {
+    "heading":    "Disponibilità",
+    "subheading": "Gestisci il tuo orario settimanale, blocca date specifiche e visualizza le sessioni prenotate.",
+    "loadFailed": "Impossibile caricare i dati di disponibilità.",
+    "available":        "Disponibile",
+    "blocked":          "Bloccato",
+    "dayOff":           "Giorno libero",
+    "clientFallback":   "Cliente",
+    "sessionFallback":  "Sessione",
+
+    "days": {
+      "0": "Domenica", "1": "Lunedì", "2": "Martedì", "3": "Mercoledì",
+      "4": "Giovedì", "5": "Venerdì", "6": "Sabato"
+    },
+
+    "toolbar": { "today": "Oggi", "prev": "Precedente", "next": "Successivo" },
+
+    "views": { "day": "Giorno", "week": "Settimana", "month": "Mese" },
+
+    "legend": {
+      "available":      "Disponibile",
+      "dayOff":         "Giorno libero",
+      "blocked":        "Bloccato",
+      "bookedOnline":   "Prenotato (Online)",
+      "bookedInPerson": "Prenotato (Di persona)"
+    },
+
+    "timezone": {
+      "setPre":      "I tuoi orari di disponibilità sono impostati nel fuso orario del tuo profilo:",
+      "notSetBold":  "Fuso orario non impostato.",
+      "notSetBody":  "Imposta il tuo fuso orario nel tuo",
+      "profileLink": "Profilo",
+      "notSetSuf":   "prima di aggiungere disponibilità, in modo che i tuoi slot vengano visualizzati correttamente ai genitori."
+    },
+
+    "buffer": {
+      "title":       "Pausa tra le sessioni",
+      "description": "Aggiungi una pausa automatica dopo ogni prenotazione confermata. Ad esempio, con una pausa di 15 minuti, se una sessione termina alle 11:00 il prossimo slot disponibile inizierà alle 11:15. Si applica a tutti i tuoi servizi ed è invisibile ai genitori.",
+      "noBuffer":    "Nessuna pausa",
+      "minLabel":    "{{count}} min",
+      "saveFailed":  "Impossibile salvare l'impostazione della pausa. Riprova.",
+      "saved":       "✓ Salvato"
+    },
+
+    "advance": {
+      "title":       "Limite di prenotazione anticipata",
+      "description": "Controlla con quanto anticipo i genitori possono prenotare sessioni. Gli slot oltre questa finestra non saranno visibili o prenotabili. Questo ti aiuta a mantenere il calendario prevedibile.",
+      "daysLabel":   "{{count}} giorni",
+      "saveFailed":  "Impossibile salvare il limite di prenotazione anticipata. Riprova.",
+      "saved":       "✓ Salvato"
+    },
+
+    "notice": {
+      "title":       "Periodo di preavviso minimo",
+      "description": "Imposta quanto preavviso ti serve prima di una sessione. Gli slot entro questa finestra saranno automaticamente nascosti ai genitori.",
+      "hoursLabel":  "{{count}}h",
+      "saveFailed":  "Impossibile salvare il periodo di preavviso. Riprova.",
+      "saved":       "✓ Salvato",
+      "warning12hBold": "Dentro la finestra senza rimborso.",
+      "warning12hBody": "La politica di cancellazione della piattaforma non emette rimborsi per prenotazioni cancellate entro 24 ore dalla sessione. Con un preavviso di 12h, i genitori possono prenotare sessioni che rientrano in questa finestra — una cancellazione potrebbe non essere idonea al rimborso. Considera di impostare almeno 24h."
+    },
+
+    "weekly": {
+      "title":           "Orario settimanale",
+      "dayLabel":        "Giorno",
+      "fromLabel":       "Dalle",
+      "toLabel":         "Alle",
+      "selectTime":      "— seleziona —",
+      "addingBtn":       "Aggiunta…",
+      "addSlotBtn":      "Aggiungi slot",
+      "checking":        "Verifica…",
+      "cancelBtn":       "Annulla",
+      "removeBtn":       "Rimuovi",
+      "removeAnywayBtn": "Rimuovi comunque",
+      "errors": {
+        "required":   "Obbligatorio",
+        "afterStart": "Deve essere dopo l'inizio",
+        "overlaps":   "Si sovrappone con lo slot esistente {{start}}–{{end}}"
+      },
+      "conflicts_one":   "La rimozione di questo slot influisce su {{count}} prenotazione confermata:",
+      "conflicts_other": "La rimozione di questo slot influisce su {{count}} prenotazioni confermate:",
+      "conflictNote":    "Queste prenotazioni non verranno cancellate automaticamente — devi gestirle separatamente.",
+      "addFailed":    "Impossibile aggiungere lo slot.",
+      "removeFailed": "Impossibile rimuovere lo slot."
+    },
+
+    "blockout": {
+      "title":          "Blocca le date",
+      "subtitle":       "Blocchi una tantum — il tuo orario ricorrente non viene mai modificato.",
+      "fromLabel":      "Da",
+      "toLabel":        "A",
+      "blockTypeLabel": "Tipo di blocco",
+      "fullDayBtn":     "Giornata intera",
+      "timeSlotBtn":    "Fascia oraria",
+      "blockingBtn":    "Blocco in corso…",
+      "blockDatesBtn":  "Blocca date",
+      "fullDayLabel":   "Giornata intera",
+      "activeTitle":    "Blocchi attivi",
+      "cancelBtn":      "Annulla",
+      "restoreBtn":     "Ripristina",
+      "restoringBtn":   "Ripristino…",
+      "restoreTitle":   "Ripristina questo slot",
+      "noAvailWarning": "Non hai disponibilità impostata per i {{day}}. Questo blocco verrà rifiutato — aggiungi disponibilità per {{day}} al tuo Orario settimanale o usa un blocco a giornata intera.",
+      "errors": {
+        "required":       "Obbligatorio",
+        "afterStart":     "Deve essere dopo l'inizio",
+        "afterStartDate": "Deve essere uguale o successiva alla data di inizio",
+        "createFailed":   "Impossibile creare il blocco.",
+        "restoreFailed":  "Impossibile ripristinare lo slot."
+      },
+      "info": {
+        "noneCreated":              "Nessun nuovo blocco è stato creato.",
+        "noneCreatedSkipped_one":   "Nessun nuovo blocco creato — il {{count}} giorno nell'intervallo è già bloccato o non ha disponibilità.",
+        "noneCreatedSkipped_other": "Nessun nuovo blocco creato — tutti i {{count}} giorni nell'intervallo sono già bloccati o non hanno disponibilità.",
+        "removedBlocks_one":        "{{count}} blocco orario esistente rimosso automaticamente",
+        "removedBlocks_other":      "{{count}} blocchi orari esistenti rimossi automaticamente",
+        "skippedDays_one":          "{{count}} giorno saltato (già bloccato o senza disponibilità)",
+        "skippedDays_other":        "{{count}} giorni saltati (già bloccati o senza disponibilità)"
+      }
+    }
+  },
+
+  "calendar": {
+    "heading":    "Calendario",
+    "subheading": "La tua disponibilità e gli appuntamenti confermati in un'unica vista.",
+    "loadFailed": "Impossibile caricare il calendario. Riprova.",
+    "loading":    "Caricamento…",
+    "available":  "Disponibile",
+
+    "toolbar": {
+      "today": "Oggi",
+      "prev":  "Precedente",
+      "next":  "Successivo"
+    },
+
+    "views": {
+      "day":    "Giorno",
+      "week":   "Settimana",
+      "month":  "Mese",
+      "agenda": "Agenda"
+    },
+
+    "legend": {
+      "available":      "Disponibile",
+      "bookedOnline":   "Prenotato (Online)",
+      "bookedInPerson": "Prenotato (Di persona)"
+    },
+
+    "modal": {
+      "title":           "Dettagli appuntamento",
+      "onlineSession":   "Sessione online",
+      "inPersonSession": "Sessione di persona",
+      "parentLabel":     "Genitore",
+      "serviceLabel":    "Servizio",
+      "timeSlotLabel":   "Orario",
+      "duration_one":    "{{count}} minuto",
+      "duration_other":  "{{count}} minuti",
+      "reminderBold":    "Promemoria:",
+      "reminderBody":    "Invia il tuo link Zoom o Teams direttamente al genitore prima della sessione.",
+      "closeBtn":        "Chiudi"
+    }
+  },
+
+  "history": {
+    "heading":    "Cronologia sessioni",
+    "subheading": "Tutte le sessioni passate — completate, annullate e rimborsate.",
+    "totalCount": "({{count}} in totale)",
+    "loadFailed": "Impossibile caricare la cronologia. Riprova.",
+
+    "empty": {
+      "title": "Nessuna sessione nel registro.",
+      "body":  "Le sessioni completate e annullate appariranno qui."
+    },
+
+    "table": {
+      "dateTime": "Data e ora",
+      "parent":   "Genitore",
+      "service":  "Servizio",
+      "duration": "Durata",
+      "format":   "Formato",
+      "status":   "Stato",
+      "actions":  "Azioni"
+    },
+
+    "status": {
+      "COMPLETED": "Completata",
+      "CANCELLED": "Annullata",
+      "REFUNDED":  "Rimborsata"
+    },
+
+    "formats": {
+      "ONLINE":    "Online",
+      "IN_PERSON": "Di persona"
+    },
+
+    "notes": {
+      "placeholder":  "Aggiungi note di sessione…",
+      "saving":       "Salvataggio…",
+      "saved":        "Salvato",
+      "saveFailed":   "Salvataggio non riuscito — riprova",
+      "hasNoteBtn":   "Note",
+      "addNoteBtn":   "Aggiungi nota",
+      "privateLabel": "Note private",
+      "privateSub":   "(non visibili ai genitori)"
+    },
+
+    "pagination": {
+      "pageOf": "Pagina <bold>{{page}}</bold> di {{pages}}"
+    }
+  },
+
+  "settings": {
+    "heading":    "Impostazioni",
+    "subheading": "Gestisci la sicurezza del tuo account e le preferenze di notifica.",
+    "comingSoon": "Prossimamente",
+
+    "password": {
+      "title":               "Cambia password",
+      "currentLabel":        "Password attuale",
+      "currentPlaceholder":  "Inserisci la tua password attuale",
+      "newLabel":            "Nuova password",
+      "newPlaceholder":      "Min 8 car., maiuscola, numero, simbolo",
+      "confirmLabel":        "Conferma nuova password",
+      "confirmPlaceholder":  "Ripeti la tua nuova password",
+      "strength": {
+        "minLength":  "Almeno 8 caratteri",
+        "uppercase":  "Una lettera maiuscola",
+        "lowercase":  "Una lettera minuscola",
+        "number":     "Un numero",
+        "special":    "Un carattere speciale (!, @, #, $…)"
+      },
+      "errors": {
+        "currentRequired": "La password attuale è obbligatoria.",
+        "tooShort":        "Almeno 8 caratteri",
+        "noUppercase":     "Almeno una lettera maiuscola",
+        "noLowercase":     "Almeno una lettera minuscola",
+        "noNumber":        "Almeno un numero",
+        "noSpecial":       "Almeno un carattere speciale (es. !, @, #)",
+        "sameAsCurrent":   "La nuova password deve essere diversa da quella attuale.",
+        "confirmRequired": "Conferma la tua nuova password.",
+        "noMatch":         "Le password non coincidono.",
+        "saveFailed":      "Impossibile cambiare la password. Riprova."
+      },
+      "success":    "Password modificata con successo. Tutti gli altri dispositivi sono stati disconnessi.",
+      "savingBtn":  "Salvataggio…",
+      "updateBtn":  "Aggiorna password"
+    },
+
+    "notifications": {
+      "title": "Notifiche via email",
+      "newBooking": {
+        "label":       "Nuova prenotazione",
+        "description": "Ricevi un'email quando un genitore prenota una sessione con te."
+      },
+      "cancellation": {
+        "label":       "Cancellazione",
+        "description": "Ricevi un'email quando un genitore cancella una prenotazione."
+      },
+      "messageReceived": {
+        "label":       "Messaggio ricevuto",
+        "description": "Ricevi un'email quando un genitore ti invia un messaggio."
+      },
+      "toastSuccess": "Preferenze salvate",
+      "toastError":   "Salvataggio non riuscito — riprova"
+    },
+
+    "twoFactor": {
+      "title":           "Autenticazione a due fattori",
+      "statusEnabled":   "Attiva",
+      "statusDisabled":  "Disattiva",
+      "descEnabled":     "Un codice di verifica viene inviato alla tua email ogni volta che accedi.",
+      "descDisabled":    "Se abilitata, dovrai inserire un codice inviato alla tua email ogni volta che accedi.",
+      "sendingBtn":      "Invio codice…",
+      "disableBtn":      "Disabilita 2FA",
+      "enableBtn":       "Abilita 2FA",
+      "successEnabled":  "Autenticazione a due fattori abilitata.",
+      "successDisabled": "Autenticazione a due fattori disabilitata.",
+      "otp": {
+        "instructionEnable":  "Un codice a 6 cifre è stato inviato alla tua email. Inseriscilo qui sotto per <bold>abilitare</bold> l'autenticazione a due fattori.",
+        "instructionDisable": "Un codice a 6 cifre è stato inviato alla tua email. Inseriscilo qui sotto per <bold>disabilitare</bold> l'autenticazione a due fattori.",
+        "verifyingBtn": "Verifica…",
+        "confirmBtn":   "Conferma",
+        "cancelBtn":    "Annulla",
+        "resendIn":     "Rinvia tra {{count}}s",
+        "resendBtn":    "Rinvia codice"
+      },
+      "errors": {
+        "sendFailed":   "Invio del codice non riuscito. Riprova.",
+        "resendFailed": "Reinvio non riuscito. Riprova.",
+        "expired":      "Codice scaduto. Richiedi un nuovo codice.",
+        "incorrect":    "Codice errato. Riprova."
+      }
+    },
+
+    "deleteAccount": {
+      "title": "Elimina account",
+      "permanentTitle":  "I seguenti dati saranno <bold>eliminati definitivamente:</bold>",
+      "retainedTitle":   "I seguenti dati saranno <bold>conservati per 5 anni</bold> ai sensi della DAC7 (obblighi fiscali UE):",
+      "expertList": {
+        "item1": "Foto del profilo, biografia e competenze",
+        "item2": "Indirizzo, link social e contatti",
+        "item3": "Qualifiche, certificazioni e documenti assicurativi",
+        "item4": "Password e accesso all'account"
+      },
+      "parentList": {
+        "item1": "Nome, email e contatti",
+        "item2": "Password e accesso all'account",
+        "item3": "Tutta la cronologia delle prenotazioni e i dati dell'account"
+      },
+      "retainedList": {
+        "item1": "Nome completo e codice fiscale",
+        "item2": "Coordinate bancarie (IBAN)",
+        "item3": "Guadagni e prenotazioni collegate a transazioni finanziarie"
+      },
+      "warningExpert": "L'eliminazione non è possibile se hai un pagamento in sospeso. Attendi che venga completato.",
+      "warningParent": "L'eliminazione non è possibile se hai prenotazioni in programma, rimborsi in sospeso o controversie aperte. Risolvili prima.",
+      "deleteBtn": "Elimina il mio account",
+      "confirm": {
+        "irreversibleMsg":     "Questa azione è <bold>permanente e irreversibile.</bold> Il tuo profilo e l'accesso verranno eliminati immediatamente.",
+        "passwordLabel":       "Inserisci la tua password per confermare",
+        "passwordPlaceholder": "La tua password attuale",
+        "passwordRequired":    "Inserisci la tua password per confermare.",
+        "saveFailed":          "Impossibile eliminare l'account. Riprova.",
+        "cancelBtn":           "Annulla",
+        "deletingBtn":         "Eliminazione…",
+        "confirmBtn":          "Sì, elimina il mio account"
+      }
+    }
+  }
+}

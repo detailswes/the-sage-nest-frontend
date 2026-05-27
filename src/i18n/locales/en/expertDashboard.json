@@ -1,0 +1,762 @@
+{
+  "nav": {
+    "profile":      "Profile",
+    "services":     "Services",
+    "availability": "Availability",
+    "calendar":     "Calendar",
+    "appointments": "Upcoming Appointments",
+    "history":      "Session History",
+    "settings":     "Settings"
+  },
+  "signOut": "Sign out",
+  "signOutModal": {
+    "title":   "Sign out?",
+    "body":    "Are you sure you want to sign out of your account?",
+    "cancel":  "Cancel",
+    "confirm": "Yes, sign out"
+  },
+  "banners": {
+    "changesRequested": {
+      "title":  "Profile changes requested",
+      "footer": "Please update your profile and save — this will resubmit it for review."
+    },
+    "noAvailability": {
+      "title": "Add your availability so parents can book you",
+      "body":  "Your profile is live but you have no availability set for the next 14 days — parents won't be able to book a session until you do.",
+      "cta":   "Set your availability →"
+    },
+    "unpublished": {
+      "title": "Your profile is currently hidden from search",
+      "body":  "Your account is approved but has been temporarily removed from parent search results by the Sage Nest team. Please contact support if you have questions."
+    }
+  },
+  "upcomingAppointments": {
+    "title":       "Upcoming Appointments",
+    "subtitle":    "Your next scheduled sessions with parents.",
+    "loadError":   "Failed to load appointments.",
+    "cancelError": "Failed to cancel the appointment. Please try again.",
+    "empty": {
+      "title":    "No upcoming appointments.",
+      "subtitle": "Your availability is live and parents can book you."
+    },
+    "cancelModal": {
+      "title":         "Cancel this appointment?",
+      "at":            "at",
+      "warningBold":   "This action cannot be undone.",
+      "warningBody":   " The parent will receive a full refund and an email notifying them of the cancellation.",
+      "keepBtn":       "Keep appointment",
+      "cancelBtn":     "Yes, cancel",
+      "cancellingBtn": "Cancelling…"
+    },
+    "noteEditor": {
+      "label":       "Private notes",
+      "parentNote":  "(not visible to parents)",
+      "placeholder": "Add session notes…",
+      "saving":      "Saving…",
+      "saved":       "Saved",
+      "error":       "Could not save — please try again"
+    },
+    "card": {
+      "online":          "Online",
+      "inPerson":        "In-Person",
+      "linkReminder":    "Session link not yet sent to parent",
+      "markSent":        "Mark sent",
+      "markSentSaving":  "Saving…",
+      "markComplete":    "Mark as complete",
+      "markingComplete": "Marking…",
+      "cancelBtn":       "Cancel appointment"
+    },
+    "duration": {
+      "minutes":      "{{count}} min",
+      "hours":        "{{h}}h",
+      "hoursMinutes": "{{h}}h {{m}}min"
+    }
+  },
+  "profile": {
+    "heading":    "Profile",
+    "subheading": "Manage your expert profile information.",
+    "loadError":  "Failed to load profile.",
+    "publicBadge": "Public",
+    "stripe": {
+      "checking":   "Checking Stripe…",
+      "connected":  "Stripe Connected",
+      "connecting": "Connecting…",
+      "incomplete": "Complete Stripe Setup",
+      "connect":    "Connect with Stripe"
+    },
+    "stripeSuccess": {
+      "title": "Stripe account connected!",
+      "body":  "You can now receive payouts when bookings are completed."
+    },
+    "pendingDraft": {
+      "title": "Profile changes pending review",
+      "body":  "Your recent edits have been submitted and are awaiting admin approval. Your live profile is unchanged until they are approved. You can save new changes at any time to update the pending submission."
+    },
+    "rejectedDraft": {
+      "title":     "Profile changes not approved",
+      "adminNote": "Admin note: ",
+      "body":      "Please update your profile and save again to resubmit for review."
+    },
+    "photo": {
+      "uploading":   "Uploading photo…",
+      "hint":        "Click your photo to change it · JPEG, PNG or WebP · max 5 MB ·",
+      "typeError":   "Please upload a JPEG, PNG, or WebP image.",
+      "sizeError":   "Your photo is {{size}} MB — max 5 MB. Try to upload a photo of shorter size.",
+      "uploadError": "Upload failed. Please try again."
+    },
+    "identityCard": {
+      "statusApproved": "Approved",
+      "statusRejected": "Rejected",
+      "statusPending":  "Pending Approval",
+      "memberSince":    "Member since {{date}}"
+    },
+    "details": {
+      "title":                "Profile Details",
+      "positionLabel":        "Professional title",
+      "positionPlaceholder":  "e.g. Infant Feeding Specialist",
+      "positionHint":         "Displayed below your name on your public profile.",
+      "summaryLabel":         "Short summary",
+      "summaryPlaceholder":   "A 1–2 sentence description shown at the top of your public profile…",
+      "bioLabel":             "Full bio",
+      "bioPlaceholder":       "Tell parents about your background, experience and approach…",
+      "addressLabel":         "Practice address",
+      "streetPlaceholder":    "Street address",
+      "cityPlaceholder":      "City",
+      "postcodePlaceholder":  "Postcode",
+      "addressHint":          "Shown to parents on your public profile page.",
+      "timezoneLabel":        "Timezone",
+      "timezoneHint":         "Used to display your availability slots correctly.",
+      "languagesLabel":       "Languages spoken",
+      "languagePlaceholder":  "Add a language not in the list…",
+      "languageAddBtn":       "Add",
+      "languageApproved":     "Approved",
+      "languagePendingReview":"· pending review",
+      "languageHint":         "Custom languages are reviewed by an admin before appearing publicly.",
+      "socialLabel":          "Social Media",
+      "socialHint":           "All fields are optional. Links will appear on your public profile.",
+      "saveBtn":              "Save Profile",
+      "savingBtn":            "Saving…"
+    },
+    "validation": {
+      "bioTooLong":       "Full bio must be {{max}} characters or fewer.",
+      "summaryTooLong":   "Summary must be {{max}} characters or fewer.",
+      "streetRequired":   "Street address is required.",
+      "cityRequired":     "City is required.",
+      "postcodeRequired": "Postcode is required.",
+      "saveFailed":       "Failed to save profile."
+    },
+    "savedAsDraft": {
+      "title": "Changes submitted for review.",
+      "body":  "Your live profile is unchanged. An admin will review your edits before they go public."
+    },
+    "saveSuccess": {
+      "title": "Profile saved successfully.",
+      "body":  "Your changes are live. You can come back and edit your profile at any time."
+    },
+    "gdpr": {
+      "title":       "Your Data",
+      "body":        "Download a copy of all personal and professional data Sage Nest holds about you — including your profile, services, bookings, and business information. Provided under GDPR Article 20 (right to data portability).",
+      "preparing":   "Preparing download…",
+      "downloadBtn": "Download my data"
+    },
+    "quals": {
+      "title":        "Qualifications",
+      "subtitle":     "At least one qualification with a supporting document must be added before your profile can be submitted for review.",
+      "docHint":      "PDF, JPG, PNG · max 5 MB per document",
+      "addBtn":       "Add",
+      "empty":        "No qualifications added yet.",
+      "noDocument":   "No document",
+      "viewDocument": "View document",
+      "editingLabel": "Editing:",
+      "otherLabel":   "Other",
+      "chooseFile":   "Choose file",
+      "noFile":       "No file chosen",
+      "docUploadHint":"Adding a supporting document helps admins verify this entry faster.",
+      "form": {
+        "typeLabel":         "Qualification type",
+        "typeSelect":        "Select type…",
+        "nameLabel":         "Qualification name",
+        "namePlaceholder":   "Enter your qualification",
+        "replaceDocLabel":   "Replace document",
+        "replaceDocHint":    "(leave empty to keep existing · PDF, JPG, PNG · max 5 MB)",
+        "supportingDocLabel":"Supporting document",
+        "cancelBtn":         "Cancel",
+        "keepBtn":           "Keep",
+        "addingBtn":         "Adding…",
+        "addQualBtn":        "Add Qualification",
+        "savingBtn":         "Saving…",
+        "saveBtn":           "Save Changes",
+        "removingBtn":       "Removing…",
+        "removeBtn":         "Remove"
+      },
+      "errors": {
+        "docSize":         "Document must be 5 MB or smaller.",
+        "typeRequired":    "Please select a qualification type.",
+        "nameRequired":    "Please enter the qualification name.",
+        "docRequired":     "Please upload a supporting document for this qualification.",
+        "addFailed":       "Failed to add qualification.",
+        "nameEditRequired":"Qualification name is required.",
+        "updateFailed":    "Failed to update qualification."
+      },
+      "types": {
+        "LACTATION_CONSULTANT":     "Lactation Consultant (IBCLC)",
+        "BREASTFEEDING_COUNSELLOR": "Breastfeeding Counsellor",
+        "INFANT_SLEEP_CONSULTANT":  "Infant Sleep Consultant",
+        "DOULA":                    "Doula",
+        "MIDWIFE":                  "Midwife",
+        "BABY_OSTEOPATH":           "Baby Osteopath",
+        "PAEDIATRIC_NUTRITIONIST":  "Paediatric Nutritionist",
+        "EARLY_YEARS_SPECIALIST":   "Early Years Specialist",
+        "POSTNATAL_PHYSIOTHERAPIST":"Postnatal Physiotherapist",
+        "PARENTING_COACH":          "Parenting Coach",
+        "OTHER":                    "Other"
+      }
+    },
+    "certs": {
+      "title":        "Certifications",
+      "subtitle":     "Additional training or certifications that build parent trust.",
+      "docHint":      "Supporting documents optional · PDF, JPG, PNG · max 5 MB",
+      "addBtn":       "Add",
+      "empty":        "No certifications added yet.",
+      "noDocument":   "No document",
+      "viewDocument": "View document",
+      "docUploadHint":"Adding a supporting document helps admins verify this entry faster.",
+      "chooseFile":   "Choose file",
+      "noFile":       "No file chosen",
+      "form": {
+        "nameLabel":       "Certification name",
+        "namePlaceholder": "e.g. First Aid Certificate",
+        "replaceDocLabel": "Replace document",
+        "replaceDocHint":  "(leave empty to keep existing · PDF, JPG, PNG · max 5 MB)",
+        "cancelBtn":       "Cancel",
+        "keepBtn":         "Keep",
+        "addingBtn":       "Adding…",
+        "addCertBtn":      "Add Certification",
+        "savingBtn":       "Saving…",
+        "saveBtn":         "Save Changes",
+        "removingBtn":     "Removing…",
+        "removeBtn":       "Remove"
+      },
+      "errors": {
+        "docSize":      "Document must be 5 MB or smaller.",
+        "nameRequired": "Certification name is required.",
+        "addFailed":    "Failed to add certification.",
+        "updateFailed": "Failed to update certification."
+      }
+    },
+    "insurance": {
+      "title":          "Professional Insurance",
+      "subtitle":       "Required before your profile can be approved. Upload proof of Public Liability or Professional Indemnity Insurance.",
+      "updateBtn":      "Update",
+      "expired":        "Insurance Expired",
+      "active":         "Insurance Active",
+      "expiresLabel":   "Policy expires:",
+      "viewDocument":   "View document",
+      "expiredWarning": "Your insurance has expired. Please upload a valid policy before your profile can be approved.",
+      "missingMsg":     "Insurance is required for profile approval. Please upload your policy.",
+      "uploadNow":      "Upload now",
+      "keepBtn":        "Keep",
+      "removingBtn":    "Removing…",
+      "removeBtn":      "Remove",
+      "form": {
+        "expiryLabel":          "Policy expiry date",
+        "expiryWarning_one":    "This policy expires in {{count}} day — consider uploading a renewed policy soon.",
+        "expiryWarning_other":  "This policy expires in {{count}} days — consider uploading a renewed policy soon.",
+        "docLabel":             "Insurance document",
+        "keepExisting":         "(leave empty to keep existing)",
+        "chooseFile":           "Choose file",
+        "noFile":               "No file chosen",
+        "cancelBtn":            "Cancel",
+        "savingBtn":            "Saving…",
+        "saveBtn":              "Save Insurance",
+        "updateBtn":            "Update Insurance"
+      },
+      "errors": {
+        "docSize":        "Document must be 5 MB or smaller.",
+        "expiryRequired": "Policy expiry date is required.",
+        "expiryFuture":   "Expiry date must be in the future.",
+        "docRequired":    "Insurance document is required for initial setup.",
+        "saveFailed":     "Failed to save insurance record."
+      }
+    },
+    "business": {
+      "title":     "Business Information",
+      "subtitle":  "Information collected for compliance purposes",
+      "editBtn":   "Edit",
+      "savedMsg":  "Business information saved.",
+      "missingMsg":"Business information is required for onboarding. Please complete this section.",
+      "addNow":    "Add now",
+      "infoRows": {
+        "entityType":     "Entity type",
+        "legalName":      "Full legal name",
+        "dateOfBirth":    "Date of birth",
+        "street":         "Street",
+        "city":           "City",
+        "postalCode":     "Postal code",
+        "country":        "Country",
+        "tin":            "TIN",
+        "vatNumber":      "VAT number",
+        "companyReg":     "Company reg. number",
+        "iban":           "IBAN / Bank account",
+        "email":          "Email address",
+        "website":        "Website",
+        "municipality":   "Municipality",
+        "businessAddress":"Business address"
+      },
+      "entityTypes": {
+        "INDIVIDUAL": "Individual",
+        "COMPANY":    "Company / Legal Entity"
+      },
+      "form": {
+        "entityTypeLabel":        "Entity type",
+        "entityTypePlaceholder":  "Select type…",
+        "legalNameLabel":         "Full legal name",
+        "legalNamePlaceholder":   "Individual or business name as officially registered",
+        "dobLabel":               "Date of birth",
+        "registeredAddress":      "Registered address",
+        "primaryAddress":         "Primary address",
+        "streetPlaceholder":      "Street and number",
+        "cityPlaceholder":        "City / Municipality",
+        "postalCodePlaceholder":  "Postal code",
+        "countryPlaceholder":     "Country",
+        "tinLabel":               "Tax Identification Number (TIN)",
+        "tinPlaceholder":         "CPR (Denmark), PPS (Ireland), or national equivalent",
+        "vatLabel":               "VAT number",
+        "vatPlaceholder":         "e.g. IE1234567T",
+        "companyRegLabel":        "Enterprise / Company registration number",
+        "companyRegPlaceholder":  "Official company registration number",
+        "ibanLabel":              "IBAN / Bank account",
+        "ibanPlaceholder":        "e.g. IE64IRCE92050112345678",
+        "ibanNote":               "Required for tax reporting under DAC7 — EU Directive 2021/514. Stored encrypted.",
+        "emailLabel":             "Email",
+        "emailPlaceholder":       "business@example.com",
+        "websiteLabel":           "Website",
+        "websiteOptional":        "(optional)",
+        "websitePlaceholder":     "https://www.example.com",
+        "municipalityLabel":      "Municipality of residence",
+        "municipalityHint":       "(required for Danish experts)",
+        "municipalityPlaceholder":"e.g. Copenhagen",
+        "businessAddressLabel":   "Business address",
+        "businessAddressHint":    "(optional — only if different from primary address)",
+        "businessAddressPlaceholder":"Leave blank if same as primary address",
+        "cancelBtn":              "Cancel",
+        "savingBtn":              "Saving…",
+        "saveBtn":                "Save",
+        "updateBtn":              "Update"
+      },
+      "errors": {
+        "entityTypeRequired": "Entity type is required.",
+        "legalNameRequired":  "Full legal name is required.",
+        "dobRequired":        "Date of birth is required.",
+        "streetRequired":     "Street is required.",
+        "cityRequired":       "City is required.",
+        "postalCodeRequired": "Postal code is required.",
+        "countryRequired":    "Country is required.",
+        "tinRequired":        "Tax Identification Number (TIN) is required.",
+        "vatRequired":        "VAT number is required for companies.",
+        "companyRegRequired": "Company registration number is required.",
+        "ibanRequired":       "IBAN / bank account is required.",
+        "ibanInvalid":        "Please enter a valid IBAN (e.g. IE64IRCE92050112345678).",
+        "emailRequired":      "Email address is required.",
+        "websiteInvalid":     "Please enter a valid URL (e.g. https://example.com).",
+        "saveFailed":         "Failed to save business information."
+      }
+    }
+  },
+  "services": {
+    "heading":       "Services",
+    "subheading":    "Manage the services you offer to parents.",
+    "addServiceBtn": "Add Service",
+    "formats": {
+      "ONLINE":    "Online",
+      "IN_PERSON": "In-Person"
+    },
+    "clusters": {
+      "FOR_PARENTS": "For Parents",
+      "FOR_BABY":    "For Baby",
+      "PACKAGE":     "Package",
+      "GIFT":        "Gift",
+      "EVENT":       "Event"
+    },
+    "errors": {
+      "loadFailed":    "Failed to load services.",
+      "deleteFailed":  "Failed to delete service.",
+      "reorderFailed": "Failed to save new order.",
+      "updateFailed":  "Failed to update service.",
+      "saveFailed":    "Failed to save service."
+    },
+    "form": {
+      "addTitle":             "Add New Service",
+      "editTitle":            "Edit Service",
+      "duplicateTitle":       "Duplicate Service",
+      "titleLabel":           "Service title",
+      "titlePlaceholder":     "e.g. 1-hour Nutrition Consultation",
+      "descriptionLabel":     "Description",
+      "descriptionPlaceholder":"Brief description of what this service includes…",
+      "formatLabel":          "Format",
+      "formatSelect":         "Select a format…",
+      "categoryLabel":        "Category",
+      "categorySelect":       "Select a category…",
+      "durationLabel":        "Duration (min)",
+      "durationSelect":       "Select duration",
+      "currencyLabel":        "Currency",
+      "priceLabel":           "Price",
+      "cancelBtn":            "Cancel",
+      "savingBtn":            "Saving…",
+      "saveChangesBtn":       "Save Changes",
+      "duplicateBtn":         "Duplicate Service",
+      "addBtn":               "Add Service"
+    },
+    "validation": {
+      "titleRequired":       "Title is required",
+      "descriptionRequired": "Description is required",
+      "durationRequired":    "Please select a duration",
+      "currencyRequired":    "Please select a currency",
+      "priceMin":            "Minimum price is {{min}}",
+      "priceMax":            "Maximum price is {{max}}",
+      "formatRequired":      "Please select a format",
+      "categoryRequired":    "Please select a category"
+    },
+    "empty": {
+      "title": "No services yet",
+      "body":  "Add your first service to get started."
+    },
+    "card": {
+      "active":        "Active",
+      "inactive":      "Inactive",
+      "deleteConfirm": "Delete?",
+      "cancelBtn":     "Cancel",
+      "deleteBtn":     "Delete"
+    }
+  },
+
+  "availability": {
+    "heading":    "Availability",
+    "subheading": "Manage your weekly schedule, block out specific dates, and view booked sessions.",
+    "loadFailed": "Failed to load availability data.",
+    "available":         "Available",
+    "blocked":           "Blocked",
+    "dayOff":            "Day Off",
+    "clientFallback":    "Client",
+    "sessionFallback":   "Session",
+
+    "days": {
+      "0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday",
+      "4": "Thursday", "5": "Friday", "6": "Saturday"
+    },
+
+    "toolbar": { "today": "Today", "prev": "Previous", "next": "Next" },
+
+    "views": { "day": "Day", "week": "Week", "month": "Month" },
+
+    "legend": {
+      "available":      "Available",
+      "dayOff":         "Day Off",
+      "blocked":        "Blocked",
+      "bookedOnline":   "Booked (Online)",
+      "bookedInPerson": "Booked (In-Person)"
+    },
+
+    "timezone": {
+      "setPre":       "Your availability times are set in your profile timezone:",
+      "notSetBold":   "Timezone not set.",
+      "notSetBody":   "Please set your timezone in your",
+      "profileLink":  "Profile",
+      "notSetSuf":    "before adding availability, so your slots display correctly to parents."
+    },
+
+    "buffer": {
+      "title":       "Buffer Between Sessions",
+      "description": "Add an automatic break after each confirmed booking. For example, with a 15-minute buffer, if a session ends at 11:00 the next available slot will start at 11:15. This applies to all your services and is invisible to parents — they simply won't see the blocked window.",
+      "noBuffer":    "No buffer",
+      "minLabel":    "{{count}} min",
+      "saveFailed":  "Failed to save buffer setting. Please try again.",
+      "saved":       "✓ Saved"
+    },
+
+    "advance": {
+      "title":       "Advance Booking Limit",
+      "description": "Control how far ahead parents can book sessions with you. Slots beyond this window will not be visible or bookable. This helps you keep your schedule predictable.",
+      "daysLabel":   "{{count}} days",
+      "saveFailed":  "Failed to save advance booking limit. Please try again.",
+      "saved":       "✓ Saved"
+    },
+
+    "notice": {
+      "title":       "Minimum Notice Period",
+      "description": "Set how much notice you need before a session. Slots within this window will be automatically hidden from parents — they simply won't see them as available.",
+      "hoursLabel":  "{{count}}h",
+      "saveFailed":  "Failed to save notice period. Please try again.",
+      "saved":       "✓ Saved",
+      "warning12hBold": "Within the no-refund window.",
+      "warning12hBody": "The platform's cancellation policy does not issue refunds for bookings cancelled within 24 hours of the session. With a 12h notice period, parents can book sessions that fall inside this window — meaning a cancellation on either side may not be eligible for a refund. Consider setting at least 24h to stay outside this zone."
+    },
+
+    "weekly": {
+      "title":          "Weekly Schedule",
+      "dayLabel":       "Day",
+      "fromLabel":      "From",
+      "toLabel":        "To",
+      "selectTime":     "— select —",
+      "addingBtn":      "Adding…",
+      "addSlotBtn":     "Add Slot",
+      "checking":       "Checking…",
+      "cancelBtn":      "Cancel",
+      "removeBtn":      "Remove",
+      "removeAnywayBtn":"Remove Anyway",
+      "errors": {
+        "required":   "Required",
+        "afterStart": "Must be after start",
+        "overlaps":   "Overlaps with existing slot {{start}}–{{end}}"
+      },
+      "conflicts_one":   "Removing this slot affects {{count}} confirmed booking:",
+      "conflicts_other": "Removing this slot affects {{count}} confirmed bookings:",
+      "conflictNote":    "These bookings will not be cancelled automatically — you must manage them separately.",
+      "addFailed":    "Failed to add slot.",
+      "removeFailed": "Failed to remove slot."
+    },
+
+    "blockout": {
+      "title":          "Block Out Dates",
+      "subtitle":       "One-off blocks — your recurring schedule is never changed.",
+      "fromLabel":      "From",
+      "toLabel":        "To",
+      "blockTypeLabel": "Block type",
+      "fullDayBtn":     "Full Day",
+      "timeSlotBtn":    "Time Slot",
+      "blockingBtn":    "Blocking…",
+      "blockDatesBtn":  "Block Dates",
+      "fullDayLabel":   "Full day",
+      "activeTitle":    "Active Block Outs",
+      "cancelBtn":      "Cancel",
+      "restoreBtn":     "Restore",
+      "restoringBtn":   "Restoring…",
+      "restoreTitle":   "Restore this slot",
+      "noAvailWarning": "You have no availability set for {{day}}s. This block will be rejected — add {{day}} availability to your Weekly Schedule first, or use a Full Day block instead.",
+      "errors": {
+        "required":       "Required",
+        "afterStart":     "Must be after start",
+        "afterStartDate": "Must be on or after the start date",
+        "createFailed":   "Failed to create block-out.",
+        "restoreFailed":  "Failed to restore slot."
+      },
+      "info": {
+        "noneCreated":              "No new blocks were created.",
+        "noneCreatedSkipped_one":   "No new blocks were created — all {{count}} day in the range is already blocked or has no availability.",
+        "noneCreatedSkipped_other": "No new blocks were created — all {{count}} days in the range are already blocked or have no availability.",
+        "removedBlocks_one":        "{{count}} existing time-slot block automatically removed",
+        "removedBlocks_other":      "{{count}} existing time-slot blocks automatically removed",
+        "skippedDays_one":          "{{count}} day skipped (already blocked or no availability)",
+        "skippedDays_other":        "{{count}} days skipped (already blocked or no availability)"
+      }
+    }
+  },
+
+  "calendar": {
+    "heading":    "Calendar",
+    "subheading": "Your availability and confirmed appointments in one view.",
+    "loadFailed": "Could not load calendar. Please try again.",
+    "loading":    "Loading…",
+    "available":  "Available",
+
+    "toolbar": {
+      "today": "Today",
+      "prev":  "Previous",
+      "next":  "Next"
+    },
+
+    "views": {
+      "day":    "Day",
+      "week":   "Week",
+      "month":  "Month",
+      "agenda": "Agenda"
+    },
+
+    "legend": {
+      "available":      "Available",
+      "bookedOnline":   "Booked (Online)",
+      "bookedInPerson": "Booked (In-Person)"
+    },
+
+    "modal": {
+      "title":           "Appointment Details",
+      "onlineSession":   "Online Session",
+      "inPersonSession": "In-Person Session",
+      "parentLabel":     "Parent",
+      "serviceLabel":    "Service",
+      "timeSlotLabel":   "Time slot",
+      "duration_one":    "{{count}} minute",
+      "duration_other":  "{{count}} minutes",
+      "reminderBold":    "Reminder:",
+      "reminderBody":    "Please send your Zoom or Teams meeting link directly to the parent before the session.",
+      "closeBtn":        "Close"
+    }
+  },
+
+  "history": {
+    "heading":    "Session History",
+    "subheading": "All past sessions — completed, cancelled, and refunded.",
+    "totalCount": "({{count}} total)",
+    "loadFailed": "Failed to load session history. Please try again.",
+
+    "empty": {
+      "title": "No session history yet.",
+      "body":  "Completed and cancelled sessions will appear here."
+    },
+
+    "table": {
+      "dateTime": "Date & Time",
+      "parent":   "Parent",
+      "service":  "Service",
+      "duration": "Duration",
+      "format":   "Format",
+      "status":   "Status",
+      "actions":  "Actions"
+    },
+
+    "status": {
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REFUNDED":  "Refunded"
+    },
+
+    "formats": {
+      "ONLINE":    "Online",
+      "IN_PERSON": "In-Person"
+    },
+
+    "notes": {
+      "placeholder":  "Add session notes…",
+      "saving":       "Saving…",
+      "saved":        "Saved",
+      "saveFailed":   "Could not save — please try again",
+      "hasNoteBtn":   "Notes",
+      "addNoteBtn":   "Add note",
+      "privateLabel": "Private notes",
+      "privateSub":   "(not visible to parents)"
+    },
+
+    "pagination": {
+      "pageOf": "Page <bold>{{page}}</bold> of {{pages}}"
+    }
+  },
+
+  "settings": {
+    "heading":    "Settings",
+    "subheading": "Manage your account security and notification preferences.",
+    "comingSoon": "Coming soon",
+
+    "password": {
+      "title":               "Change Password",
+      "currentLabel":        "Current password",
+      "currentPlaceholder":  "Enter your current password",
+      "newLabel":            "New password",
+      "newPlaceholder":      "Min 8 chars, uppercase, number, symbol",
+      "confirmLabel":        "Confirm new password",
+      "confirmPlaceholder":  "Repeat your new password",
+      "strength": {
+        "minLength":  "At least 8 characters",
+        "uppercase":  "One uppercase letter",
+        "lowercase":  "One lowercase letter",
+        "number":     "One number",
+        "special":    "One special character (!, @, #, $…)"
+      },
+      "errors": {
+        "currentRequired": "Current password is required.",
+        "tooShort":        "At least 8 characters",
+        "noUppercase":     "At least one uppercase letter",
+        "noLowercase":     "At least one lowercase letter",
+        "noNumber":        "At least one number",
+        "noSpecial":       "At least one special character (e.g. !, @, #)",
+        "sameAsCurrent":   "New password must be different from your current password.",
+        "confirmRequired": "Please confirm your new password.",
+        "noMatch":         "Passwords do not match.",
+        "saveFailed":      "Failed to change password. Please try again."
+      },
+      "success":    "Password changed successfully. All other devices have been signed out.",
+      "savingBtn":  "Saving…",
+      "updateBtn":  "Update password"
+    },
+
+    "notifications": {
+      "title": "Email Notifications",
+      "newBooking": {
+        "label":       "New booking",
+        "description": "Receive an email when a parent books a session with you."
+      },
+      "cancellation": {
+        "label":       "Cancellation",
+        "description": "Receive an email when a parent cancels a booking."
+      },
+      "messageReceived": {
+        "label":       "Message received",
+        "description": "Receive an email when a parent sends you a message."
+      },
+      "toastSuccess": "Preferences saved",
+      "toastError":   "Failed to save — please try again"
+    },
+
+    "twoFactor": {
+      "title":           "Two-Factor Authentication",
+      "statusEnabled":   "Enabled",
+      "statusDisabled":  "Disabled",
+      "descEnabled":     "A verification code is sent to your email each time you sign in.",
+      "descDisabled":    "When enabled, you'll need to enter a code sent to your email each time you sign in.",
+      "sendingBtn":      "Sending code…",
+      "disableBtn":      "Disable 2FA",
+      "enableBtn":       "Enable 2FA",
+      "successEnabled":  "Two-factor authentication enabled.",
+      "successDisabled": "Two-factor authentication disabled.",
+      "otp": {
+        "instructionEnable":  "A 6-digit code was sent to your email. Enter it below to <bold>enable</bold> two-factor authentication.",
+        "instructionDisable": "A 6-digit code was sent to your email. Enter it below to <bold>disable</bold> two-factor authentication.",
+        "verifyingBtn": "Verifying…",
+        "confirmBtn":   "Confirm",
+        "cancelBtn":    "Cancel",
+        "resendIn":     "Resend in {{count}}s",
+        "resendBtn":    "Resend code"
+      },
+      "errors": {
+        "sendFailed":   "Failed to send code. Try again.",
+        "resendFailed": "Failed to resend. Try again.",
+        "expired":      "Code expired. Please request a new one.",
+        "incorrect":    "Incorrect code. Please try again."
+      }
+    },
+
+    "deleteAccount": {
+      "title": "Delete Account",
+      "permanentTitle":  "The following will be <bold>permanently deleted:</bold>",
+      "retainedTitle":   "The following will be <bold>retained for 5 years</bold> under DAC7 (EU tax reporting obligations):",
+      "expertList": {
+        "item1": "Profile photo, biography, and expertise",
+        "item2": "Address, social links, and contact details",
+        "item3": "Qualifications, certifications, and insurance documents",
+        "item4": "Your password and login access"
+      },
+      "parentList": {
+        "item1": "Your name, email, and contact details",
+        "item2": "Your password and login access",
+        "item3": "All booking history and account data"
+      },
+      "retainedList": {
+        "item1": "Your full name and tax identification number",
+        "item2": "Bank account details (IBAN)",
+        "item3": "Earnings and booking records tied to financial transactions"
+      },
+      "warningExpert": "Deletion is blocked if you have a pending payout. Please wait for it to clear first.",
+      "warningParent": "Deletion is blocked if you have upcoming bookings, pending refunds, or open disputes. Please resolve these first.",
+      "deleteBtn": "Delete my account",
+      "confirm": {
+        "irreversibleMsg":     "This action is <bold>permanent and irreversible.</bold> Your profile and login access will be deleted immediately.",
+        "passwordLabel":       "Enter your password to confirm",
+        "passwordPlaceholder": "Your current password",
+        "passwordRequired":    "Please enter your password to confirm.",
+        "saveFailed":          "Could not delete account. Please try again.",
+        "cancelBtn":           "Cancel",
+        "deletingBtn":         "Deleting…",
+        "confirmBtn":          "Yes, delete my account"
+      }
+    }
+  }
+}

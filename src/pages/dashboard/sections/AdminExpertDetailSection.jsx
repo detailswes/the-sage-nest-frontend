@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   getExpertDetail,
   approveExpert,
@@ -24,54 +25,19 @@ import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
 import { formatBookingTime } from "../../../utils/formatBookingTime";
 import BookingDetailModal from "../../../components/admin/BookingDetailModal";
 
-// ─── Shared helpers (mirrors ExpertManagementSection constants) ───────────────
+// ─── Shared helpers ───────────────────────────────────────────────────────────
 
-const QUAL_LABEL = {
-  LACTATION_CONSULTANT:       "Lactation Consultant (IBCLC)",
-  BREASTFEEDING_COUNSELLOR:   "Breastfeeding Counsellor",
-  INFANT_SLEEP_CONSULTANT:    "Infant Sleep Consultant",
-  DOULA:                      "Doula",
-  MIDWIFE:                    "Midwife",
-  BABY_OSTEOPATH:             "Baby Osteopath",
-  PAEDIATRIC_NUTRITIONIST:    "Paediatric Nutritionist",
-  EARLY_YEARS_SPECIALIST:     "Early Years Specialist",
-  POSTNATAL_PHYSIOTHERAPIST:  "Postnatal Physiotherapist",
-  PARENTING_COACH:            "Parenting Coach",
-  OTHER:                      "Other",
+const FORMAT_BADGE_CLS = {
+  ONLINE:    "bg-blue-100 text-blue-700",
+  IN_PERSON: "bg-purple-100 text-purple-700",
 };
 
-const FORMAT_BADGE = {
-  ONLINE:    { label: "Online",     cls: "bg-blue-100 text-blue-700" },
-  IN_PERSON: { label: "In-Person",  cls: "bg-purple-100 text-purple-700" },
-};
-
-const CLUSTER_BADGE = {
-  FOR_PARENTS: { label: "For Parents", cls: "bg-pink-100 text-pink-700" },
-  FOR_BABY:    { label: "For Baby",    cls: "bg-cyan-100 text-cyan-700" },
-  PACKAGE:     { label: "Package",     cls: "bg-amber-100 text-amber-700" },
-  GIFT:        { label: "Gift",        cls: "bg-green-100 text-green-700" },
-  EVENT:       { label: "Event",       cls: "bg-violet-100 text-violet-700" },
-};
-
-const ACTION_LABELS = {
-  APPROVE:             "Approved",
-  REJECT:              "Rejected",
-  SUSPEND:             "Suspended",
-  REACTIVATE:          "Reactivated",
-  REQUEST_CHANGES:     "Changes requested",
-  UNPUBLISH:           "Unpublished",
-  REPUBLISH:           "Republished",
-  MANUAL_VERIFY:       "Manually verified",
-  MANUAL_REFUND:       "Manual refund issued",
-  SEND_PASSWORD_RESET: "Password reset sent",
-  RESEND_VERIFICATION: "Verification email resent",
-  GDPR_DELETE:         "Account deleted (GDPR)",
-  APPROVE_PROFILE_DRAFT: "Profile draft approved",
-  REJECT_PROFILE_DRAFT:  "Profile draft rejected",
-  // Expert-initiated events
-  EXPERT_PROFILE_SAVED:             "Profile updated",
-  EXPERT_PROFILE_DRAFT_SUBMITTED:   "Profile draft submitted",
-  EXPERT_PROFILE_RESUBMITTED:       "Profile resubmitted",
+const CLUSTER_BADGE_CLS = {
+  FOR_PARENTS: "bg-pink-100 text-pink-700",
+  FOR_BABY:    "bg-cyan-100 text-cyan-700",
+  PACKAGE:     "bg-amber-100 text-amber-700",
+  GIFT:        "bg-green-100 text-green-700",
+  EVENT:       "bg-violet-100 text-violet-700",
 };
 
 const formatDate = (iso) =>
@@ -92,8 +58,9 @@ const SectionLabel = ({ children }) => (
   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{children}</p>
 );
 
-const DocLink = ({ url, label = "View document" }) => {
-  if (!url) return <span className="text-xs text-gray-400 italic">No document</span>;
+const DocLink = ({ url, label }) => {
+  const { t } = useTranslation("adminDashboard");
+  if (!url) return <span className="text-xs text-gray-400 italic">{t("expertDetail.profile.noDocument")}</span>;
   return (
     <a
       href={getDocumentUrl(url)}
@@ -104,37 +71,39 @@ const DocLink = ({ url, label = "View document" }) => {
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
       </svg>
-      {label}
+      {label || t("expertDetail.profile.viewDocument")}
     </a>
   );
 };
 
 const StatusBadge = ({ status }) => {
-  const cfg = {
-    APPROVED:          { cls: "bg-green-100 text-green-700",   label: "Approved" },
-    REJECTED:          { cls: "bg-red-100 text-red-600",       label: "Rejected" },
-    SUSPENDED:         { cls: "bg-orange-100 text-orange-700", label: "Suspended" },
-    PENDING:           { cls: "bg-amber-100 text-amber-700",   label: "Pending Review" },
-    CHANGES_REQUESTED: { cls: "bg-violet-100 text-violet-700", label: "Changes Requested" },
-  }[status] || { cls: "bg-gray-100 text-gray-500", label: status };
+  const { t } = useTranslation("adminDashboard");
+  const cls = {
+    APPROVED:          "bg-green-100 text-green-700",
+    REJECTED:          "bg-red-100 text-red-600",
+    SUSPENDED:         "bg-orange-100 text-orange-700",
+    PENDING:           "bg-amber-100 text-amber-700",
+    CHANGES_REQUESTED: "bg-violet-100 text-violet-700",
+  }[status] || "bg-gray-100 text-gray-500";
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
-      {cfg.label}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {t(`expertDetail.statusBadge.${status}`, { defaultValue: status })}
     </span>
   );
 };
 
 const BookingStatusBadge = ({ status }) => {
-  const cfg = {
-    CONFIRMED:       { cls: "bg-green-100 text-green-700",  label: "Confirmed" },
-    COMPLETED:       { cls: "bg-blue-100 text-blue-700",    label: "Completed" },
-    CANCELLED:       { cls: "bg-red-100 text-red-600",      label: "Cancelled" },
-    REFUNDED:        { cls: "bg-gray-100 text-gray-600",    label: "Refunded" },
-    PENDING_PAYMENT: { cls: "bg-amber-100 text-amber-700",  label: "Pending Payment" },
-  }[status] || { cls: "bg-gray-100 text-gray-500", label: status };
+  const { t } = useTranslation("adminDashboard");
+  const cls = {
+    CONFIRMED:       "bg-green-100 text-green-700",
+    COMPLETED:       "bg-blue-100 text-blue-700",
+    CANCELLED:       "bg-red-100 text-red-600",
+    REFUNDED:        "bg-gray-100 text-gray-600",
+    PENDING_PAYMENT: "bg-amber-100 text-amber-700",
+  }[status] || "bg-gray-100 text-gray-500";
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
-      {cfg.label}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {t(`expertDetail.bookingStatusBadge.${status}`, { defaultValue: status })}
     </span>
   );
 };
@@ -144,6 +113,7 @@ const BookingStatusBadge = ({ status }) => {
 const AdminExpertDetailSection = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation("adminDashboard");
 
   const [expert, setExpert]         = useState(null);
   const [loading, setLoading]       = useState(true);
@@ -151,7 +121,7 @@ const AdminExpertDetailSection = () => {
   const [actionLoading, setActionLoading] = useState(null);
   const [actionError, setActionError]     = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
-  const [langActionLoading, setLangActionLoading] = useState(null); // language being actioned
+  const [langActionLoading, setLangActionLoading] = useState(null);
   const [langConfirm, setLangConfirm] = useState(null); // { lang, action: 'approve' | 'reject' }
 
   // Tabs
@@ -200,11 +170,11 @@ const AdminExpertDetailSection = () => {
       const data = await getExpertDetail(id);
       setExpert(data);
     } catch {
-      setError("Expert not found or failed to load.");
+      setError(t("expertDetail.loadError"));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => { loadExpert(); }, [loadExpert]);
 
@@ -255,7 +225,7 @@ const AdminExpertDetailSection = () => {
       const updated = await approveLanguage(expert.id, language);
       setExpert((e) => ({ ...e, languages: updated.languages, pending_languages: updated.pending_languages }));
     } catch (e) {
-      setActionError(e?.response?.data?.error || "Failed to approve language.");
+      setActionError(e?.response?.data?.error || t("expertDetail.profile.langApproveError"));
     } finally {
       setLangActionLoading(null);
     }
@@ -268,7 +238,7 @@ const AdminExpertDetailSection = () => {
       const updated = await rejectLanguage(expert.id, language);
       setExpert((e) => ({ ...e, languages: updated.languages, pending_languages: updated.pending_languages }));
     } catch (e) {
-      setActionError(e?.response?.data?.error || "Failed to reject language.");
+      setActionError(e?.response?.data?.error || t("expertDetail.profile.langRejectError"));
     } finally {
       setLangActionLoading(null);
     }
@@ -281,10 +251,10 @@ const AdminExpertDetailSection = () => {
       await approveProfileDraft(id);
       setShowDraftReject(false);
       setDraftRejectNote("");
-      await loadExpert(); // reload to get updated live fields and cleared draft
+      await loadExpert();
       setAuditLoaded(false);
     } catch (e) {
-      setDraftActionError(e?.response?.data?.error || "Failed to approve draft.");
+      setDraftActionError(e?.response?.data?.error || t("expertDetail.draft.approveError"));
     } finally {
       setDraftActionLoading(null);
     }
@@ -303,23 +273,23 @@ const AdminExpertDetailSection = () => {
       }));
       setAuditLoaded(false);
     } catch (e) {
-      setDraftActionError(e?.response?.data?.error || "Failed to reject draft.");
+      setDraftActionError(e?.response?.data?.error || t("expertDetail.draft.rejectError"));
     } finally {
       setDraftActionLoading(null);
     }
   };
 
-  const runAction = async (label, fn) => {
+  const runAction = async (key, fn, successMsg) => {
     clearFeedback();
-    setActionLoading(label);
+    setActionLoading(key);
     try {
       await fn();
-      setActionSuccess(`${label} successfully.`);
+      setActionSuccess(successMsg);
       await loadExpert();
       setBookingsLoaded(false);
       setAuditLoaded(false);
     } catch (e) {
-      setActionError(e?.response?.data?.error || `${label} failed.`);
+      setActionError(e?.response?.data?.error || t("expertDetail.genericActionError"));
     } finally {
       setActionLoading(null);
     }
@@ -330,17 +300,17 @@ const AdminExpertDetailSection = () => {
   const handleConfirmAction = async () => {
     const type = confirmAction;
     setConfirmAction(null);
-    if (type === "approve")    await runAction("Approved",    () => approveExpert(id));
-    else if (type === "reject")     await runAction("Rejected",    () => rejectExpert(id));
-    else if (type === "suspend")    await runAction("Suspended",   () => suspendExpert(id));
-    else if (type === "reactivate") await runAction("Reactivated", () => reactivateExpert(id));
+    if (type === "approve")         await runAction("approve",     () => approveExpert(id),    t("expertDetail.statusActions.approveSuccess"));
+    else if (type === "reject")     await runAction("reject",      () => rejectExpert(id),     t("expertDetail.statusActions.rejectSuccess"));
+    else if (type === "suspend")    await runAction("suspend",     () => suspendExpert(id),    t("expertDetail.statusActions.suspendSuccess"));
+    else if (type === "reactivate") await runAction("reactivate",  () => reactivateExpert(id), t("expertDetail.statusActions.reactivateSuccess"));
   };
-  const handlePasswordReset      = () => runAction("Password reset sent",         () => sendPasswordReset(id));
-  const handleResendVerification = () => runAction("Verification email resent",   () => resendVerification(id));
-  const handleManualVerify       = () => runAction("Marked as verified",          () => manuallyVerify(id));
+  const handlePasswordReset      = () => runAction("passwordReset",      () => sendPasswordReset(id),   t("expertDetail.supportTools.passwordResetSuccess"));
+  const handleResendVerification = () => runAction("resendVerification", () => resendVerification(id),  t("expertDetail.supportTools.resendVerificationSuccess"));
+  const handleManualVerify       = () => runAction("manualVerify",       () => manuallyVerify(id),      t("expertDetail.supportTools.manualVerifySuccess"));
 
   const handleRequestChanges = async () => {
-    if (!changesNote.trim()) { setChangesError("Please enter a note."); return; }
+    if (!changesNote.trim()) { setChangesError(t("expertDetail.requestChanges.errorRequired")); return; }
     setChangesLoading(true);
     setChangesError("");
     try {
@@ -353,10 +323,10 @@ const AdminExpertDetailSection = () => {
       }));
       setShowRequestChanges(false);
       setChangesNote("");
-      setActionSuccess("Change request sent.");
+      setActionSuccess(t("expertDetail.requestChanges.success"));
       setAuditLoaded(false);
     } catch (e) {
-      setChangesError(e?.response?.data?.error || "Failed to send request.");
+      setChangesError(e?.response?.data?.error || t("expertDetail.genericActionError"));
     } finally {
       setChangesLoading(false);
     }
@@ -369,7 +339,7 @@ const AdminExpertDetailSection = () => {
       await gdprDeleteExpert(id, gdprEmail.trim());
       navigate("/dashboard/admin/experts");
     } catch (e) {
-      setGdprError(e?.response?.data?.error || "Deletion failed.");
+      setGdprError(e?.response?.data?.error || t("expertDetail.gdpr.deletionFailed"));
     } finally {
       setGdprLoading(false);
     }
@@ -390,11 +360,11 @@ const AdminExpertDetailSection = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      setExportError("Export failed. Please try again.");
+      setExportError(t("expertDetail.bizInfo.exportError"));
     } finally {
       setExporting(false);
     }
-   };
+  };
 
   if (loading) {
     return (
@@ -407,9 +377,9 @@ const AdminExpertDetailSection = () => {
   if (error || !expert) {
     return (
       <div className="text-center py-24">
-        <p className="text-sm text-red-500 mb-4">{error || "Expert not found."}</p>
+        <p className="text-sm text-red-500 mb-4">{error || t("expertDetail.notFoundError")}</p>
         <button onClick={() => navigate("/dashboard/admin/experts")} className="text-sm text-[#445446] hover:underline">
-          ← Back to expert list
+          {t("expertDetail.backToList")}
         </button>
       </div>
     );
@@ -421,7 +391,7 @@ const AdminExpertDetailSection = () => {
   const hasAddress = expert.address_street || expert.address_city || expert.address_postcode;
   const insurance  = expert.insurance;
   const expired    = insurance ? isInsuranceExpired(insurance.policy_expires_at) : false;
-  
+
   return (
     <div>
       {/* Breadcrumb / back */}
@@ -433,7 +403,7 @@ const AdminExpertDetailSection = () => {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
           </svg>
-          Expert Management
+          {t("expertDetail.breadcrumb")}
         </button>
         <span className="text-gray-300">/</span>
         <span className="text-sm font-medium text-[#1F2933] truncate">{name}</span>
@@ -473,26 +443,33 @@ const AdminExpertDetailSection = () => {
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <StatusBadge status={expert.status} />
                   {expert.status === "APPROVED" && !expert.is_published && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 border border-orange-200">Unlisted</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 border border-orange-200">
+                      {t("expertDetail.badge.unlisted")}
+                    </span>
                   )}
                   {expert.user?.is_verified ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Email Verified</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
+                      {t("expertDetail.badge.emailVerified")}
+                    </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Unverified</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                      {t("expertDetail.badge.unverified")}
+                    </span>
                   )}
-                  {/* session_format badge removed — format is managed per-service */}
                   {expert.user?.login_attempts > 0 && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                      {expert.user.login_attempts} failed login{expert.user.login_attempts !== 1 ? "s" : ""}
+                      {t("expertDetail.badge.failedLogin", { count: expert.user.login_attempts })}
                     </span>
                   )}
                   {expert.user?.locked_until && new Date(expert.user.locked_until) > new Date() && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200">
-                      Locked until {new Date(expert.user.locked_until).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                      {t("expertDetail.badge.lockedUntil", { time: new Date(expert.user.locked_until).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) })}
                     </span>
                   )}
                   {expert.user?.created_at && (
-                    <span className="text-xs text-gray-400">Joined {formatDate(expert.user.created_at)}</span>
+                    <span className="text-xs text-gray-400">
+                      {t("expertDetail.badge.joined", { date: formatDate(expert.user.created_at) })}
+                    </span>
                   )}
                 </div>
               </div>
@@ -503,9 +480,9 @@ const AdminExpertDetailSection = () => {
           <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden">
             <div className="flex border-b border-[#E4E7E4]">
               {[
-                { key: "profile",  label: "Profile" },
-                { key: "bookings", label: `Bookings${expert._count?.bookings ? ` (${expert._count.bookings})` : ""}` },
-                { key: "activity", label: "Activity" },
+                { key: "profile",  label: t("expertDetail.tabs.profile") },
+                { key: "bookings", label: `${t("expertDetail.tabs.bookings")}${expert._count?.bookings ? ` (${expert._count.bookings})` : ""}` },
+                { key: "activity", label: t("expertDetail.tabs.activity") },
               ].map(({ key, label }) => (
                 <button key={key} onClick={() => handleTabChange(key)}
                   className={`px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
@@ -522,157 +499,145 @@ const AdminExpertDetailSection = () => {
               {activeTab === "profile" && (
                 <>
                   {/* ── Pending draft review card ── */}
-                  {expert.profile_draft?.status === "PENDING_REVIEW" && (
-                    <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden mb-2">
-                      {/* Card header */}
-                      <div className="flex items-center justify-between gap-4 px-5 py-3.5 bg-amber-100 border-b border-amber-200">
-                        <div className="flex items-center gap-2">
-                          <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
-                          </svg>
-                          <span className="text-sm font-semibold text-amber-800">Profile edit pending review</span>
-                          <span className="text-xs text-amber-600 ml-1">
-                            · submitted {new Date(expert.profile_draft.submitted_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {draftActionError && <span className="text-xs text-red-600">{draftActionError}</span>}
-                          {showDraftReject ? (
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                value={draftRejectNote}
-                                onChange={(e) => setDraftRejectNote(e.target.value)}
-                                placeholder="Rejection note (optional)…"
-                                className="text-xs px-3 py-1.5 border border-amber-300 rounded-lg bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 w-52"
-                              />
-                              <button
-                                onClick={handleRejectDraft}
-                                disabled={draftActionLoading === "reject"}
-                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 transition-colors"
-                              >
-                                {draftActionLoading === "reject" ? "…" : "Confirm reject"}
-                              </button>
-                              <button
-                                onClick={() => { setShowDraftReject(false); setDraftRejectNote(""); setDraftActionError(""); }}
-                                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <button
-                                onClick={handleApproveDraft}
-                                disabled={draftActionLoading !== null}
-                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white disabled:opacity-50 transition-colors"
-                              >
-                                {draftActionLoading === "approve" ? "Approving…" : "Approve & publish"}
-                              </button>
-                              <button
-                                onClick={() => setShowDraftReject(true)}
-                                disabled={draftActionLoading !== null}
-                                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Side-by-side diff */}
-                      <div className="grid grid-cols-2 divide-x divide-amber-200">
-                        {/* Live column */}
-                        <div className="px-5 py-4 space-y-4">
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Live (current)</p>
-                          {[
-                            ["Summary",         expert.summary,          expert.profile_draft.summary],
-                            ["Bio",             expert.bio,              expert.profile_draft.bio],
-                            ["Professional title", expert.position,      expert.profile_draft.position],
-                            // ["Session format", ...],  // managed per-service
-                            ["Location",        [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null,
-                                                [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null],
-                            ["Timezone",        expert.timezone,         expert.profile_draft.timezone],
-                            ["Languages",       expert.languages?.join(", ") || null, expert.profile_draft.languages?.join(", ") || null],
-                            ["Instagram",       expert.instagram,        expert.profile_draft.instagram],
-                            ["Facebook",        expert.facebook,         expert.profile_draft.facebook],
-                            ["LinkedIn",        expert.linkedin,         expert.profile_draft.linkedin],
-                            ["Expertise",       expert.expertise,        expert.profile_draft.expertise],
-                          ].map(([label, live, proposed]) => {
-                            const changed = (live || "") !== (proposed || "");
-                            return (
-                              <div key={label}>
-                                <p className="text-xs font-medium text-gray-400 mb-0.5">{label}</p>
-                                <p className={`text-sm leading-relaxed ${changed ? "text-[#1F2933]" : "text-gray-400"}`}>
-                                  {live || <span className="italic text-gray-300">—</span>}
-                                </p>
+                  {expert.profile_draft?.status === "PENDING_REVIEW" && (() => {
+                    const draftFields = [
+                      { key: "Summary",            live: expert.summary,       proposed: expert.profile_draft.summary },
+                      { key: "Bio",                live: expert.bio,           proposed: expert.profile_draft.bio },
+                      { key: "Professional title", live: expert.position,      proposed: expert.profile_draft.position },
+                      { key: "Location",           live: [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null, proposed: [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null },
+                      { key: "Timezone",           live: expert.timezone,      proposed: expert.profile_draft.timezone },
+                      { key: "Languages",          live: expert.languages?.join(", ") || null, proposed: expert.profile_draft.languages?.join(", ") || null },
+                      { key: "Instagram",          live: expert.instagram,     proposed: expert.profile_draft.instagram },
+                      { key: "Facebook",           live: expert.facebook,      proposed: expert.profile_draft.facebook },
+                      { key: "LinkedIn",           live: expert.linkedin,      proposed: expert.profile_draft.linkedin },
+                      { key: "Expertise",          live: expert.expertise,     proposed: expert.profile_draft.expertise },
+                    ];
+                    return (
+                      <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden mb-2">
+                        {/* Card header */}
+                        <div className="flex items-center justify-between gap-4 px-5 py-3.5 bg-amber-100 border-b border-amber-200">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-sm font-semibold text-amber-800">{t("expertDetail.draft.pendingTitle")}</span>
+                            <span className="text-xs text-amber-600 ml-1">
+                              {t("expertDetail.draft.submitted", { date: new Date(expert.profile_draft.submitted_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {draftActionError && <span className="text-xs text-red-600">{draftActionError}</span>}
+                            {showDraftReject ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={draftRejectNote}
+                                  onChange={(e) => setDraftRejectNote(e.target.value)}
+                                  placeholder={t("expertDetail.draft.rejectionPlaceholder")}
+                                  className="text-xs px-3 py-1.5 border border-amber-300 rounded-lg bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 w-52"
+                                />
+                                <button
+                                  onClick={handleRejectDraft}
+                                  disabled={draftActionLoading === "reject"}
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 transition-colors"
+                                >
+                                  {draftActionLoading === "reject" ? t("expertDetail.draft.rejecting") : t("expertDetail.draft.confirmReject")}
+                                </button>
+                                <button
+                                  onClick={() => { setShowDraftReject(false); setDraftRejectNote(""); setDraftActionError(""); }}
+                                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+                                >
+                                  {t("expertDetail.draft.cancel")}
+                                </button>
                               </div>
-                            );
-                          })}
+                            ) : (
+                              <>
+                                <button
+                                  onClick={handleApproveDraft}
+                                  disabled={draftActionLoading !== null}
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white disabled:opacity-50 transition-colors"
+                                >
+                                  {draftActionLoading === "approve" ? t("expertDetail.draft.approving") : t("expertDetail.draft.approveBtn")}
+                                </button>
+                                <button
+                                  onClick={() => setShowDraftReject(true)}
+                                  disabled={draftActionLoading !== null}
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                                >
+                                  {t("expertDetail.draft.rejectBtn")}
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Proposed column */}
-                        <div className="px-5 py-4 space-y-4 bg-white">
-                          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-3">Proposed changes</p>
-                          {[
-                            ["Summary",         expert.summary,          expert.profile_draft.summary],
-                            ["Bio",             expert.bio,              expert.profile_draft.bio],
-                            ["Professional title", expert.position,      expert.profile_draft.position],
-                            // ["Session format", ...],  // managed per-service
-                            ["Location",        [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null,
-                                                [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null],
-                            ["Timezone",        expert.timezone,         expert.profile_draft.timezone],
-                            ["Languages",       expert.languages?.join(", ") || null, expert.profile_draft.languages?.join(", ") || null],
-                            ["Instagram",       expert.instagram,        expert.profile_draft.instagram],
-                            ["Facebook",        expert.facebook,         expert.profile_draft.facebook],
-                            ["LinkedIn",        expert.linkedin,         expert.profile_draft.linkedin],
-                            ["Expertise",       expert.expertise,        expert.profile_draft.expertise],
-                          ].map(([label, live, proposed]) => {
-                            const changed = (live || "") !== (proposed || "");
-                            return (
-                              <div key={label}>
-                                <p className="text-xs font-medium text-gray-400 mb-0.5">{label}</p>
-                                <p className={`text-sm leading-relaxed ${changed ? "font-medium text-amber-800 bg-amber-100/60 px-1.5 py-0.5 rounded" : "text-gray-400"}`}>
-                                  {proposed || <span className="italic text-gray-300">—</span>}
-                                </p>
-                              </div>
-                            );
-                          })}
+                        {/* Side-by-side diff */}
+                        <div className="grid grid-cols-2 divide-x divide-amber-200">
+                          {/* Live column */}
+                          <div className="px-5 py-4 space-y-4">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t("expertDetail.draft.liveCol")}</p>
+                            {draftFields.map(({ key, live, proposed }) => {
+                              const changed = (live || "") !== (proposed || "");
+                              return (
+                                <div key={key}>
+                                  <p className="text-xs font-medium text-gray-400 mb-0.5">{t(`expertDetail.draft.fields.${key}`)}</p>
+                                  <p className={`text-sm leading-relaxed ${changed ? "text-[#1F2933]" : "text-gray-400"}`}>
+                                    {live || <span className="italic text-gray-300">—</span>}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Proposed column */}
+                          <div className="px-5 py-4 space-y-4 bg-white">
+                            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-3">{t("expertDetail.draft.proposedCol")}</p>
+                            {draftFields.map(({ key, live, proposed }) => {
+                              const changed = (live || "") !== (proposed || "");
+                              return (
+                                <div key={key}>
+                                  <p className="text-xs font-medium text-gray-400 mb-0.5">{t(`expertDetail.draft.fields.${key}`)}</p>
+                                  <p className={`text-sm leading-relaxed ${changed ? "font-medium text-amber-800 bg-amber-100/60 px-1.5 py-0.5 rounded" : "text-gray-400"}`}>
+                                    {proposed || <span className="italic text-gray-300">—</span>}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   <div className="space-y-4">
                     <div>
-                      <SectionLabel>Summary</SectionLabel>
+                      <SectionLabel>{t("expertDetail.profile.summary")}</SectionLabel>
                       {expert.summary
                         ? <p className="text-sm text-[#1F2933] leading-relaxed">{expert.summary}</p>
-                        : <p className="text-sm text-gray-400 italic">No summary added.</p>}
+                        : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noSummary")}</p>}
                     </div>
                     <div>
-                      <SectionLabel>Full Bio</SectionLabel>
+                      <SectionLabel>{t("expertDetail.profile.fullBio")}</SectionLabel>
                       {expert.bio
                         ? <p className="text-sm text-[#1F2933] leading-relaxed">{expert.bio}</p>
-                        : <p className="text-sm text-gray-400 italic">No bio added.</p>}
+                        : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noBio")}</p>}
                     </div>
                   </div>
 
                   <div>
-                    <SectionLabel>Languages Spoken</SectionLabel>
+                    <SectionLabel>{t("expertDetail.profile.languagesSpoken")}</SectionLabel>
                     {expert.languages?.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5">
                         {expert.languages.map((lang) => (
                           <span key={lang} className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#445446]/10 text-[#445446]">{lang}</span>
                         ))}
                       </div>
-                    ) : <p className="text-sm text-gray-400 italic">No languages added.</p>}
+                    ) : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noLanguages")}</p>}
                   </div>
 
                   {expert.pending_languages?.length > 0 && (
                     <div>
-                      <SectionLabel>Pending Language Approvals</SectionLabel>
+                      <SectionLabel>{t("expertDetail.profile.pendingLanguages")}</SectionLabel>
                       <div className="flex flex-wrap gap-3">
                         {expert.pending_languages.map((lang) => {
                           const isConfirming = langConfirm?.lang === lang;
@@ -683,13 +648,12 @@ const AdminExpertDetailSection = () => {
                                 {lang}
                                 {isConfirming && (
                                   <span className="ml-1.5 font-normal text-amber-600">
-                                    — {langConfirm.action === 'approve' ? 'Approve?' : 'Reject?'}
+                                    — {langConfirm.action === 'approve' ? t("expertDetail.profile.langApproveQuestion") : t("expertDetail.profile.langRejectQuestion")}
                                   </span>
                                 )}
                               </span>
 
                               {isConfirming ? (
-                                /* Confirmation row */
                                 <div className="flex items-center gap-1.5">
                                   <button
                                     type="button"
@@ -697,24 +661,23 @@ const AdminExpertDetailSection = () => {
                                     disabled={isLoading}
                                     className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${langConfirm.action === 'approve' ? 'bg-green-100 hover:bg-green-200 text-green-700' : 'bg-red-100 hover:bg-red-200 text-red-600'}`}
                                   >
-                                    {isLoading ? '…' : 'Confirm'}
+                                    {isLoading ? '…' : t("expertDetail.profile.langConfirm")}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => setLangConfirm(null)}
                                     className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"
                                   >
-                                    Cancel
+                                    {t("expertDetail.profile.langCancel")}
                                   </button>
                                 </div>
                               ) : (
-                                /* Default approve / reject icons */
                                 <div className="flex items-center gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => setLangConfirm({ lang, action: 'approve' })}
                                     disabled={isLoading}
-                                    title="Approve"
+                                    title={t("expertDetail.profile.langApproveQuestion")}
                                     className="p-1.5 rounded-full bg-green-100 hover:bg-green-200 text-green-700 disabled:opacity-50 transition-colors"
                                   >
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
@@ -723,7 +686,7 @@ const AdminExpertDetailSection = () => {
                                     type="button"
                                     onClick={() => setLangConfirm({ lang, action: 'reject' })}
                                     disabled={isLoading}
-                                    title="Reject"
+                                    title={t("expertDetail.profile.langRejectQuestion")}
                                     className="p-1.5 rounded-full bg-red-100 hover:bg-red-200 text-red-600 disabled:opacity-50 transition-colors"
                                   >
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
@@ -738,28 +701,30 @@ const AdminExpertDetailSection = () => {
                   )}
 
                   <div>
-                    <SectionLabel>Location</SectionLabel>
+                    <SectionLabel>{t("expertDetail.profile.location")}</SectionLabel>
                     {hasAddress
                       ? <p className="text-sm text-[#1F2933]">{[expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ")}</p>
-                      : <p className="text-sm text-gray-400 italic">No location added.</p>}
+                      : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noLocation")}</p>}
                   </div>
 
                   <div>
-                    <SectionLabel>Qualifications</SectionLabel>
+                    <SectionLabel>{t("expertDetail.profile.qualifications")}</SectionLabel>
                     {expert.qualifications?.length > 0 ? (
                       <ul className="space-y-2">
                         {expert.qualifications.map((q) => (
                           <li key={q.id} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-[#F5F7F5] rounded-xl border border-[#E4E7E4]">
-                            <p className="text-sm font-medium text-[#1F2933]">{q.type === "OTHER" ? q.custom_name : QUAL_LABEL[q.type] || q.type}</p>
+                            <p className="text-sm font-medium text-[#1F2933]">
+                              {q.type === "OTHER" ? q.custom_name : t(`expertMgmt.qual.${q.type}`, { defaultValue: q.type })}
+                            </p>
                             <DocLink url={q.document_url} />
                           </li>
                         ))}
                       </ul>
-                    ) : <p className="text-sm text-gray-400 italic">No qualifications added.</p>}
+                    ) : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noQualifications")}</p>}
                   </div>
 
                   <div>
-                    <SectionLabel>Certifications</SectionLabel>
+                    <SectionLabel>{t("expertDetail.profile.certifications")}</SectionLabel>
                     {expert.certifications?.length > 0 ? (
                       <ul className="space-y-2">
                         {expert.certifications.map((c) => (
@@ -769,30 +734,30 @@ const AdminExpertDetailSection = () => {
                           </li>
                         ))}
                       </ul>
-                    ) : <p className="text-sm text-gray-400 italic">No certifications added.</p>}
+                    ) : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noCertifications")}</p>}
                   </div>
 
                   <div>
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <SectionLabel>Business Information</SectionLabel>
-                        <p className="text-xs text-gray-400 italic -mt-1">Information collected for compliance purposes</p>
+                        <SectionLabel>{t("expertDetail.bizInfo.title")}</SectionLabel>
+                        <p className="text-xs text-gray-400 italic -mt-1">{t("expertDetail.bizInfo.subtitle")}</p>
                       </div>
                       {/* Year + status selectors */}
                       <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                        <span className="text-xs text-gray-400">Year</span>
+                        <span className="text-xs text-gray-400">{t("expertDetail.bizInfo.yearLabel")}</span>
                         <select value={exportYear} onChange={(e) => setExportYear(Number(e.target.value))}
                           className="text-xs border border-[#E4E7E4] rounded-lg px-2 py-1.5 bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30">
                           {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
                             <option key={y} value={y}>{y}</option>
                           ))}
                         </select>
-                        <span className="text-xs text-gray-400">Status</span>
+                        <span className="text-xs text-gray-400">{t("expertDetail.bizInfo.statusLabel")}</span>
                         <select value={summaryStatus} onChange={(e) => setSummaryStatus(e.target.value)}
                           className="text-xs border border-[#E4E7E4] rounded-lg px-2 py-1.5 bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30">
-                          <option value="ALL">All</option>
-                          <option value="CONFIRMED">Confirmed</option>
-                          <option value="COMPLETED">Completed</option>
+                          <option value="ALL">{t("expertDetail.bizInfo.statusAll")}</option>
+                          <option value="CONFIRMED">{t("expertDetail.bizInfo.statusConfirmed")}</option>
+                          <option value="COMPLETED">{t("expertDetail.bizInfo.statusCompleted")}</option>
                         </select>
                       </div>
                     </div>
@@ -804,15 +769,15 @@ const AdminExpertDetailSection = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                         </svg>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-amber-800">DAC7 reporting threshold reached ({expert.dac7.year})</p>
+                          <p className="text-xs font-semibold text-amber-800">{t("expertDetail.bizInfo.dac7Title", { year: expert.dac7.year })}</p>
                           <p className="text-xs text-amber-700 mt-0.5">
-                            {expert.dac7.transaction_count} transaction{expert.dac7.transaction_count !== 1 ? "s" : ""} &middot; £{expert.dac7.gross_earnings.toFixed(2)} gross
+                            {expert.dac7.transaction_count} {t("expertDetail.bizInfo.dac7Transaction", { count: expert.dac7.transaction_count })} &middot; £{expert.dac7.gross_earnings.toFixed(2)} {t("expertDetail.bizInfo.dac7Gross")}
                             {expert.dac7.threshold_reason === "both"
-                              ? " — exceeds both the 30-transaction and £2,000 thresholds."
+                              ? t("expertDetail.bizInfo.dac7Suffix_both")
                               : expert.dac7.threshold_reason === "transactions"
-                              ? " — 30-transaction threshold met."
-                              : " — £2,000 gross earnings threshold met."}
-                            {" "}This expert may be reportable under EU Directive 2021/514 (DAC7). Confirm applicable threshold with a tax adviser.
+                              ? t("expertDetail.bizInfo.dac7Suffix_transactions")
+                              : t("expertDetail.bizInfo.dac7Suffix_amount")}
+                            {" "}{t("expertDetail.bizInfo.dac7Advice")}
                           </p>
                         </div>
                       </div>
@@ -829,16 +794,16 @@ const AdminExpertDetailSection = () => {
                           const cur = expert.services?.find(s => s.currency)?.currency || 'EUR';
                           const fmt = (n) => new Intl.NumberFormat('en', { style: 'currency', currency: cur }).format(n);
                           return [
-                            { label: "Gross Earnings",     value: fmt(summary.total_gross) },
-                            { label: "Fees Deducted",      value: fmt(summary.total_fees) },
-                            { label: "Net Earnings",       value: fmt(summary.total_net), highlight: true },
-                            { label: "Completed Sessions", value: summary.completed_sessions },
-                            { label: "Refunds Issued",     value: summary.refund_count },
-                            { label: "Total Refunded",     value: fmt(summary.total_refunded) },
+                            { key: "gross",        value: fmt(summary.total_gross) },
+                            { key: "fees",         value: fmt(summary.total_fees) },
+                            { key: "net",          value: fmt(summary.total_net), highlight: true },
+                            { key: "sessions",     value: summary.completed_sessions },
+                            { key: "refundCount",  value: summary.refund_count },
+                            { key: "refundTotal",  value: fmt(summary.total_refunded) },
                           ];
-                        })().map(({ label, value, highlight }) => (
-                          <div key={label} className={`rounded-xl p-3 border ${highlight ? "bg-[#445446]/5 border-[#445446]/20" : "bg-[#F5F7F5] border-[#E4E7E4]"}`}>
-                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{label}</p>
+                        })().map(({ key, value, highlight }) => (
+                          <div key={key} className={`rounded-xl p-3 border ${highlight ? "bg-[#445446]/5 border-[#445446]/20" : "bg-[#F5F7F5] border-[#E4E7E4]"}`}>
+                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{t(`expertDetail.bizInfo.cards.${key}`)}</p>
                             <p className={`text-sm font-bold ${highlight ? "text-[#445446]" : "text-[#1F2933]"}`}>{value}</p>
                           </div>
                         ))}
@@ -854,30 +819,30 @@ const AdminExpertDetailSection = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                           </svg>
                         )}
-                        {exporting ? "Exporting…" : "Export .xlsx"}
+                        {exporting ? t("expertDetail.bizInfo.exporting") : t("expertDetail.bizInfo.exportBtn")}
                       </button>
                       {!expert.business_info && (
-                        <span className="text-xs text-gray-400">CSV export requires business info on file</span>
+                        <span className="text-xs text-gray-400">{t("expertDetail.bizInfo.exportNoBiz")}</span>
                       )}
                     </div>
                     {exportError && <p className="text-xs text-red-500 mb-2">{exportError}</p>}
                     {expert.business_info ? (() => {
                       const bi = expert.business_info;
                       const rows = [
-                        ["Entity type", bi.entity_type === "INDIVIDUAL" ? "Individual" : "Company / Legal Entity"],
-                        ["Full legal name", bi.legal_name],
-                        ...(bi.entity_type === "INDIVIDUAL" && bi.date_of_birth ? [["Date of birth", new Date(bi.date_of_birth).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })]] : []),
-                        ["Street", bi.address_street],
-                        ["City", bi.address_city],
-                        ["Postal code", bi.address_postal_code],
-                        ["Country", bi.address_country],
-                        ["TIN", bi.tin],
-                        ...(bi.vat_number ? [["VAT number", bi.vat_number]] : []),
-                        ...(bi.entity_type === "COMPANY" && bi.company_reg_number ? [["Company reg. number", bi.company_reg_number]] : []),
-                        ["IBAN / Bank account", bi.iban],
-                        ["Email address", bi.business_email],
-                        ...(bi.municipality ? [["Municipality", bi.municipality]] : []),
-                        ...(bi.business_address ? [["Business address", bi.business_address]] : []),
+                        [t("expertDetail.bizInfo.rows.entityType"), bi.entity_type === "INDIVIDUAL" ? t("expertDetail.bizInfo.rows.individual") : t("expertDetail.bizInfo.rows.company")],
+                        [t("expertDetail.bizInfo.rows.legalName"), bi.legal_name],
+                        ...(bi.entity_type === "INDIVIDUAL" && bi.date_of_birth ? [[t("expertDetail.bizInfo.rows.dob"), new Date(bi.date_of_birth).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })]] : []),
+                        [t("expertDetail.bizInfo.rows.street"), bi.address_street],
+                        [t("expertDetail.bizInfo.rows.city"), bi.address_city],
+                        [t("expertDetail.bizInfo.rows.postalCode"), bi.address_postal_code],
+                        [t("expertDetail.bizInfo.rows.country"), bi.address_country],
+                        [t("expertDetail.bizInfo.rows.tin"), bi.tin],
+                        ...(bi.vat_number ? [[t("expertDetail.bizInfo.rows.vat"), bi.vat_number]] : []),
+                        ...(bi.entity_type === "COMPANY" && bi.company_reg_number ? [[t("expertDetail.bizInfo.rows.companyReg"), bi.company_reg_number]] : []),
+                        [t("expertDetail.bizInfo.rows.iban"), bi.iban],
+                        [t("expertDetail.bizInfo.rows.bizEmail"), bi.business_email],
+                        ...(bi.municipality ? [[t("expertDetail.bizInfo.rows.municipality"), bi.municipality]] : []),
+                        ...(bi.business_address ? [[t("expertDetail.bizInfo.rows.bizAddress"), bi.business_address]] : []),
                       ];
                       return (
                         <div className="rounded-xl border border-[#E4E7E4] divide-y divide-[#F0F2F0] overflow-hidden">
@@ -891,37 +856,37 @@ const AdminExpertDetailSection = () => {
                       );
                     })() : (
                       <div className="px-4 py-3.5 rounded-xl border border-amber-200 bg-amber-50">
-                        <p className="text-xs font-semibold text-amber-700">⚠️ No business information submitted.</p>
+                        <p className="text-xs font-semibold text-amber-700">{t("expertDetail.bizInfo.noBizInfo")}</p>
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <SectionLabel>Professional Insurance</SectionLabel>
+                    <SectionLabel>{t("expertDetail.insurance.title")}</SectionLabel>
                     {insurance ? (
                       <div className={`px-4 py-3.5 rounded-xl border ${expired ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className={`text-sm font-semibold mb-0.5 ${expired ? "text-red-700" : "text-green-800"}`}>
-                              {expired ? "Insurance Expired" : "Insurance Active"}
+                              {expired ? t("expertDetail.insurance.expired") : t("expertDetail.insurance.active")}
                             </p>
                             <p className={`text-xs ${expired ? "text-red-600" : "text-green-700"}`}>
-                              Expires: <span className="font-medium">{formatDate(insurance.policy_expires_at)}</span>
+                              {t("expertDetail.insurance.expiresLabel")} <span className="font-medium">{formatDate(insurance.policy_expires_at)}</span>
                             </p>
                           </div>
-                          <DocLink url={insurance.document_url} label="View policy" />
+                          <DocLink url={insurance.document_url} label={t("expertDetail.insurance.viewPolicy")} />
                         </div>
-                        {expired && <p className="mt-2 text-xs font-semibold text-red-600">⚠️ Insurance has expired.</p>}
+                        {expired && <p className="mt-2 text-xs font-semibold text-red-600">{t("expertDetail.insurance.isExpired")}</p>}
                       </div>
                     ) : (
                       <div className="px-4 py-3.5 rounded-xl border border-amber-200 bg-amber-50">
-                        <p className="text-xs font-semibold text-amber-700">⚠️ No insurance uploaded.</p>
+                        <p className="text-xs font-semibold text-amber-700">{t("expertDetail.insurance.noInsurance")}</p>
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <SectionLabel>Services ({expert.services?.length ?? 0})</SectionLabel>
+                    <SectionLabel>{t("expertDetail.services.title", { count: expert.services?.length ?? 0 })}</SectionLabel>
                     {expert.services?.length > 0 ? (
                       <div className="space-y-2">
                         {expert.services.map((svc) => (
@@ -929,14 +894,18 @@ const AdminExpertDetailSection = () => {
                             <div className="flex items-start justify-between gap-2 mb-1">
                               <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
                               <div className="flex items-center gap-1.5 flex-shrink-0">
-                                {svc.format && FORMAT_BADGE[svc.format] && (
-                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${FORMAT_BADGE[svc.format].cls}`}>{FORMAT_BADGE[svc.format].label}</span>
+                                {svc.format && FORMAT_BADGE_CLS[svc.format] && (
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${FORMAT_BADGE_CLS[svc.format]}`}>
+                                    {t(`expertDetail.formatBadge.${svc.format}`, { defaultValue: svc.format })}
+                                  </span>
                                 )}
-                                {svc.cluster && CLUSTER_BADGE[svc.cluster] && (
-                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CLUSTER_BADGE[svc.cluster].cls}`}>{CLUSTER_BADGE[svc.cluster].label}</span>
+                                {svc.cluster && CLUSTER_BADGE_CLS[svc.cluster] && (
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CLUSTER_BADGE_CLS[svc.cluster]}`}>
+                                    {t(`expertDetail.clusterBadge.${svc.cluster}`, { defaultValue: svc.cluster })}
+                                  </span>
                                 )}
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${svc.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
-                                  {svc.is_active ? "Active" : "Inactive"}
+                                  {svc.is_active ? t("expertDetail.services.active") : t("expertDetail.services.inactive")}
                                 </span>
                               </div>
                             </div>
@@ -945,11 +914,11 @@ const AdminExpertDetailSection = () => {
                           </div>
                         ))}
                       </div>
-                    ) : <p className="text-sm text-gray-400 italic">No services added yet.</p>}
+                    ) : <p className="text-sm text-gray-400 italic">{t("expertDetail.services.noServices")}</p>}
                   </div>
 
                   <div>
-                    <SectionLabel>Stripe Account</SectionLabel>
+                    <SectionLabel>{t("expertDetail.stripe.title")}</SectionLabel>
                     {expert.stripe_account_id ? (
                       <div className="flex flex-wrap items-center gap-3">
                         <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
@@ -958,12 +927,12 @@ const AdminExpertDetailSection = () => {
                         {expert.stripe_onboarding_complete ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
-                            Connected · Payouts enabled
+                            {t("expertDetail.stripe.connected")}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" /></svg>
-                            Pending · Onboarding incomplete
+                            {t("expertDetail.stripe.pendingOnboarding")}
                           </span>
                         )}
                         <a
@@ -972,14 +941,14 @@ const AdminExpertDetailSection = () => {
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-xs font-medium text-[#635BFF] hover:underline"
                         >
-                          View in Stripe
+                          {t("expertDetail.stripe.viewInStripe")}
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
                         </a>
                       </div>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-                        Not connected
+                        {t("expertDetail.stripe.notConnected")}
                       </span>
                     )}
                   </div>
@@ -991,10 +960,10 @@ const AdminExpertDetailSection = () => {
                 bookingsLoading ? (
                   <div className="flex items-center gap-2 py-4">
                     <div className="w-4 h-4 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-                    <span className="text-xs text-gray-400">Loading bookings…</span>
+                    <span className="text-xs text-gray-400">{t("expertDetail.bookingsTab.loading")}</span>
                   </div>
                 ) : bookings.length === 0 ? (
-                  <p className="text-sm text-gray-400 italic py-4">No bookings on record.</p>
+                  <p className="text-sm text-gray-400 italic py-4">{t("expertDetail.bookingsTab.noBookings")}</p>
                 ) : (
                   <div className="space-y-2">
                     {bookings.map((b) => (
@@ -1004,7 +973,7 @@ const AdminExpertDetailSection = () => {
                         className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-[#E4E7E4] bg-[#FAFAFA] hover:bg-[#F0F2F0] transition-colors text-left"
                       >
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-[#1F2933] truncate">#{b.id} · {b.service?.title || "Session"}</p>
+                          <p className="text-xs font-medium text-[#1F2933] truncate">#{b.id} · {b.service?.title || t("expertDetail.bookingsTab.sessionFallback")}</p>
                           <p className="text-xs text-gray-400 mt-0.5 leading-tight">
                             <span className="block">
                               {formatBookingTime(b.scheduled_at, expert.timezone).primary}
@@ -1028,10 +997,10 @@ const AdminExpertDetailSection = () => {
                 auditLoading ? (
                   <div className="flex items-center gap-2 py-4">
                     <div className="w-4 h-4 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-                    <span className="text-xs text-gray-400">Loading activity…</span>
+                    <span className="text-xs text-gray-400">{t("expertDetail.activityTab.loading")}</span>
                   </div>
                 ) : auditLog.length === 0 ? (
-                  <p className="text-sm text-gray-400 italic">No activity recorded yet.</p>
+                  <p className="text-sm text-gray-400 italic">{t("expertDetail.activityTab.noActivity")}</p>
                 ) : (
                   <ol className="relative border-l border-[#E4E7E4] ml-2 space-y-4">
                     {(() => {
@@ -1059,29 +1028,29 @@ const AdminExpertDetailSection = () => {
 
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-xs font-semibold text-[#1F2933]">
-                                {ACTION_LABELS[entry.action] || entry.action}
+                                {t(`expertDetail.actionLabels.${entry.action}`, { defaultValue: entry.action })}
                               </p>
                               {isExpertAction && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">
-                                  Expert
+                                  {t("expertDetail.activityTab.expertBadge")}
                                 </span>
                               )}
                               {isPending && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200">
                                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
-                                  Awaiting response
+                                  {t("expertDetail.activityTab.awaiting")}
                                 </span>
                               )}
                               {isResolved && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200">
                                   <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
-                                  Resolved
+                                  {t("expertDetail.activityTab.resolved")}
                                 </span>
                               )}
                             </div>
 
                             <p className="text-xs text-gray-400 mt-0.5">
-                              {isExpertAction ? `${entry.admin_name} (expert)` : entry.admin_name} · {new Date(entry.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                              {isExpertAction ? `${entry.admin_name} ${t("expertDetail.activityTab.expertSuffix")}` : entry.admin_name} · {new Date(entry.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                             </p>
                             {entry.note && (
                               <p className="text-xs text-gray-500 mt-1 bg-gray-50 rounded-lg px-3 py-2 border border-[#E4E7E4] whitespace-pre-wrap">{entry.note}</p>
@@ -1108,29 +1077,29 @@ const AdminExpertDetailSection = () => {
                   <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 3.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" />
                 </svg>
               </div>
-              <p className="text-sm font-semibold text-gray-500 mb-1">Account Deleted</p>
-              <p className="text-xs text-gray-400 leading-relaxed">This account has been permanently erased (GDPR). No further actions are available.</p>
+              <p className="text-sm font-semibold text-gray-500 mb-1">{t("expertDetail.accountDeleted.title")}</p>
+              <p className="text-xs text-gray-400 leading-relaxed">{t("expertDetail.accountDeleted.message")}</p>
             </div>
           ) : (
             <>
               {/* Status actions */}
               <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
-                <SectionLabel>Status Actions</SectionLabel>
+                <SectionLabel>{t("expertDetail.statusActions.title")}</SectionLabel>
                 <div className="flex flex-col gap-2">
                   {expert.status === "SUSPENDED" ? (
                     <button onClick={() => setConfirmAction("reactivate")} disabled={!!actionLoading}
                       className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors">
-                      {actionLoading === "Reactivated" ? "Reactivating…" : "Reactivate Expert"}
+                      {actionLoading === "reactivate" ? t("expertDetail.statusActions.reactivating") : t("expertDetail.statusActions.reactivate")}
                     </button>
                   ) : expert.status === "APPROVED" ? (
                     <>
                       <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
-                        {actionLoading === "Rejected" ? "Rejecting…" : "Reject Expert"}
+                        {actionLoading === "reject" ? t("expertDetail.statusActions.rejecting") : t("expertDetail.statusActions.reject")}
                       </button>
                       <button onClick={() => setConfirmAction("suspend")} disabled={!!actionLoading}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 disabled:opacity-50 transition-colors">
-                        {actionLoading === "Suspended" ? "Suspending…" : "Suspend Expert"}
+                        {actionLoading === "suspend" ? t("expertDetail.statusActions.suspending") : t("expertDetail.statusActions.suspend")}
                       </button>
                     </>
                   ) : expert.status === "REJECTED" ? (
@@ -1140,11 +1109,11 @@ const AdminExpertDetailSection = () => {
                         disabled={!!actionLoading || !expert.stripe_onboarding_complete}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
+                        {actionLoading === "approve" ? t("expertDetail.statusActions.approving") : t("expertDetail.statusActions.approve")}
                       </button>
                       {!expert.stripe_onboarding_complete && (
                         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
-                          Cannot approve — expert has not completed Stripe onboarding.
+                          {t("expertDetail.statusActions.cannotApprove")}
                         </p>
                       )}
                     </>
@@ -1155,23 +1124,23 @@ const AdminExpertDetailSection = () => {
                         disabled={!!actionLoading || !expert.stripe_onboarding_complete}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        {actionLoading === "Approved" ? "Approving…" : "Approve Expert"}
+                        {actionLoading === "approve" ? t("expertDetail.statusActions.approving") : t("expertDetail.statusActions.approve")}
                       </button>
                       {!expert.stripe_onboarding_complete && (
                         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
-                          Cannot approve — expert has not completed Stripe onboarding.
+                          {t("expertDetail.statusActions.cannotApprove")}
                         </p>
                       )}
                       <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
-                        {actionLoading === "Rejected" ? "Rejecting…" : "Reject Expert"}
+                        {actionLoading === "reject" ? t("expertDetail.statusActions.rejecting") : t("expertDetail.statusActions.reject")}
                       </button>
                     </>
                   )}
                   {["PENDING", "APPROVED", "CHANGES_REQUESTED"].includes(expert.status) && (
                     <button onClick={() => { setChangesNote(expert.change_request_note || ""); setShowRequestChanges(true); }}
                       className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors">
-                      Request Changes
+                      {t("expertDetail.statusActions.requestChanges")}
                     </button>
                   )}
                 </div>
@@ -1179,21 +1148,21 @@ const AdminExpertDetailSection = () => {
 
               {/* Support tools */}
               <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
-                <SectionLabel>Support Tools</SectionLabel>
+                <SectionLabel>{t("expertDetail.supportTools.title")}</SectionLabel>
                 <div className="flex flex-col gap-2">
                   <button onClick={handlePasswordReset} disabled={!!actionLoading}
                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-                    {actionLoading === "Password reset sent" ? "Sending…" : "Send Password Reset"}
+                    {actionLoading === "passwordReset" ? t("expertDetail.supportTools.sending") : t("expertDetail.supportTools.passwordReset")}
                   </button>
                   {!expert.user?.is_verified && (
                     <>
                       <button onClick={handleResendVerification} disabled={!!actionLoading}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-                        {actionLoading === "Verification email resent" ? "Sending…" : "Resend Verification Email"}
+                        {actionLoading === "resendVerification" ? t("expertDetail.supportTools.sending") : t("expertDetail.supportTools.resendVerification")}
                       </button>
                       <button onClick={handleManualVerify} disabled={!!actionLoading}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 transition-colors">
-                        {actionLoading === "Marked as verified" ? "Verifying…" : "Mark as Verified"}
+                        {actionLoading === "manualVerify" ? t("expertDetail.supportTools.verifying") : t("expertDetail.supportTools.markVerified")}
                       </button>
                     </>
                   )}
@@ -1202,11 +1171,11 @@ const AdminExpertDetailSection = () => {
 
               {/* Danger zone */}
               <div className="bg-white rounded-2xl border-2 border-dashed border-red-100 p-5">
-                <SectionLabel>Danger Zone</SectionLabel>
-                <p className="text-xs text-gray-400 mb-3">Permanently erase all personal data. This cannot be undone.</p>
+                <SectionLabel>{t("expertDetail.dangerZone.title")}</SectionLabel>
+                <p className="text-xs text-gray-400 mb-3">{t("expertDetail.dangerZone.subtitle")}</p>
                 <button onClick={() => { setGdprEmail(""); setShowGdprDelete(true); }}
                   className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
-                  Delete Account (GDPR Erasure)
+                  {t("expertDetail.dangerZone.deleteBtn")}
                 </button>
               </div>
             </>
@@ -1228,19 +1197,21 @@ const AdminExpertDetailSection = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget && !changesLoading) setShowRequestChanges(false); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">Request Profile Changes</h3>
-            <p className="text-sm text-gray-500 text-center mb-4">Describe what needs to be corrected. The specialist will receive this note by email.</p>
+            <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">{t("expertDetail.requestChanges.title")}</h3>
+            <p className="text-sm text-gray-500 text-center mb-4">{t("expertDetail.requestChanges.subtitle")}</p>
             <textarea value={changesNote} onChange={(e) => { if (e.target.value.length <= 2000) setChangesNote(e.target.value); }}
-              placeholder="e.g. Please upload a clearer copy of your insurance certificate." rows={5}
+              placeholder={t("expertDetail.requestChanges.placeholder")} rows={5}
               className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 resize-none" />
             <p className="text-xs text-gray-400 text-right mb-3">{changesNote.length}/2000</p>
             {changesError && <p className="text-xs text-red-600 mb-3">{changesError}</p>}
             <div className="flex gap-3">
               <button onClick={() => { setShowRequestChanges(false); setChangesNote(""); setChangesError(""); }} disabled={changesLoading}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
+                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+                {t("expertDetail.requestChanges.cancel")}
+              </button>
               <button onClick={handleRequestChanges} disabled={changesLoading || !changesNote.trim()}
                 className="flex-1 py-2.5 px-4 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium disabled:opacity-50">
-                {changesLoading ? "Sending…" : "Send Request"}
+                {changesLoading ? t("expertDetail.requestChanges.sending") : t("expertDetail.requestChanges.send")}
               </button>
             </div>
           </div>
@@ -1251,29 +1222,29 @@ const AdminExpertDetailSection = () => {
       {confirmAction && (() => {
         const cfg = {
           approve: {
-            title: "Approve Expert?",
-            body: `Are you sure you want to approve ${name}?`,
+            title: t("expertDetail.confirmModal.approve_title"),
+            body:  t("expertDetail.confirmModal.approve_body", { name }),
             iconBg: "bg-green-50",
             btnCls: "bg-green-600 hover:bg-green-700",
             icon: <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>,
           },
           reject: {
-            title: "Reject Expert?",
-            body: `Are you sure you want to reject ${name}?`,
+            title: t("expertDetail.confirmModal.reject_title"),
+            body:  t("expertDetail.confirmModal.reject_body", { name }),
             iconBg: "bg-red-50",
             btnCls: "bg-red-500 hover:bg-red-600",
             icon: <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>,
           },
           suspend: {
-            title: "Suspend Expert?",
-            body: `${name} will be blocked from logging in until reactivated.`,
+            title: t("expertDetail.confirmModal.suspend_title"),
+            body:  t("expertDetail.confirmModal.suspend_body", { name }),
             iconBg: "bg-orange-50",
             btnCls: "bg-orange-500 hover:bg-orange-600",
             icon: <svg className="w-6 h-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>,
           },
           reactivate: {
-            title: "Reactivate Expert?",
-            body: `${name} will be restored to approved status and can log in again.`,
+            title: t("expertDetail.confirmModal.reactivate_title"),
+            body:  t("expertDetail.confirmModal.reactivate_body", { name }),
             iconBg: "bg-green-50",
             btnCls: "bg-green-600 hover:bg-green-700",
             icon: <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>,
@@ -1293,17 +1264,17 @@ const AdminExpertDetailSection = () => {
                   <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
                   </svg>
-                  <p className="text-xs text-amber-800">This expert has no insurance uploaded. Please confirm that you wish to proceed.</p>
+                  <p className="text-xs text-amber-800">{t("expertDetail.confirmModal.noInsurance")}</p>
                 </div>
               )}
               <div className="flex gap-3">
                 <button onClick={() => setConfirmAction(null)}
                   className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                  Cancel
+                  {t("expertDetail.confirmModal.cancel")}
                 </button>
                 <button onClick={handleConfirmAction}
                   className={`flex-1 py-2.5 px-4 rounded-lg text-white text-sm font-medium transition-colors ${cfg.btnCls}`}>
-                  Confirm
+                  {t("expertDetail.confirmModal.confirm")}
                 </button>
               </div>
             </div>
@@ -1316,58 +1287,60 @@ const AdminExpertDetailSection = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget && !gdprLoading) setShowGdprDelete(false); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-base font-semibold text-red-700 text-center mb-4">Permanent Account Erasure</h3>
+            <h3 className="text-base font-semibold text-red-700 text-center mb-4">{t("expertDetail.gdpr.title")}</h3>
             {expert.pending_payout_count > 0 ? (
               <>
                 <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-800 space-y-1">
-                  <p className="font-semibold">This account cannot be deleted until all pending payouts have cleared.</p>
+                  <p className="font-semibold">{t("expertDetail.gdpr.pendingTitle")}</p>
                   <p className="text-red-700 mt-1">
-                    {expert.pending_payout_count} payout{expert.pending_payout_count !== 1 ? "s are" : " is"} still pending. Payouts typically clear within 24 hours of a completed session. Return here once all payouts have settled.
+                    {t("expertDetail.gdpr.pendingBody", { count: expert.pending_payout_count })}
                   </p>
                 </div>
                 <button
                   onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
                   className="w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                 >
-                  Close
+                  {t("expertDetail.gdpr.close")}
                 </button>
               </>
             ) : (
               <>
                 <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-2 text-xs text-red-700 space-y-1">
-                  <p className="font-semibold">This action is irreversible. The following will be erased:</p>
+                  <p className="font-semibold">{t("expertDetail.gdpr.eraseTitle")}</p>
                   <ul className="list-disc list-inside space-y-0.5 text-red-600">
-                    <li>Profile, bio, photo, login credentials, and uploaded documents</li>
-                    <li>Business contact email and website</li>
-                    <li>All future bookings cancelled and Stripe refunds issued</li>
-                    <li>All active sessions invalidated immediately</li>
-                    <li>Specialist shown as "Deleted specialist" in parent booking history</li>
+                    <li>{t("expertDetail.gdpr.erase1")}</li>
+                    <li>{t("expertDetail.gdpr.erase2")}</li>
+                    <li>{t("expertDetail.gdpr.erase3")}</li>
+                    <li>{t("expertDetail.gdpr.erase4")}</li>
+                    <li>{t("expertDetail.gdpr.erase5")}</li>
                   </ul>
                 </div>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 text-xs text-amber-800 space-y-1">
-                  <p className="font-semibold">Retained for a minimum of 5 years under DAC7 (EU Directive 2021/514):</p>
+                  <p className="font-semibold">{t("expertDetail.gdpr.retainTitle")}</p>
                   <ul className="list-disc list-inside space-y-0.5 text-amber-700">
-                    <li>Full legal name, date of birth, and entity type</li>
-                    <li>Tax identification number (TIN) and VAT / company registration number</li>
-                    <li>Registered address and bank account (IBAN)</li>
-                    <li>All earnings and booking records tied to financial transactions</li>
+                    <li>{t("expertDetail.gdpr.retain1")}</li>
+                    <li>{t("expertDetail.gdpr.retain2")}</li>
+                    <li>{t("expertDetail.gdpr.retain3")}</li>
+                    <li>{t("expertDetail.gdpr.retain4")}</li>
                   </ul>
-                  <p className="mt-1 text-amber-600">GDPR Art. 17(3)(b) — this data must remain identifiable for tax reporting and cannot be anonymised.</p>
+                  <p className="mt-1 text-amber-600">{t("expertDetail.gdpr.gdprNote")}</p>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">
-                  Type the specialist's email to confirm: <span className="font-medium text-[#1F2933]">{expert.user?.email}</span>
+                  {t("expertDetail.gdpr.typeEmail")} <span className="font-medium text-[#1F2933]">{expert.user?.email}</span>
                 </p>
                 <input type="email" value={gdprEmail} onChange={(e) => setGdprEmail(e.target.value)}
-                  placeholder={expert.user?.email || "specialist@email.com"}
+                  placeholder={t("expertDetail.gdpr.emailPlaceholder")}
                   className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 mb-3" />
                 {gdprError && <p className="text-xs text-red-600 mb-3">{gdprError}</p>}
                 <div className="flex gap-3">
                   <button onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }} disabled={gdprLoading}
-                    className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
+                    className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+                    {t("expertDetail.gdpr.cancel")}
+                  </button>
                   <button onClick={handleGdprDelete}
                     disabled={gdprLoading || gdprEmail.trim().toLowerCase() !== expert.user?.email?.toLowerCase()}
                     className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
-                    {gdprLoading ? "Erasing…" : "Erase Account"}
+                    {gdprLoading ? t("expertDetail.gdpr.erasing") : t("expertDetail.gdpr.eraseBtn")}
                   </button>
                 </div>
               </>
