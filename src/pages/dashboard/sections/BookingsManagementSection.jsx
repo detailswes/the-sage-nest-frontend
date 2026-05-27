@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { listAllBookings } from "../../../api/adminApi";
 import BookingDetailModal, {
   BookingStatusBadge,
@@ -10,21 +11,22 @@ import { formatBookingTime } from "../../../utils/formatBookingTime";
 
 // ─── Filter tabs ──────────────────────────────────────────────────────────────
 
-const FILTERS = [
-  { key: "ALL",             label: "All" },
-  { key: "UPCOMING",        label: "Upcoming" },
-  { key: "CONFIRMED",       label: "Confirmed" },
-  { key: "COMPLETED",       label: "Completed" },
-  { key: "PENDING_PAYMENT", label: "Pending Payment" },
-  { key: "CANCELLED",       label: "Cancelled" },
-  { key: "REFUNDED",        label: "Refunded" },
-  { key: "DISPUTED",        label: "Disputed" },
+const FILTER_KEYS = [
+  "ALL",
+  "UPCOMING",
+  "CONFIRMED",
+  "COMPLETED",
+  "PENDING_PAYMENT",
+  "CANCELLED",
+  "REFUNDED",
+  "DISPUTED",
 ];
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 
 const BookingsManagementSection = () => {
   const location = useLocation();
+  const { t } = useTranslation("adminDashboard");
 
   const [bookings, setBookings]         = useState([]);
   const [total, setTotal]               = useState(0);
@@ -120,10 +122,8 @@ const BookingsManagementSection = () => {
     <div>
       {/* Page header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#1F2933]">Booking Management</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Platform-wide booking list — search, filter and take action on any booking.
-        </p>
+        <h1 className="text-2xl font-bold text-[#1F2933]">{t("bookingsMgmt.pageTitle")}</h1>
+        <p className="text-sm text-gray-400 mt-1">{t("bookingsMgmt.pageSubtitle")}</p>
       </div>
 
       {/* Search + date range */}
@@ -136,7 +136,7 @@ const BookingsManagementSection = () => {
             type="text"
             value={search}
             onChange={handleSearchChange}
-            placeholder="Search by booking ID, parent or specialist name…"
+            placeholder={t("bookingsMgmt.searchPlaceholder")}
             className="flex-1 text-sm bg-transparent outline-none placeholder-gray-300 text-[#1F2933]"
           />
           {search && (
@@ -157,10 +157,10 @@ const BookingsManagementSection = () => {
         </div>
 
         <div className="flex items-center gap-2 bg-white border border-[#E4E7E4] rounded-xl px-3 py-2 shadow-sm">
-          <span className="text-xs text-gray-400">From</span>
+          <span className="text-xs text-gray-400">{t("bookingsMgmt.from")}</span>
           <input type="date" value={fromDate} onChange={handleFromChange}
             className="text-sm outline-none bg-transparent text-[#1F2933]" />
-          <span className="text-xs text-gray-400">To</span>
+          <span className="text-xs text-gray-400">{t("bookingsMgmt.to")}</span>
           <input type="date" value={toDate} onChange={handleToChange}
             className="text-sm outline-none bg-transparent text-[#1F2933]" />
           {(fromDate || toDate) && (
@@ -171,7 +171,7 @@ const BookingsManagementSection = () => {
               }}
               className="text-xs text-gray-400 hover:text-gray-600"
             >
-              Clear
+              {t("bookingsMgmt.clear")}
             </button>
           )}
         </div>
@@ -179,7 +179,7 @@ const BookingsManagementSection = () => {
 
       {/* Filter tabs */}
       <div className="flex gap-1 flex-wrap mb-4">
-        {FILTERS.map(({ key, label }) => (
+        {FILTER_KEYS.map((key) => (
           <button
             key={key}
             onClick={() => applyFilter(key)}
@@ -189,7 +189,7 @@ const BookingsManagementSection = () => {
                 : "bg-white border border-[#E4E7E4] text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
             }`}
           >
-            {label}
+            {t(`bookingsMgmt.filter.${key}`)}
           </button>
         ))}
       </div>
@@ -198,7 +198,15 @@ const BookingsManagementSection = () => {
       <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
         {/* Table header */}
         <div className="grid grid-cols-[60px_1fr_1fr_1fr_160px_90px_90px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
-          {["ID", "Parent", "Specialist", "Service", "Date & Time", "Amount", "Status"].map((h) => (
+          {[
+            t("bookingsMgmt.col.id"),
+            t("bookingsMgmt.col.parent"),
+            t("bookingsMgmt.col.specialist"),
+            t("bookingsMgmt.col.service"),
+            t("bookingsMgmt.col.dateTime"),
+            t("bookingsMgmt.col.amount"),
+            t("bookingsMgmt.col.status"),
+          ].map((h) => (
             <span key={h} className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</span>
           ))}
         </div>
@@ -209,7 +217,7 @@ const BookingsManagementSection = () => {
           </div>
         ) : bookings.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-sm text-gray-400">No bookings found.</p>
+            <p className="text-sm text-gray-400">{t("bookingsMgmt.noBookings")}</p>
           </div>
         ) : (
           <div className={`divide-y divide-[#E4E7E4] ${fetching ? "opacity-60 pointer-events-none" : ""}`}>
@@ -249,7 +257,13 @@ const BookingsManagementSection = () => {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-xs text-gray-400">
-            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total} bookings
+            {t("bookingsMgmt.pagination.showing")}{" "}
+            <span className="font-medium text-[#1F2933]">
+              {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}
+            </span>{" "}
+            {t("bookingsMgmt.pagination.of")}{" "}
+            <span className="font-medium text-[#1F2933]">{total}</span>{" "}
+            {t("bookingsMgmt.pagination.booking", { count: total })}
           </p>
           <div className="flex gap-1">
             <button
@@ -257,7 +271,7 @@ const BookingsManagementSection = () => {
               disabled={page === 1 || fetching}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
-              Previous
+              {t("bookingsMgmt.pagination.previous")}
             </button>
             {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
               const p = totalPages <= 7 ? i + 1 : page <= 4 ? i + 1 : page + i - 3;
@@ -282,7 +296,7 @@ const BookingsManagementSection = () => {
               disabled={page === totalPages || fetching}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
-              Next
+              {t("bookingsMgmt.pagination.next")}
             </button>
           </div>
         </div>

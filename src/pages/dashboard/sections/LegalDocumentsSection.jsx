@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { getLegalDocuments, bumpLegalDocument } from "../../../api/adminApi";
-
-const DOC_LABELS = {
-  PRIVACY_POLICY:   "Privacy Policy",
-  TERMS_CONDITIONS: "Terms & Conditions",
-};
 
 // Accepts x.x, x.x.x, 2.0.1, etc. — at least two numeric segments.
 const VERSION_RE = /^\d+(\.\d+)+$/;
@@ -14,6 +10,7 @@ const formatDate = (iso) =>
 
 // ─── Version history table ─────────────────────────────────────────────────────
 const VersionHistory = ({ docs }) => {
+  const { t } = useTranslation("adminDashboard");
   const history = docs.slice(1); // everything after the current (latest) version
 
   if (history.length === 0) return null;
@@ -21,15 +18,21 @@ const VersionHistory = ({ docs }) => {
   return (
     <div className="mt-4 border-t border-[#E4E7E4] pt-4">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-        Version History
+        {t("legalDocs.versionHistory.title")}
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-[#E4E7E4]">
-              <th className="text-left font-semibold text-gray-400 pb-2 pr-4 whitespace-nowrap">Version</th>
-              <th className="text-left font-semibold text-gray-400 pb-2 pr-4 whitespace-nowrap">Published</th>
-              <th className="text-right font-semibold text-gray-400 pb-2 whitespace-nowrap">Acceptances</th>
+              <th className="text-left font-semibold text-gray-400 pb-2 pr-4 whitespace-nowrap">
+                {t("legalDocs.versionHistory.col.version")}
+              </th>
+              <th className="text-left font-semibold text-gray-400 pb-2 pr-4 whitespace-nowrap">
+                {t("legalDocs.versionHistory.col.published")}
+              </th>
+              <th className="text-right font-semibold text-gray-400 pb-2 whitespace-nowrap">
+                {t("legalDocs.versionHistory.col.acceptances")}
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F0F2F0]">
@@ -46,7 +49,7 @@ const VersionHistory = ({ docs }) => {
                     <span className="inline-flex items-center gap-1 font-medium text-[#1F2933]">
                       {row.accepted_count.toLocaleString()}
                       <span className="text-gray-400 font-normal">
-                        user{row.accepted_count !== 1 ? "s" : ""}
+                        {t("legalDocs.versionHistory.user", { count: row.accepted_count })}
                       </span>
                     </span>
                   ) : (
@@ -64,6 +67,7 @@ const VersionHistory = ({ docs }) => {
 
 // ─── Doc card ──────────────────────────────────────────────────────────────────
 const DocCard = ({ type, docs, onBumped }) => {
+  const { t } = useTranslation("adminDashboard");
   const [version,        setVersion]        = useState("");
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState("");
@@ -76,6 +80,9 @@ const DocCard = ({ type, docs, onBumped }) => {
   const trimmed      = version.trim();
   const versionValid = VERSION_RE.test(trimmed);
   const showFmtHint  = trimmed.length > 0 && !versionValid;
+
+  const docLabel = t(`legalDocs.docType.${type}`);
+  const docPath  = type === "PRIVACY_POLICY" ? "/privacy-policy" : "/terms-conditions";
 
   const handleBump = () => {
     if (!versionValid) return;
@@ -91,7 +98,7 @@ const DocCard = ({ type, docs, onBumped }) => {
       onBumped(type, updatedDocs);
       setVersion("");
     } catch (err) {
-      setError(err?.response?.data?.error || "Failed to publish version.");
+      setError(err?.response?.data?.error || t("legalDocs.card.publishError"));
     } finally {
       setLoading(false);
     }
@@ -113,27 +120,27 @@ const DocCard = ({ type, docs, onBumped }) => {
               </svg>
             </div>
             <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
-              Publish {DOC_LABELS[type]} v{trimmed}?
+              {t("legalDocs.confirmModal.title", { docLabel, version: trimmed })}
             </h3>
             <p className="text-sm text-gray-500 text-center mb-6">
-              Make sure the updated content is already live on the page before confirming.
+              {t("legalDocs.confirmModal.body")}
               {type === "PRIVACY_POLICY"
-                ? " All users (parents and experts) will be prompted to re-accept on their next login."
-                : " All parents will be prompted to re-accept before their next booking."}{" "}
-              This cannot be undone.
+                ? t("legalDocs.confirmModal.bodyPrivacy")
+                : t("legalDocs.confirmModal.bodyTerms")}
+              {t("legalDocs.confirmModal.cannotUndo")}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => { setConfirmPending(false); setVersion(""); }}
                 className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("legalDocs.confirmModal.cancel")}
               </button>
               <button
                 onClick={handleConfirmedBump}
                 className="flex-1 py-2.5 px-4 rounded-lg bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-medium transition-colors"
               >
-                Yes, publish
+                {t("legalDocs.confirmModal.confirm")}
               </button>
             </div>
           </div>
@@ -144,48 +151,49 @@ const DocCard = ({ type, docs, onBumped }) => {
         {/* Header row */}
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <p className="text-sm font-semibold text-[#1F2933]">{DOC_LABELS[type]}</p>
+            <p className="text-sm font-semibold text-[#1F2933]">{docLabel}</p>
             {currentDoc ? (
               <p className="text-xs text-gray-500 mt-1">
-                <span className="font-semibold text-[#1F2933]">Version {currentDoc.version}</span>
+                <span className="font-semibold text-[#1F2933]">
+                  {t("legalDocs.card.version", { v: currentDoc.version })}
+                </span>
                 <span className="mx-1.5 text-gray-300">—</span>
-                published {formatDate(currentDoc.effective_from)}
+                {t("legalDocs.card.published", { date: formatDate(currentDoc.effective_from) })}
                 {currentDoc.accepted_count > 0 && (
                   <span className="ml-2 text-gray-400">
-                    · {currentDoc.accepted_count.toLocaleString()} acceptance{currentDoc.accepted_count !== 1 ? "s" : ""}
+                    · {currentDoc.accepted_count.toLocaleString()}{" "}
+                    {t("legalDocs.card.acceptance", { count: currentDoc.accepted_count })}
                   </span>
                 )}
               </p>
             ) : (
-              <p className="text-xs text-red-500 mt-1">No version published yet</p>
+              <p className="text-xs text-red-500 mt-1">{t("legalDocs.card.noVersion")}</p>
             )}
           </div>
           <a
-            href={type === "PRIVACY_POLICY" ? "/privacy-policy" : "/terms-conditions"}
+            href={docPath}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-[#445446] font-medium underline whitespace-nowrap"
           >
-            View current
+            {t("legalDocs.card.viewCurrent")}
           </a>
         </div>
 
         {/* Publish controls */}
         <div className="space-y-3">
           <p className="text-xs text-gray-500 leading-relaxed">
-            Make sure the updated content is already live on the{" "}
-            {type === "PRIVACY_POLICY" ? "/privacy-policy" : "/terms-conditions"}{" "}
-            page before publishing.
+            {t("legalDocs.card.instructions", { path: docPath })}
             {type === "PRIVACY_POLICY"
-              ? " All users (parents and experts) will be prompted to re-accept on their next login."
-              : " All parents will be prompted to re-accept before their next booking."}
+              ? t("legalDocs.card.reacceptPrivacy")
+              : t("legalDocs.card.reacceptTerms")}
           </p>
           <div className="flex gap-2">
             <input
               type="text"
               value={version}
               onChange={(e) => { setVersion(e.target.value); setError(""); }}
-              placeholder="e.g. 1.1 or 2.0.1"
+              placeholder={t("legalDocs.card.versionPlaceholder")}
               className={`flex-1 px-3 py-2 rounded-lg border text-sm text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 transition-colors ${
                 showFmtHint
                   ? "border-red-400 bg-red-50 focus:border-red-400 focus:ring-red-400/20"
@@ -197,11 +205,11 @@ const DocCard = ({ type, docs, onBumped }) => {
               disabled={loading || !versionValid}
               className="px-4 py-2 rounded-lg bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {loading ? "Publishing…" : "Publish"}
+              {loading ? t("legalDocs.card.publishing") : t("legalDocs.card.publishBtn")}
             </button>
           </div>
           {showFmtHint && !error && (
-            <p className="text-xs text-red-500">Use numeric format e.g. 1.1 or 2.0.1</p>
+            <p className="text-xs text-red-500">{t("legalDocs.card.formatHint")}</p>
           )}
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -219,7 +227,7 @@ const DocCard = ({ type, docs, onBumped }) => {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
               </svg>
-              Version history
+              {t("legalDocs.card.versionHistoryBtn")}
               <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500">
                 {historyCount}
               </span>
@@ -235,6 +243,7 @@ const DocCard = ({ type, docs, onBumped }) => {
 
 // ─── Main section ──────────────────────────────────────────────────────────────
 const LegalDocumentsSection = () => {
+  const { t } = useTranslation("adminDashboard");
   const [docs,    setDocs]    = useState({ privacy_policy: [], terms_conditions: [] });
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
@@ -242,9 +251,9 @@ const LegalDocumentsSection = () => {
   useEffect(() => {
     getLegalDocuments()
       .then(setDocs)
-      .catch(() => setError("Could not load legal document versions."))
+      .catch(() => setError(t("legalDocs.loadError")))
       .finally(() => setLoading(false));
-  }, []);
+  }, []); // eslint-disable-line
 
   const handleBumped = (type, updatedDocs) => {
     const key = type === "PRIVACY_POLICY" ? "privacy_policy" : "terms_conditions";
@@ -254,10 +263,8 @@ const LegalDocumentsSection = () => {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">Legal Documents</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          View current versions and publish updates after the page content has been updated by developers.
-        </p>
+        <h2 className="text-xl font-semibold text-[#1F2933]">{t("legalDocs.pageTitle")}</h2>
+        <p className="text-sm text-gray-500 mt-1">{t("legalDocs.pageSubtitle")}</p>
       </div>
 
       {error && (
@@ -269,7 +276,7 @@ const LegalDocumentsSection = () => {
       {loading ? (
         <div className="flex items-center gap-2 py-10">
           <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-          <span className="text-sm text-gray-400">Loading…</span>
+          <span className="text-sm text-gray-400">{t("legalDocs.loading")}</span>
         </div>
       ) : (
         <div className="space-y-4 max-w-lg">

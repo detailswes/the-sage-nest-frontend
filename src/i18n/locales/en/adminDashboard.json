@@ -1,0 +1,961 @@
+{
+  "nav": {
+    "expertManagement": "Expert Management",
+    "parentManagement": "Parent Management",
+    "bookingManagement": "Booking Management",
+    "paymentOverview": "Payment Overview",
+    "legalDocuments": "Legal Documents",
+    "legalCompliance": "Legal Compliance"
+  },
+  "signOut": "Sign out",
+  "signOutModal": {
+    "title": "Sign out?",
+    "body": "Are you sure you want to sign out of your account?",
+    "cancel": "Cancel",
+    "confirm": "Yes, sign out"
+  },
+
+  "parentMgmt": {
+    "pageTitle": "Parent Management",
+    "pageSubtitle": "Review and manage parent accounts on the platform.",
+    "exportBtn": "Export .xlsx",
+    "exporting": "Exporting…",
+    "searchPlaceholder": "Search by name or email…",
+    "registeredFrom": "Registered from",
+    "to": "to",
+    "clearFilters": "Clear filters",
+    "loadError": "Failed to load parents.",
+    "noParents": "No parents found.",
+    "viewBtn": "View",
+    "col": {
+      "parent": "Parent",
+      "joined": "Joined",
+      "status": "Status",
+      "bookings": "Bookings"
+    },
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "suspended": "Suspended"
+    },
+    "badge": {
+      "active": "Active",
+      "suspended": "Suspended"
+    },
+    "pagination": {
+      "showing": "Showing",
+      "of": "of",
+      "parent_one": "parent",
+      "parent_other": "parents",
+      "prev": "Prev",
+      "next": "Next"
+    }
+  },
+
+  "parentDetail": {
+    "breadcrumb": "Parent Management",
+    "notFound": "Parent not found",
+    "backToList": "← Back to Parent Management",
+    "badge": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "unverified": "Unverified email"
+    },
+    "registered": "Registered",
+    "totalBookings": "Total Bookings",
+    "tabs": {
+      "overview": "Overview",
+      "bookings": "Bookings",
+      "consents": "Legal Consents",
+      "activity": "Activity"
+    },
+    "overview": {
+      "contactTitle": "Contact",
+      "email": "Email",
+      "phone": "Phone",
+      "emailVerified": "Email verified",
+      "yes": "Yes",
+      "no": "No",
+      "accountTitle": "Account",
+      "status": "Status",
+      "registered": "Registered",
+      "totalBookings": "Total bookings"
+    },
+    "consents": {
+      "noData": "No consent data available.",
+      "upToDate": "Up to date",
+      "needsUpdate": "Needs update",
+      "privacyPolicy": "Privacy Policy",
+      "terms": "Terms & Conditions",
+      "currentVersion": "Current version",
+      "acceptedVersion": "Accepted version",
+      "acceptedOn": "Accepted on",
+      "neverAccepted": "Never accepted",
+      "ppHistory": "Privacy Policy — Acceptance History",
+      "noPpHistory": "No Privacy Policy acceptances recorded.",
+      "tcHistory": "Terms & Conditions — Acceptance History",
+      "noTcHistory": "No Terms & Conditions acceptances recorded.",
+      "acceptedAtRegistration": "Accepted at registration:",
+      "colVersion": "Version",
+      "colAcceptedOn": "Accepted on",
+      "colMarketing": "Marketing consent",
+      "colSource": "Source",
+      "granted": "Granted",
+      "notGranted": "Not granted",
+      "versionUpdate": "Version update"
+    },
+    "bookingsTab": {
+      "noBookings": "No bookings found.",
+      "col": {
+        "service": "Service",
+        "specialist": "Specialist",
+        "dateTime": "Date & Time",
+        "amount": "Amount",
+        "status": "Status"
+      }
+    },
+    "activityTab": {
+      "noActivity": "No activity recorded yet."
+    },
+    "actionLabels": {
+      "ACTIVATE_PARENT": "Account activated",
+      "SUSPEND_PARENT": "Account suspended",
+      "GDPR_DELETE_PARENT": "Account deleted (GDPR)",
+      "SEND_PASSWORD_RESET": "Password reset sent",
+      "RESEND_VERIFICATION": "Verification email resent",
+      "MANUAL_VERIFY": "Email manually verified",
+      "BOOKING_CANCELLED": "Booking cancelled",
+      "REFUND_ISSUED": "Refund issued",
+      "BOOKING_CONFIRMED": "Booking confirmed",
+      "BOOKING_CANCELLED_BY_EXPERT": "Booking cancelled by specialist",
+      "LOGIN": "Logged in"
+    },
+    "statusActions": {
+      "title": "Account Status",
+      "activate": "Activate Account",
+      "activating": "Activating…",
+      "suspend": "Suspend Account",
+      "suspending": "Suspending…",
+      "success": "Account status updated successfully."
+    },
+    "supportTools": {
+      "title": "Support Tools",
+      "passwordReset": "Send Password Reset",
+      "sending": "Sending…",
+      "resendVerification": "Resend Verification Email",
+      "markVerified": "Mark as Verified",
+      "verifying": "Verifying…",
+      "passwordResetSuccess": "Password reset email sent.",
+      "resendVerificationSuccess": "Verification email resent.",
+      "manualVerifySuccess": "Account marked as verified."
+    },
+    "dangerZone": {
+      "title": "Danger Zone",
+      "subtitle": "Permanently erase all personal data. This cannot be undone.",
+      "deleteBtn": "Delete Account (GDPR)"
+    },
+    "genericActionError": "Action failed. Please try again.",
+    "confirmModal": {
+      "defaultName": "This parent",
+      "activate_title": "Activate Account?",
+      "activate_body": "{{name}}'s account will be re-enabled and they will be able to log in again.",
+      "activate_confirm": "Activate",
+      "suspend_title": "Suspend Account?",
+      "suspend_body": "{{name}}'s account will be suspended and all active sessions will be invalidated immediately.",
+      "suspend_confirm": "Suspend",
+      "cancel": "Cancel"
+    },
+    "gdpr": {
+      "title": "Permanent Account Erasure",
+      "blockedTitle": "This account cannot be erased until the following are resolved:",
+      "blockedUpcoming_one": "upcoming booking",
+      "blockedUpcoming_other": "upcoming bookings",
+      "blockedUpcomingSuffix": " — cancel or reschedule before proceeding.",
+      "blockedOverdue_one": "confirmed booking with a pending refund",
+      "blockedOverdue_other": "confirmed bookings with a pending refund",
+      "blockedOverdueSuffix": " — payment was captured for sessions that have now passed without resolution.",
+      "blockedRefunds_one": "pending refund",
+      "blockedRefunds_other": "pending refunds",
+      "blockedRefundsSuffix": " — wait for refunds to settle before proceeding.",
+      "blockedDisputes_one": "open dispute",
+      "blockedDisputes_other": "open disputes",
+      "blockedDisputesSuffix": " — resolve all disputes before proceeding.",
+      "blockedResolve": "Resolve these in the Bookings tab, then return here to proceed.",
+      "close": "Close",
+      "irreversible": "This action is irreversible.",
+      "deletedTitle": "Permanently deleted:",
+      "erase1": "Name, email address, and phone number",
+      "erase2": "Password and account credentials",
+      "erase3": "Free-text content (e.g. cancellation reasons)",
+      "erase4": "All active sessions",
+      "retainTitle": "Retained in anonymised form:",
+      "retain1": "Booking records (date, service, duration, amount, payment reference)",
+      "retain2": "Transaction records (payment intent ID, amount, refund status)",
+      "retainNote": "Your personal details will be permanently deleted. Anonymised booking and payment records are retained for legal and tax purposes — these cannot be used to identify you.",
+      "typeEmail": "Type the parent's email address to confirm:",
+      "cancel": "Cancel",
+      "eraseBtn": "Erase Account",
+      "erasing": "Erasing…",
+      "deletionFailed": "Deletion failed. Please try again."
+    }
+  },
+
+  "bookingsMgmt": {
+    "pageTitle": "Booking Management",
+    "pageSubtitle": "Platform-wide booking list — search, filter and take action on any booking.",
+    "searchPlaceholder": "Search by booking ID, parent or specialist name…",
+    "from": "From",
+    "to": "To",
+    "clear": "Clear",
+    "noBookings": "No bookings found.",
+    "col": {
+      "id": "ID",
+      "parent": "Parent",
+      "specialist": "Specialist",
+      "service": "Service",
+      "dateTime": "Date & Time",
+      "amount": "Amount",
+      "status": "Status"
+    },
+    "filter": {
+      "ALL": "All",
+      "UPCOMING": "Upcoming",
+      "CONFIRMED": "Confirmed",
+      "COMPLETED": "Completed",
+      "PENDING_PAYMENT": "Pending Payment",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded",
+      "DISPUTED": "Disputed"
+    },
+    "pagination": {
+      "showing": "Showing",
+      "of": "of",
+      "booking_one": "booking",
+      "booking_other": "bookings",
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+
+  "paymentsMgmt": {
+    "pageTitle": "Payment Overview",
+    "subtitleTransactions": "Platform-wide transaction list — view amounts, fees, payouts and Stripe references.",
+    "subtitleRefundLog": "Audit log of all admin-initiated refunds with Stripe reference and initiating admin.",
+    "viewTransactions": "Transactions",
+    "viewRefundLog": "Refund Log",
+    "exportBtn": "Export CSV",
+    "exporting": "Exporting…",
+    "searchPlaceholder": "Search by booking ID, parent or specialist name…",
+    "from": "From",
+    "to": "To",
+    "clear": "Clear",
+    "noTransactions": "No transactions found.",
+    "partial": "partial",
+    "refundPending": "refund pending",
+    "col": {
+      "id": "ID",
+      "parent": "Parent",
+      "specialist": "Specialist",
+      "amount": "Amount",
+      "fee": "Fee",
+      "payout": "Payout",
+      "date": "Date",
+      "paymentStatus": "Payment Status"
+    },
+    "filter": {
+      "ALL": "All",
+      "succeeded": "Succeeded",
+      "refunded": "Refunded",
+      "pending": "Pending",
+      "failed": "Failed",
+      "transfer_failed": "Transfer Failed"
+    },
+    "paymentStatus": {
+      "succeeded": "Succeeded",
+      "refunded": "Refunded",
+      "refund_pending": "Refund Pending",
+      "captured_cancelled": "Captured — No Refund",
+      "transfer_failed": "Captured — Transfer Failed",
+      "pending": "Pending",
+      "failed": "Failed"
+    },
+    "pagination": {
+      "showing": "Showing",
+      "of": "of",
+      "transaction_one": "transaction",
+      "transaction_other": "transactions",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "modal": {
+      "title": "Transaction #{{id}}",
+      "loadError": "Failed to load transaction details.",
+      "parentClient": "Parent / Client",
+      "specialist": "Specialist",
+      "session": "Session",
+      "service": "Service",
+      "format": "Format",
+      "dateTime": "Date & Time",
+      "duration": "Duration",
+      "min": "min",
+      "paymentBreakdown": "Payment Breakdown",
+      "amountCharged": "Amount charged",
+      "platformFee": "Platform fee (Sage Nest)",
+      "specialistPayout": "Specialist payout",
+      "transferStatus": "Transfer status",
+      "refundStatus": "Refund status",
+      "amountRefunded": "Amount refunded",
+      "stripeRef": "Stripe Reference",
+      "paymentIntentId": "Payment Intent ID",
+      "noPayment": "No payment captured",
+      "chargeId": "Charge ID",
+      "transferId": "Transfer ID",
+      "cancellationNote": "Cancellation Note"
+    },
+    "refundLog": {
+      "noRefunds": "No refunds have been issued yet.",
+      "note_one": "{{count}} refund recorded. Stripe Refund ID can be used to verify in the Stripe dashboard.",
+      "note_other": "{{count}} refunds recorded. Stripe Refund ID can be used to verify in the Stripe dashboard.",
+      "showing": "Showing",
+      "of": "of",
+      "previous": "Previous",
+      "next": "Next",
+      "col": {
+        "timestamp": "Timestamp",
+        "admin": "Admin",
+        "booking": "Booking",
+        "parent": "Parent",
+        "original": "Original",
+        "refunded": "Refunded",
+        "stripeRefundId": "Stripe Refund ID"
+      }
+    }
+  },
+
+  "expertMgmt": {
+    "pageTitle": "Expert Management",
+    "pageSubtitle": "Review and manage expert accounts on the platform.",
+    "exportBtn": "Export .xlsx",
+    "exporting": "Exporting…",
+    "searchPlaceholder": "Search experts by name…",
+    "cityPlaceholder": "Filter by city…",
+    "registeredFrom": "Registered from",
+    "to": "to",
+    "clear": "Clear",
+    "noExpertsTitle": "No experts found",
+    "noExpertsFiltered": "Try adjusting your search or filters.",
+    "noExpertsYet": "No expert accounts registered yet.",
+    "col": {
+      "name": "Name",
+      "email": "Email",
+      "position": "Position",
+      "status": "Status",
+      "joined": "Joined",
+      "bookings": "Bookings",
+      "dac7": "DAC7",
+      "actions": "Actions"
+    },
+    "filter": {
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "suspended": "Suspended",
+      "changes_requested": "Changes Requested"
+    },
+    "qual": {
+      "all": "All qualifications",
+      "LACTATION_CONSULTANT": "Lactation Consultant (IBCLC)",
+      "BREASTFEEDING_COUNSELLOR": "Breastfeeding Counsellor",
+      "INFANT_SLEEP_CONSULTANT": "Infant Sleep Consultant",
+      "DOULA": "Doula",
+      "MIDWIFE": "Midwife",
+      "BABY_OSTEOPATH": "Baby Osteopath",
+      "PAEDIATRIC_NUTRITIONIST": "Paediatric Nutritionist",
+      "EARLY_YEARS_SPECIALIST": "Early Years Specialist",
+      "POSTNATAL_PHYSIOTHERAPIST": "Postnatal Physiotherapist",
+      "PARENTING_COACH": "Parenting Coach",
+      "OTHER": "Other"
+    },
+    "badge": {
+      "deleted": "Deleted",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "SUSPENDED": "Suspended",
+      "CHANGES_REQUESTED": "Changes Requested",
+      "PENDING": "Pending"
+    },
+    "pagination": {
+      "showing": "Showing",
+      "of": "of",
+      "expert_one": "expert",
+      "expert_other": "experts",
+      "prev": "Prev",
+      "next": "Next"
+    },
+    "action": {
+      "reactivate": "Reactivate",
+      "reject": "Reject",
+      "suspend": "Suspend",
+      "approve": "Approve",
+      "deletedPlaceholder": "—"
+    },
+    "confirmModal": {
+      "approve_title": "Approve Expert?",
+      "approve_prefix": "Are you sure you want to approve",
+      "reject_title": "Reject Expert?",
+      "reject_prefix": "Are you sure you want to reject",
+      "suspend_title": "Suspend Expert?",
+      "suspend_prefix": "Are you sure you want to suspend",
+      "reactivate_title": "Reactivate Expert?",
+      "reactivate_prefix": "Are you sure you want to reactivate",
+      "password-reset_title": "Send Password Reset?",
+      "password-reset_prefix": "Send a password reset email to",
+      "resend-verification_title": "Resend Verification Email?",
+      "resend-verification_prefix": "Resend a verification email to",
+      "manual-verify_title": "Mark Account as Verified?",
+      "manual-verify_prefix": "Manually verify the account of",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "noInsurance": "This expert has no insurance uploaded. Please confirm that you wish to proceed."
+    },
+    "success": {
+      "passwordReset": "Password reset email sent successfully.",
+      "resendVerification": "Verification email resent successfully."
+    }
+  },
+
+  "expertDetail": {
+    "breadcrumb": "Expert Management",
+    "notFoundError": "Expert not found.",
+    "backToList": "← Back to expert list",
+    "tabs": {
+      "profile": "Profile",
+      "bookings": "Bookings",
+      "activity": "Activity"
+    },
+    "loadError": "Expert not found or failed to load.",
+    "genericActionError": "Action failed. Please try again.",
+    "badge": {
+      "unlisted": "Unlisted",
+      "emailVerified": "Email Verified",
+      "unverified": "Unverified",
+      "failedLogin_one": "{{count}} failed login",
+      "failedLogin_other": "{{count}} failed logins",
+      "lockedUntil": "Locked until {{time}}",
+      "joined": "Joined {{date}}"
+    },
+    "draft": {
+      "pendingTitle": "Profile edit pending review",
+      "submitted": "· submitted {{date}}",
+      "liveCol": "Live (current)",
+      "proposedCol": "Proposed changes",
+      "approveBtn": "Approve & publish",
+      "approving": "Approving…",
+      "rejectBtn": "Reject",
+      "rejectionPlaceholder": "Rejection note (optional)…",
+      "confirmReject": "Confirm reject",
+      "rejecting": "…",
+      "cancel": "Cancel",
+      "approveError": "Failed to approve draft.",
+      "rejectError": "Failed to reject draft.",
+      "fields": {
+        "Summary": "Summary",
+        "Bio": "Bio",
+        "Professional title": "Professional title",
+        "Location": "Location",
+        "Timezone": "Timezone",
+        "Languages": "Languages",
+        "Instagram": "Instagram",
+        "Facebook": "Facebook",
+        "LinkedIn": "LinkedIn",
+        "Expertise": "Expertise"
+      }
+    },
+    "profile": {
+      "summary": "Summary",
+      "noSummary": "No summary added.",
+      "fullBio": "Full Bio",
+      "noBio": "No bio added.",
+      "languagesSpoken": "Languages Spoken",
+      "noLanguages": "No languages added.",
+      "pendingLanguages": "Pending Language Approvals",
+      "langApproveQuestion": "Approve?",
+      "langRejectQuestion": "Reject?",
+      "langConfirm": "Confirm",
+      "langCancel": "Cancel",
+      "location": "Location",
+      "noLocation": "No location added.",
+      "qualifications": "Qualifications",
+      "noQualifications": "No qualifications added.",
+      "certifications": "Certifications",
+      "noCertifications": "No certifications added.",
+      "viewDocument": "View document",
+      "noDocument": "No document",
+      "langApproveError": "Failed to approve language.",
+      "langRejectError": "Failed to reject language."
+    },
+    "bizInfo": {
+      "title": "Business Information",
+      "subtitle": "Information collected for compliance purposes",
+      "yearLabel": "Year",
+      "statusLabel": "Status",
+      "statusAll": "All",
+      "statusConfirmed": "Confirmed",
+      "statusCompleted": "Completed",
+      "dac7Title": "DAC7 reporting threshold reached ({{year}})",
+      "dac7Suffix_both": " — exceeds both the 30-transaction and £2,000 thresholds.",
+      "dac7Suffix_transactions": " — 30-transaction threshold met.",
+      "dac7Suffix_amount": " — £2,000 gross earnings threshold met.",
+      "dac7Advice": "This expert may be reportable under EU Directive 2021/514 (DAC7). Confirm applicable threshold with a tax adviser.",
+      "cards": {
+        "gross": "Gross Earnings",
+        "fees": "Fees Deducted",
+        "net": "Net Earnings",
+        "sessions": "Completed Sessions",
+        "refundCount": "Refunds Issued",
+        "refundTotal": "Total Refunded"
+      },
+      "exportBtn": "Export .xlsx",
+      "exporting": "Exporting…",
+      "exportNoBiz": "CSV export requires business info on file",
+      "exportError": "Export failed. Please try again.",
+      "dac7Transaction_one": "transaction",
+      "dac7Transaction_other": "transactions",
+      "dac7Gross": "gross",
+      "rows": {
+        "entityType": "Entity type",
+        "individual": "Individual",
+        "company": "Company / Legal Entity",
+        "legalName": "Full legal name",
+        "dob": "Date of birth",
+        "street": "Street",
+        "city": "City",
+        "postalCode": "Postal code",
+        "country": "Country",
+        "tin": "TIN",
+        "vat": "VAT number",
+        "companyReg": "Company reg. number",
+        "iban": "IBAN / Bank account",
+        "bizEmail": "Email address",
+        "municipality": "Municipality",
+        "bizAddress": "Business address"
+      },
+      "noBizInfo": "⚠️ No business information submitted."
+    },
+    "insurance": {
+      "title": "Professional Insurance",
+      "expired": "Insurance Expired",
+      "active": "Insurance Active",
+      "expiresLabel": "Expires:",
+      "viewPolicy": "View policy",
+      "isExpired": "⚠️ Insurance has expired.",
+      "noInsurance": "⚠️ No insurance uploaded."
+    },
+    "services": {
+      "title": "Services ({{count}})",
+      "noServices": "No services added yet.",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "stripe": {
+      "title": "Stripe Account",
+      "connected": "Connected · Payouts enabled",
+      "pendingOnboarding": "Pending · Onboarding incomplete",
+      "viewInStripe": "View in Stripe",
+      "notConnected": "Not connected"
+    },
+    "bookingsTab": {
+      "loading": "Loading bookings…",
+      "noBookings": "No bookings on record.",
+      "sessionFallback": "Session"
+    },
+    "activityTab": {
+      "loading": "Loading activity…",
+      "noActivity": "No activity recorded yet.",
+      "expertBadge": "Expert",
+      "awaiting": "Awaiting response",
+      "resolved": "Resolved",
+      "expertSuffix": "(expert)"
+    },
+    "actionLabels": {
+      "APPROVE": "Approved",
+      "REJECT": "Rejected",
+      "SUSPEND": "Suspended",
+      "REACTIVATE": "Reactivated",
+      "REQUEST_CHANGES": "Changes requested",
+      "UNPUBLISH": "Unpublished",
+      "REPUBLISH": "Republished",
+      "MANUAL_VERIFY": "Manually verified",
+      "MANUAL_REFUND": "Manual refund issued",
+      "SEND_PASSWORD_RESET": "Password reset sent",
+      "RESEND_VERIFICATION": "Verification email resent",
+      "GDPR_DELETE": "Account deleted (GDPR)",
+      "APPROVE_PROFILE_DRAFT": "Profile draft approved",
+      "REJECT_PROFILE_DRAFT": "Profile draft rejected",
+      "EXPERT_PROFILE_SAVED": "Profile updated",
+      "EXPERT_PROFILE_DRAFT_SUBMITTED": "Profile draft submitted",
+      "EXPERT_PROFILE_RESUBMITTED": "Profile resubmitted"
+    },
+    "statusBadge": {
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "SUSPENDED": "Suspended",
+      "PENDING": "Pending Review",
+      "CHANGES_REQUESTED": "Changes Requested"
+    },
+    "bookingStatusBadge": {
+      "CONFIRMED": "Confirmed",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded",
+      "PENDING_PAYMENT": "Pending Payment"
+    },
+    "formatBadge": {
+      "ONLINE": "Online",
+      "IN_PERSON": "In-Person"
+    },
+    "clusterBadge": {
+      "FOR_PARENTS": "For Parents",
+      "FOR_BABY": "For Baby",
+      "PACKAGE": "Package",
+      "GIFT": "Gift",
+      "EVENT": "Event"
+    },
+    "statusActions": {
+      "title": "Status Actions",
+      "reactivate": "Reactivate Expert",
+      "reactivating": "Reactivating…",
+      "reject": "Reject Expert",
+      "rejecting": "Rejecting…",
+      "suspend": "Suspend Expert",
+      "suspending": "Suspending…",
+      "approve": "Approve Expert",
+      "approving": "Approving…",
+      "cannotApprove": "Cannot approve — expert has not completed Stripe onboarding.",
+      "requestChanges": "Request Changes",
+      "approveSuccess": "Expert approved successfully.",
+      "rejectSuccess": "Expert rejected successfully.",
+      "suspendSuccess": "Expert suspended successfully.",
+      "reactivateSuccess": "Expert reactivated successfully."
+    },
+    "supportTools": {
+      "title": "Support Tools",
+      "passwordReset": "Send Password Reset",
+      "sending": "Sending…",
+      "resendVerification": "Resend Verification Email",
+      "markVerified": "Mark as Verified",
+      "verifying": "Verifying…",
+      "passwordResetSuccess": "Password reset email sent.",
+      "resendVerificationSuccess": "Verification email resent.",
+      "manualVerifySuccess": "Account marked as verified."
+    },
+    "dangerZone": {
+      "title": "Danger Zone",
+      "subtitle": "Permanently erase all personal data. This cannot be undone.",
+      "deleteBtn": "Delete Account (GDPR Erasure)"
+    },
+    "accountDeleted": {
+      "title": "Account Deleted",
+      "message": "This account has been permanently erased (GDPR). No further actions are available."
+    },
+    "confirmModal": {
+      "approve_title": "Approve Expert?",
+      "approve_body": "Are you sure you want to approve {{name}}?",
+      "reject_title": "Reject Expert?",
+      "reject_body": "Are you sure you want to reject {{name}}?",
+      "suspend_title": "Suspend Expert?",
+      "suspend_body": "{{name}} will be blocked from logging in until reactivated.",
+      "reactivate_title": "Reactivate Expert?",
+      "reactivate_body": "{{name}} will be restored to approved status and can log in again.",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "noInsurance": "This expert has no insurance uploaded. Please confirm that you wish to proceed."
+    },
+    "requestChanges": {
+      "title": "Request Profile Changes",
+      "subtitle": "Describe what needs to be corrected. The specialist will receive this note by email.",
+      "placeholder": "e.g. Please upload a clearer copy of your insurance certificate.",
+      "cancel": "Cancel",
+      "send": "Send Request",
+      "sending": "Sending…",
+      "errorRequired": "Please enter a note.",
+      "success": "Change request sent."
+    },
+    "gdpr": {
+      "title": "Permanent Account Erasure",
+      "pendingTitle": "This account cannot be deleted until all pending payouts have cleared.",
+      "pendingBody_one": "{{count}} payout is still pending. Payouts typically clear within 24 hours of a completed session. Return here once all payouts have settled.",
+      "pendingBody_other": "{{count}} payouts are still pending. Payouts typically clear within 24 hours of a completed session. Return here once all payouts have settled.",
+      "close": "Close",
+      "eraseTitle": "This action is irreversible. The following will be erased:",
+      "erase1": "Profile, bio, photo, login credentials, and uploaded documents",
+      "erase2": "Business contact email and website",
+      "erase3": "All future bookings cancelled and Stripe refunds issued",
+      "erase4": "All active sessions invalidated immediately",
+      "erase5": "Specialist shown as \"Deleted specialist\" in parent booking history",
+      "retainTitle": "Retained for a minimum of 5 years under DAC7 (EU Directive 2021/514):",
+      "retain1": "Full legal name, date of birth, and entity type",
+      "retain2": "Tax identification number (TIN) and VAT / company registration number",
+      "retain3": "Registered address and bank account (IBAN)",
+      "retain4": "All earnings and booking records tied to financial transactions",
+      "gdprNote": "GDPR Art. 17(3)(b) — this data must remain identifiable for tax reporting and cannot be anonymised.",
+      "typeEmail": "Type the specialist's email to confirm:",
+      "emailPlaceholder": "specialist@email.com",
+      "cancel": "Cancel",
+      "eraseBtn": "Erase Account",
+      "erasing": "Erasing…",
+      "deletionFailed": "Deletion failed."
+    }
+  },
+
+  "bookingModal": {
+    "title": "Booking #{{id}}",
+    "loadError": "Failed to load booking details.",
+    "notFound": "Booking not found.",
+    "sections": {
+      "parentClient": "Parent / Client",
+      "specialist": "Specialist",
+      "sessionDetails": "Session Details",
+      "payment": "Payment",
+      "refund": "Refund",
+      "cancellation": "Cancellation",
+      "dispute": "Dispute",
+      "internalNote": "Internal Note",
+      "internalNoteHint": "(not visible to parent or specialist)"
+    },
+    "labels": {
+      "service": "Service",
+      "format": "Format",
+      "dateTime": "Date & Time",
+      "duration": "Duration",
+      "min": "min",
+      "amountCharged": "Amount charged",
+      "platformFee": "Platform fee",
+      "paymentStatus": "Payment status",
+      "transferStatus": "Transfer status",
+      "refundStatus": "Refund status",
+      "amountRefunded": "Amount refunded",
+      "partial": "(partial)",
+      "refundDate": "Refund date",
+      "stripeRefundId": "Stripe Refund ID"
+    },
+    "paymentStatus": {
+      "noPayment": "No payment",
+      "capturedTransferFailed": "Captured — transfer failed",
+      "captured": "Payment captured",
+      "capturedRefunded": "Captured — refunded",
+      "capturedRefundPending": "Captured — refund pending",
+      "capturedCancelled": "Captured — cancelled"
+    },
+    "refundStatus": {
+      "refunded": "Refunded",
+      "pending": "Refund pending",
+      "detailsNotRecorded": "(details not recorded)",
+      "notRefunded": "Not refunded"
+    },
+    "cancellationNoReason": "No reason provided — follow up may be required",
+    "disputeNoReason": "No reason provided",
+    "disputeFlaggedOn": "Flagged on {{date}}",
+    "notePlaceholder": "Add an internal note…",
+    "saveNote": "Save note",
+    "saving": "Saving…",
+    "noteSaved": "Note saved.",
+    "noteSaveError": "Failed to save note.",
+    "bookingStatus": {
+      "CONFIRMED": "Confirmed",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded",
+      "PENDING_PAYMENT": "Pending Payment",
+      "PENDING": "Pending"
+    },
+    "disputed": "Disputed"
+  },
+
+  "adminActions": {
+    "title": "Admin Actions",
+    "cancelBooking": "Cancel Booking",
+    "issueRefund": "Issue Refund",
+    "markDisputed": "Mark as Disputed",
+    "resolveDispute": "Resolve Dispute",
+    "resolving": "Resolving…",
+    "retryTransfer": "Retry Transfer",
+    "markResolved": "Mark as Resolved",
+    "genericError": "Action failed. Please try again.",
+    "cancel": {
+      "descWithRefund": "Cancel and refund this booking. A full refund will be issued to the parent.",
+      "descNoRefund": "Cancel this booking.",
+      "placeholder": "Reason for cancellation (required)…",
+      "confirmBtn": "Confirm Cancel",
+      "cancelling": "Cancelling…",
+      "dismiss": "Dismiss",
+      "success": "Booking cancelled successfully."
+    },
+    "refund": {
+      "policyLabel": "Policy:",
+      "amountLabel": "Refund amount (£)",
+      "amountHint": "— leave blank for full refund (£{{amount}})",
+      "reasonPlaceholder": "Reason (optional)…",
+      "overrideWarning": "This amount deviates from the cancellation policy. An override reason is required.",
+      "overridePlaceholder": "Explain why the policy is being overridden…",
+      "reviewBtn": "Review Refund",
+      "refunding": "Refunding…",
+      "dismiss": "Dismiss",
+      "tierFull": "full refund (>24 h)",
+      "tierHalf": "50% refund (12–24 h)",
+      "tierNone": "no refund (<12 h)",
+      "errGtZero": "Amount must be greater than £0.00.",
+      "errExceedsTotal": "Amount cannot exceed the booking total (£{{amount}}).",
+      "errOverrideRequired": "An override reason is required when the amount deviates from the cancellation policy.",
+      "successPartial": "Partial refund of £{{amount}} issued successfully.",
+      "successFull": "Full refund issued successfully."
+    },
+    "dispute": {
+      "desc": "Flag this booking as disputed. Any pending payout to the specialist will be paused.",
+      "placeholder": "Reason for dispute (optional)…",
+      "confirmBtn": "Confirm Dispute",
+      "flagging": "Flagging…",
+      "dismiss": "Dismiss",
+      "success": "Booking marked as disputed. Pending payout is paused.",
+      "resolveSuccess": "Dispute resolved."
+    },
+    "retry": {
+      "desc": "Reset this transfer to pending so the next scheduled run will attempt the payout again. Ensure the specialist's Stripe account is correctly configured before retrying.",
+      "confirmBtn": "Confirm Retry",
+      "processing": "Processing…",
+      "cancel": "Cancel",
+      "success": "Transfer queued for retry."
+    },
+    "resolve": {
+      "desc": "Mark this transfer as manually resolved. Use this when the payout has been handled outside the automated system (e.g. direct bank transfer).",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "e.g. Manual bank transfer sent on 22 Apr 2026",
+      "confirmBtn": "Mark as Resolved",
+      "processing": "Processing…",
+      "cancel": "Cancel",
+      "success": "Transfer marked as resolved."
+    },
+    "refundConfirm": {
+      "titleOverride": "Confirm Policy Override",
+      "titlePartial": "Confirm Partial Refund",
+      "titleFull": "Confirm Full Refund",
+      "bodyPartial": "Issue a partial refund of £{{amount}} for booking #{{id}}?",
+      "bodyFull": "Issue a full refund of £{{amount}} for booking #{{id}}?",
+      "cannotUndo": "This action cannot be undone.",
+      "overrideLabel": "Override reason:",
+      "cancel": "Cancel",
+      "confirm": "Yes, issue refund"
+    }
+  },
+
+  "legalCompliance": {
+    "pageTitle": "Legal Compliance",
+    "pageSubtitle": "Parents and their acceptance status for the current document versions",
+    "searchPlaceholder": "Search by name or email…",
+    "filter": {
+      "all": "All",
+      "nonCompliant": "Non-compliant"
+    },
+    "badge": {
+      "upToDate": "Up to date",
+      "needsUpdate": "Needs update"
+    },
+    "summary": {
+      "parent_one": "parent",
+      "parent_other": "parents",
+      "nonCompliant": "{{count}} on this page need to accept updated documents"
+    },
+    "col": {
+      "parent": "Parent",
+      "privacyPolicy": "Privacy Policy",
+      "terms": "Terms & Conditions",
+      "overall": "Overall"
+    },
+    "joined": "Joined {{date}}",
+    "accepted": "Accepted {{version}} · {{date}}",
+    "neverAccepted": "Never accepted",
+    "current": "Current: {{version}}",
+    "viewProfile": "View profile →",
+    "allCompliant": "All parents have accepted the current document versions.",
+    "noParents": "No parents found.",
+    "pagination": {
+      "page": "Page {{page}} of {{pages}}",
+      "result_one": "result",
+      "result_other": "results",
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+
+  "legalDocs": {
+    "pageTitle": "Legal Documents",
+    "pageSubtitle": "View current versions and publish updates after the page content has been updated by developers.",
+    "loadError": "Could not load legal document versions.",
+    "loading": "Loading…",
+    "docType": {
+      "PRIVACY_POLICY": "Privacy Policy",
+      "TERMS_CONDITIONS": "Terms & Conditions"
+    },
+    "card": {
+      "version": "Version {{v}}",
+      "published": "published {{date}}",
+      "acceptance_one": "acceptance",
+      "acceptance_other": "acceptances",
+      "noVersion": "No version published yet",
+      "viewCurrent": "View current",
+      "instructions": "Make sure the updated content is already live on the {{path}} page before publishing.",
+      "reacceptPrivacy": " All users (parents and experts) will be prompted to re-accept on their next login.",
+      "reacceptTerms": " All parents will be prompted to re-accept before their next booking.",
+      "versionPlaceholder": "e.g. 1.1 or 2.0.1",
+      "publishBtn": "Publish",
+      "publishing": "Publishing…",
+      "formatHint": "Use numeric format e.g. 1.1 or 2.0.1",
+      "publishError": "Failed to publish version.",
+      "versionHistoryBtn": "Version history"
+    },
+    "confirmModal": {
+      "title": "Publish {{docLabel}} v{{version}}?",
+      "body": "Make sure the updated content is already live on the page before confirming.",
+      "bodyPrivacy": " All users (parents and experts) will be prompted to re-accept on their next login.",
+      "bodyTerms": " All parents will be prompted to re-accept before their next booking.",
+      "cannotUndo": " This cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Yes, publish"
+    },
+    "versionHistory": {
+      "title": "Version History",
+      "col": {
+        "version": "Version",
+        "published": "Published",
+        "acceptances": "Acceptances"
+      },
+      "user_one": "user",
+      "user_other": "users"
+    }
+  },
+
+  "sessionFormat": {
+    "ONLINE": "Online",
+    "IN_PERSON": "In-Person",
+    "BOTH": "Online & In-Person"
+  },
+
+  "transferStatus": {
+    "payoutSent": "Payout sent",
+    "resolved": "Resolved — manually handled",
+    "failed": "Failed — manual action required",
+    "skippedRefunded": "Skipped — booking refunded",
+    "skippedCancelled": "Skipped — booking cancelled",
+    "skippedPartialRefund": "Skipped — partial refund issued",
+    "skippedRefund": "Skipped — refunded",
+    "skippedRefundPending": "Skipped — refund pending",
+    "skippedRefundIssued": "Skipped — refund issued",
+    "skipped": "Skipped",
+    "onHoldDisputed": "On hold — disputed",
+    "pendingAwaitingSession": "Pending — awaiting session",
+    "pendingPayoutDue": "Pending — payout due {{date}}",
+    "pendingPayoutOverdue": "Pending — payout overdue",
+    "pendingTransfer": "Pending transfer"
+  }
+}

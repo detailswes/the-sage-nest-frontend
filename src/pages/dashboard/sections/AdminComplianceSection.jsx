@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getParentComplianceList } from "../../../api/adminApi";
 
 const formatDate = (iso) =>
@@ -7,30 +8,39 @@ const formatDate = (iso) =>
     ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
     : "—";
 
-const ComplianceBadge = ({ ok }) =>
-  ok ? (
+const FILTER_KEYS = [
+  { key: "all",           tKey: "legalCompliance.filter.all" },
+  { key: "non_compliant", tKey: "legalCompliance.filter.nonCompliant" },
+];
+
+const ComplianceBadge = ({ ok }) => {
+  const { t } = useTranslation("adminDashboard");
+  return ok ? (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
       </svg>
-      Up to date
+      {t("legalCompliance.badge.upToDate")}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
       </svg>
-      Needs update
+      {t("legalCompliance.badge.needsUpdate")}
     </span>
   );
+};
 
 const AdminComplianceSection = () => {
-  const [data, setData]             = useState([]);
-  const [meta, setMeta]             = useState({ total: 0, page: 1, pages: 1, current_pp_version: null, current_tc_version: null });
-  const [loading, setLoading]       = useState(true);
-  const [search, setSearch]         = useState("");
-  const [filter, setFilter]         = useState("all");  // "all" | "non_compliant"
-  const [page, setPage]             = useState(1);
+  const { t } = useTranslation("adminDashboard");
+
+  const [data, setData]       = useState([]);
+  const [meta, setMeta]       = useState({ total: 0, page: 1, pages: 1, current_pp_version: null, current_tc_version: null });
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState("");
+  const [filter, setFilter]   = useState("all"); // "all" | "non_compliant"
+  const [page, setPage]       = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,8 +73,8 @@ const AdminComplianceSection = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-[#1F2933]">Legal Compliance</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Parents and their acceptance status for the current document versions</p>
+          <h1 className="text-xl font-bold text-[#1F2933]">{t("legalCompliance.pageTitle")}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{t("legalCompliance.pageSubtitle")}</p>
         </div>
         {/* Current versions pill */}
         <div className="flex items-center gap-3 text-xs text-gray-500">
@@ -91,15 +101,12 @@ const AdminComplianceSection = () => {
             type="text"
             value={search}
             onChange={handleSearch}
-            placeholder="Search by name or email…"
+            placeholder={t("legalCompliance.searchPlaceholder")}
             className="w-full pl-9 pr-4 py-2 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
           />
         </div>
         <div className="flex items-center gap-1 bg-white border border-[#E4E7E4] rounded-lg p-1">
-          {[
-            { key: "all",          label: "All" },
-            { key: "non_compliant", label: "Non-compliant" },
-          ].map(({ key, label }) => (
+          {FILTER_KEYS.map(({ key, tKey }) => (
             <button
               key={key}
               onClick={() => handleFilter(key)}
@@ -109,7 +116,7 @@ const AdminComplianceSection = () => {
                   : "text-gray-500 hover:text-[#1F2933]"
               }`}
             >
-              {label}
+              {t(tKey)}
             </button>
           ))}
         </div>
@@ -119,11 +126,13 @@ const AdminComplianceSection = () => {
       {!loading && filter === "all" && (
         <div className="mb-4 flex items-center gap-4 text-sm">
           <span className="text-gray-500">
-            <span className="font-semibold text-[#1F2933]">{meta.total}</span> parent{meta.total !== 1 ? "s" : ""}
+            <span className="font-semibold text-[#1F2933]">{meta.total}</span>{" "}
+            {t("legalCompliance.summary.parent", { count: meta.total })}
           </span>
           {nonCompliantCount > 0 && (
             <span className="text-red-600">
-              <span className="font-semibold">{nonCompliantCount}</span> on this page need to accept updated documents
+              <span className="font-semibold">{nonCompliantCount}</span>{" "}
+              {t("legalCompliance.summary.nonCompliant", { count: nonCompliantCount })}
             </span>
           )}
         </div>
@@ -137,14 +146,22 @@ const AdminComplianceSection = () => {
           </div>
         ) : data.length === 0 ? (
           <div className="py-20 text-center text-sm text-gray-400">
-            {filter === "non_compliant" ? "All parents have accepted the current document versions." : "No parents found."}
+            {filter === "non_compliant"
+              ? t("legalCompliance.allCompliant")
+              : t("legalCompliance.noParents")}
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50/60 border-b border-[#E4E7E4]">
-                {["Parent", "Privacy Policy", "Terms & Conditions", "Overall", ""].map((h) => (
-                  <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">
+                {[
+                  t("legalCompliance.col.parent"),
+                  t("legalCompliance.col.privacyPolicy"),
+                  t("legalCompliance.col.terms"),
+                  t("legalCompliance.col.overall"),
+                  "",
+                ].map((h, i) => (
+                  <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">
                     {h}
                   </th>
                 ))}
@@ -157,18 +174,22 @@ const AdminComplianceSection = () => {
                   <td className="px-5 py-3.5">
                     <p className="font-medium text-[#1F2933]">{p.name || "—"}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{p.email}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Joined {formatDate(p.created_at)}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {t("legalCompliance.joined", { date: formatDate(p.created_at) })}
+                    </p>
                   </td>
                   {/* PP */}
                   <td className="px-5 py-3.5">
                     <ComplianceBadge ok={p.pp_compliant} />
                     <p className="text-xs text-gray-400 mt-1.5">
                       {p.pp_version
-                        ? <>Accepted <span className="font-medium text-[#1F2933]">{p.pp_version}</span> · {formatDate(p.pp_accepted_at)}</>
-                        : "Never accepted"}
+                        ? t("legalCompliance.accepted", { version: p.pp_version, date: formatDate(p.pp_accepted_at) })
+                        : t("legalCompliance.neverAccepted")}
                     </p>
                     {!p.pp_compliant && meta.current_pp_version && (
-                      <p className="text-xs text-red-500 mt-0.5">Current: {meta.current_pp_version}</p>
+                      <p className="text-xs text-red-500 mt-0.5">
+                        {t("legalCompliance.current", { version: meta.current_pp_version })}
+                      </p>
                     )}
                   </td>
                   {/* TC */}
@@ -176,11 +197,13 @@ const AdminComplianceSection = () => {
                     <ComplianceBadge ok={p.tc_compliant} />
                     <p className="text-xs text-gray-400 mt-1.5">
                       {p.tc_version
-                        ? <>Accepted <span className="font-medium text-[#1F2933]">{p.tc_version}</span> · {formatDate(p.tc_accepted_at)}</>
-                        : "Never accepted"}
+                        ? t("legalCompliance.accepted", { version: p.tc_version, date: formatDate(p.tc_accepted_at) })
+                        : t("legalCompliance.neverAccepted")}
                     </p>
                     {!p.tc_compliant && meta.current_tc_version && (
-                      <p className="text-xs text-red-500 mt-0.5">Current: {meta.current_tc_version}</p>
+                      <p className="text-xs text-red-500 mt-0.5">
+                        {t("legalCompliance.current", { version: meta.current_tc_version })}
+                      </p>
                     )}
                   </td>
                   {/* Overall */}
@@ -193,7 +216,7 @@ const AdminComplianceSection = () => {
                       to={`/dashboard/admin/parents/${p.id}`}
                       className="text-xs font-medium text-[#445446] hover:underline"
                     >
-                      View profile →
+                      {t("legalCompliance.viewProfile")}
                     </Link>
                   </td>
                 </tr>
@@ -206,21 +229,24 @@ const AdminComplianceSection = () => {
       {/* Pagination */}
       {meta.pages > 1 && (
         <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-          <span>Page {meta.page} of {meta.pages} · {meta.total} result{meta.total !== 1 ? "s" : ""}</span>
+          <span>
+            {t("legalCompliance.pagination.page", { page: meta.page, pages: meta.pages })}{" "}·{" "}
+            {meta.total} {t("legalCompliance.pagination.result", { count: meta.total })}
+          </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={meta.page === 1}
               className="px-3 py-1.5 rounded-lg border border-[#E4E7E4] text-xs font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Previous
+              {t("legalCompliance.pagination.previous")}
             </button>
             <button
               onClick={() => setPage((p) => Math.min(meta.pages, p + 1))}
               disabled={meta.page === meta.pages}
               className="px-3 py-1.5 rounded-lg border border-[#E4E7E4] text-xs font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              {t("legalCompliance.pagination.next")}
             </button>
           </div>
         </div>
