@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { validatePhone } from "../../utils/validation";
 import {
@@ -92,6 +93,7 @@ const detectedTimezone = (() => {
 
 // ─── Personal Info section ────────────────────────────────────────────────────
 const PersonalInfoSection = ({ profile, onUpdated }) => {
+  const { t } = useTranslation("parentDashboard");
   const [name,     setName]     = useState(profile.name     || "");
   const [phone,    setPhone]    = useState(profile.phone    || "");
   const [city,     setCity]     = useState(profile.city     || "");
@@ -104,11 +106,11 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
 
   const handleSave = async () => {
     const errs = {};
-    if (!name.trim()) errs.name = "Name is required.";
+    if (!name.trim()) errs.name = t("personalInfo.validation.nameRequired");
     if (!phone.trim()) {
-      errs.phone = "Phone number is required.";
+      errs.phone = t("personalInfo.validation.phoneRequired");
     } else if (!validatePhone(phone)) {
-      errs.phone = "Please enter a valid phone number (e.g. +44 7700 900000).";
+      errs.phone = t("personalInfo.validation.phoneInvalid");
     }
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
@@ -125,62 +127,62 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
         timezone: timezone || null,
       });
       onUpdated(updated);
-      setBanner({ type: "success", message: "Profile updated successfully." });
+      setBanner({ type: "success", message: t("personalInfo.saveSuccess") });
     } catch (err) {
       setBanner({
         type: "error",
-        message: err?.response?.data?.error || "Could not save changes.",
+        message: err?.response?.data?.error || t("personalInfo.saveError"),
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const isKnownTz = TIMEZONES.some((t) => t.value === timezone);
+  const isKnownTz = TIMEZONES.some((tz) => tz.value === timezone);
 
   return (
     <Section
-      title="Personal information"
-      description="Your name, contact details, and location."
+      title={t("personalInfo.title")}
+      description={t("personalInfo.description")}
     >
       <div className="space-y-4">
         <Banner type={banner?.type} message={banner?.message} />
-        <Field label="Full name">
+        <Field label={t("personalInfo.fullName")}>
           <Input
             type="text"
             value={name}
             onChange={(e) => { setName(e.target.value); setFieldErrors((p) => ({ ...p, name: undefined })); }}
-            placeholder="Jane Smith"
+            placeholder={t("personalInfo.fullNamePlaceholder")}
             error={!!fieldErrors.name}
           />
           {fieldErrors.name && <p className="mt-1 text-xs text-red-500">{fieldErrors.name}</p>}
         </Field>
         <div>
-          <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Phone number</label>
+          <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t("personalInfo.phone")}</label>
           <Input
             type="tel"
             value={phone}
             onChange={(e) => { setPhone(e.target.value); setFieldErrors((p) => ({ ...p, phone: undefined })); }}
-            placeholder="+44 7700 900000"
+            placeholder={t("personalInfo.phonePlaceholder")}
             error={!!fieldErrors.phone}
           />
           {fieldErrors.phone ? (
             <p className="mt-1 text-xs text-red-500">{fieldErrors.phone}</p>
           ) : (
-            <p className="mt-1 text-xs text-gray-400">So your expert can reach you about your session.</p>
+            <p className="mt-1 text-xs text-gray-400">{t("personalInfo.phoneHint")}</p>
           )}
         </div>
-        <Field label="City / Location (optional)">
+        <Field label={t("personalInfo.city")}>
           <Input
             type="text"
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            placeholder="e.g. London"
+            placeholder={t("personalInfo.cityPlaceholder")}
           />
-          <p className="mt-1 text-xs text-gray-400">Helps match you with nearby in-person specialists.</p>
+          <p className="mt-1 text-xs text-gray-400">{t("personalInfo.cityHint")}</p>
         </Field>
         <div>
-          <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Timezone</label>
+          <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t("personalInfo.timezone")}</label>
           <select
             value={isKnownTz ? timezone : "__other__"}
             onChange={(e) => { if (e.target.value !== "__other__") setTimezone(e.target.value); }}
@@ -194,14 +196,14 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
             )}
           </select>
           <p className="mt-1 text-xs text-gray-400">
-            Used to display session times correctly.
+            {t("personalInfo.timezoneHint")}
             {detectedTimezone && timezone !== detectedTimezone && (
               <button
                 type="button"
                 onClick={() => setTimezone(detectedTimezone)}
                 className="ml-1.5 text-[#445446] hover:underline"
               >
-                Reset to detected ({detectedTimezone})
+                {t("personalInfo.timezoneReset", { tz: detectedTimezone })}
               </button>
             )}
           </p>
@@ -212,7 +214,7 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
             disabled={loading}
             className="px-5 py-2.5 bg-[#445446] hover:bg-[#3a4a3b] disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors"
           >
-            {loading ? "Saving…" : "Save changes"}
+            {loading ? t("personalInfo.savingBtn") : t("personalInfo.saveBtn")}
           </button>
         </div>
       </div>
@@ -222,6 +224,7 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
 
 // ─── Email section ────────────────────────────────────────────────────────────
 const EmailSection = ({ profile, onLogout }) => {
+  const { t } = useTranslation("parentDashboard");
   const [newEmail, setNewEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -231,10 +234,7 @@ const EmailSection = ({ profile, onLogout }) => {
 
   const handleChange = async () => {
     if (!newEmail.trim() || !password) {
-      setBanner({
-        type: "error",
-        message: "New email and current password are required.",
-      });
+      setBanner({ type: "error", message: t("email.errors.required") });
       return;
     }
     setLoading(true);
@@ -245,7 +245,7 @@ const EmailSection = ({ profile, onLogout }) => {
     } catch (err) {
       setBanner({
         type: "error",
-        message: err?.response?.data?.error || "Could not update email.",
+        message: err?.response?.data?.error || t("email.errors.failed"),
       });
       setLoading(false);
     }
@@ -253,10 +253,7 @@ const EmailSection = ({ profile, onLogout }) => {
 
   if (emailSent) {
     return (
-      <Section
-        title="Email address"
-        description="Used to log in and receive notifications."
-      >
+      <Section title={t("email.title")} description={t("email.description")}>
         <div className="text-center py-4">
           <div className="w-12 h-12 rounded-full bg-[#445446]/10 flex items-center justify-center mx-auto mb-3">
             <svg
@@ -274,17 +271,18 @@ const EmailSection = ({ profile, onLogout }) => {
             </svg>
           </div>
           <p className="text-sm font-semibold text-[#1F2933] mb-1">
-            Verify your new email
+            {t("email.sentTitle")}
           </p>
           <p className="text-sm text-gray-500 mb-4">
-            We sent a verification link to <strong>{newEmail}</strong>.<br />
-            Click it to activate your new address. You have been signed out.
+            <Trans i18nKey="email.sentLine1" ns="parentDashboard" values={{ email: newEmail }} components={[<span />, <strong />]} />
+            <br />
+            {t("email.sentLine2")}
           </p>
           <button
             onClick={onLogout}
             className="text-sm text-[#445446] font-medium hover:underline"
           >
-            Sign in with new email
+            {t("email.signInNew")}
           </button>
         </div>
       </Section>
@@ -292,21 +290,16 @@ const EmailSection = ({ profile, onLogout }) => {
   }
 
   return (
-    <Section
-      title="Email address"
-      description="Used to log in and receive notifications."
-    >
+    <Section title={t("email.title")} description={t("email.description")}>
       <div className="space-y-4">
         <div className="flex items-center justify-between px-4 py-3 bg-[#F5F7F5] rounded-lg border border-[#E4E7E4]">
           <span className="text-sm text-[#1F2933] font-medium">
             {profile.email}
           </span>
           {profile.is_verified ? (
-            <span className="text-xs text-green-600 font-medium">Verified</span>
+            <span className="text-xs text-green-600 font-medium">{t("email.verified")}</span>
           ) : (
-            <span className="text-xs text-amber-600 font-medium">
-              Unverified
-            </span>
+            <span className="text-xs text-amber-600 font-medium">{t("email.unverified")}</span>
           )}
         </div>
 
@@ -315,29 +308,28 @@ const EmailSection = ({ profile, onLogout }) => {
             onClick={() => setShowForm(true)}
             className="text-sm text-[#445446] font-medium hover:underline"
           >
-            Change email address
+            {t("email.changeLink")}
           </button>
         ) : (
           <div className="space-y-4 pt-1">
             <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-              Changing your email will sign you out. You must verify the new
-              address before logging back in.
+              {t("email.warning")}
             </div>
             <Banner type={banner?.type} message={banner?.message} />
-            <Field label="New email address">
+            <Field label={t("email.newEmailLabel")}>
               <Input
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="new@example.com"
+                placeholder={t("email.newEmailPlaceholder")}
               />
             </Field>
-            <Field label="Confirm with current password">
+            <Field label={t("email.confirmPasswordLabel")}>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Your current password"
+                placeholder={t("email.currentPasswordPlaceholder")}
               />
             </Field>
             <div className="flex gap-3 justify-end pt-1">
@@ -350,14 +342,14 @@ const EmailSection = ({ profile, onLogout }) => {
                 }}
                 className="px-4 py-2.5 text-sm font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("email.cancel")}
               </button>
               <button
                 onClick={handleChange}
                 disabled={loading}
                 className="px-5 py-2.5 bg-[#445446] hover:bg-[#3a4a3b] disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors"
               >
-                {loading ? "Sending…" : "Send verification"}
+                {loading ? t("email.sending") : t("email.sendVerification")}
               </button>
             </div>
           </div>
@@ -369,6 +361,7 @@ const EmailSection = ({ profile, onLogout }) => {
 
 // ─── Change Password section ──────────────────────────────────────────────────
 const ChangePasswordSection = ({ onLogout }) => {
+  const { t } = useTranslation("parentDashboard");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -377,72 +370,61 @@ const ChangePasswordSection = ({ onLogout }) => {
 
   const handleSave = async () => {
     if (!current || !next || !confirm) {
-      setBanner({ type: "error", message: "All fields are required." });
+      setBanner({ type: "error", message: t("password.errors.allRequired") });
       return;
     }
     if (next.length < 8) {
-      setBanner({
-        type: "error",
-        message: "New password must be at least 8 characters.",
-      });
+      setBanner({ type: "error", message: t("password.errors.tooShort") });
       return;
     }
     if (next !== confirm) {
-      setBanner({ type: "error", message: "New passwords do not match." });
+      setBanner({ type: "error", message: t("password.errors.mismatch") });
       return;
     }
     setLoading(true);
     setBanner(null);
     try {
       await changePasswordApi({ currentPassword: current, newPassword: next });
-      setBanner({
-        type: "success",
-        message:
-          "Password changed. You have been signed out of all other sessions.",
-      });
+      setBanner({ type: "success", message: t("password.success") });
       setCurrent("");
       setNext("");
       setConfirm("");
-      // Sign out current session too — user should re-login with new password
       setTimeout(onLogout, 2000);
     } catch (err) {
       setBanner({
         type: "error",
-        message: err?.response?.data?.error || "Could not change password.",
+        message: err?.response?.data?.error || t("password.errors.failed"),
       });
       setLoading(false);
     }
   };
 
   return (
-    <Section
-      title="Change password"
-      description="Requires your current password for confirmation."
-    >
+    <Section title={t("password.title")} description={t("password.description")}>
       <div className="space-y-4">
         <Banner type={banner?.type} message={banner?.message} />
-        <Field label="Current password">
+        <Field label={t("password.currentLabel")}>
           <Input
             type="password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
-            placeholder="Enter current password"
+            placeholder={t("password.currentPlaceholder")}
           />
         </Field>
-        <Field label="New password">
+        <Field label={t("password.newLabel")}>
           <Input
             type="password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
-            placeholder="Minimum 8 characters"
+            placeholder={t("password.newPlaceholder")}
           />
         </Field>
-        <Field label="Confirm new password">
+        <Field label={t("password.confirmLabel")}>
           <Input
             type="password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Repeat new password"
+            placeholder={t("password.confirmPlaceholder")}
           />
         </Field>
         <div className="flex justify-end pt-1">
@@ -451,7 +433,7 @@ const ChangePasswordSection = ({ onLogout }) => {
             disabled={loading}
             className="px-5 py-2.5 bg-[#445446] hover:bg-[#3a4a3b] disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors"
           >
-            {loading ? "Updating…" : "Update password"}
+            {loading ? t("password.updatingBtn") : t("password.updateBtn")}
           </button>
         </div>
       </div>
@@ -461,31 +443,11 @@ const ChangePasswordSection = ({ onLogout }) => {
 
 // ─── Notification preferences section ────────────────────────────────────────
 const NOTIF_ROWS = [
-  {
-    field: "notify_booking_confirmation",
-    label: "Booking confirmation",
-    description: "Receive an email when your payment is processed and your booking is confirmed.",
-  },
-  {
-    field: "notify_session_reminder",
-    label: "Session reminder",
-    description: "Reminders sent 24 hours and 1 hour before your session.",
-  },
-  {
-    field: "notify_expert_cancellation",
-    label: "Cancellation by specialist",
-    description: "Receive an email if your specialist cancels an upcoming session.",
-  },
-  {
-    field: "notify_reschedule",
-    label: "Reschedule confirmation",
-    description: "Receive a confirmation email after you move a booking to a new time.",
-  },
-  {
-    field: "notify_platform_updates",
-    label: "Platform updates",
-    description: "Occasional product news, tips, and announcements from Sage Nest.",
-  },
+  { field: "notify_booking_confirmation", tKey: "bookingConfirmation" },
+  { field: "notify_session_reminder",     tKey: "sessionReminder" },
+  { field: "notify_expert_cancellation",  tKey: "expertCancellation" },
+  { field: "notify_reschedule",           tKey: "reschedule" },
+  { field: "notify_platform_updates",     tKey: "platformUpdates" },
 ];
 
 const Toggle = ({ checked, onChange, disabled }) => (
@@ -508,6 +470,7 @@ const Toggle = ({ checked, onChange, disabled }) => (
 );
 
 const NotificationSection = () => {
+  const { t } = useTranslation("parentDashboard");
   const defaultPrefs = Object.fromEntries(
     NOTIF_ROWS.map((r) => [r.field, r.field === "notify_platform_updates" ? false : true])
   );
@@ -535,10 +498,10 @@ const NotificationSection = () => {
     try {
       const saved = await updateParentNotificationPrefsApi({ [field]: value });
       setPrefs((p) => ({ ...p, ...saved }));
-      showToast("success", "Preference saved");
+      showToast("success", t("notifications.toastSuccess"));
     } catch {
       setPrefs(prev);
-      showToast("error", "Could not save — please try again");
+      showToast("error", t("notifications.toastError"));
     } finally {
       setSaving(false);
     }
@@ -549,10 +512,10 @@ const NotificationSection = () => {
       <div className="px-6 py-5 border-b border-[#E4E7E4] flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold text-[#1F2933]">
-            Email notifications
+            {t("notifications.title")}
           </h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            Choose which emails Sage Nest sends you.
+            {t("notifications.description")}
           </p>
         </div>
         {saving && (
@@ -566,12 +529,12 @@ const NotificationSection = () => {
         </div>
       ) : (
         <div className="divide-y divide-[#F0F2F0]">
-          {NOTIF_ROWS.map(({ field, label, description }) => (
+          {NOTIF_ROWS.map(({ field, tKey }) => (
             <div key={field} className="flex items-start justify-between gap-6 px-6 py-4">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-[#1F2933]">{label}</p>
+                <p className="text-sm font-medium text-[#1F2933]">{t(`notifications.rows.${tKey}.label`)}</p>
                 <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                  {description}
+                  {t(`notifications.rows.${tKey}.description`)}
                 </p>
               </div>
               <Toggle
@@ -608,6 +571,7 @@ const NotificationSection = () => {
 
 // ─── Two-Factor Authentication section ───────────────────────────────────────
 const TwoFactorSection = () => {
+  const { t } = useTranslation("parentDashboard");
   const [enabled, setEnabled] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [step, setStep] = useState("idle"); // 'idle' | 'entering_code'
@@ -628,8 +592,8 @@ const TwoFactorSection = () => {
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
   }, [resendCooldown]);
 
   const handleSendCode = async (intentType) => {
@@ -645,7 +609,7 @@ const TwoFactorSection = () => {
       setResendCooldown(60);
       setTimeout(() => codeInputRef.current?.focus(), 50);
     } catch (err) {
-      setCodeError(err?.response?.data?.error || "Failed to send code. Try again.");
+      setCodeError(err?.response?.data?.error || t("twoFactor.errors.sendFailed"));
     } finally {
       setSaving(false);
     }
@@ -660,7 +624,7 @@ const TwoFactorSection = () => {
       setCode("");
       setResendCooldown(60);
     } catch (err) {
-      setCodeError(err?.response?.data?.error || "Failed to resend. Try again.");
+      setCodeError(err?.response?.data?.error || t("twoFactor.errors.sendFailed"));
     }
   };
 
@@ -672,11 +636,11 @@ const TwoFactorSection = () => {
       if (intent === "enable") {
         await enable2FAApi({ code: codeVal });
         setEnabled(true);
-        setSuccessMsg("Two-factor authentication enabled.");
+        setSuccessMsg(t("twoFactor.enabledMsg"));
       } else {
         await disable2FAApi({ code: codeVal });
         setEnabled(false);
-        setSuccessMsg("Two-factor authentication disabled.");
+        setSuccessMsg(t("twoFactor.disabledMsg"));
       }
       setStep("idle");
       setCode("");
@@ -684,9 +648,9 @@ const TwoFactorSection = () => {
     } catch (err) {
       const errData = err?.response?.data;
       if (errData?.expired) {
-        setCodeError("Code expired. Please request a new one.");
+        setCodeError(t("twoFactor.errors.expired"));
       } else {
-        setCodeError(errData?.error || "Incorrect code. Please try again.");
+        setCodeError(errData?.error || t("twoFactor.errors.incorrect"));
       }
     } finally {
       setSaving(false);
@@ -708,7 +672,7 @@ const TwoFactorSection = () => {
           : "bg-gray-100 text-gray-500 border-gray-200"
       }`}
     >
-      {enabled ? "Enabled" : "Disabled"}
+      {enabled ? t("twoFactor.statusEnabled") : t("twoFactor.statusDisabled")}
     </span>
   );
 
@@ -717,10 +681,10 @@ const TwoFactorSection = () => {
       <div className="px-6 py-5 border-b border-[#E4E7E4] flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold text-[#1F2933]">
-            Two-factor authentication
+            {t("twoFactor.title")}
           </h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            Require an email code each time you sign in.
+            {t("twoFactor.description")}
           </p>
         </div>
         {titleRight}
@@ -734,17 +698,11 @@ const TwoFactorSection = () => {
         ) : step === "idle" ? (
           <div className="space-y-4">
             <p className="text-sm text-gray-600 leading-relaxed">
-              {enabled
-                ? "A 6-digit verification code is sent to your email each time you sign in."
-                : "When enabled, you'll need to enter a one-time code sent to your email on every sign-in. This protects your account and payment information even if your password is compromised."}
+              {enabled ? t("twoFactor.bodyEnabled") : t("twoFactor.bodyDisabled")}
             </p>
 
-            {successMsg && (
-              <Banner type="success" message={successMsg} />
-            )}
-            {codeError && (
-              <Banner type="error" message={codeError} />
-            )}
+            {successMsg && <Banner type="success" message={successMsg} />}
+            {codeError && <Banner type="error" message={codeError} />}
 
             <button
               type="button"
@@ -759,12 +717,12 @@ const TwoFactorSection = () => {
               {saving ? (
                 <>
                   <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                  Sending code…
+                  {t("twoFactor.sendingCode")}
                 </>
               ) : enabled ? (
-                "Disable 2FA"
+                t("twoFactor.disableBtn")
               ) : (
-                "Enable 2FA"
+                t("twoFactor.enableBtn")
               )}
             </button>
           </div>
@@ -774,9 +732,9 @@ const TwoFactorSection = () => {
             className="space-y-4"
           >
             <p className="text-sm text-gray-600 leading-relaxed">
-              A 6-digit code was sent to your email. Enter it below to{" "}
-              <strong>{intent === "enable" ? "enable" : "disable"}</strong>{" "}
-              two-factor authentication.
+              {intent === "enable"
+                ? t("twoFactor.codeInstructEnable")
+                : t("twoFactor.codeInstructDisable")}
             </p>
 
             <div>
@@ -811,25 +769,25 @@ const TwoFactorSection = () => {
                 {saving && (
                   <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                 )}
-                {saving ? "Verifying…" : "Confirm"}
+                {saving ? t("twoFactor.verifyingBtn") : t("twoFactor.confirmBtn")}
               </button>
               <button
                 type="button"
                 onClick={handleCancel}
                 className="px-4 py-2.5 text-sm font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("twoFactor.cancelBtn")}
               </button>
               <span className="ml-auto text-xs">
                 {resendCooldown > 0 ? (
-                  <span className="text-gray-400">Resend in {resendCooldown}s</span>
+                  <span className="text-gray-400">{t("twoFactor.resendIn", { count: resendCooldown })}</span>
                 ) : (
                   <button
                     type="button"
                     onClick={handleResend}
                     className="text-[#445446] hover:underline"
                   >
-                    Resend code
+                    {t("twoFactor.resendCode")}
                   </button>
                 )}
               </span>
@@ -843,6 +801,7 @@ const TwoFactorSection = () => {
 
 // ─── Data Export section ──────────────────────────────────────────────────────
 const DataExportSection = () => {
+  const { t } = useTranslation("parentDashboard");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -861,22 +820,17 @@ const DataExportSection = () => {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Could not generate your data export. Please try again.");
+      setError(t("dataExport.error"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Section
-      title="Download my data"
-      description="Export a copy of all personal data we hold about you (GDPR Article 20)."
-    >
+    <Section title={t("dataExport.title")} description={t("dataExport.description")}>
       <div className="space-y-4">
         <p className="text-sm text-gray-600 leading-relaxed">
-          Your export will include your name, email, phone number, full booking
-          history, reviews you have left, and all consent records in a
-          structured JSON file.
+          {t("dataExport.body")}
         </p>
         {error && (
           <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
@@ -891,7 +845,7 @@ const DataExportSection = () => {
           {loading ? (
             <>
               <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-              Preparing…
+              {t("dataExport.preparingBtn")}
             </>
           ) : (
             <>
@@ -908,7 +862,7 @@ const DataExportSection = () => {
                   d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
                 />
               </svg>
-              Download my data
+              {t("dataExport.downloadBtn")}
             </>
           )}
         </button>
@@ -918,9 +872,9 @@ const DataExportSection = () => {
 };
 
 // ─── Legal consents section ───────────────────────────────────────────────────
-function fmtDate(iso) {
+function fmtDate(iso, lng = "en") {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return new Date(iso).toLocaleDateString(lng === "it" ? "it-IT" : "en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -937,6 +891,7 @@ const ConsentRow = ({ label, children }) => (
 );
 
 const LegalConsentsSection = () => {
+  const { t, i18n } = useTranslation("parentDashboard");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -947,8 +902,9 @@ const LegalConsentsSection = () => {
   useEffect(() => {
     getLegalConsentsApi()
       .then(setData)
-      .catch(() => setError("Could not load consent records."))
+      .catch(() => setError(t("legalConsents.loadError")))
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMarketingChange = async (newValue) => {
@@ -968,20 +924,16 @@ const LegalConsentsSection = () => {
       }));
       setMarketingBanner({
         type: "success",
-        message: newValue
-          ? "You have opted in to marketing emails."
-          : "Marketing consent withdrawn. You will no longer receive marketing emails.",
+        message: newValue ? t("legalConsents.optInSuccess") : t("legalConsents.optOutSuccess"),
       });
     } catch {
-      setMarketingBanner({
-        type: "error",
-        message: "Could not update marketing consent. Please try again.",
-      });
+      setMarketingBanner({ type: "error", message: t("legalConsents.updateError") });
     } finally {
       setMarketingSaving(false);
     }
   };
 
+  const lng = i18n.language;
   const latestPp = data?.privacy_policy?.[0];
   const latestTcReg = data?.terms_registration?.[0];
   const bookingTcCount = data?.terms_per_booking?.length ?? 0;
@@ -990,10 +942,8 @@ const LegalConsentsSection = () => {
   return (
     <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden">
       <div className="px-6 py-5 border-b border-[#E4E7E4]">
-        <h3 className="text-base font-semibold text-[#1F2933]">Legal consents</h3>
-        <p className="text-sm text-gray-500 mt-0.5">
-          A record of the legal documents you have accepted and your consent choices.
-        </p>
+        <h3 className="text-base font-semibold text-[#1F2933]">{t("legalConsents.title")}</h3>
+        <p className="text-sm text-gray-500 mt-0.5">{t("legalConsents.description")}</p>
       </div>
 
       <div className="px-6 py-6">
@@ -1007,19 +957,19 @@ const LegalConsentsSection = () => {
           <div className="divide-y divide-[#F0F2F0] space-y-0">
 
             {/* Privacy Policy */}
-            <ConsentRow label="Privacy Policy">
+            <ConsentRow label={t("legalConsents.ppLabel")}>
               {latestPp ? (
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm text-[#1F2933] font-medium">
-                      Version {latestPp.version}
+                      {t("legalConsents.version", { version: latestPp.version })}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      Accepted {fmtDate(latestPp.accepted_at)}
+                      {t("legalConsents.accepted", { date: fmtDate(latestPp.accepted_at, lng) })}
                     </p>
                     {data.privacy_policy.length > 1 && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Previously accepted {data.privacy_policy.length - 1} earlier version{data.privacy_policy.length > 2 ? "s" : ""}.
+                        {t("legalConsents.previousVersions", { count: data.privacy_policy.length - 1 })}
                       </p>
                     )}
                   </div>
@@ -1029,32 +979,37 @@ const LegalConsentsSection = () => {
                     rel="noopener noreferrer"
                     className="flex-shrink-0 text-xs text-[#445446] hover:underline font-medium"
                   >
-                    View ↗
+                    {t("legalConsents.viewLink")}
                   </a>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">No record found.</p>
+                <p className="text-sm text-gray-400">{t("legalConsents.noRecord")}</p>
               )}
               <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-                Required to use Sage Nest. Cannot be withdrawn without deleting your account.
+                {t("legalConsents.ppRequired")}
               </p>
             </ConsentRow>
 
             {/* Terms & Conditions */}
-            <ConsentRow label="Terms &amp; Conditions">
+            <ConsentRow label={t("legalConsents.tcLabel")}>
               {latestTcReg ? (
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm text-[#1F2933] font-medium">
-                      Version {latestTcReg.version}
+                      {t("legalConsents.version", { version: latestTcReg.version })}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      Accepted at registration {fmtDate(latestTcReg.accepted_at)}
+                      {t("legalConsents.acceptedAtReg", { date: fmtDate(latestTcReg.accepted_at, lng) })}
                     </p>
                     {bookingTcCount > 0 && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Re-accepted {bookingTcCount} updated version{bookingTcCount !== 1 ? "s" : ""}
-                        {latestBookingTc ? ` — most recently v${latestBookingTc.version} on ${fmtDate(latestBookingTc.accepted_at)}` : ""}.
+                        {t("legalConsents.reaccepted", { count: bookingTcCount })}
+                        {latestBookingTc
+                          ? t("legalConsents.reacceptedLatest", {
+                              version: latestBookingTc.version,
+                              date: fmtDate(latestBookingTc.accepted_at, lng),
+                            })
+                          : ""}.
                       </p>
                     )}
                   </div>
@@ -1064,37 +1019,37 @@ const LegalConsentsSection = () => {
                     rel="noopener noreferrer"
                     className="flex-shrink-0 text-xs text-[#445446] hover:underline font-medium"
                   >
-                    View ↗
+                    {t("legalConsents.viewLink")}
                   </a>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">No record found.</p>
+                <p className="text-sm text-gray-400">{t("legalConsents.noRecord")}</p>
               )}
               <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-                Required to book sessions. Cannot be withdrawn without cancelling all bookings and deleting your account.
+                {t("legalConsents.tcRequired")}
               </p>
             </ConsentRow>
 
             {/* Marketing consent */}
-            <ConsentRow label="Marketing emails">
+            <ConsentRow label={t("legalConsents.marketingLabel")}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   {data.marketing_consent ? (
                     <p className="text-sm text-[#1F2933] font-medium">
-                      Opted in
+                      {t("legalConsents.optedIn")}
                       {data.marketing_accepted_at && (
                         <span className="font-normal text-gray-500">
-                          {" "}— since {fmtDate(data.marketing_accepted_at)}
+                          {" "}{t("legalConsents.since", { date: fmtDate(data.marketing_accepted_at, lng) })}
                         </span>
                       )}
                     </p>
                   ) : (
                     <p className="text-sm text-[#1F2933] font-medium">
-                      Not opted in
+                      {t("legalConsents.notOptedIn")}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                    Occasional product news and tips from Sage Nest. Optional and independent of your bookings.
+                    {t("legalConsents.marketingBody")}
                   </p>
                 </div>
                 <button
@@ -1130,7 +1085,7 @@ const LegalConsentsSection = () => {
               {showWithdrawConfirm && (
                 <div className="mt-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
                   <p className="text-sm text-amber-800">
-                    Withdrawing marketing consent means you will stop receiving product news and tips. Your bookings and account will not be affected.
+                    {t("legalConsents.withdrawWarning")}
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -1138,20 +1093,20 @@ const LegalConsentsSection = () => {
                       disabled={marketingSaving}
                       className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-medium rounded-lg transition-colors"
                     >
-                      {marketingSaving ? "Saving…" : "Yes, withdraw consent"}
+                      {marketingSaving ? t("legalConsents.saving") : t("legalConsents.withdrawConfirm")}
                     </button>
                     <button
                       onClick={() => setShowWithdrawConfirm(false)}
                       className="px-4 py-2 border border-amber-300 text-amber-700 text-xs font-medium rounded-lg hover:bg-amber-50 transition-colors"
                     >
-                      Cancel
+                      {t("legalConsents.cancel")}
                     </button>
                   </div>
                 </div>
               )}
 
               <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-                You can withdraw or re-grant this consent at any time under GDPR Article 7(3). Withdrawal does not affect the lawfulness of processing based on consent before its withdrawal.
+                {t("legalConsents.gdprNote")}
               </p>
             </ConsentRow>
 
@@ -1164,6 +1119,7 @@ const LegalConsentsSection = () => {
 
 // ─── Delete Account section ───────────────────────────────────────────────────
 const DeleteAccountSection = ({ onLogout }) => {
+  const { t } = useTranslation("parentDashboard");
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1171,7 +1127,7 @@ const DeleteAccountSection = ({ onLogout }) => {
 
   const handleDelete = async () => {
     if (!password) {
-      setError("Please enter your password to confirm.");
+      setError(t("deleteAccount.errors.passwordRequired"));
       return;
     }
     setLoading(true);
@@ -1181,7 +1137,7 @@ const DeleteAccountSection = ({ onLogout }) => {
       onLogout();
     } catch (err) {
       const errData = err?.response?.data;
-      setError(errData?.error || "Could not delete account. Please try again.");
+      setError(errData?.error || t("deleteAccount.errors.failed"));
       if (errData?.has_upcoming_bookings || errData?.has_pending_transactions) {
         setShowConfirm(false);
         setPassword("");
@@ -1193,9 +1149,9 @@ const DeleteAccountSection = ({ onLogout }) => {
   return (
     <div className="bg-white rounded-2xl border border-red-200 overflow-hidden">
       <div className="px-6 py-5 border-b border-red-100">
-        <h3 className="text-base font-semibold text-red-600">Delete account</h3>
+        <h3 className="text-base font-semibold text-red-600">{t("deleteAccount.title")}</h3>
         <p className="text-sm text-gray-500 mt-0.5">
-          Permanently erase your personal data. This cannot be undone.
+          {t("deleteAccount.description")}
         </p>
       </div>
       <div className="px-6 py-6">
@@ -1208,53 +1164,52 @@ const DeleteAccountSection = ({ onLogout }) => {
           <div className="space-y-4">
             <div className="text-sm text-gray-600 leading-relaxed space-y-3">
               <div>
-                <p className="font-medium text-gray-700 mb-1">Permanently deleted:</p>
+                <p className="font-medium text-gray-700 mb-1">{t("deleteAccount.permanentlyDeleted")}</p>
                 <ul className="list-disc list-inside text-gray-500 space-y-1 pl-2">
-                  <li>Your name, email address, and phone number</li>
-                  <li>Your password and account credentials</li>
-                  <li>Any free-text content you submitted (e.g. cancellation reasons)</li>
+                  <li>{t("deleteAccount.itemName")}</li>
+                  <li>{t("deleteAccount.itemCredentials")}</li>
+                  <li>{t("deleteAccount.itemTextContent")}</li>
                 </ul>
               </div>
               <div>
-                <p className="font-medium text-gray-700 mb-1">Retained in anonymised form:</p>
+                <p className="font-medium text-gray-700 mb-1">{t("deleteAccount.retainedAnon")}</p>
                 <ul className="list-disc list-inside text-gray-500 space-y-1 pl-2">
-                  <li>Booking records (date, service, duration, amount paid, payment reference)</li>
-                  <li>Transaction records (payment intent ID, amount, refund status)</li>
+                  <li>{t("deleteAccount.itemBookings")}</li>
+                  <li>{t("deleteAccount.itemTransactions")}</li>
                 </ul>
               </div>
               <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                Your personal details will be permanently deleted. Anonymised booking
-                and payment records are retained for legal and tax purposes — these
-                cannot be used to identify you.
+                {t("deleteAccount.privacyNote")}
               </p>
               <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                You must cancel any upcoming bookings and wait for all transactions
-                to be settled before your account can be deleted.
+                {t("deleteAccount.warning")}
               </p>
             </div>
             <button
               onClick={() => setShowConfirm(true)}
               className="px-5 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-sm font-medium rounded-lg transition-colors"
             >
-              Delete my account
+              {t("deleteAccount.deleteBtn")}
             </button>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 space-y-1">
-              <p>This action is <strong>permanent and irreversible</strong>.</p>
+              <Trans
+                i18nKey="deleteAccount.irreversibleWarning"
+                ns="parentDashboard"
+                components={[<span />, <strong />]}
+              />
               <p className="text-red-600">
-                Your personal details will be permanently deleted. Anonymised booking
-                and payment records are retained for legal and tax purposes — these
-                cannot be used to identify you.
+                {t("deleteAccount.irreversibleNote")}
               </p>
             </div>
-            <Field label="Enter your password to confirm">
+            <Field label={t("deleteAccount.confirmPasswordLabel")}>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Your current password"
+                placeholder={t("deleteAccount.currentPasswordPlaceholder")}
                 error={!!error}
               />
             </Field>
@@ -1268,14 +1223,14 @@ const DeleteAccountSection = ({ onLogout }) => {
                 }}
                 className="flex-1 py-2.5 text-sm font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("deleteAccount.cancel")}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={loading}
                 className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors"
               >
-                {loading ? "Deleting…" : "Yes, delete my account"}
+                {loading ? t("deleteAccount.deleting") : t("deleteAccount.confirmBtn")}
               </button>
             </div>
           </div>
@@ -1287,6 +1242,7 @@ const DeleteAccountSection = ({ onLogout }) => {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 const ParentProfilePage = () => {
+  const { t } = useTranslation("parentDashboard");
   const { logout, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1295,8 +1251,9 @@ const ParentProfilePage = () => {
   useEffect(() => {
     getProfileApi()
       .then(setProfile)
-      .catch(() => setError("Could not load your profile."))
+      .catch(() => setError(t("profile.loadError")))
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleProfileUpdated = (updated) => {
@@ -1315,7 +1272,7 @@ const ParentProfilePage = () => {
   if (error || !profile) {
     return (
       <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-        {error || "Could not load profile."}
+        {error || t("profile.loadErrorFallback")}
       </div>
     );
   }
@@ -1323,10 +1280,8 @@ const ParentProfilePage = () => {
   return (
     <div>
       <div className="mb-7">
-        <h2 className="text-xl font-semibold text-[#1F2933]">My Profile</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Manage your personal information and account settings.
-        </p>
+        <h2 className="text-xl font-semibold text-[#1F2933]">{t("profile.title")}</h2>
+        <p className="text-sm text-gray-500 mt-1">{t("profile.subtitle")}</p>
       </div>
 
       <div className="space-y-6">

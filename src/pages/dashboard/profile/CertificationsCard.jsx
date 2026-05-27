@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   addCertification,
   updateCertification,
@@ -16,8 +17,9 @@ const Spinner = () => (
 );
 
 const DocBadge = ({ url }) => {
+  const { t } = useTranslation("expertDashboard");
   if (!url)
-    return <span className="text-xs text-gray-400 italic">No document</span>;
+    return <span className="text-xs text-gray-400 italic">{t("profile.certs.noDocument")}</span>;
   return (
     <a
       href={getDocumentUrl(url)}
@@ -38,12 +40,13 @@ const DocBadge = ({ url }) => {
           d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13"
         />
       </svg>
-      View document
+      {t("profile.certs.viewDocument")}
     </a>
   );
 };
 
 const CertificationsCard = ({ initialData = [] }) => {
+  const { t } = useTranslation("expertDashboard");
   const [items, setItems] = useState(initialData);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -75,7 +78,7 @@ const CertificationsCard = ({ initialData = [] }) => {
     e.target.value = "";
     if (!file) return;
     if (file.size > DOC_MAX) {
-      setFormError("Document must be 5 MB or smaller.");
+      setFormError(t("profile.certs.errors.docSize"));
       return;
     }
     setForm((f) => ({ ...f, document: file }));
@@ -87,7 +90,7 @@ const CertificationsCard = ({ initialData = [] }) => {
     e.preventDefault();
     setFormError("");
     if (!form.name.trim()) {
-      setFormError("Certification name is required.");
+      setFormError(t("profile.certs.errors.nameRequired"));
       return;
     }
     setSaving(true);
@@ -102,7 +105,7 @@ const CertificationsCard = ({ initialData = [] }) => {
       setShowForm(false);
     } catch (err) {
       setFormError(
-        err?.response?.data?.error || "Failed to add certification."
+        err?.response?.data?.error || t("profile.certs.errors.addFailed")
       );
     } finally {
       setSaving(false);
@@ -123,7 +126,7 @@ const CertificationsCard = ({ initialData = [] }) => {
     e.target.value = "";
     if (!file) return;
     if (file.size > DOC_MAX) {
-      setEditError("Document must be 5 MB or smaller.");
+      setEditError(t("profile.certs.errors.docSize"));
       return;
     }
     setEditForm((f) => ({ ...f, document: file }));
@@ -150,7 +153,7 @@ const CertificationsCard = ({ initialData = [] }) => {
     e.preventDefault();
     setEditError("");
     if (!editForm.name.trim()) {
-      setEditError("Certification name is required.");
+      setEditError(t("profile.certs.errors.nameRequired"));
       return;
     }
     setEditSaving(true);
@@ -165,7 +168,7 @@ const CertificationsCard = ({ initialData = [] }) => {
       cancelEdit();
     } catch (err) {
       setEditError(
-        err?.response?.data?.error || "Failed to update certification."
+        err?.response?.data?.error || t("profile.certs.errors.updateFailed")
       );
     } finally {
       setEditSaving(false);
@@ -192,16 +195,16 @@ const CertificationsCard = ({ initialData = [] }) => {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-base font-semibold text-[#1F2933] flex items-center gap-1.5">
-            Certifications{" "}
+            {t("profile.certs.title")}{" "}
             <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-green-50 text-green-700 border border-green-200 align-middle">
-              Public
+              {t("profile.publicBadge")}
             </span>
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Additional training or certifications that build parent trust.
+            {t("profile.certs.subtitle")}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            Supporting documents optional · PDF, JPG, PNG · max 5 MB
+            {t("profile.certs.docHint")}
           </p>
         </div>
         {!showForm && (
@@ -223,7 +226,7 @@ const CertificationsCard = ({ initialData = [] }) => {
                 d="M12 4.5v15m7.5-7.5h-15"
               />
             </svg>
-            Add
+            {t("profile.certs.addBtn")}
           </button>
         )}
       </div>
@@ -246,7 +249,7 @@ const CertificationsCard = ({ initialData = [] }) => {
 
                   <div>
                     <label className="block text-xs font-medium text-[#1F2933] mb-1">
-                      Certification name
+                      {t("profile.certs.form.nameLabel")}
                     </label>
                     <input
                       type="text"
@@ -255,7 +258,7 @@ const CertificationsCard = ({ initialData = [] }) => {
                         setEditForm((f) => ({ ...f, name: e.target.value }));
                         setEditError("");
                       }}
-                      placeholder="e.g. First Aid Certificate"
+                      placeholder={t("profile.certs.form.namePlaceholder")}
                       className={inputClass(
                         !editForm.name.trim() && !!editError
                       )}
@@ -264,10 +267,9 @@ const CertificationsCard = ({ initialData = [] }) => {
 
                   <div>
                     <label className="block text-xs font-medium text-[#1F2933] mb-1">
-                      Replace document{" "}
+                      {t("profile.certs.form.replaceDocLabel")}{" "}
                       <span className="font-normal text-gray-400">
-                        (leave empty to keep existing · PDF, JPG, PNG · max 5
-                        MB)
+                        {t("profile.certs.form.replaceDocHint")}
                       </span>
                     </label>
                     {c.document_url && !editDocName && (
@@ -281,10 +283,10 @@ const CertificationsCard = ({ initialData = [] }) => {
                         onClick={() => editFileRef.current?.click()}
                         className="flex-shrink-0 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-2 rounded-lg transition-colors"
                       >
-                        Choose file
+                        {t("profile.certs.chooseFile")}
                       </button>
                       <span className="text-xs text-gray-500 truncate">
-                        {editDocName || (c.document_url ? c.document_url.split("/").pop() : "No file chosen")}
+                        {editDocName || (c.document_url ? c.document_url.split("/").pop() : t("profile.certs.noFile"))}
                       </span>
                     </div>
                     <input
@@ -298,7 +300,7 @@ const CertificationsCard = ({ initialData = [] }) => {
 
                   {!c.document_url && !editForm.document && (
                     <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      Adding a supporting document helps admins verify this entry faster.
+                      {t("profile.certs.docUploadHint")}
                     </p>
                   )}
 
@@ -308,7 +310,7 @@ const CertificationsCard = ({ initialData = [] }) => {
                       onClick={cancelEdit}
                       className="text-sm text-gray-500 hover:text-[#1F2933] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                      Cancel
+                      {t("profile.certs.form.cancelBtn")}
                     </button>
                     <button
                       type="submit"
@@ -316,7 +318,7 @@ const CertificationsCard = ({ initialData = [] }) => {
                       className="flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                     >
                       {editSaving && <Spinner />}
-                      {editSaving ? "Saving…" : "Save Changes"}
+                      {editSaving ? t("profile.certs.form.savingBtn") : t("profile.certs.form.saveBtn")}
                     </button>
                   </div>
                 </form>
@@ -340,18 +342,8 @@ const CertificationsCard = ({ initialData = [] }) => {
                           className="p-1.5 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/5 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"
-                            />
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
                           </svg>
                         </button>
                         <button
@@ -360,18 +352,8 @@ const CertificationsCard = ({ initialData = [] }) => {
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="Remove"
                         >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
-                            />
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                           </svg>
                         </button>
                       </>
@@ -382,7 +364,7 @@ const CertificationsCard = ({ initialData = [] }) => {
                           onClick={() => setConfirmId(null)}
                           className="text-xs text-gray-500 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
                         >
-                          Keep
+                          {t("profile.certs.form.keepBtn")}
                         </button>
                         <button
                           type="button"
@@ -391,7 +373,7 @@ const CertificationsCard = ({ initialData = [] }) => {
                           className="flex items-center gap-1 text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-2.5 py-1 rounded-lg transition-colors"
                         >
                           {deletingId === c.id && <Spinner />}
-                          {deletingId === c.id ? "Removing…" : "Remove"}
+                          {deletingId === c.id ? t("profile.certs.form.removingBtn") : t("profile.certs.form.removeBtn")}
                         </button>
                       </div>
                     )}
@@ -405,7 +387,7 @@ const CertificationsCard = ({ initialData = [] }) => {
 
       {items.length === 0 && !showForm && (
         <p className="text-sm text-gray-400 py-2">
-          No certifications added yet.
+          {t("profile.certs.empty")}
         </p>
       )}
 
@@ -421,7 +403,7 @@ const CertificationsCard = ({ initialData = [] }) => {
           )}
           <div>
             <label className="block text-xs font-medium text-[#1F2933] mb-1">
-              Certification name
+              {t("profile.certs.form.nameLabel")}
             </label>
             <input
               type="text"
@@ -430,7 +412,7 @@ const CertificationsCard = ({ initialData = [] }) => {
                 setForm((f) => ({ ...f, name: e.target.value }));
                 setFormError("");
               }}
-              placeholder="e.g. First Aid Certificate"
+              placeholder={t("profile.certs.form.namePlaceholder")}
               className={inputClass(!form.name.trim() && !!formError)}
             />
           </div>
@@ -441,10 +423,10 @@ const CertificationsCard = ({ initialData = [] }) => {
                 onClick={() => fileRef.current?.click()}
                 className="flex-shrink-0 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-2 rounded-lg transition-colors"
               >
-                Choose file
+                {t("profile.certs.chooseFile")}
               </button>
               <span className="text-xs text-gray-500 truncate">
-                {docName || "No file chosen"}
+                {docName || t("profile.certs.noFile")}
               </span>
             </div>
             <input
@@ -457,7 +439,7 @@ const CertificationsCard = ({ initialData = [] }) => {
           </div>
           {!form.document && (
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              Adding a supporting document helps admins verify this entry faster.
+              {t("profile.certs.docUploadHint")}
             </p>
           )}
 
@@ -467,7 +449,7 @@ const CertificationsCard = ({ initialData = [] }) => {
               onClick={cancelForm}
               className="text-sm text-gray-500 hover:text-[#1F2933] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {t("profile.certs.form.cancelBtn")}
             </button>
             <button
               type="submit"
@@ -475,7 +457,7 @@ const CertificationsCard = ({ initialData = [] }) => {
               className="flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               {saving && <Spinner />}
-              {saving ? "Adding…" : "Add Certification"}
+              {saving ? t("profile.certs.form.addingBtn") : t("profile.certs.form.addCertBtn")}
             </button>
           </div>
         </form>

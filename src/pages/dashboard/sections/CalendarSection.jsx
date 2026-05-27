@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import {
   format, parse, startOfWeek, getDay,
   startOfMonth, endOfMonth, endOfWeek, addDays,
 } from 'date-fns';
 import { enGB } from 'date-fns/locale/en-GB';
+import { it as itLocale } from 'date-fns/locale/it';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { getCalendarBookings } from '../../../api/bookingApi';
 import { listAvailability } from '../../../api/expertApi';
 import { listBlockouts } from '../../../api/blockoutApi';
 
-// ─── react-big-calendar localizer (date-fns) — Monday week start ─────────────
-const locales = { 'en-GB': enGB };
+// ─── react-big-calendar localizer — Monday week start, EN + IT locales ────────
+const locales = { 'en-GB': enGB, 'it': itLocale };
 const localizer = dateFnsLocalizer({
   format,
   parse,
@@ -27,7 +29,6 @@ function parseDateLocal(dateStr) {
   return new Date(y, m - 1, d);
 }
 
-/** Compute the visible calendar range for a given view + anchor date */
 function getRangeForView(view, date) {
   if (view === 'week') {
     return {
@@ -43,7 +44,6 @@ function getRangeForView(view, date) {
   if (view === 'agenda') {
     return { start: date, end: addDays(date, 30) };
   }
-  // month — use full calendar grid (Mon-start weeks covering the month)
   const mStart = startOfMonth(date);
   const mEnd   = endOfMonth(date);
   return {
@@ -52,8 +52,7 @@ function getRangeForView(view, date) {
   };
 }
 
-/** Expand recurring weekly availability slots into concrete events for a date range */
-function expandRecurringSlots(slots, rangeStart, rangeEnd) {
+function expandRecurringSlots(slots, rangeStart, rangeEnd, availLabel = 'Available') {
   const events = [];
   const cursor = new Date(rangeStart);
   cursor.setHours(0, 0, 0, 0);
@@ -70,7 +69,7 @@ function expandRecurringSlots(slots, rangeStart, rangeEnd) {
       const evEnd = new Date(cursor); evEnd.setHours(eh, em, 0, 0);
       events.push({
         id:    `avail-${slot.id}-${cursor.toDateString()}`,
-        title: 'Available',
+        title: availLabel,
         start,
         end:   evEnd,
         type:  'availability',
@@ -83,7 +82,6 @@ function expandRecurringSlots(slots, rangeStart, rangeEnd) {
   return events;
 }
 
-/** Convert blockout DB records into calendar events */
 function blockoutsToEvents(blockouts) {
   return blockouts.map((b) => {
     const date = parseDateLocal(b.date);
@@ -101,7 +99,6 @@ function blockoutsToEvents(blockouts) {
   });
 }
 
-/** Strip availability event windows that overlap with bookings or blockouts */
 function subtractOccupied(availEvents, blockoutEvents, bookingEvents) {
   const occupied = [
     ...blockoutEvents.map((e) => ({ start: e.start, end: e.end, allDay: !!e.allDay })),
@@ -129,61 +126,68 @@ function subtractOccupied(availEvents, blockoutEvents, bookingEvents) {
   return result;
 }
 
+// ─── Locale-aware time formatter ──────────────────────────────────────────────
+const fmtTime = (d, lng = 'en') =>
+  d.toLocaleTimeString(lng === 'it' ? 'it-IT' : 'en-GB', {
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+
 // ─── Custom toolbar ───────────────────────────────────────────────────────────
 const VIEWS = ['day', 'week', 'month', 'agenda'];
-const CustomToolbar = ({ label, onNavigate, onView, view }) => (
-  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-    <div className="flex items-center gap-1">
-      <button
-        onClick={() => onNavigate('PREV')}
-        className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
-        title="Previous"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-        </svg>
-      </button>
-      <button
-        onClick={() => onNavigate('TODAY')}
-        className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#E4E7E4] hover:bg-gray-50 transition-colors"
-      >
-        Today
-      </button>
-      <button
-        onClick={() => onNavigate('NEXT')}
-        className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
-        title="Next"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-        </svg>
-      </button>
-      <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
-    </div>
-    <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
-      {VIEWS.map((v) => (
+const CustomToolbar = ({ label, onNavigate, onView, view }) => {
+  const { t } = useTranslation('expertDashboard');
+  return (
+    <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div className="flex items-center gap-1">
         <button
-          key={v}
-          onClick={() => onView(v)}
-          className={`px-4 py-1.5 text-xs font-medium transition-colors ${
-            view === v
-              ? 'bg-[#445446] text-white'
-              : 'text-gray-500 hover:bg-gray-50 bg-white'
-          }`}
+          onClick={() => onNavigate('PREV')}
+          className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
+          title={t('calendar.toolbar.prev')}
         >
-          {v.charAt(0).toUpperCase() + v.slice(1)}
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
         </button>
-      ))}
+        <button
+          onClick={() => onNavigate('TODAY')}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#E4E7E4] hover:bg-gray-50 transition-colors"
+        >
+          {t('calendar.toolbar.today')}
+        </button>
+        <button
+          onClick={() => onNavigate('NEXT')}
+          className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
+          title={t('calendar.toolbar.next')}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+        <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
+      </div>
+      <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
+        {VIEWS.map((v) => (
+          <button
+            key={v}
+            onClick={() => onView(v)}
+            className={`px-4 py-1.5 text-xs font-medium transition-colors ${
+              view === v
+                ? 'bg-[#445446] text-white'
+                : 'text-gray-500 hover:bg-gray-50 bg-white'
+            }`}
+          >
+            {t('calendar.views.' + v)}
+          </button>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
-// ─── Weekend column tint (Sat + Sun get a lighter background) ────────────────
+// ─── Weekend column tint ──────────────────────────────────────────────────────
 const dayPropGetter = (date) => {
   const dow = date.getDay();
-  if (dow === 0 || dow === 6) {
-    return { style: { backgroundColor: '#f7f8f7' } };
-  }
+  if (dow === 0 || dow === 6) return { style: { backgroundColor: '#f7f8f7' } };
   return {};
 };
 
@@ -197,34 +201,46 @@ const eventPropGetter = (event) => {
   return { style: { ...base, backgroundColor: '#445446', color: '#fff' } };
 };
 
-// ─── Event components (month vs time-grid) ────────────────────────────────────
-const fmtTime = (d) =>
-  d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-
+// ─── Event components ─────────────────────────────────────────────────────────
 const MonthEvent = ({ event }) => {
+  const { t } = useTranslation('expertDashboard');
   if (event.type === 'availability') {
-    return <span title={`Available ${event.startLabel}–${event.endLabel}`}>{event.startLabel}–{event.endLabel}</span>;
+    return (
+      <span title={`${t('calendar.available')} ${event.startLabel}–${event.endLabel}`}>
+        {event.startLabel}–{event.endLabel}
+      </span>
+    );
   }
   const b = event.resource;
   return <span title={event.title}>{b?.parent?.name || event.title}</span>;
 };
 
 const TimeGridEvent = ({ event }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
   if (event.type === 'availability') {
-    return <span title={`Available ${fmtTime(event.start)}–${fmtTime(event.end)}`}>Available</span>;
+    return (
+      <span title={`${t('calendar.available')} ${fmtTime(event.start, lng)}–${fmtTime(event.end, lng)}`}>
+        {t('calendar.available')}
+      </span>
+    );
   }
   const b = event.resource;
   return (
     <div className="leading-tight overflow-hidden">
       <p className="font-semibold truncate">{b?.parent?.name || event.title}</p>
       <p className="truncate opacity-90">{b?.service?.title}</p>
-      <p className="truncate opacity-75">{b?.format === 'ONLINE' ? 'Online' : 'In-Person'}</p>
+      <p className="truncate opacity-75">
+        {b?.format === 'ONLINE' ? t('calendar.legend.bookedOnline').replace(' (Online)', '') : t('calendar.legend.bookedInPerson').replace(' (In-Person)', '')}
+      </p>
     </div>
   );
 };
 
 // ─── Appointment detail modal ─────────────────────────────────────────────────
 const AppointmentModal = ({ event, onClose }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
   if (!event) return null;
   const b = event.resource;
   const isOnline = b.format === 'ONLINE';
@@ -237,13 +253,13 @@ const AppointmentModal = ({ event, onClose }) => {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-base font-semibold text-[#1F2933]">Appointment Details</h3>
+            <h3 className="text-base font-semibold text-[#1F2933]">{t('calendar.modal.title')}</h3>
             <span className={`mt-1 inline-block text-xs font-medium px-2.5 py-1 rounded-full ${
               isOnline
                 ? 'bg-blue-50 text-blue-600 border border-blue-100'
                 : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
             }`}>
-              {isOnline ? 'Online Session' : 'In-Person Session'}
+              {isOnline ? t('calendar.modal.onlineSession') : t('calendar.modal.inPersonSession')}
             </span>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
@@ -259,7 +275,7 @@ const AppointmentModal = ({ event, onClose }) => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
             </svg>
             <div>
-              <p className="text-xs text-gray-400">Parent</p>
+              <p className="text-xs text-gray-400">{t('calendar.modal.parentLabel')}</p>
               <p className="font-medium text-[#1F2933]">{b.parent?.name || '—'}</p>
               {b.parent?.email && (
                 <a href={`mailto:${b.parent.email}`} className="text-xs text-[#445446] hover:underline">
@@ -274,7 +290,7 @@ const AppointmentModal = ({ event, onClose }) => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
             </svg>
             <div>
-              <p className="text-xs text-gray-400">Service</p>
+              <p className="text-xs text-gray-400">{t('calendar.modal.serviceLabel')}</p>
               <p className="font-medium text-[#1F2933]">{b.service?.title || '—'}</p>
             </div>
           </div>
@@ -284,14 +300,16 @@ const AppointmentModal = ({ event, onClose }) => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
             <div>
-              <p className="text-xs text-gray-400">Time slot</p>
+              <p className="text-xs text-gray-400">{t('calendar.modal.timeSlotLabel')}</p>
               <p className="font-medium text-[#1F2933]">
-                {new Date(b.scheduled_at).toLocaleString('en-GB', {
+                {new Date(b.scheduled_at).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', {
                   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
                   hour: '2-digit', minute: '2-digit',
                 })}
               </p>
-              <p className="text-xs text-gray-400 mt-0.5">{b.duration_minutes} minutes</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {t('calendar.modal.duration', { count: b.duration_minutes })}
+              </p>
             </div>
           </div>
         </div>
@@ -303,15 +321,18 @@ const AppointmentModal = ({ event, onClose }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
               </svg>
               <p className="text-xs text-blue-700 leading-relaxed">
-                <strong>Reminder:</strong> Please send your Zoom or Teams meeting link directly to the parent before the session.
+                <strong>{t('calendar.modal.reminderBold')}</strong>{' '}
+                {t('calendar.modal.reminderBody')}
               </p>
             </div>
           </div>
         )}
 
-        <button onClick={onClose}
-          className="mt-5 w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-          Close
+        <button
+          onClick={onClose}
+          className="mt-5 w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          {t('calendar.modal.closeBtn')}
         </button>
       </div>
     </div>
@@ -319,23 +340,30 @@ const AppointmentModal = ({ event, onClose }) => {
 };
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
-const Legend = () => (
-  <div className="flex items-center gap-4 mb-4 flex-wrap">
-    {[
-      { color: '#445446', opacity: 0.5,  label: 'Available' },
-      { color: '#2563eb', opacity: 1,    label: 'Booked (Online)' },
-      { color: '#445446', opacity: 1,    label: 'Booked (In-Person)' },
-    ].map(({ color, opacity, label }) => (
-      <div key={label} className="flex items-center gap-1.5">
-        <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color, opacity }} />
-        <span className="text-xs text-gray-500">{label}</span>
-      </div>
-    ))}
-  </div>
-);
+const Legend = () => {
+  const { t } = useTranslation('expertDashboard');
+  const items = [
+    { color: '#445446', opacity: 0.5, label: t('calendar.legend.available') },
+    { color: '#2563eb', opacity: 1,   label: t('calendar.legend.bookedOnline') },
+    { color: '#445446', opacity: 1,   label: t('calendar.legend.bookedInPerson') },
+  ];
+  return (
+    <div className="flex items-center gap-4 mb-4 flex-wrap">
+      {items.map(({ color, opacity, label }) => (
+        <div key={label} className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color, opacity }} />
+          <span className="text-xs text-gray-500">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const CalendarSection = () => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view,        setView]        = useState('month');
   const [bookings,    setBookings]    = useState([]);
@@ -345,12 +373,10 @@ const CalendarSection = () => {
   const [error,       setError]       = useState('');
   const [selected,    setSelected]    = useState(null);
 
-  // Fetch recurring availability slots once — they don't change with navigation
   useEffect(() => {
     listAvailability().then(setSlots).catch(() => {});
   }, []);
 
-  // Fetch bookings + blockouts for a generous 3-month window around the current date
   const fetchRangeData = useCallback(async (date) => {
     setLoading(true);
     setError('');
@@ -364,17 +390,18 @@ const CalendarSection = () => {
       setBookings(bkData);
       setBlockouts(blData);
     } catch {
-      setError('Could not load calendar. Please try again.');
+      setError(t('calendar.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchRangeData(currentDate);
   }, [currentDate, fetchRangeData]);
 
-  // Build merged event list: clean availability windows + bookings
+  const availLabel = t('calendar.available');
+
   const events = useMemo(() => {
     const range = getRangeForView(view, currentDate);
 
@@ -384,14 +411,13 @@ const CalendarSection = () => {
       return { id: b.id, title: b.parent?.name || 'Booking', start, end, type: 'booking', resource: b };
     });
 
-    const blockoutEvs  = blockoutsToEvents(blockouts);
-    const rawAvailEvs  = expandRecurringSlots(slots, range.start, range.end);
+    const blockoutEvs   = blockoutsToEvents(blockouts);
+    const rawAvailEvs   = expandRecurringSlots(slots, range.start, range.end, availLabel);
     const cleanAvailEvs = subtractOccupied(rawAvailEvs, blockoutEvs, bookingEvs);
 
     return [...cleanAvailEvs, ...bookingEvs];
-  }, [slots, blockouts, bookings, currentDate, view]);
+  }, [slots, blockouts, bookings, currentDate, view, availLabel]);
 
-  // Scroll to earliest slot or 06:00 in time-grid views
   const scrollToTime = useMemo(() => {
     if (slots.length === 0) return new Date(0, 0, 0, 6, 0);
     const earliest = slots.reduce(
@@ -405,19 +431,17 @@ const CalendarSection = () => {
 
   const handleNavigate = useCallback((date) => setCurrentDate(date), []);
   const handleView     = useCallback((v) => setView(v), []);
-
-  // Only open the detail modal for booking events
-  const handleSelect = useCallback((event) => {
+  const handleSelect   = useCallback((event) => {
     if (event.type === 'booking') setSelected(event);
   }, []);
+
+  const culture = lng === 'it' ? 'it' : 'en-GB';
 
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">Calendar</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Your availability and confirmed appointments in one view.
-        </p>
+        <h2 className="text-xl font-semibold text-[#1F2933]">{t('calendar.heading')}</h2>
+        <p className="text-sm text-gray-500 mt-1">{t('calendar.subheading')}</p>
       </div>
 
       <Legend />
@@ -429,14 +453,14 @@ const CalendarSection = () => {
       {loading && (
         <div className="flex items-center gap-2 mb-4">
           <div className="w-4 h-4 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-          <span className="text-xs text-gray-400">Loading…</span>
+          <span className="text-xs text-gray-400">{t('calendar.loading')}</span>
         </div>
       )}
 
       <div className="bg-white rounded-xl border border-[#E4E7E4] overflow-hidden" style={{ height: 640 }}>
         <Calendar
           localizer={localizer}
-          culture="en-GB"
+          culture={culture}
           formats={{
             agendaDateFormat:   'dd/MM/yyyy',
             agendaHeaderFormat: ({ start, end }) =>

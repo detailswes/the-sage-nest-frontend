@@ -1,0 +1,205 @@
+{
+  "nav": {
+    "findExpert": "Trova un esperto",
+    "upcomingBookings": "Prenotazioni future",
+    "pastBookings": "Prenotazioni passate",
+    "myProfile": "Il mio profilo",
+    "signOut": "Esci"
+  },
+  "signOutModal": {
+    "title": "Uscire?",
+    "message": "Sei sicuro di voler uscire dal tuo account?",
+    "cancel": "Annulla",
+    "confirm": "Sì, esci"
+  },
+  "profile": {
+    "title": "Il mio profilo",
+    "subtitle": "Gestisci le tue informazioni personali e le impostazioni dell'account.",
+    "loadError": "Impossibile caricare il tuo profilo.",
+    "loadErrorFallback": "Impossibile caricare il profilo."
+  },
+  "personalInfo": {
+    "title": "Informazioni personali",
+    "description": "Il tuo nome, i recapiti e la posizione.",
+    "fullName": "Nome completo",
+    "fullNamePlaceholder": "Mario Rossi",
+    "phone": "Numero di telefono",
+    "phonePlaceholder": "+39 333 1234567",
+    "phoneHint": "In modo che il tuo esperto possa contattarti riguardo alla sessione.",
+    "city": "Città / Luogo (opzionale)",
+    "cityPlaceholder": "es. Milano",
+    "cityHint": "Ti aiuta a trovare specialisti nelle vicinanze per sessioni di persona.",
+    "timezone": "Fuso orario",
+    "timezoneHint": "Utilizzato per visualizzare correttamente gli orari delle sessioni.",
+    "timezoneReset": "Ripristina al rilevato ({{tz}})",
+    "saveBtn": "Salva modifiche",
+    "savingBtn": "Salvataggio…",
+    "saveSuccess": "Profilo aggiornato con successo.",
+    "saveError": "Impossibile salvare le modifiche.",
+    "validation": {
+      "nameRequired": "Il nome è obbligatorio.",
+      "phoneRequired": "Il numero di telefono è obbligatorio.",
+      "phoneInvalid": "Inserisci un numero di telefono valido (es. +39 333 1234567)."
+    }
+  },
+  "email": {
+    "title": "Indirizzo email",
+    "description": "Utilizzato per accedere e ricevere notifiche.",
+    "verified": "Verificato",
+    "unverified": "Non verificato",
+    "changeLink": "Cambia indirizzo email",
+    "warning": "La modifica dell'email ti disconnetterà. Devi verificare il nuovo indirizzo prima di accedere di nuovo.",
+    "newEmailLabel": "Nuovo indirizzo email",
+    "newEmailPlaceholder": "nuovo@esempio.com",
+    "confirmPasswordLabel": "Conferma con la password attuale",
+    "currentPasswordPlaceholder": "La tua password attuale",
+    "cancel": "Annulla",
+    "sendVerification": "Invia verifica",
+    "sending": "Invio in corso…",
+    "sentTitle": "Verifica il tuo nuovo indirizzo email",
+    "sentLine1": "Abbiamo inviato un link di verifica a <1>{{email}}</1>.",
+    "sentLine2": "Fai clic per attivare il nuovo indirizzo. Sei stato disconnesso.",
+    "signInNew": "Accedi con il nuovo indirizzo email",
+    "errors": {
+      "required": "Il nuovo indirizzo email e la password attuale sono obbligatori.",
+      "failed": "Impossibile aggiornare l'indirizzo email."
+    }
+  },
+  "password": {
+    "title": "Cambia password",
+    "description": "Richiede la tua password attuale per conferma.",
+    "currentLabel": "Password attuale",
+    "currentPlaceholder": "Inserisci la password attuale",
+    "newLabel": "Nuova password",
+    "newPlaceholder": "Minimo 8 caratteri",
+    "confirmLabel": "Conferma nuova password",
+    "confirmPlaceholder": "Ripeti la nuova password",
+    "updateBtn": "Aggiorna password",
+    "updatingBtn": "Aggiornamento…",
+    "errors": {
+      "allRequired": "Tutti i campi sono obbligatori.",
+      "tooShort": "La nuova password deve contenere almeno 8 caratteri.",
+      "mismatch": "Le nuove password non coincidono.",
+      "failed": "Impossibile modificare la password."
+    },
+    "success": "Password modificata. Sei stato disconnesso da tutte le altre sessioni."
+  },
+  "notifications": {
+    "title": "Notifiche email",
+    "description": "Scegli quali email Sage Nest ti invia.",
+    "rows": {
+      "bookingConfirmation": {
+        "label": "Conferma prenotazione",
+        "description": "Ricevi un'email quando il pagamento viene elaborato e la prenotazione è confermata."
+      },
+      "sessionReminder": {
+        "label": "Promemoria sessione",
+        "description": "Promemoria inviati 24 ore e 1 ora prima della tua sessione."
+      },
+      "expertCancellation": {
+        "label": "Cancellazione da parte dello specialista",
+        "description": "Ricevi un'email se il tuo specialista annulla una sessione imminente."
+      },
+      "reschedule": {
+        "label": "Conferma riprogrammazione",
+        "description": "Ricevi un'email di conferma dopo aver spostato una prenotazione a un nuovo orario."
+      },
+      "platformUpdates": {
+        "label": "Aggiornamenti piattaforma",
+        "description": "Notizie occasionali sul prodotto, suggerimenti e annunci da Sage Nest."
+      }
+    },
+    "toastSuccess": "Preferenza salvata",
+    "toastError": "Impossibile salvare — riprova"
+  },
+  "twoFactor": {
+    "title": "Autenticazione a due fattori",
+    "description": "Richiede un codice via email ad ogni accesso.",
+    "statusEnabled": "Attivata",
+    "statusDisabled": "Disattivata",
+    "bodyEnabled": "Un codice di verifica a 6 cifre viene inviato alla tua email ad ogni accesso.",
+    "bodyDisabled": "Quando attivata, dovrai inserire un codice monouso inviato alla tua email ad ogni accesso. Protegge il tuo account e le informazioni di pagamento anche se la password è compromessa.",
+    "enableBtn": "Attiva 2FA",
+    "disableBtn": "Disattiva 2FA",
+    "sendingCode": "Invio codice…",
+    "codeInstructEnable": "Un codice a 6 cifre è stato inviato alla tua email. Inseriscilo qui sotto per attivare l'autenticazione a due fattori.",
+    "codeInstructDisable": "Un codice a 6 cifre è stato inviato alla tua email. Inseriscilo qui sotto per disattivare l'autenticazione a due fattori.",
+    "confirmBtn": "Conferma",
+    "verifyingBtn": "Verifica in corso…",
+    "cancelBtn": "Annulla",
+    "resendCode": "Rinvia codice",
+    "resendIn": "Rinvia tra {{count}}s",
+    "enabledMsg": "Autenticazione a due fattori attivata.",
+    "disabledMsg": "Autenticazione a due fattori disattivata.",
+    "errors": {
+      "sendFailed": "Impossibile inviare il codice. Riprova.",
+      "expired": "Codice scaduto. Richiedine uno nuovo.",
+      "incorrect": "Codice errato. Riprova."
+    }
+  },
+  "dataExport": {
+    "title": "Scarica i miei dati",
+    "description": "Esporta una copia di tutti i dati personali che abbiamo su di te (GDPR Articolo 20).",
+    "body": "L'esportazione includerà il tuo nome, email, numero di telefono, l'intera cronologia delle prenotazioni, le recensioni che hai lasciato e tutti i record di consenso in un file JSON strutturato.",
+    "downloadBtn": "Scarica i miei dati",
+    "preparingBtn": "Preparazione…",
+    "error": "Impossibile generare l'esportazione dei dati. Riprova."
+  },
+  "legalConsents": {
+    "title": "Consensi legali",
+    "description": "Un registro dei documenti legali che hai accettato e delle tue scelte di consenso.",
+    "ppLabel": "Informativa sulla privacy",
+    "tcLabel": "Termini e condizioni",
+    "marketingLabel": "Email di marketing",
+    "version": "Versione {{version}}",
+    "accepted": "Accettato il {{date}}",
+    "acceptedAtReg": "Accettato alla registrazione il {{date}}",
+    "previousVersions_one": "Accettata in precedenza {{count}} versione precedente.",
+    "previousVersions_other": "Accettate in precedenza {{count}} versioni precedenti.",
+    "reaccepted_one": "Riaccettata {{count}} versione aggiornata",
+    "reaccepted_other": "Riaccettate {{count}} versioni aggiornate",
+    "reacceptedLatest": " — più recentemente v{{version}} il {{date}}",
+    "viewLink": "Visualizza ↗",
+    "noRecord": "Nessun record trovato.",
+    "ppRequired": "Necessario per utilizzare Sage Nest. Non può essere revocato senza eliminare l'account.",
+    "tcRequired": "Necessario per prenotare sessioni. Non può essere revocato senza cancellare tutte le prenotazioni ed eliminare l'account.",
+    "optedIn": "Consenso dato",
+    "since": "— dal {{date}}",
+    "notOptedIn": "Non iscritto",
+    "marketingBody": "Notizie occasionali sul prodotto e suggerimenti da Sage Nest. Opzionale e indipendente dalle prenotazioni.",
+    "gdprNote": "Puoi revocare o ri-concedere questo consenso in qualsiasi momento ai sensi dell'articolo 7(3) del GDPR. La revoca non pregiudica la liceità del trattamento basato sul consenso prima della revoca.",
+    "loadError": "Impossibile caricare i record di consenso.",
+    "optInSuccess": "Hai dato il consenso per le email di marketing.",
+    "optOutSuccess": "Consenso marketing revocato. Non riceverai più email di marketing.",
+    "updateError": "Impossibile aggiornare il consenso marketing. Riprova.",
+    "withdrawWarning": "La revoca del consenso marketing significa che non riceverai più notizie e suggerimenti sul prodotto. Le prenotazioni e l'account non saranno interessati.",
+    "withdrawConfirm": "Sì, revoca il consenso",
+    "saving": "Salvataggio…",
+    "cancel": "Annulla"
+  },
+  "deleteAccount": {
+    "title": "Elimina account",
+    "description": "Cancella definitivamente i tuoi dati personali. Questa azione non può essere annullata.",
+    "permanentlyDeleted": "Cancellati definitivamente:",
+    "itemName": "Il tuo nome, indirizzo email e numero di telefono",
+    "itemCredentials": "La tua password e le credenziali dell'account",
+    "itemTextContent": "Qualsiasi contenuto testuale che hai inviato (es. motivi di cancellazione)",
+    "retainedAnon": "Conservati in forma anonimizzata:",
+    "itemBookings": "Registrazioni delle prenotazioni (data, servizio, durata, importo pagato, riferimento di pagamento)",
+    "itemTransactions": "Registrazioni delle transazioni (ID intento di pagamento, importo, stato del rimborso)",
+    "privacyNote": "I tuoi dati personali verranno eliminati definitivamente. I registri anonimi di prenotazione e pagamento vengono conservati per motivi legali e fiscali — non possono essere utilizzati per identificarti.",
+    "warning": "Devi cancellare tutte le prenotazioni future e attendere che tutte le transazioni siano saldate prima di poter eliminare l'account.",
+    "deleteBtn": "Elimina il mio account",
+    "irreversibleWarning": "Questa azione è <1>permanente e irreversibile</1>.",
+    "irreversibleNote": "I tuoi dati personali verranno eliminati definitivamente. I registri anonimi di prenotazione e pagamento vengono conservati per motivi legali e fiscali — non possono essere utilizzati per identificarti.",
+    "confirmPasswordLabel": "Inserisci la tua password per confermare",
+    "currentPasswordPlaceholder": "La tua password attuale",
+    "cancel": "Annulla",
+    "confirmBtn": "Sì, elimina il mio account",
+    "deleting": "Eliminazione…",
+    "errors": {
+      "passwordRequired": "Inserisci la tua password per confermare.",
+      "failed": "Impossibile eliminare l'account. Riprova."
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { isValidIBAN, electronicFormatIBAN } from "ibantools";
 import { saveBusinessInfo } from "../../../api/expertApi";
 
@@ -6,10 +7,7 @@ const Spinner = () => (
   <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin flex-shrink-0" />
 );
 
-const ENTITY_TYPES = [
-  { value: "INDIVIDUAL", label: "Individual" },
-  { value: "COMPANY", label: "Company / Legal Entity" },
-];
+const ENTITY_TYPE_VALUES = ["INDIVIDUAL", "COMPANY"];
 
 const EMPTY_FORM = {
   entity_type: "",
@@ -29,9 +27,9 @@ const EMPTY_FORM = {
   business_address: "",
 };
 
-const formatDate = (iso) =>
+const formatDate = (iso, lng = 'en') =>
   iso
-    ? new Date(iso).toLocaleDateString("en-GB", {
+    ? new Date(iso).toLocaleDateString(lng === 'it' ? 'it-IT' : 'en-GB', {
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -50,6 +48,8 @@ const InfoRow = ({ label, value }) => (
 );
 
 const BusinessInfoCard = ({ initialData = null }) => {
+  const { t, i18n } = useTranslation("expertDashboard");
+  const lng = i18n.language;
   const [data, setData] = useState(initialData);
   const [showForm, setShowForm] = useState(!initialData);
   const [saving, setSaving]       = useState(false);
@@ -103,25 +103,25 @@ const BusinessInfoCard = ({ initialData = null }) => {
     setServerError("");
 
     const errs = {};
-    if (!form.entity_type) errs.entity_type = "Entity type is required.";
-    if (!form.legal_name.trim()) errs.legal_name = "Full legal name is required.";
-    if (isIndividual && !form.date_of_birth) errs.date_of_birth = "Date of birth is required.";
-    if (!form.address_street.trim()) errs.address_street = "Street is required.";
-    if (!form.address_city.trim()) errs.address_city = "City is required.";
-    if (!form.address_postal_code.trim()) errs.address_postal_code = "Postal code is required.";
-    if (!form.address_country.trim()) errs.address_country = "Country is required.";
-    if (!form.tin.trim()) errs.tin = "Tax Identification Number (TIN) is required.";
-    if (isCompany && !form.vat_number.trim()) errs.vat_number = "VAT number is required for companies.";
-    if (isCompany && !form.company_reg_number.trim()) errs.company_reg_number = "Company registration number is required.";
+    if (!form.entity_type) errs.entity_type = t("profile.business.errors.entityTypeRequired");
+    if (!form.legal_name.trim()) errs.legal_name = t("profile.business.errors.legalNameRequired");
+    if (isIndividual && !form.date_of_birth) errs.date_of_birth = t("profile.business.errors.dobRequired");
+    if (!form.address_street.trim()) errs.address_street = t("profile.business.errors.streetRequired");
+    if (!form.address_city.trim()) errs.address_city = t("profile.business.errors.cityRequired");
+    if (!form.address_postal_code.trim()) errs.address_postal_code = t("profile.business.errors.postalCodeRequired");
+    if (!form.address_country.trim()) errs.address_country = t("profile.business.errors.countryRequired");
+    if (!form.tin.trim()) errs.tin = t("profile.business.errors.tinRequired");
+    if (isCompany && !form.vat_number.trim()) errs.vat_number = t("profile.business.errors.vatRequired");
+    if (isCompany && !form.company_reg_number.trim()) errs.company_reg_number = t("profile.business.errors.companyRegRequired");
     if (!form.iban.trim()) {
-      errs.iban = "IBAN / bank account is required.";
+      errs.iban = t("profile.business.errors.ibanRequired");
     } else if (!isValidIBAN(electronicFormatIBAN(form.iban.trim()) ?? "")) {
-      errs.iban = "Please enter a valid IBAN (e.g. IE64IRCE92050112345678).";
+      errs.iban = t("profile.business.errors.ibanInvalid");
     }
-    if (!form.business_email.trim()) errs.business_email = "Email address is required.";
+    if (!form.business_email.trim()) errs.business_email = t("profile.business.errors.emailRequired");
     if (form.website.trim()) {
       try { new URL(form.website.trim()); } catch {
-        errs.website = "Please enter a valid URL (e.g. https://example.com).";
+        errs.website = t("profile.business.errors.websiteInvalid");
       }
     }
 
@@ -157,7 +157,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
       setTimeout(() => setSaved(false), 5000);
     } catch (err) {
       setServerError(
-        err?.response?.data?.error || "Failed to save business information."
+        err?.response?.data?.error || t("profile.business.errors.saveFailed")
       );
     } finally {
       setSaving(false);
@@ -170,10 +170,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
       <div className="flex items-start justify-between mb-1">
         <div>
           <h3 className="text-base font-semibold text-[#1F2933]">
-            Business Information
+            {t("profile.business.title")}
           </h3>
           <p className="text-xs text-gray-400 mt-0.5">
-            Information collected for compliance purposes
+            {t("profile.business.subtitle")}
           </p>
         </div>
         {data && !showForm && (
@@ -187,7 +187,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
             }}
             className="flex-shrink-0 ml-4 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-1.5 rounded-lg transition-colors"
           >
-            Edit
+            {t("profile.business.editBtn")}
           </button>
         )}
       </div>
@@ -195,19 +195,11 @@ const BusinessInfoCard = ({ initialData = null }) => {
       {/* Saved success banner */}
       {saved && (
         <div className="mt-3 flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl">
-          <svg
-            className="w-4 h-4 text-green-600 flex-shrink-0"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-              clipRule="evenodd"
-            />
+          <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
           </svg>
           <p className="text-sm font-medium text-green-800">
-            Business information saved.
+            {t("profile.business.savedMsg")}
           </p>
         </div>
       )}
@@ -217,42 +209,38 @@ const BusinessInfoCard = ({ initialData = null }) => {
         <div className="mt-4">
           <div className="px-1">
             <InfoRow
-              label="Entity type"
-              value={
-                data.entity_type === "INDIVIDUAL"
-                  ? "Individual"
-                  : "Company / Legal Entity"
-              }
+              label={t("profile.business.infoRows.entityType")}
+              value={t("profile.business.entityTypes." + data.entity_type)}
             />
-            <InfoRow label="Full legal name" value={data.legal_name} />
+            <InfoRow label={t("profile.business.infoRows.legalName")} value={data.legal_name} />
             {data.entity_type === "INDIVIDUAL" && (
               <InfoRow
-                label="Date of birth"
-                value={formatDate(data.date_of_birth)}
+                label={t("profile.business.infoRows.dateOfBirth")}
+                value={formatDate(data.date_of_birth, lng)}
               />
             )}
-            <InfoRow label="Street" value={data.address_street} />
-            <InfoRow label="City" value={data.address_city} />
-            <InfoRow label="Postal code" value={data.address_postal_code} />
-            <InfoRow label="Country" value={data.address_country} />
-            <InfoRow label="TIN" value={data.tin} />
+            <InfoRow label={t("profile.business.infoRows.street")} value={data.address_street} />
+            <InfoRow label={t("profile.business.infoRows.city")} value={data.address_city} />
+            <InfoRow label={t("profile.business.infoRows.postalCode")} value={data.address_postal_code} />
+            <InfoRow label={t("profile.business.infoRows.country")} value={data.address_country} />
+            <InfoRow label={t("profile.business.infoRows.tin")} value={data.tin} />
             {data.entity_type === "COMPANY" && (
-              <InfoRow label="VAT number" value={data.vat_number} />
+              <InfoRow label={t("profile.business.infoRows.vatNumber")} value={data.vat_number} />
             )}
             {data.entity_type === "COMPANY" && (
               <InfoRow
-                label="Company reg. number"
+                label={t("profile.business.infoRows.companyReg")}
                 value={data.company_reg_number}
               />
             )}
-            <InfoRow label="IBAN / Bank account" value={data.iban} />
-            <InfoRow label="Email address" value={data.business_email} />
-            <InfoRow label="Website" value={data.website} />
+            <InfoRow label={t("profile.business.infoRows.iban")} value={data.iban} />
+            <InfoRow label={t("profile.business.infoRows.email")} value={data.business_email} />
+            <InfoRow label={t("profile.business.infoRows.website")} value={data.website} />
             {data.municipality && (
-              <InfoRow label="Municipality" value={data.municipality} />
+              <InfoRow label={t("profile.business.infoRows.municipality")} value={data.municipality} />
             )}
             {data.business_address && (
-              <InfoRow label="Business address" value={data.business_address} />
+              <InfoRow label={t("profile.business.infoRows.businessAddress")} value={data.business_address} />
             )}
           </div>
         </div>
@@ -261,27 +249,18 @@ const BusinessInfoCard = ({ initialData = null }) => {
       {/* Empty state prompt */}
       {!data && !showForm && (
         <div className="mt-3 flex items-center gap-3 px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-xl">
-          <svg
-            className="w-4 h-4 text-amber-600 flex-shrink-0"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-              clipRule="evenodd"
-            />
+          <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
           </svg>
           <p className="text-xs text-amber-700">
-            Business information is required for onboarding. Please complete
-            this section.
+            {t("profile.business.missingMsg")}
           </p>
           <button
             type="button"
             onClick={() => setShowForm(true)}
             className="ml-auto flex-shrink-0 text-xs font-medium text-amber-700 border border-amber-300 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
           >
-            Add now
+            {t("profile.business.addNow")}
           </button>
         </div>
       )}
@@ -301,7 +280,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
           {/* Entity type */}
           <div>
             <label className={labelClass}>
-              Entity type <span className="text-red-500">*</span>
+              {t("profile.business.form.entityTypeLabel")} <span className="text-red-500">*</span>
             </label>
             <select
               name="entity_type"
@@ -309,10 +288,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
               onChange={handleChange}
               className={inputClass("entity_type")}
             >
-              <option value="">Select type…</option>
-              {ENTITY_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
+              <option value="">{t("profile.business.form.entityTypePlaceholder")}</option>
+              {ENTITY_TYPE_VALUES.map((v) => (
+                <option key={v} value={v}>
+                  {t("profile.business.entityTypes." + v)}
                 </option>
               ))}
             </select>
@@ -322,14 +301,14 @@ const BusinessInfoCard = ({ initialData = null }) => {
           {/* Legal name */}
           <div>
             <label className={labelClass}>
-              Full legal name <span className="text-red-500">*</span>
+              {t("profile.business.form.legalNameLabel")} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="legal_name"
               value={form.legal_name}
               onChange={handleChange}
-              placeholder="Individual or business name as officially registered"
+              placeholder={t("profile.business.form.legalNamePlaceholder")}
               className={inputClass("legal_name")}
             />
             {fieldErrors.legal_name && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.legal_name}</p>}
@@ -339,7 +318,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
           {isIndividual && (
             <div>
               <label className={labelClass}>
-                Date of birth <span className="text-red-500">*</span>
+                {t("profile.business.form.dobLabel")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -356,7 +335,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
           {/* Structured address */}
           <div>
             <label className={labelClass}>
-              {isCompany ? "Registered address" : "Primary address"} <span className="text-red-500">*</span>
+              {isCompany ? t("profile.business.form.registeredAddress") : t("profile.business.form.primaryAddress")} <span className="text-red-500">*</span>
             </label>
             <div className="space-y-2">
               <div>
@@ -365,7 +344,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                   name="address_street"
                   value={form.address_street}
                   onChange={handleChange}
-                  placeholder="Street and number"
+                  placeholder={t("profile.business.form.streetPlaceholder")}
                   className={inputClass("address_street")}
                 />
                 {fieldErrors.address_street && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.address_street}</p>}
@@ -377,7 +356,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                     name="address_city"
                     value={form.address_city}
                     onChange={handleChange}
-                    placeholder="City / Municipality"
+                    placeholder={t("profile.business.form.cityPlaceholder")}
                     className={inputClass("address_city")}
                   />
                   {fieldErrors.address_city && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.address_city}</p>}
@@ -388,7 +367,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                     name="address_postal_code"
                     value={form.address_postal_code}
                     onChange={handleChange}
-                    placeholder="Postal code"
+                    placeholder={t("profile.business.form.postalCodePlaceholder")}
                     className={inputClass("address_postal_code")}
                   />
                   {fieldErrors.address_postal_code && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.address_postal_code}</p>}
@@ -400,7 +379,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                   name="address_country"
                   value={form.address_country}
                   onChange={handleChange}
-                  placeholder="Country"
+                  placeholder={t("profile.business.form.countryPlaceholder")}
                   className={inputClass("address_country")}
                 />
                 {fieldErrors.address_country && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.address_country}</p>}
@@ -411,7 +390,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
           {/* TIN */}
           <div>
             <label className={labelClass}>
-              Tax Identification Number (TIN){" "}
+              {t("profile.business.form.tinLabel")}{" "}
               <span className="text-red-500">*</span>
             </label>
             <input
@@ -419,24 +398,24 @@ const BusinessInfoCard = ({ initialData = null }) => {
               name="tin"
               value={form.tin}
               onChange={handleChange}
-              placeholder="CPR (Denmark), PPS (Ireland), or national equivalent"
+              placeholder={t("profile.business.form.tinPlaceholder")}
               className={inputClass("tin")}
             />
             {fieldErrors.tin && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.tin}</p>}
           </div>
 
-          {/* VAT number — company only, required */}
+          {/* VAT number — company only */}
           {isCompany && (
             <div>
               <label className={labelClass}>
-                VAT number <span className="text-red-500">*</span>
+                {t("profile.business.form.vatLabel")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 name="vat_number"
                 value={form.vat_number}
                 onChange={handleChange}
-                placeholder="e.g. IE1234567T"
+                placeholder={t("profile.business.form.vatPlaceholder")}
                 className={inputClass("vat_number")}
               />
               {fieldErrors.vat_number && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.vat_number}</p>}
@@ -447,7 +426,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
           {isCompany && (
             <div>
               <label className={labelClass}>
-                Enterprise / Company registration number{" "}
+                {t("profile.business.form.companyRegLabel")}{" "}
                 <span className="text-red-500">*</span>
               </label>
               <input
@@ -455,7 +434,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 name="company_reg_number"
                 value={form.company_reg_number}
                 onChange={handleChange}
-                placeholder="Official company registration number"
+                placeholder={t("profile.business.form.companyRegPlaceholder")}
                 className={inputClass("company_reg_number")}
               />
               {fieldErrors.company_reg_number && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.company_reg_number}</p>}
@@ -465,19 +444,19 @@ const BusinessInfoCard = ({ initialData = null }) => {
           {/* IBAN */}
           <div>
             <label className={labelClass}>
-              IBAN / Bank account <span className="text-red-500">*</span>
+              {t("profile.business.form.ibanLabel")} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="iban"
               value={form.iban}
               onChange={handleChange}
-              placeholder="e.g. IE64IRCE92050112345678"
+              placeholder={t("profile.business.form.ibanPlaceholder")}
               className={inputClass("iban")}
             />
             {fieldErrors.iban && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.iban}</p>}
             <p className="mt-1.5 text-xs text-gray-400">
-              Required for tax reporting under DAC7 — EU Directive 2021/514. Stored encrypted.
+              {t("profile.business.form.ibanNote")}
             </p>
           </div>
 
@@ -485,40 +464,40 @@ const BusinessInfoCard = ({ initialData = null }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>
-                Email <span className="text-red-500">*</span>
+                {t("profile.business.form.emailLabel")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
                 name="business_email"
                 value={form.business_email}
                 onChange={handleChange}
-                placeholder="business@example.com"
+                placeholder={t("profile.business.form.emailPlaceholder")}
                 className={inputClass("business_email")}
               />
               {fieldErrors.business_email && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.business_email}</p>}
             </div>
             <div>
               <label className={labelClass}>
-                Website <span className="text-gray-400 font-normal">(optional)</span>
+                {t("profile.business.form.websiteLabel")} <span className="text-gray-400 font-normal">{t("profile.business.form.websiteOptional")}</span>
               </label>
               <input
                 type="text"
                 name="website"
                 value={form.website}
                 onChange={handleChange}
-                placeholder="https://www.example.com"
+                placeholder={t("profile.business.form.websitePlaceholder")}
                 className={inputClass("website")}
               />
               {fieldErrors.website && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.website}</p>}
             </div>
           </div>
 
-          {/* Municipality — Danish experts */}
+          {/* Municipality */}
           <div>
             <label className={labelClass}>
-              Municipality of residence{" "}
+              {t("profile.business.form.municipalityLabel")}{" "}
               <span className="text-gray-400 font-normal">
-                (required for Danish experts)
+                {t("profile.business.form.municipalityHint")}
               </span>
             </label>
             <input
@@ -526,7 +505,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
               name="municipality"
               value={form.municipality}
               onChange={handleChange}
-              placeholder="e.g. Copenhagen"
+              placeholder={t("profile.business.form.municipalityPlaceholder")}
               className={inputClass("municipality")}
             />
           </div>
@@ -534,9 +513,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
           {/* Business address — optional */}
           <div>
             <label className={labelClass}>
-              Business address{" "}
+              {t("profile.business.form.businessAddressLabel")}{" "}
               <span className="text-gray-400 font-normal">
-                (optional — only if different from primary address)
+                {t("profile.business.form.businessAddressHint")}
               </span>
             </label>
             <textarea
@@ -544,7 +523,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
               value={form.business_address}
               onChange={handleChange}
               rows={3}
-              placeholder="Leave blank if same as primary address"
+              placeholder={t("profile.business.form.businessAddressPlaceholder")}
               className={`${inputClass("business_address")} resize-none`}
             />
           </div>
@@ -561,7 +540,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 }}
                 className="text-sm text-gray-500 hover:text-[#1F2933] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("profile.business.form.cancelBtn")}
               </button>
             )}
             <button
@@ -570,7 +549,11 @@ const BusinessInfoCard = ({ initialData = null }) => {
               className="flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               {saving && <Spinner />}
-              {saving ? "Saving…" : data ? "Update" : "Save"}
+              {saving
+                ? t("profile.business.form.savingBtn")
+                : data
+                  ? t("profile.business.form.updateBtn")
+                  : t("profile.business.form.saveBtn")}
             </button>
           </div>
         </form>

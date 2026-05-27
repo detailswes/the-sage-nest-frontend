@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useTranslation } from 'react-i18next';
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import {
   format,
@@ -12,6 +13,7 @@ import {
   addDays,
 } from "date-fns";
 import { enGB } from "date-fns/locale/en-GB";
+import { it as itLocale } from "date-fns/locale/it";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 import {
@@ -33,21 +35,12 @@ import { getCalendarBookings } from "../../../api/bookingApi";
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }), // Monday
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
   getDay,
-  locales: { "en-GB": enGB },
+  locales: { "en-GB": enGB, "it": itLocale },
 });
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const DAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
 const EMPTY_SLOT_FORM = { day_of_week: "1", start_time: "", end_time: "" };
 const EMPTY_BLOCK_FORM = {
   date_from: "",
@@ -66,7 +59,7 @@ function parseDateLocal(dateStr) {
 }
 
 /** Expand recurring weekly slots into concrete calendar events for a date range */
-function expandRecurringSlots(slots, rangeStart, rangeEnd) {
+function expandRecurringSlots(slots, rangeStart, rangeEnd, availLabel = 'Available') {
   const events = [];
   const cursor = new Date(rangeStart);
   cursor.setHours(0, 0, 0, 0);
@@ -85,7 +78,7 @@ function expandRecurringSlots(slots, rangeStart, rangeEnd) {
       evEnd.setHours(eh, em, 0, 0);
       events.push({
         id: `slot-${slot.id}-${cursor.toDateString()}`,
-        title: "Available",
+        title: availLabel,
         start,
         end: evEnd,
         type: "availability",
@@ -98,7 +91,7 @@ function expandRecurringSlots(slots, rangeStart, rangeEnd) {
 }
 
 /** Convert blockout DB records into calendar events */
-function blockoutsToEvents(blockouts) {
+function blockoutsToEvents(blockouts, blockedLabel = 'Blocked', dayOffLabel = 'Day Off') {
   return blockouts.map((b) => {
     const date = parseDateLocal(b.date);
     let start, end;
@@ -117,7 +110,7 @@ function blockoutsToEvents(blockouts) {
     }
     return {
       id: `block-${b.id}`,
-      title: b.start_time ? "Blocked" : "Day Off",
+      title: b.start_time ? blockedLabel : dayOffLabel,
       start,
       end,
       type: "blockout",
@@ -128,39 +121,30 @@ function blockoutsToEvents(blockouts) {
 }
 
 /** Convert booking DB records into calendar events */
-function bookingsToEvents(bookings) {
+function bookingsToEvents(bookings, clientFallback = 'Client', sessionFallback = 'Session') {
   return bookings.map((b) => {
     const start = new Date(b.scheduled_at);
     const end = new Date(start.getTime() + b.duration_minutes * 60 * 1000);
     return {
       id: `booking-${b.id}`,
-      title: `${b.parent?.name || "Client"} · ${b.service?.title || "Session"}`,
+      title: `${b.parent?.name || clientFallback} · ${b.service?.title || sessionFallback}`,
       start,
       end,
       type: "booking",
-      format: b.format,         // ONLINE | IN_PERSON — drives colour
+      format: b.format,
       bookingId: b.id,
     };
   });
 }
 
 /**
- * Remove available-slot time ranges that overlap with occupied ranges
- * (bookings / blockouts). Full-day blockouts wipe the whole day;
- * time-based overlaps trim or split the available slot around the window.
+ * Remove available-slot time ranges that overlap with occupied ranges.
+ * Full-day blockouts wipe the whole day; time-based overlaps trim or split.
  */
 function subtractOccupied(availEvents, blockoutEvents, bookingEvents) {
   const occupied = [
-    ...blockoutEvents.map((e) => ({
-      start: e.start,
-      end: e.end,
-      allDay: !!e.allDay,
-    })),
-    ...bookingEvents.map((e) => ({
-      start: e.start,
-      end: e.end,
-      allDay: false,
-    })),
+    ...blockoutEvents.map((e) => ({ start: e.start, end: e.end, allDay: !!e.allDay })),
+    ...bookingEvents.map((e) => ({ start: e.start, end: e.end, allDay: false })),
   ];
 
   let result = [...availEvents];
@@ -169,7 +153,6 @@ function subtractOccupied(availEvents, blockoutEvents, bookingEvents) {
     const next = [];
     for (const avail of result) {
       if (occ.allDay) {
-        // Full-day blockout: drop every availability slot on that date
         if (avail.start.toDateString() !== occ.start.toDateString()) {
           next.push(avail);
         }
@@ -178,11 +161,9 @@ function subtractOccupied(availEvents, blockoutEvents, bookingEvents) {
         if (!overlaps) {
           next.push(avail);
         } else {
-          // Keep the portion before the occupied window
           if (avail.start < occ.start) {
             next.push({ ...avail, end: occ.start, id: avail.id + "_pre" });
           }
-          // Keep the portion after the occupied window
           if (avail.end > occ.end) {
             next.push({ ...avail, start: occ.end, id: avail.id + "_post" });
           }
@@ -219,72 +200,55 @@ function getRangeForView(view, date) {
 }
 
 // ─── Custom toolbar ───────────────────────────────────────────────────────────
-const CustomToolbar = ({ label, onNavigate, onView, view }) => (
-  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-    <div className="flex items-center gap-1">
-      <button
-        onClick={() => onNavigate("PREV")}
-        className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
-        title="Previous"
-      >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15.75 19.5 8.25 12l7.5-7.5"
-          />
-        </svg>
-      </button>
-      <button
-        onClick={() => onNavigate("TODAY")}
-        className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#E4E7E4] hover:bg-gray-50 transition-colors"
-      >
-        Today
-      </button>
-      <button
-        onClick={() => onNavigate("NEXT")}
-        className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
-        title="Next"
-      >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="m8.25 4.5 7.5 7.5-7.5 7.5"
-          />
-        </svg>
-      </button>
-      <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
-    </div>
-    <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
-      {["day", "week", "month"].map((v) => (
+const CustomToolbar = ({ label, onNavigate, onView, view }) => {
+  const { t } = useTranslation('expertDashboard');
+  return (
+    <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div className="flex items-center gap-1">
         <button
-          key={v}
-          onClick={() => onView(v)}
-          className={`px-4 py-1.5 text-xs font-medium transition-colors ${
-            view === v
-              ? "bg-[#445446] text-white"
-              : "text-gray-500 hover:bg-gray-50 bg-white"
-          }`}
+          onClick={() => onNavigate("PREV")}
+          className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
+          title={t('availability.toolbar.prev')}
         >
-          {v.charAt(0).toUpperCase() + v.slice(1)}
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
         </button>
-      ))}
+        <button
+          onClick={() => onNavigate("TODAY")}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#E4E7E4] hover:bg-gray-50 transition-colors"
+        >
+          {t('availability.toolbar.today')}
+        </button>
+        <button
+          onClick={() => onNavigate("NEXT")}
+          className="p-2 rounded-lg text-gray-500 hover:text-[#445446] hover:bg-[#445446]/10 transition-colors"
+          title={t('availability.toolbar.next')}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+        <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
+      </div>
+      <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
+        {["day", "week", "month"].map((v) => (
+          <button
+            key={v}
+            onClick={() => onView(v)}
+            className={`px-4 py-1.5 text-xs font-medium transition-colors ${
+              view === v
+                ? "bg-[#445446] text-white"
+                : "text-gray-500 hover:bg-gray-50 bg-white"
+            }`}
+          >
+            {t('availability.views.' + v)}
+          </button>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Event style getter ───────────────────────────────────────────────────────
 const dayPropGetter = (date) => {
@@ -302,126 +266,119 @@ const eventStyleGetter = (event) => {
     cursor: "default",
   };
   if (event.type === "availability")
-    return {
-      style: {
-        ...base,
-        backgroundColor: "#445446",
-        color: "#fff",
-        opacity: 0.85,
-      },
-    };
+    return { style: { ...base, backgroundColor: "#445446", color: "#fff", opacity: 0.85 } };
   if (event.type === "blockout" && event.allDay)
-    return { style: { ...base, backgroundColor: "#f97316", color: "#fff" } }; // Day Off – orange
+    return { style: { ...base, backgroundColor: "#f97316", color: "#fff" } };
   if (event.type === "blockout")
-    return { style: { ...base, backgroundColor: "#ef4444", color: "#fff" } }; // Blocked – red
+    return { style: { ...base, backgroundColor: "#ef4444", color: "#fff" } };
   if (event.type === "booking")
-    return {
-      style: {
-        ...base,
-        backgroundColor: event.format === "ONLINE" ? "#2563eb" : "#445446",
-        color: "#fff",
-      },
-    };
+    return { style: { ...base, backgroundColor: event.format === "ONLINE" ? "#2563eb" : "#445446", color: "#fff" } };
   return { style: base };
 };
 
 // ─── Custom event renderers ───────────────────────────────────────────────────
-// Month view has no time axis so we show the actual time range inside the event.
-// Week/day views already position events on the time grid — just show the label.
-const fmtTime = (d) =>
-  d.toLocaleTimeString("en-GB", {
+const fmtTime = (d, lng = 'en') =>
+  d.toLocaleTimeString(lng === 'it' ? 'it-IT' : 'en-GB', {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
 
-// Used in month view — show HH:MM–HH:MM for availability slots
 const MonthEventComponent = ({ event }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
   if (event.type === "availability") {
-    const label = `${fmtTime(event.start)}–${fmtTime(event.end)}`;
-    return <span title={`Available ${label}`}>{label}</span>;
+    const label = `${fmtTime(event.start, lng)}–${fmtTime(event.end, lng)}`;
+    return <span title={`${t('availability.available')} ${label}`}>{label}</span>;
   }
   return <span title={event.title}>{event.title}</span>;
 };
 
-// Used in week/day views — position on grid is self-explanatory, just show label
 const TimeGridEventComponent = ({ event }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
   if (event.type === "availability") {
-    return <span title={`Available ${fmtTime(event.start)}–${fmtTime(event.end)}`}>Available</span>;
+    return (
+      <span title={`${t('availability.available')} ${fmtTime(event.start, lng)}–${fmtTime(event.end, lng)}`}>
+        {t('availability.available')}
+      </span>
+    );
   }
   return <span title={event.title}>{event.title}</span>;
 };
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
-const Legend = () => (
-  <div className="flex items-center gap-4 mb-4 flex-wrap">
-    {[
-      { color: "#445446", label: "Available",           opacity: 0.85 },
-      { color: "#f97316", label: "Day Off" },
-      { color: "#ef4444", label: "Blocked" },
-      { color: "#2563eb", label: "Booked (Online)" },
-      { color: "#445446", label: "Booked (In-Person)",  border: "2px dashed #445446", bg: "transparent" },
-    ].map(({ color, label, opacity, border, bg }) => (
-      <div key={label} className="flex items-center gap-1.5">
-        <span
-          className="w-3 h-3 rounded-sm flex-shrink-0"
-          style={{
-            backgroundColor: bg !== undefined ? bg : color,
-            opacity: opacity ?? 1,
-            border: border ?? "none",
-          }}
-        />
-        <span className="text-xs text-gray-500">{label}</span>
-      </div>
-    ))}
-  </div>
-);
+const Legend = () => {
+  const { t } = useTranslation('expertDashboard');
+  const items = [
+    { color: "#445446", label: t('availability.legend.available'),      opacity: 0.85 },
+    { color: "#f97316", label: t('availability.legend.dayOff') },
+    { color: "#ef4444", label: t('availability.legend.blocked') },
+    { color: "#2563eb", label: t('availability.legend.bookedOnline') },
+    { color: "#445446", label: t('availability.legend.bookedInPerson'), border: "2px dashed #445446", bg: "transparent" },
+  ];
+  return (
+    <div className="flex items-center gap-4 mb-4 flex-wrap">
+      {items.map(({ color, label, opacity, border, bg }) => (
+        <div key={label} className="flex items-center gap-1.5">
+          <span
+            className="w-3 h-3 rounded-sm flex-shrink-0"
+            style={{
+              backgroundColor: bg !== undefined ? bg : color,
+              opacity: opacity ?? 1,
+              border: border ?? "none",
+            }}
+          />
+          <span className="text-xs text-gray-500">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
-/// ─── 15-minute time options (06:00 → 22:00) ──────────────────────────────────
+// ─── 15-minute time options (06:00 → 22:00) ──────────────────────────────────
 const TIME_OPTIONS = [];
 for (let h = 6; h < 22; h++) {
   for (let m = 0; m < 60; m += 15) {
-    TIME_OPTIONS.push(
-      `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
-    );
+    TIME_OPTIONS.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
   }
 }
 TIME_OPTIONS.push("22:00");
 
-// Dropdown restricted to 15-minute increments — prevents non-standard times
-const TimeSelect = ({ value, onChange, hasError }) => (
-  <div className="relative">
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={`w-full px-3 py-2 rounded-lg border text-sm text-[#1F2933] bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] appearance-none pr-7 ${
-        hasError ? "border-red-400" : "border-[#E4E7E4]"
-      }`}
-    >
-      <option value="">— select —</option>
-      {TIME_OPTIONS.map((t) => (
-        <option key={t} value={t}>
-          {t}
-        </option>
-      ))}
-    </select>
-    <svg
-      className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
-    </svg>
-  </div>
-);
+const TimeSelect = ({ value, onChange, hasError }) => {
+  const { t } = useTranslation('expertDashboard');
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full px-3 py-2 rounded-lg border text-sm text-[#1F2933] bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] appearance-none pr-7 ${
+          hasError ? "border-red-400" : "border-[#E4E7E4]"
+        }`}
+      >
+        <option value="">{t('availability.weekly.selectTime')}</option>
+        {TIME_OPTIONS.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+      <svg
+        className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+      </svg>
+    </div>
+  );
+};
 
 // ─── Weekly schedule panel ────────────────────────────────────────────────────
 
-function fmtBookingDate(isoStr) {
+function fmtBookingDate(isoStr, lng = 'en') {
   const d = new Date(isoStr);
-  return d.toLocaleString("en-GB", {
+  return d.toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -431,17 +388,11 @@ function fmtBookingDate(isoStr) {
   });
 }
 
-const WeeklySchedulePanel = ({
-  slots,
-  onAdd,
-  onRemove,
-  removingId,
-  adding,
-  formError,
-}) => {
+const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formError }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
   const [form, setForm] = useState(EMPTY_SLOT_FORM);
   const [formErrors, setFormErrors] = useState({});
-  // pendingRemove: null | { id, checking: bool, conflicts: array|null }
   const [pendingRemove, setPendingRemove] = useState(null);
 
   const handleStartRemove = async (slot) => {
@@ -450,17 +401,16 @@ const WeeklySchedulePanel = ({
       const data = await checkAvailabilityConflicts(slot.id);
       setPendingRemove({ id: slot.id, checking: false, conflicts: data.bookings });
     } catch {
-      // If the check fails, fall back to a simple confirm with no conflict info
       setPendingRemove({ id: slot.id, checking: false, conflicts: [] });
     }
   };
 
   const validate = () => {
     const errs = {};
-    if (!form.start_time) errs.start_time = "Required";
-    if (!form.end_time) errs.end_time = "Required";
+    if (!form.start_time) errs.start_time = t('availability.weekly.errors.required');
+    if (!form.end_time)   errs.end_time   = t('availability.weekly.errors.required');
     if (form.start_time && form.end_time && form.start_time >= form.end_time) {
-      errs.end_time = "Must be after start";
+      errs.end_time = t('availability.weekly.errors.afterStart');
     } else if (form.start_time && form.end_time) {
       const dayInt = parseInt(form.day_of_week);
       const conflict = slots.find(
@@ -470,7 +420,10 @@ const WeeklySchedulePanel = ({
           form.end_time > s.start_time
       );
       if (conflict) {
-        errs.end_time = `Overlaps with existing slot ${conflict.start_time}–${conflict.end_time}`;
+        errs.end_time = t('availability.weekly.errors.overlaps', {
+          start: conflict.start_time,
+          end: conflict.end_time,
+        });
       }
     }
     return errs;
@@ -492,16 +445,16 @@ const WeeklySchedulePanel = ({
     setFormErrors({});
   };
 
-  const slotsByDay = DAYS.reduce((acc, label, idx) => {
-    const daySlots = slots.filter((s) => s.day_of_week === idx);
-    if (daySlots.length) acc.push({ label, idx, slots: daySlots });
-    return acc;
-  }, []);
+  const slotsByDay = Array.from({ length: 7 }, (_, idx) => ({
+    label: t('availability.days.' + idx),
+    idx,
+    slots: slots.filter((s) => s.day_of_week === idx),
+  })).filter(({ slots: ds }) => ds.length > 0);
 
   return (
     <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
       <h3 className="text-sm font-semibold text-[#1F2933] mb-4">
-        Weekly Schedule
+        {t('availability.weekly.title')}
       </h3>
 
       {formError && (
@@ -514,20 +467,16 @@ const WeeklySchedulePanel = ({
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Day
+              {t('availability.weekly.dayLabel')}
             </label>
             <div className="relative">
               <select
                 value={form.day_of_week}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, day_of_week: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, day_of_week: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] appearance-none pr-7"
               >
-                {DAYS.map((d, i) => (
-                  <option key={i} value={i}>
-                    {d}
-                  </option>
+                {Array.from({ length: 7 }, (_, i) => (
+                  <option key={i} value={i}>{t('availability.days.' + i)}</option>
                 ))}
               </select>
               <svg
@@ -537,17 +486,13 @@ const WeeklySchedulePanel = ({
                 stroke="currentColor"
                 strokeWidth={2}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m19 9-7 7-7-7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
               </svg>
             </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              From
+              {t('availability.weekly.fromLabel')}
             </label>
             <TimeSelect
               value={form.start_time}
@@ -558,14 +503,12 @@ const WeeklySchedulePanel = ({
               hasError={!!formErrors.start_time}
             />
             {formErrors.start_time && (
-              <p className="mt-0.5 text-xs text-red-500">
-                {formErrors.start_time}
-              </p>
+              <p className="mt-0.5 text-xs text-red-500">{formErrors.start_time}</p>
             )}
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              To
+              {t('availability.weekly.toLabel')}
             </label>
             <TimeSelect
               value={form.end_time}
@@ -576,9 +519,7 @@ const WeeklySchedulePanel = ({
               hasError={!!formErrors.end_time}
             />
             {formErrors.end_time && (
-              <p className="mt-0.5 text-xs text-red-500">
-                {formErrors.end_time}
-              </p>
+              <p className="mt-0.5 text-xs text-red-500">{formErrors.end_time}</p>
             )}
           </div>
         </div>
@@ -591,21 +532,11 @@ const WeeklySchedulePanel = ({
             {adding ? (
               <div className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
             ) : (
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4.5v15m7.5-7.5h-15"
-                />
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
             )}
-            {adding ? "Adding…" : "Add Slot"}
+            {adding ? t('availability.weekly.addingBtn') : t('availability.weekly.addSlotBtn')}
           </button>
         </div>
       </form>
@@ -619,9 +550,9 @@ const WeeklySchedulePanel = ({
               </p>
               <div className="space-y-1">
                 {ds.map((slot) => {
-                  const isPending = pendingRemove?.id === slot.id;
-                  const isChecking = isPending && pendingRemove.checking;
-                  const conflicts = isPending && !isChecking ? pendingRemove.conflicts : null;
+                  const isPending    = pendingRemove?.id === slot.id;
+                  const isChecking   = isPending && pendingRemove.checking;
+                  const conflicts    = isPending && !isChecking ? pendingRemove.conflicts : null;
                   const hasConflicts = conflicts && conflicts.length > 0;
 
                   return (
@@ -636,7 +567,7 @@ const WeeklySchedulePanel = ({
 
                         {isChecking ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-gray-400">Checking…</span>
+                            <span className="text-xs text-gray-400">{t('availability.weekly.checking')}</span>
                             <div className="w-3 h-3 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" />
                           </div>
                         ) : isPending ? (
@@ -645,7 +576,7 @@ const WeeklySchedulePanel = ({
                               onClick={() => setPendingRemove(null)}
                               className="text-xs text-gray-500 px-1.5 py-0.5 rounded hover:bg-gray-100 transition-colors"
                             >
-                              Cancel
+                              {t('availability.weekly.cancelBtn')}
                             </button>
                             <button
                               onClick={() => { setPendingRemove(null); onRemove(slot.id); }}
@@ -656,7 +587,7 @@ const WeeklySchedulePanel = ({
                                   : "bg-red-500 hover:bg-red-600"
                               }`}
                             >
-                              {hasConflicts ? "Remove Anyway" : "Remove"}
+                              {hasConflicts ? t('availability.weekly.removeAnywayBtn') : t('availability.weekly.removeBtn')}
                             </button>
                           </div>
                         ) : (
@@ -683,18 +614,18 @@ const WeeklySchedulePanel = ({
                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                             </svg>
                             <p className="font-semibold text-amber-800">
-                              Removing this slot affects {conflicts.length} confirmed booking{conflicts.length !== 1 ? "s" : ""}:
+                              {t('availability.weekly.conflicts', { count: conflicts.length })}
                             </p>
                           </div>
                           <ul className="space-y-0.5 text-amber-700 ml-5">
                             {conflicts.map((bk) => (
                               <li key={bk.id}>
-                                {fmtBookingDate(bk.scheduled_at)} · {bk.parent?.name} · {bk.service?.title}
+                                {fmtBookingDate(bk.scheduled_at, lng)} · {bk.parent?.name} · {bk.service?.title}
                               </li>
                             ))}
                           </ul>
                           <p className="mt-1.5 ml-5 text-amber-600">
-                            These bookings will not be cancelled automatically — you must manage them separately.
+                            {t('availability.weekly.conflictNote')}
                           </p>
                         </div>
                       )}
@@ -711,16 +642,6 @@ const WeeklySchedulePanel = ({
 };
 
 // ─── Block-out panel ──────────────────────────────────────────────────────────
-const DAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
-
 const BlockoutPanel = ({
   blockouts,
   slots,
@@ -731,19 +652,20 @@ const BlockoutPanel = ({
   createError,
   createInfo,
 }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
   const [form, setForm] = useState(EMPTY_BLOCK_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [confirmRestoreId, setConfirmRestoreId] = useState(null);
 
-  // Inline warning: time-slot block on a single day with no weekly availability
   const noAvailabilityWarning = useMemo(() => {
     if (form.block_type !== "time_slot" || !form.date_from || form.date_from !== form.date_to) return "";
     const [y, m, d] = form.date_from.split("-").map(Number);
-    const dayOfWeek = new Date(y, m - 1, d).getDay(); // local date — no UTC shift
+    const dayOfWeek = new Date(y, m - 1, d).getDay();
     const hasSlots = slots.some((s) => s.day_of_week === dayOfWeek);
     if (hasSlots) return "";
-    return `You have no availability set for ${DAY_NAMES[dayOfWeek]}s. This block will be rejected — add ${DAY_NAMES[dayOfWeek]} availability to your Weekly Schedule first, or use a Full Day block instead.`;
-  }, [form.date_from, form.date_to, form.block_type, slots]);
+    return t('availability.blockout.noAvailWarning', { day: t('availability.days.' + dayOfWeek) });
+  }, [form.date_from, form.date_to, form.block_type, slots, t]);
 
   const inputClass = (hasErr) =>
     `w-full px-3 py-2 rounded-lg border text-sm text-[#1F2933] bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
@@ -752,15 +674,15 @@ const BlockoutPanel = ({
 
   const validate = () => {
     const errs = {};
-    if (!form.date_from) errs.date_from = "Required";
-    if (!form.date_to) errs.date_to = "Required";
+    if (!form.date_from) errs.date_from = t('availability.blockout.errors.required');
+    if (!form.date_to)   errs.date_to   = t('availability.blockout.errors.required');
     if (form.date_from && form.date_to && form.date_from > form.date_to)
-      errs.date_to = "Must be on or after the start date";
+      errs.date_to = t('availability.blockout.errors.afterStartDate');
     if (form.block_type === "time_slot") {
-      if (!form.start_time) errs.start_time = "Required";
-      if (!form.end_time) errs.end_time = "Required";
+      if (!form.start_time) errs.start_time = t('availability.blockout.errors.required');
+      if (!form.end_time)   errs.end_time   = t('availability.blockout.errors.required');
       if (form.start_time && form.end_time && form.start_time >= form.end_time)
-        errs.end_time = "Must be after start";
+        errs.end_time = t('availability.blockout.errors.afterStart');
     }
     return errs;
   };
@@ -784,7 +706,7 @@ const BlockoutPanel = ({
 
   const formatBlockDate = (isoDate) => {
     const d = parseDateLocal(isoDate);
-    return d.toLocaleDateString("en-GB", {
+    return d.toLocaleDateString(lng === 'it' ? 'it-IT' : 'en-GB', {
       weekday: "short",
       day: "numeric",
       month: "short",
@@ -792,17 +714,15 @@ const BlockoutPanel = ({
     });
   };
 
-  const sortedBlockouts = [...blockouts].sort(
-    (a, b) => new Date(a.date) - new Date(b.date)
-  );
+  const sortedBlockouts = [...blockouts].sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
     <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
       <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
-        Block Out Dates
+        {t('availability.blockout.title')}
       </h3>
       <p className="text-xs text-gray-400 mb-4">
-        One-off blocks — your recurring schedule is never changed.
+        {t('availability.blockout.subtitle')}
       </p>
 
       {createError && (
@@ -821,7 +741,7 @@ const BlockoutPanel = ({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              From
+              {t('availability.blockout.fromLabel')}
             </label>
             <input
               type="date"
@@ -831,7 +751,6 @@ const BlockoutPanel = ({
                 setForm((f) => ({
                   ...f,
                   date_from: val,
-                  // Auto-advance date_to if it would become before date_from
                   date_to: f.date_to && f.date_to < val ? val : f.date_to,
                 }));
                 setFormErrors((fe) => ({ ...fe, date_from: "", date_to: "" }));
@@ -845,7 +764,7 @@ const BlockoutPanel = ({
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              To
+              {t('availability.blockout.toLabel')}
             </label>
             <input
               type="date"
@@ -862,6 +781,7 @@ const BlockoutPanel = ({
             )}
           </div>
         </div>
+
         {noAvailabilityWarning && (
           <p className="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
             {noAvailabilityWarning}
@@ -870,24 +790,17 @@ const BlockoutPanel = ({
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            Block type
+            {t('availability.blockout.blockTypeLabel')}
           </label>
           <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
             {[
-              { value: "full_day", label: "Full Day" },
-              { value: "time_slot", label: "Time Slot" },
+              { value: "full_day",  label: t('availability.blockout.fullDayBtn') },
+              { value: "time_slot", label: t('availability.blockout.timeSlotBtn') },
             ].map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
-                onClick={() =>
-                  setForm((f) => ({
-                    ...f,
-                    block_type: value,
-                    start_time: "",
-                    end_time: "",
-                  }))
-                }
+                onClick={() => setForm((f) => ({ ...f, block_type: value, start_time: "", end_time: "" }))}
                 className={`flex-1 py-2 text-xs font-medium transition-colors ${
                   form.block_type === value
                     ? "bg-[#445446] text-white"
@@ -904,7 +817,7 @@ const BlockoutPanel = ({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                From
+                {t('availability.blockout.fromLabel')}
               </label>
               <TimeSelect
                 value={form.start_time}
@@ -915,14 +828,12 @@ const BlockoutPanel = ({
                 hasError={!!formErrors.start_time}
               />
               {formErrors.start_time && (
-                <p className="mt-0.5 text-xs text-red-500">
-                  {formErrors.start_time}
-                </p>
+                <p className="mt-0.5 text-xs text-red-500">{formErrors.start_time}</p>
               )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                To
+                {t('availability.blockout.toLabel')}
               </label>
               <TimeSelect
                 value={form.end_time}
@@ -933,9 +844,7 @@ const BlockoutPanel = ({
                 hasError={!!formErrors.end_time}
               />
               {formErrors.end_time && (
-                <p className="mt-0.5 text-xs text-red-500">
-                  {formErrors.end_time}
-                </p>
+                <p className="mt-0.5 text-xs text-red-500">{formErrors.end_time}</p>
               )}
             </div>
           </div>
@@ -950,7 +859,7 @@ const BlockoutPanel = ({
             {creating && (
               <div className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
             )}
-            {creating ? "Blocking…" : "Block Dates"}
+            {creating ? t('availability.blockout.blockingBtn') : t('availability.blockout.blockDatesBtn')}
           </button>
         </div>
       </form>
@@ -958,7 +867,7 @@ const BlockoutPanel = ({
       {sortedBlockouts.length > 0 && (
         <div className="mt-4 border-t border-[#E4E7E4] pt-4 space-y-2">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Active Block Outs
+            {t('availability.blockout.activeTitle')}
           </p>
           {sortedBlockouts.map((b) => (
             <div
@@ -972,7 +881,7 @@ const BlockoutPanel = ({
                 <p className="text-xs text-red-600 mt-0.5">
                   {b.start_time
                     ? `${b.start_time} – ${b.end_time}`
-                    : "Full day"}
+                    : t('availability.blockout.fullDayLabel')}
                 </p>
               </div>
               {confirmRestoreId === b.id ? (
@@ -981,27 +890,24 @@ const BlockoutPanel = ({
                     onClick={() => setConfirmRestoreId(null)}
                     className="text-xs text-gray-500 px-1.5 py-0.5 rounded hover:bg-red-100 transition-colors"
                   >
-                    Cancel
+                    {t('availability.blockout.cancelBtn')}
                   </button>
                   <button
-                    onClick={() => {
-                      setConfirmRestoreId(null);
-                      onDelete(b.id);
-                    }}
+                    onClick={() => { setConfirmRestoreId(null); onDelete(b.id); }}
                     disabled={deletingId === b.id}
                     className="text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-2 py-0.5 rounded transition-colors"
                   >
-                    Restore
+                    {t('availability.blockout.restoreBtn')}
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => setConfirmRestoreId(b.id)}
                   disabled={deletingId === b.id}
-                  title="Restore this slot"
+                  title={t('availability.blockout.restoreTitle')}
                   className="ml-3 flex-shrink-0 text-xs font-medium text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors disabled:opacity-40"
                 >
-                  {deletingId === b.id ? "Restoring…" : "Restore"}
+                  {deletingId === b.id ? t('availability.blockout.restoringBtn') : t('availability.blockout.restoreBtn')}
                 </button>
               )}
             </div>
@@ -1014,49 +920,48 @@ const BlockoutPanel = ({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const AvailabilitySection = () => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
+
   const [view, setView] = useState("week");
   const [date, setDate] = useState(new Date());
   const [range, setRange] = useState(() => getRangeForView("week", new Date()));
 
-  const [slots, setSlots] = useState([]);
-  const [blockouts, setBlockouts] = useState([]);
+  const [slots,       setSlots]       = useState([]);
+  const [blockouts,   setBlockouts]   = useState([]);
   const [calBookings, setCalBookings] = useState([]);
 
   const [loadingInit, setLoadingInit] = useState(true);
-  const [initError, setInitError] = useState("");
-  const [expertTz, setExpertTz] = useState("");
+  const [initError,   setInitError]   = useState('');
+  const [expertTz,    setExpertTz]    = useState("");
 
   const [bufferMinutes, setBufferMinutes] = useState(0);
-  const [savingBuffer, setSavingBuffer] = useState(false);
-  const [bufferSaved, setBufferSaved] = useState(false);
-  const [bufferError, setBufferError] = useState("");
+  const [savingBuffer,  setSavingBuffer]  = useState(false);
+  const [bufferSaved,   setBufferSaved]   = useState(false);
+  const [bufferError,   setBufferError]   = useState("");
 
-  const [advanceDays, setAdvanceDays] = useState(60);
+  const [advanceDays,   setAdvanceDays]   = useState(60);
   const [savingAdvance, setSavingAdvance] = useState(false);
-  const [advanceSaved, setAdvanceSaved] = useState(false);
-  const [advanceError, setAdvanceError] = useState("");
+  const [advanceSaved,  setAdvanceSaved]  = useState(false);
+  const [advanceError,  setAdvanceError]  = useState("");
 
-  const [noticeHours, setNoticeHours] = useState(24);
+  const [noticeHours,  setNoticeHours]  = useState(24);
   const [savingNotice, setSavingNotice] = useState(false);
-  const [noticeSaved, setNoticeSaved] = useState(false);
-  const [noticeError, setNoticeError] = useState("");
+  const [noticeSaved,  setNoticeSaved]  = useState(false);
+  const [noticeError,  setNoticeError]  = useState("");
 
-  const [addingSlot, setAddingSlot] = useState(false);
-  const [removingId, setRemovingId] = useState(null);
-  const [slotError, setSlotError] = useState("");
+  const [addingSlot,  setAddingSlot]  = useState(false);
+  const [removingId,  setRemovingId]  = useState(null);
+  const [slotError,   setSlotError]   = useState("");
 
   const [creatingBlock, setCreatingBlock] = useState(false);
   const [deletingBlock, setDeletingBlock] = useState(null);
-  const [blockError, setBlockError] = useState("");
-  const [blockInfo, setBlockInfo] = useState("");
+  const [blockError,    setBlockError]    = useState("");
+  const [blockInfo,     setBlockInfo]     = useState("");
 
   // ── Suppress overflow indicators on off-range (prior/next month) cells ───────
-  // viewedDateRef stays in sync with `date` so the ShowMore component can read
-  // it without needing to be re-created (which would cause calendar remounts).
   const viewedDateRef = useRef(date);
-  useEffect(() => {
-    viewedDateRef.current = date;
-  }, [date]);
+  useEffect(() => { viewedDateRef.current = date; }, [date]);
 
   const ShowMoreComponent = useMemo(() => {
     const ref = viewedDateRef;
@@ -1071,21 +976,15 @@ const AvailabilitySection = () => {
         </button>
       );
     };
-  }, []); // empty deps → stable reference; reads current month from ref
+  }, []);
 
-  // ── Initial load ────────────────────────────────────────────────────────────
+  // ── Initial load ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const initialRange = getRangeForView("week", new Date());
     Promise.all([
       listAvailability(),
-      listBlockouts(
-        initialRange.start.toISOString(),
-        initialRange.end.toISOString()
-      ),
-      getCalendarBookings(
-        initialRange.start.toISOString(),
-        initialRange.end.toISOString()
-      ),
+      listBlockouts(initialRange.start.toISOString(), initialRange.end.toISOString()),
+      getCalendarBookings(initialRange.start.toISOString(), initialRange.end.toISOString()),
       getMyProfile(),
     ])
       .then(([s, b, bk, profile]) => {
@@ -1097,19 +996,16 @@ const AvailabilitySection = () => {
         setAdvanceDays(profile?.advance_booking_days ?? 60);
         setNoticeHours(profile?.min_notice_hours ?? 24);
       })
-      .catch(() => setInitError("Failed to load availability data."))
+      .catch(() => setInitError('availability.loadFailed'))
       .finally(() => setLoadingInit(false));
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Refresh blockouts + bookings when range changes ──────────────────────────
+  // ── Refresh blockouts + bookings when range changes ───────────────────────────
   const refreshRangeData = useCallback(async (newRange) => {
     try {
       const [b, bk] = await Promise.all([
         listBlockouts(newRange.start.toISOString(), newRange.end.toISOString()),
-        getCalendarBookings(
-          newRange.start.toISOString(),
-          newRange.end.toISOString()
-        ),
+        getCalendarBookings(newRange.start.toISOString(), newRange.end.toISOString()),
       ]);
       setBlockouts(b);
       setCalBookings(bk);
@@ -1118,24 +1014,22 @@ const AvailabilitySection = () => {
     }
   }, []);
 
-  // ── Navigation — handles 'PREV' / 'NEXT' / 'TODAY' strings from CustomToolbar
+  // ── Navigation ───────────────────────────────────────────────────────────────
   const handleNavigate = useCallback(
     (action) => {
       let newDate;
       if (action === "TODAY") {
         newDate = new Date();
       } else if (action === "PREV") {
-        newDate =
-          view === "week"
-            ? addDays(date, -7)
-            : new Date(date.getFullYear(), date.getMonth() - 1, 1);
+        newDate = view === "week"
+          ? addDays(date, -7)
+          : new Date(date.getFullYear(), date.getMonth() - 1, 1);
       } else if (action === "NEXT") {
-        newDate =
-          view === "week"
-            ? addDays(date, 7)
-            : new Date(date.getFullYear(), date.getMonth() + 1, 1);
+        newDate = view === "week"
+          ? addDays(date, 7)
+          : new Date(date.getFullYear(), date.getMonth() + 1, 1);
       } else {
-        newDate = action; // Date object from react-big-calendar's internal navigation
+        newDate = action;
       }
       setDate(newDate);
       const newRange = getRangeForView(view, newDate);
@@ -1155,14 +1049,12 @@ const AvailabilitySection = () => {
     [date, refreshRangeData]
   );
 
-  // react-big-calendar fires onRangeChange on internal navigation
   const handleRangeChange = useCallback(
     (newRange) => {
       let start, end;
       if (Array.isArray(newRange)) {
         start = newRange[0];
-        end = newRange[newRange.length - 1];
-        end = addDays(end, 1);
+        end = addDays(newRange[newRange.length - 1], 1);
       } else {
         start = newRange.start;
         end = newRange.end;
@@ -1174,7 +1066,7 @@ const AvailabilitySection = () => {
     [refreshRangeData]
   );
 
-  // ── Initial scroll position — earliest slot start minus 30 min, floor 06:00 ─
+  // ── Initial scroll position ───────────────────────────────────────────────────
   const scrollToTime = useMemo(() => {
     if (slots.length === 0) return new Date(0, 0, 0, 6, 0);
     const earliest = slots.reduce(
@@ -1186,20 +1078,16 @@ const AvailabilitySection = () => {
     return new Date(0, 0, 0, Math.floor(totalMins / 60), totalMins % 60);
   }, [slots]);
 
-  // ── Build merged event list — available slots trimmed around occupied ranges ─
+  // ── Build merged event list ───────────────────────────────────────────────────
   const events = useMemo(() => {
-    const blockoutEvs = blockoutsToEvents(blockouts);
-    const bookingEvs = bookingsToEvents(calBookings);
-    const rawAvailEvs = expandRecurringSlots(slots, range.start, range.end);
-    const cleanAvailEvs = subtractOccupied(
-      rawAvailEvs,
-      blockoutEvs,
-      bookingEvs
-    );
+    const blockoutEvs  = blockoutsToEvents(blockouts, t('availability.blocked'), t('availability.dayOff'));
+    const bookingEvs   = bookingsToEvents(calBookings, t('availability.clientFallback'), t('availability.sessionFallback'));
+    const rawAvailEvs  = expandRecurringSlots(slots, range.start, range.end, t('availability.available'));
+    const cleanAvailEvs = subtractOccupied(rawAvailEvs, blockoutEvs, bookingEvs);
     return [...cleanAvailEvs, ...blockoutEvs, ...bookingEvs];
-  }, [slots, blockouts, calBookings, range]);
+  }, [slots, blockouts, calBookings, range, t]);
 
-  // ── Slot handlers ─────────────────────────────────────────────────────────
+  // ── Slot handlers ─────────────────────────────────────────────────────────────
   const handleAddSlot = async (data) => {
     setAddingSlot(true);
     setSlotError("");
@@ -1207,13 +1095,11 @@ const AvailabilitySection = () => {
       const created = await addAvailabilitySlot(data);
       setSlots((prev) =>
         [...prev, created].sort(
-          (a, b) =>
-            a.day_of_week - b.day_of_week ||
-            a.start_time.localeCompare(b.start_time)
+          (a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time)
         )
       );
     } catch (err) {
-      setSlotError(err?.response?.data?.error || "Failed to add slot.");
+      setSlotError(err?.response?.data?.error || t('availability.weekly.addFailed'));
     } finally {
       setAddingSlot(false);
     }
@@ -1225,13 +1111,13 @@ const AvailabilitySection = () => {
       await removeAvailabilitySlot(id);
       setSlots((prev) => prev.filter((s) => s.id !== id));
     } catch {
-      setSlotError("Failed to remove slot.");
+      setSlotError(t('availability.weekly.removeFailed'));
     } finally {
       setRemovingId(null);
     }
   };
 
-  // ── Blockout handlers ─────────────────────────────────────────────────────
+  // ── Blockout handlers ─────────────────────────────────────────────────────────
   const handleCreateBlockout = async (data) => {
     setCreatingBlock(true);
     setBlockError("");
@@ -1242,13 +1128,12 @@ const AvailabilitySection = () => {
       if (newBlockouts.length === 0) {
         setBlockError(
           skipped > 0
-            ? `No new blocks were created — all ${skipped} day${skipped !== 1 ? "s" : ""} in the range are already blocked or have no availability.`
-            : "No new blocks were created."
+            ? t('availability.blockout.info.noneCreatedSkipped', { count: skipped })
+            : t('availability.blockout.info.noneCreated')
         );
       } else {
         setBlockouts((prev) => {
           if (removedCount > 0) {
-            // Drop superseded time-slot blocks for dates covered by the new full-day blocks
             const newDates = new Set(newBlockouts.map((b) => new Date(b.date).toDateString()));
             return [
               ...prev.filter((b) => !(b.start_time && newDates.has(new Date(b.date).toDateString()))),
@@ -1260,15 +1145,13 @@ const AvailabilitySection = () => {
 
         const parts = [];
         if (removedCount > 0)
-          parts.push(`${removedCount} existing time-slot block${removedCount !== 1 ? "s" : ""} automatically removed`);
+          parts.push(t('availability.blockout.info.removedBlocks', { count: removedCount }));
         if (skipped > 0)
-          parts.push(`${skipped} day${skipped !== 1 ? "s" : ""} skipped (already blocked or no availability)`);
+          parts.push(t('availability.blockout.info.skippedDays', { count: skipped }));
         if (parts.length) setBlockInfo(parts.join(" · ") + ".");
       }
     } catch (err) {
-      setBlockError(
-        err?.response?.data?.error || "Failed to create block-out."
-      );
+      setBlockError(err?.response?.data?.error || t('availability.blockout.errors.createFailed'));
     } finally {
       setCreatingBlock(false);
     }
@@ -1280,13 +1163,13 @@ const AvailabilitySection = () => {
       await deleteBlockout(id);
       setBlockouts((prev) => prev.filter((b) => b.id !== id));
     } catch {
-      setBlockError("Failed to restore slot.");
+      setBlockError(t('availability.blockout.errors.restoreFailed'));
     } finally {
       setDeletingBlock(null);
     }
   };
 
-  // ── Buffer save handler ───────────────────────────────────────────────────
+  // ── Buffer save handler ───────────────────────────────────────────────────────
   const handleSaveBuffer = async (value) => {
     setSavingBuffer(true);
     setBufferError("");
@@ -1297,13 +1180,13 @@ const AvailabilitySection = () => {
       setBufferSaved(true);
       setTimeout(() => setBufferSaved(false), 3000);
     } catch {
-      setBufferError("Failed to save buffer setting. Please try again.");
+      setBufferError(t('availability.buffer.saveFailed'));
     } finally {
       setSavingBuffer(false);
     }
   };
 
-  // ── Advance booking limit save handler ────────────────────────────────────
+  // ── Advance booking limit save handler ────────────────────────────────────────
   const handleSaveAdvance = async (value) => {
     setSavingAdvance(true);
     setAdvanceError("");
@@ -1314,15 +1197,13 @@ const AvailabilitySection = () => {
       setAdvanceSaved(true);
       setTimeout(() => setAdvanceSaved(false), 3000);
     } catch {
-      setAdvanceError(
-        "Failed to save advance booking limit. Please try again."
-      );
+      setAdvanceError(t('availability.advance.saveFailed'));
     } finally {
       setSavingAdvance(false);
     }
   };
 
-  // ── Minimum notice period save handler ────────────────────────────────────
+  // ── Minimum notice period save handler ────────────────────────────────────────
   const handleSaveNotice = async (value) => {
     setSavingNotice(true);
     setNoticeError("");
@@ -1333,13 +1214,13 @@ const AvailabilitySection = () => {
       setNoticeSaved(true);
       setTimeout(() => setNoticeSaved(false), 3000);
     } catch {
-      setNoticeError("Failed to save notice period. Please try again.");
+      setNoticeError(t('availability.notice.saveFailed'));
     } finally {
       setSavingNotice(false);
     }
   };
 
-  // ── Loading / error ───────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────────
   if (loadingInit) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -1348,25 +1229,23 @@ const AvailabilitySection = () => {
     );
   }
 
+  const dateFnsLocale = lng === 'it' ? itLocale : enGB;
   const calendarLabel =
     view === "week"
-      ? format(range.start, "MMM d") + " – " + format(range.end, "MMM d, yyyy")
-      : format(date, "MMMM yyyy");
+      ? format(range.start, "MMM d", { locale: dateFnsLocale }) + " – " + format(range.end, "MMM d, yyyy", { locale: dateFnsLocale })
+      : format(date, "MMMM yyyy", { locale: dateFnsLocale });
 
   return (
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">Availability</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Manage your weekly schedule, block out specific dates, and view booked
-          sessions.
-        </p>
+        <h2 className="text-xl font-semibold text-[#1F2933]">{t('availability.heading')}</h2>
+        <p className="text-sm text-gray-500 mt-1">{t('availability.subheading')}</p>
       </div>
 
       {initError && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {initError}
+          {t(initError)}
         </div>
       )}
 
@@ -1382,6 +1261,7 @@ const AvailabilitySection = () => {
         <div style={{ height: view === "week" ? 560 : 500 }}>
           <Calendar
             localizer={localizer}
+            culture={lng === 'it' ? 'it' : 'en-GB'}
             events={events}
             view={view}
             views={['day', 'week', 'month']}
@@ -1412,30 +1292,27 @@ const AvailabilitySection = () => {
       {/* Timezone notice */}
       {expertTz ? (
         <div className="mb-4 px-4 py-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-sm text-gray-600">
-          Your availability times are set in your profile timezone:{" "}
+          {t('availability.timezone.setPre')}{" "}
           <span className="font-semibold text-[#1F2933]">{expertTz}</span>
         </div>
       ) : (
         <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-          <strong>Timezone not set.</strong> Please set your timezone in your{" "}
+          <strong>{t('availability.timezone.notSetBold')}</strong>{" "}
+          {t('availability.timezone.notSetBody')}{" "}
           <a href="/dashboard/expert/profile" className="underline font-medium">
-            Profile
+            {t('availability.timezone.profileLink')}
           </a>{" "}
-          before adding availability, so your slots display correctly to
-          parents.
+          {t('availability.timezone.notSetSuf')}
         </div>
       )}
 
       {/* Buffer Between Sessions */}
       <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
         <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
-          Buffer Between Sessions
+          {t('availability.buffer.title')}
         </h3>
         <p className="text-xs text-gray-400 mb-4">
-          Add a automatic break after each confirmed booking. For example, with
-          a 15-minute buffer, if a session ends at 11:00 the next available slot
-          will start at 11:15. This applies to all your services and is
-          invisible to parents — they simply won't see the blocked window.
+          {t('availability.buffer.description')}
         </p>
 
         {bufferError && (
@@ -1457,7 +1334,7 @@ const AvailabilitySection = () => {
                   : "bg-white text-gray-600 border-[#E4E7E4] hover:bg-gray-50"
               }`}
             >
-              {mins === 0 ? "No buffer" : `${mins} min`}
+              {mins === 0 ? t('availability.buffer.noBuffer') : t('availability.buffer.minLabel', { count: mins })}
             </button>
           ))}
 
@@ -1466,7 +1343,7 @@ const AvailabilitySection = () => {
           )}
           {bufferSaved && (
             <span className="text-xs text-[#445446] font-medium ml-1">
-              ✓ Saved
+              {t('availability.buffer.saved')}
             </span>
           )}
         </div>
@@ -1475,12 +1352,10 @@ const AvailabilitySection = () => {
       {/* Advance Booking Limit */}
       <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
         <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
-          Advance Booking Limit
+          {t('availability.advance.title')}
         </h3>
         <p className="text-xs text-gray-400 mb-4">
-          Control how far ahead parents can book sessions with you. Slots beyond
-          this window will not be visible or bookable. This helps you keep your
-          schedule predictable.
+          {t('availability.advance.description')}
         </p>
 
         {advanceError && (
@@ -1502,7 +1377,7 @@ const AvailabilitySection = () => {
                   : "bg-white text-gray-600 border-[#E4E7E4] hover:bg-gray-50"
               }`}
             >
-              {days} days
+              {t('availability.advance.daysLabel', { count: days })}
             </button>
           ))}
 
@@ -1511,7 +1386,7 @@ const AvailabilitySection = () => {
           )}
           {advanceSaved && (
             <span className="text-xs text-[#445446] font-medium ml-1">
-              ✓ Saved
+              {t('availability.advance.saved')}
             </span>
           )}
         </div>
@@ -1520,12 +1395,10 @@ const AvailabilitySection = () => {
       {/* Minimum Notice Period */}
       <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
         <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
-          Minimum Notice Period
+          {t('availability.notice.title')}
         </h3>
         <p className="text-xs text-gray-400 mb-4">
-          Set how much notice you need before a session. Slots within this
-          window will be automatically hidden from parents — they simply won't
-          see them as available.
+          {t('availability.notice.description')}
         </p>
 
         {noticeError && (
@@ -1547,7 +1420,7 @@ const AvailabilitySection = () => {
                   : "bg-white text-gray-600 border-[#E4E7E4] hover:bg-gray-50"
               }`}
             >
-              {hours}h
+              {t('availability.notice.hoursLabel', { count: hours })}
             </button>
           ))}
 
@@ -1556,7 +1429,7 @@ const AvailabilitySection = () => {
           )}
           {noticeSaved && (
             <span className="text-xs text-[#445446] font-medium ml-1">
-              ✓ Saved
+              {t('availability.notice.saved')}
             </span>
           )}
         </div>
@@ -1567,7 +1440,8 @@ const AvailabilitySection = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
             <p>
-              <span className="font-semibold">Within the no-refund window.</span> The platform's cancellation policy does not issue refunds for bookings cancelled within 24 hours of the session. With a 12h notice period, parents can book sessions that fall inside this window — meaning a cancellation on either side may not be eligible for a refund. Consider setting at least 24h to stay outside this zone.
+              <span className="font-semibold">{t('availability.notice.warning12hBold')}</span>{" "}
+              {t('availability.notice.warning12hBody')}
             </p>
           </div>
         )}

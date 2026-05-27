@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
+import LanguageSelector from "../../components/LanguageSelector";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const SearchIcon = ({ active }) => (
@@ -93,10 +95,10 @@ const LogoutIcon = () => (
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: "browse", label: "Find an Expert", Icon: SearchIcon },
-  { key: "upcoming", label: "Upcoming Bookings", Icon: UpcomingIcon },
-  { key: "past", label: "Past Bookings", Icon: PastIcon },
-  { key: "profile", label: "My Profile", Icon: ProfileIcon },
+  { key: "browse", tKey: "nav.findExpert", Icon: SearchIcon },
+  { key: "upcoming", tKey: "nav.upcomingBookings", Icon: UpcomingIcon },
+  { key: "past", tKey: "nav.pastBookings", Icon: PastIcon },
+  { key: "profile", tKey: "nav.myProfile", Icon: ProfileIcon },
 ];
 
 const VALID_SECTIONS = ["browse", "upcoming", "past", "profile"];
@@ -105,6 +107,7 @@ const VALID_SECTIONS = ["browse", "upcoming", "past", "profile"];
 const ParentDashboard = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { t } = useTranslation("parentDashboard");
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   const lastSegment = location.pathname.split("/").pop();
@@ -160,7 +163,7 @@ const ParentDashboard = () => {
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ key, label, Icon }) => {
+          {NAV_ITEMS.map(({ key, tKey, Icon }) => {
             const isActive = activeSection === key;
             return (
               <Link
@@ -173,20 +176,21 @@ const ParentDashboard = () => {
                 }`}
               >
                 <Icon active={isActive} />
-                {label}
+                {t(tKey)}
               </Link>
             );
           })}
         </nav>
 
-        {/* Sign out */}
-        <div className="p-3 border-t border-[#E4E7E4]">
+        {/* Language selector + Sign out */}
+        <div className="p-3 border-t border-[#E4E7E4] space-y-1">
+          <LanguageSelector />
           <button
             onClick={() => setShowSignOutConfirm(true)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-150"
           >
             <LogoutIcon />
-            Sign out
+            {t("nav.signOut")}
           </button>
         </div>
       </aside>
@@ -223,23 +227,23 @@ const ParentDashboard = () => {
               </svg>
             </div>
             <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
-              Sign out?
+              {t("signOutModal.title")}
             </h3>
             <p className="text-sm text-gray-500 text-center mb-6">
-              Are you sure you want to sign out of your account?
+              {t("signOutModal.message")}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowSignOutConfirm(false)}
                 className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("signOutModal.cancel")}
               </button>
               <button
                 onClick={logout}
                 className="flex-1 py-2.5 px-4 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors"
               >
-                Yes, sign out
+                {t("signOutModal.confirm")}
               </button>
             </div>
           </div>

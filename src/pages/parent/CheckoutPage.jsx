@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { abandonBooking } from '../../api/bookingApi';
 
-function formatPrice(price, currency = 'EUR') {
-  return new Intl.NumberFormat('en', { style: 'currency', currency }).format(Number(price));
+function formatPrice(price, currency = 'EUR', lng = 'en') {
+  return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', { style: 'currency', currency }).format(Number(price));
 }
-function formatSlotTime(isoStr) {
-  return new Date(isoStr).toLocaleString('en-GB', {
+function formatSlotTime(isoStr, lng = 'en') {
+  return new Date(isoStr).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', {
     weekday: 'short', day: 'numeric', month: 'short',
     hour: '2-digit', minute: '2-digit',
   });
@@ -16,6 +17,8 @@ function formatSlotTime(isoStr) {
 const CheckoutPage = () => {
   const { state } = useLocation();
   const navigate  = useNavigate();
+  const { t, i18n } = useTranslation('parentBookings');
+  const lng = i18n.language;
 
   const {
     bookingId, clientSecret,
@@ -141,7 +144,7 @@ const CheckoutPage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>
           )}
-          {abandoning ? 'Releasing slot…' : 'Edit booking'}
+          {abandoning ? t('checkout.releasingSlot') : t('checkout.editBooking')}
         </button>
         <span className="text-[#1F2933] font-bold text-lg tracking-tight ml-auto">Sage Nest</span>
       </div>
@@ -150,13 +153,13 @@ const CheckoutPage = () => {
 
         {/* Booking summary */}
         <div className="bg-[#F5F7F5] border-b border-[#E4E7E4] px-6 py-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Booking summary</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{t('checkout.summaryLabel')}</p>
           <p className="text-base font-semibold text-[#1F2933]">{serviceTitle}</p>
-          <p className="text-sm text-gray-500 mt-0.5">with {expertName}</p>
-          <p className="text-sm text-gray-500 mt-0.5">{scheduledAt ? formatSlotTime(scheduledAt) : ''}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{t('checkout.with', { name: expertName })}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{scheduledAt ? formatSlotTime(scheduledAt, lng) : ''}</p>
           {format === 'IN_PERSON' && sessionLocation && (
             <p className="text-sm text-gray-500 mt-0.5">
-              <span className="font-medium text-[#1F2933]">Location:</span> {sessionLocation}
+              <span className="font-medium text-[#1F2933]">{t('checkout.locationLabel')}</span> {sessionLocation}
             </p>
           )}
           <div className="flex items-center justify-between mt-3">
@@ -165,22 +168,22 @@ const CheckoutPage = () => {
                 ? 'bg-blue-50 text-blue-600'
                 : 'bg-[#445446]/10 text-[#445446]'
             }`}>
-              {format === 'ONLINE' ? 'Online' : 'In-Person'}
+              {format === 'ONLINE' ? t('checkout.formatOnline') : t('checkout.formatInPerson')}
             </span>
-            <span className="text-xl font-bold text-[#1F2933]">{formatPrice(amount, currency)}</span>
+            <span className="text-xl font-bold text-[#1F2933]">{formatPrice(amount, currency, lng)}</span>
           </div>
         </div>
 
         {/* Payment form */}
         <form onSubmit={handleSubmit} className="px-6 py-6">
-          <p className="text-sm font-medium text-[#1F2933] mb-4">Payment details</p>
+          <p className="text-sm font-medium text-[#1F2933] mb-4">{t('checkout.paymentDetails')}</p>
 
           {/* Loading spinner — outside the Stripe mount target so React never
               renders children inside the div Stripe takes over */}
           {!stripeReady && (
             <div className="flex items-center gap-2 py-8 justify-center mb-4">
               <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-              <span className="text-sm text-gray-400">Loading payment form…</span>
+              <span className="text-sm text-gray-400">{t('checkout.loadingPayment')}</span>
             </div>
           )}
 
@@ -195,17 +198,17 @@ const CheckoutPage = () => {
 
           {/* Currency notice */}
           <div className="mb-4 p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
-            Prices are set by the expert in their local currency ({currency}). Your bank may apply a conversion fee if this differs from your card currency.
+            {t('checkout.currencyNotice', { currency })}
           </div>
 
           <button type="submit"
             disabled={!stripeReady || paying || abandoning}
             className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-            {paying ? 'Processing…' : `Pay ${formatPrice(amount, currency)}`}
+            {paying ? t('checkout.processingBtn') : t('checkout.payBtn', { amount: formatPrice(amount, currency, lng) })}
           </button>
 
           <p className="text-xs text-gray-400 text-center mt-3">
-            Secured by Stripe. Your card details are never stored by Sage Nest.
+            {t('checkout.stripeNote')}
           </p>
         </form>
       </div>

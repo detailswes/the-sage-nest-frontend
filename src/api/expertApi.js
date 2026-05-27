@@ -113,7 +113,7 @@ export const updateNotificationPreferences = (prefs) =>
 
 // ─── GDPR Data Export ─────────────────────────────────────────────────────────
 export const exportMyData = () =>
-  api.get('/experts/me/export').then((r) => r.data);
+  api.get('/auth/data-export').then((r) => r.data);
 
 // ─── Services ─────────────────────────────────────────────────────────────────
 export const listServices = () => api.get('/services').then((r) => r.data);
