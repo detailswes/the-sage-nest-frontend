@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   listParents,
   exportParentsXlsx,
@@ -8,11 +9,7 @@ import {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAGE_LIMIT = 10;
 
-const STATUS_FILTERS = [
-  { key: "all",       label: "All" },
-  { key: "active",    label: "Active" },
-  { key: "suspended", label: "Suspended" },
-];
+const STATUS_FILTER_KEYS = ["all", "active", "suspended"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDate = (iso) =>
@@ -27,23 +24,24 @@ const getInitials = (name) =>
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
+  const { t } = useTranslation("adminDashboard");
   if (!status || status === "ACTIVE")
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
         <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
-        Active
+        {t("parentMgmt.badge.active")}
       </span>
     );
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
       <span className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" />
-      Suspended
+      {t("parentMgmt.badge.suspended")}
     </span>
   );
 };
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
-const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
+const PaginationBar = ({ page, totalPages, total, limit, onPageChange, t }) => {
   if (totalPages <= 1) return null;
   const from = (page - 1) * limit + 1;
   const to   = Math.min(page * limit, total);
@@ -60,9 +58,11 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
   return (
     <div className="flex items-center justify-between mt-4 px-1">
       <p className="text-sm text-gray-500">
-        Showing{" "}
-        <span className="font-medium text-[#1F2933]">{from}–{to}</span> of{" "}
-        <span className="font-medium text-[#1F2933]">{total}</span> parent{total !== 1 ? "s" : ""}
+        {t("parentMgmt.pagination.showing")}{" "}
+        <span className="font-medium text-[#1F2933]">{from}–{to}</span>{" "}
+        {t("parentMgmt.pagination.of")}{" "}
+        <span className="font-medium text-[#1F2933]">{total}</span>{" "}
+        {t("parentMgmt.pagination.parent", { count: total })}
       </p>
       <div className="flex items-center gap-1">
         <button
@@ -73,7 +73,7 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
-          Prev
+          {t("parentMgmt.pagination.prev")}
         </button>
         {buildPages().map((p, i) =>
           p === "…" ? (
@@ -93,7 +93,7 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
           disabled={page === totalPages}
           className={`${btnBase} gap-1 px-2.5 w-auto ${page === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-100"}`}
         >
-          Next
+          {t("parentMgmt.pagination.next")}
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
@@ -106,6 +106,8 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange }) => {
 // ─── Main component ───────────────────────────────────────────────────────────
 const ParentManagementSection = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("adminDashboard");
+
   const [parents, setParents]           = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [fetching, setFetching]         = useState(false);
@@ -144,12 +146,12 @@ const ParentManagementSection = () => {
       setPagination(result.pagination);
       setCounts(result.counts);
     } catch (err) {
-      setError(err?.response?.data?.error || "Failed to load parents.");
+      setError(err?.response?.data?.error || t("parentMgmt.loadError"));
     } finally {
       setFetching(false);
       setInitialLoading(false);
     }
-  }, [page, activeFilter, search, fromDate, toDate]);
+  }, [page, activeFilter, search, fromDate, toDate, t]);
 
   useEffect(() => { fetchParents(); }, [fetchParents]);
 
@@ -207,10 +209,8 @@ const ParentManagementSection = () => {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-[#1F2933]">Parent Management</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Review and manage parent accounts on the platform.
-          </p>
+          <h2 className="text-xl font-semibold text-[#1F2933]">{t("parentMgmt.pageTitle")}</h2>
+          <p className="text-sm text-gray-500 mt-1">{t("parentMgmt.pageSubtitle")}</p>
         </div>
         <button
           onClick={handleExport}
@@ -224,7 +224,7 @@ const ParentManagementSection = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
           )}
-          {exporting ? "Exporting…" : "Export .xlsx"}
+          {exporting ? t("parentMgmt.exporting") : t("parentMgmt.exportBtn")}
         </button>
       </div>
 
@@ -236,7 +236,7 @@ const ParentManagementSection = () => {
 
       {/* Status tabs */}
       <div className="flex items-center gap-1 mb-5 border-b border-[#E4E7E4]">
-        {STATUS_FILTERS.map(({ key, label }) => {
+        {STATUS_FILTER_KEYS.map((key) => {
           const count    = tabCount(key);
           const isActive = activeFilter === key;
           return (
@@ -249,7 +249,7 @@ const ParentManagementSection = () => {
                   : "text-gray-500 border-transparent hover:text-[#1F2933] hover:border-gray-300"
               }`}
             >
-              {label}
+              {t(`parentMgmt.filter.${key}`)}
               <span
                 className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold ${
                   isActive ? "bg-[#445446] text-white" : "bg-gray-100 text-gray-600"
@@ -274,7 +274,7 @@ const ParentManagementSection = () => {
           </svg>
           <input
             type="text"
-            placeholder="Search by name or email…"
+            placeholder={t("parentMgmt.searchPlaceholder")}
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             className={`${filterInputCls} pl-9 w-full`}
@@ -282,7 +282,7 @@ const ParentManagementSection = () => {
         </div>
         {/* Date range */}
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500 whitespace-nowrap">Registered from</label>
+          <label className="text-xs text-gray-500 whitespace-nowrap">{t("parentMgmt.registeredFrom")}</label>
           <input
             type="date"
             value={fromDate}
@@ -291,7 +291,7 @@ const ParentManagementSection = () => {
           />
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500">to</label>
+          <label className="text-xs text-gray-500">{t("parentMgmt.to")}</label>
           <input
             type="date"
             value={toDate}
@@ -306,7 +306,7 @@ const ParentManagementSection = () => {
             }}
             className="text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 px-2 py-1.5 rounded-lg transition-colors"
           >
-            Clear filters
+            {t("parentMgmt.clearFilters")}
           </button>
         )}
       </div>
@@ -318,16 +318,16 @@ const ParentManagementSection = () => {
             <thead>
               <tr className="border-b border-[#E4E7E4] bg-gray-50/50">
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">
-                  Parent
+                  {t("parentMgmt.col.parent")}
                 </th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">
-                  Joined
+                  {t("parentMgmt.col.joined")}
                 </th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">
-                  Status
+                  {t("parentMgmt.col.status")}
                 </th>
                 <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">
-                  Bookings
+                  {t("parentMgmt.col.bookings")}
                 </th>
                 <th className="px-4 py-3" />
               </tr>
@@ -342,7 +342,7 @@ const ParentManagementSection = () => {
               ) : parents.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-16 text-center text-sm text-gray-400">
-                    No parents found.
+                    {t("parentMgmt.noParents")}
                   </td>
                 </tr>
               ) : (
@@ -380,7 +380,7 @@ const ParentManagementSection = () => {
                           onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/admin/parents/${p.id}`); }}
                           className="text-xs font-medium text-[#445446] hover:underline whitespace-nowrap"
                         >
-                          View
+                          {t("parentMgmt.viewBtn")}
                         </button>
                       </td>
                     </tr>
@@ -398,6 +398,7 @@ const ParentManagementSection = () => {
         total={pagination.total}
         limit={PAGE_LIMIT}
         onPageChange={handlePageChange}
+        t={t}
       />
 
     </>

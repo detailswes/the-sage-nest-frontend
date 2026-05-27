@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "../../components/admin/NotificationBell";
+import LanguageSelector from "../../components/LanguageSelector";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const UsersIcon = ({ active }) => (
@@ -105,16 +107,17 @@ const ShieldIcon = ({ active }) => (
 );
 
 const NAV_ITEMS = [
-  { path: "experts",         label: "Expert Management", Icon: UsersIcon },
-  { path: "parents",         label: "Parent Management", Icon: UsersIcon },
-  { path: "bookings",        label: "Booking Management", Icon: BookingsIcon },
-  { path: "payments",        label: "Payment Overview",   Icon: PaymentsIcon },
-  { path: "legal-documents", label: "Legal Documents",    Icon: DocumentIcon },
-  { path: "compliance",      label: "Legal Compliance",   Icon: ShieldIcon },
+  { path: "experts",         tKey: "nav.expertManagement", Icon: UsersIcon },
+  { path: "parents",         tKey: "nav.parentManagement", Icon: UsersIcon },
+  { path: "bookings",        tKey: "nav.bookingManagement", Icon: BookingsIcon },
+  { path: "payments",        tKey: "nav.paymentOverview",   Icon: PaymentsIcon },
+  { path: "legal-documents", tKey: "nav.legalDocuments",    Icon: DocumentIcon },
+  { path: "compliance",      tKey: "nav.legalCompliance",   Icon: ShieldIcon },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const AdminDashboard = () => {
+  const { t } = useTranslation("adminDashboard");
   const { user, logout } = useAuth();
   const location = useLocation();
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -179,7 +182,7 @@ const AdminDashboard = () => {
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ path, label, Icon }) => {
+          {NAV_ITEMS.map(({ path, tKey, Icon }) => {
             const isActive = activeSection === path;
             return (
               <Link
@@ -192,20 +195,21 @@ const AdminDashboard = () => {
                 }`}
               >
                 <Icon active={isActive} />
-                {label}
+                {t(tKey)}
               </Link>
             );
           })}
         </nav>
 
-        {/* Sign out */}
-        <div className="p-3 border-t border-[#E4E7E4]">
+        {/* Language selector + Sign out */}
+        <div className="p-3 border-t border-[#E4E7E4] space-y-1">
+          <LanguageSelector />
           <button
             onClick={() => setShowSignOutConfirm(true)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-150"
           >
             <LogoutIcon />
-            Sign out
+            {t("signOut")}
           </button>
         </div>
       </aside>
@@ -242,23 +246,23 @@ const AdminDashboard = () => {
               </svg>
             </div>
             <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
-              Sign out?
+              {t("signOutModal.title")}
             </h3>
             <p className="text-sm text-gray-500 text-center mb-6">
-              Are you sure you want to sign out of your account?
+              {t("signOutModal.body")}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowSignOutConfirm(false)}
                 className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("signOutModal.cancel")}
               </button>
               <button
                 onClick={logout}
                 className="flex-1 py-2.5 px-4 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors"
               >
-                Yes, sign out
+                {t("signOutModal.confirm")}
               </button>
             </div>
           </div>
