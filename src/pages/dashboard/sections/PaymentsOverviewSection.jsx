@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { listTransactions, exportTransactionsCsv, getBookingDetail, getRefundLog } from "../../../api/adminApi";
 import { formatFormat, formatTransferStatus } from "../../../utils/formatBookingTime";
 import AdminActionsPanel from "../../../components/admin/AdminActionsPanel";
@@ -40,19 +41,19 @@ const specialistPayout = (transaction) => {
 
 // ─── Payment status helpers ───────────────────────────────────────────────────
 
-function getPaymentStatus(t) {
+function getPaymentStatus(tx) {
   // Payment was captured but the expert transfer failed — distinct from a payment failure
-  if (["CONFIRMED", "COMPLETED"].includes(t.status) && t.transfer_status === "failed")
+  if (["CONFIRMED", "COMPLETED"].includes(tx.status) && tx.transfer_status === "failed")
     return "transfer_failed";
-  if (["CONFIRMED", "COMPLETED"].includes(t.status) && t.stripe_payment_intent_id)
+  if (["CONFIRMED", "COMPLETED"].includes(tx.status) && tx.stripe_payment_intent_id)
     return "succeeded";
-  if (t.status === "REFUNDED") return "refunded";
-  if (t.status === "PENDING_PAYMENT") return "pending";
-  if (t.status === "CANCELLED") {
+  if (tx.status === "REFUNDED") return "refunded";
+  if (tx.status === "PENDING_PAYMENT") return "pending";
+  if (tx.status === "CANCELLED") {
     // Payment was captured before the cancellation — not a payment failure
-    if (t.stripe_payment_intent_id) {
-      if (t.refund_status === "pending")   return "refund_pending";
-      if (t.refund_status === "succeeded") return "refunded";
+    if (tx.stripe_payment_intent_id) {
+      if (tx.refund_status === "pending")   return "refund_pending";
+      if (tx.refund_status === "succeeded") return "refunded";
       return "captured_cancelled"; // captured, no refund (0% policy or refund not yet initiated)
     }
     return "failed"; // booking cancelled before any payment was captured
@@ -60,50 +61,48 @@ function getPaymentStatus(t) {
   return "failed";
 }
 
+const PAYMENT_STATUS_CLS = {
+  succeeded:          "bg-green-100 text-green-700",
+  refunded:           "bg-gray-100 text-gray-600",
+  refund_pending:     "bg-amber-100 text-amber-700",
+  captured_cancelled: "bg-orange-100 text-orange-700",
+  transfer_failed:    "bg-red-100 text-red-600",
+  pending:            "bg-amber-100 text-amber-700",
+  failed:             "bg-red-100 text-red-600",
+};
+
 const PaymentStatusBadge = ({ transaction }) => {
+  const { t } = useTranslation("adminDashboard");
   const ps = getPaymentStatus(transaction);
-  const cfg = {
-    succeeded:          { cls: "bg-green-100 text-green-700",   label: "Succeeded" },
-    refunded:           { cls: "bg-gray-100 text-gray-600",     label: "Refunded" },
-    refund_pending:     { cls: "bg-amber-100 text-amber-700",   label: "Refund Pending" },
-    captured_cancelled: { cls: "bg-orange-100 text-orange-700", label: "Captured — No Refund" },
-    transfer_failed:    { cls: "bg-red-100 text-red-600",       label: "Captured — Transfer Failed" },
-    pending:            { cls: "bg-amber-100 text-amber-700",   label: "Pending" },
-    failed:             { cls: "bg-red-100 text-red-600",       label: "Failed" },
-  }[ps] || { cls: "bg-gray-100 text-gray-500", label: ps };
+  const cls = PAYMENT_STATUS_CLS[ps] || "bg-gray-100 text-gray-500";
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
-      {cfg.label}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {t(`paymentsMgmt.paymentStatus.${ps}`, { defaultValue: ps })}
     </span>
   );
 };
 
 // ─── Filter tabs ──────────────────────────────────────────────────────────────
 
-const FILTERS = [
-  { key: "ALL",            label: "All" },
-  { key: "succeeded",      label: "Succeeded" },
-  { key: "refunded",       label: "Refunded" },
-  { key: "pending",        label: "Pending" },
-  { key: "failed",         label: "Failed" },
-  { key: "transfer_failed", label: "Transfer Failed" },
-];
+const FILTER_KEYS = ["ALL", "succeeded", "refunded", "pending", "failed", "transfer_failed"];
 
 // ─── Amount cell (shows refund info inline when a refund has occurred) ────────
 
-function AmountCell({ transaction: t }) {
-  const refunded = t.refund_status === "succeeded" && t.refund_amount != null;
-  const refundPending = t.refund_status === "pending" && t.refund_amount != null;
+function AmountCell({ transaction: tx }) {
+  const { t } = useTranslation("adminDashboard");
+  const refunded     = tx.refund_status === "succeeded" && tx.refund_amount != null;
+  const refundPending = tx.refund_status === "pending"  && tx.refund_amount != null;
 
   if (refunded) {
-    const isPartial = parseFloat(t.refund_amount) < parseFloat(t.amount);
+    const isPartial = parseFloat(tx.refund_amount) < parseFloat(tx.amount);
     return (
       <span className="flex flex-col gap-0.5 leading-tight">
         <span className="text-sm font-medium text-gray-400 line-through">
-          {formatCurrency(t.amount, t.currency)}
+          {formatCurrency(tx.amount, tx.currency)}
         </span>
         <span className="text-xs font-medium text-red-500">
-          −{formatCurrency(t.refund_amount, t.currency)}{isPartial && <span className="text-red-400 font-normal"> (partial)</span>}
+          −{formatCurrency(tx.refund_amount, tx.currency)}
+          {isPartial && <span className="text-red-400 font-normal"> ({t("paymentsMgmt.partial")})</span>}
         </span>
       </span>
     );
@@ -112,18 +111,19 @@ function AmountCell({ transaction: t }) {
   if (refundPending) {
     return (
       <span className="flex flex-col gap-0.5 leading-tight">
-        <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(t.amount, t.currency)}</span>
-        <span className="text-xs text-amber-500">refund pending</span>
+        <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(tx.amount, tx.currency)}</span>
+        <span className="text-xs text-amber-500">{t("paymentsMgmt.refundPending")}</span>
       </span>
     );
   }
 
-  return <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(t.amount, t.currency)}</span>;
+  return <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(tx.amount, tx.currency)}</span>;
 }
 
 // ─── Transaction detail modal ─────────────────────────────────────────────────
 
 function TransactionDetailModal({ bookingId, onClose }) {
+  const { t } = useTranslation("adminDashboard");
   const [booking, setBooking]   = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState("");
@@ -134,9 +134,9 @@ function TransactionDetailModal({ bookingId, onClose }) {
     setError("");
     getBookingDetail(bookingId)
       .then(setBooking)
-      .catch(() => setError("Failed to load transaction details."))
+      .catch(() => setError(t("paymentsMgmt.modal.loadError")))
       .finally(() => setLoading(false));
-  }, [bookingId, reloadKey]);
+  }, [bookingId, reloadKey, t]);
 
   return (
     <div
@@ -148,7 +148,7 @@ function TransactionDetailModal({ bookingId, onClose }) {
         <div className="sticky top-0 bg-white rounded-t-2xl flex items-center justify-between px-6 py-4 border-b border-[#E4E7E4]">
           <div className="flex items-center gap-3">
             <h2 className="text-base font-semibold text-[#1F2933]">
-              Transaction #{bookingId}
+              {t("paymentsMgmt.modal.title", { id: bookingId })}
             </h2>
             {booking && <PaymentStatusBadge transaction={booking} />}
           </div>
@@ -174,12 +174,16 @@ function TransactionDetailModal({ bookingId, onClose }) {
             {/* Parties */}
             <div className="px-6 py-4 grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Parent / Client</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  {t("paymentsMgmt.modal.parentClient")}
+                </p>
                 <p className="text-sm font-medium text-[#1F2933]">{booking.parent?.name || "—"}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{booking.parent?.email || "—"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Specialist</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  {t("paymentsMgmt.modal.specialist")}
+                </p>
                 <p className="text-sm font-medium text-[#1F2933]">{booking.expert?.user?.name || "—"}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{booking.expert?.user?.email || "—"}</p>
               </div>
@@ -187,68 +191,74 @@ function TransactionDetailModal({ bookingId, onClose }) {
 
             {/* Session */}
             <div className="px-6 py-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Session</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                {t("paymentsMgmt.modal.session")}
+              </p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Service</span>
+                  <span className="text-gray-500">{t("paymentsMgmt.modal.service")}</span>
                   <span className="font-medium text-[#1F2933]">{booking.service?.title || "—"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Format</span>
-                  <span className="font-medium text-[#1F2933]">{formatFormat(booking.format)}</span>
+                  <span className="text-gray-500">{t("paymentsMgmt.modal.format")}</span>
+                  <span className="font-medium text-[#1F2933]">{formatFormat(booking.format, t)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Date &amp; Time</span>
+                  <span className="text-gray-500">{t("paymentsMgmt.modal.dateTime")}</span>
                   <span className="font-medium text-[#1F2933]">{formatDateTime(booking.scheduled_at)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Duration</span>
-                  <span className="font-medium text-[#1F2933]">{booking.duration_minutes} min</span>
+                  <span className="text-gray-500">{t("paymentsMgmt.modal.duration")}</span>
+                  <span className="font-medium text-[#1F2933]">
+                    {booking.duration_minutes} {t("paymentsMgmt.modal.min")}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Payment breakdown */}
             <div className="px-6 py-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Payment Breakdown</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                {t("paymentsMgmt.modal.paymentBreakdown")}
+              </p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Amount charged</span>
+                  <span className="text-gray-500">{t("paymentsMgmt.modal.amountCharged")}</span>
                   <span className="font-medium text-[#1F2933]">{formatCurrency(booking.amount, booking.currency)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Platform fee (Sage Nest)</span>
+                  <span className="text-gray-500">{t("paymentsMgmt.modal.platformFee")}</span>
                   <span className="font-medium text-[#1F2933]">{formatCurrency(booking.platform_fee, booking.currency)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Specialist payout</span>
-                  <span className="font-medium text-[#1F2933]">
-                    {specialistPayout(booking)}
-                  </span>
+                  <span className="text-gray-500">{t("paymentsMgmt.modal.specialistPayout")}</span>
+                  <span className="font-medium text-[#1F2933]">{specialistPayout(booking)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Transfer status</span>
-                  <span className="font-medium text-[#1F2933]">{formatTransferStatus(booking)}</span>
+                  <span className="text-gray-500">{t("paymentsMgmt.modal.transferStatus")}</span>
+                  <span className="font-medium text-[#1F2933]">{formatTransferStatus(booking, t)}</span>
                 </div>
                 {booking.refund_status && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Refund status</span>
+                    <span className="text-gray-500">{t("paymentsMgmt.modal.refundStatus")}</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                       booking.refund_status === "succeeded" ? "bg-green-100 text-green-700" :
                       booking.refund_status === "pending"   ? "bg-amber-100 text-amber-700" :
                                                               "bg-red-100 text-red-600"
                     }`}>
-                      {booking.refund_status.charAt(0).toUpperCase() + booking.refund_status.slice(1)}
+                      {t(`paymentsMgmt.paymentStatus.${booking.refund_status}`, {
+                        defaultValue: booking.refund_status.charAt(0).toUpperCase() + booking.refund_status.slice(1),
+                      })}
                     </span>
                   </div>
                 )}
                 {booking.refund_amount != null && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Amount refunded</span>
+                    <span className="text-gray-500">{t("paymentsMgmt.modal.amountRefunded")}</span>
                     <span className="font-medium text-[#1F2933]">
                       {formatCurrency(booking.refund_amount, booking.currency)}
                       {parseFloat(booking.refund_amount) < parseFloat(booking.amount) && (
-                        <span className="ml-1 text-xs text-amber-600 font-normal">(partial)</span>
+                        <span className="ml-1 text-xs text-amber-600 font-normal">({t("paymentsMgmt.partial")})</span>
                       )}
                     </span>
                   </div>
@@ -258,21 +268,23 @@ function TransactionDetailModal({ bookingId, onClose }) {
 
             {/* Stripe reference */}
             <div className="px-6 py-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Stripe Reference</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                {t("paymentsMgmt.modal.stripeRef")}
+              </p>
               <div className="space-y-2 text-sm">
                 <div className="flex items-start justify-between gap-4">
-                  <span className="text-gray-500 flex-shrink-0">Payment Intent ID</span>
+                  <span className="text-gray-500 flex-shrink-0">{t("paymentsMgmt.modal.paymentIntentId")}</span>
                   {booking.stripe_payment_intent_id ? (
                     <span className="font-mono text-xs text-[#1F2933] break-all text-right">
                       {booking.stripe_payment_intent_id}
                     </span>
                   ) : (
-                    <span className="text-gray-400 text-xs">No payment captured</span>
+                    <span className="text-gray-400 text-xs">{t("paymentsMgmt.modal.noPayment")}</span>
                   )}
                 </div>
                 {booking.stripe_charge_id && (
                   <div className="flex items-start justify-between gap-4">
-                    <span className="text-gray-500 flex-shrink-0">Charge ID</span>
+                    <span className="text-gray-500 flex-shrink-0">{t("paymentsMgmt.modal.chargeId")}</span>
                     <span className="font-mono text-xs text-[#1F2933] break-all text-right">
                       {booking.stripe_charge_id}
                     </span>
@@ -280,7 +292,7 @@ function TransactionDetailModal({ bookingId, onClose }) {
                 )}
                 {booking.stripe_transfer_id && (
                   <div className="flex items-start justify-between gap-4">
-                    <span className="text-gray-500 flex-shrink-0">Transfer ID</span>
+                    <span className="text-gray-500 flex-shrink-0">{t("paymentsMgmt.modal.transferId")}</span>
                     <span className="font-mono text-xs text-[#1F2933] break-all text-right">
                       {booking.stripe_transfer_id}
                     </span>
@@ -292,7 +304,9 @@ function TransactionDetailModal({ bookingId, onClose }) {
             {/* Cancellation info */}
             {(booking.status === "CANCELLED" || booking.status === "REFUNDED") && booking.cancellation_reason && (
               <div className="px-6 py-4">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Cancellation Note</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  {t("paymentsMgmt.modal.cancellationNote")}
+                </p>
                 <p className="text-sm text-[#1F2933]">{booking.cancellation_reason}</p>
                 {booking.cancelled_at && (
                   <p className="text-xs text-gray-400 mt-1">{formatDate(booking.cancelled_at)}</p>
@@ -316,6 +330,7 @@ function TransactionDetailModal({ bookingId, onClose }) {
 // ─── Refund log view ──────────────────────────────────────────────────────────
 
 function RefundLogView() {
+  const { t } = useTranslation("adminDashboard");
   const [entries, setEntries]   = useState([]);
   const [total, setTotal]       = useState(0);
   const [page, setPage]         = useState(1);
@@ -337,7 +352,15 @@ function RefundLogView() {
       <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
         {/* Table header */}
         <div className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
-          {["Timestamp", "Admin", "Booking", "Parent", "Original", "Refunded", "Stripe Refund ID"].map((h) => (
+          {[
+            t("paymentsMgmt.refundLog.col.timestamp"),
+            t("paymentsMgmt.refundLog.col.admin"),
+            t("paymentsMgmt.refundLog.col.booking"),
+            t("paymentsMgmt.refundLog.col.parent"),
+            t("paymentsMgmt.refundLog.col.original"),
+            t("paymentsMgmt.refundLog.col.refunded"),
+            t("paymentsMgmt.refundLog.col.stripeRefundId"),
+          ].map((h) => (
             <span key={h} className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</span>
           ))}
         </div>
@@ -348,7 +371,7 @@ function RefundLogView() {
           </div>
         ) : entries.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-sm text-gray-400">No refunds have been issued yet.</p>
+            <p className="text-sm text-gray-400">{t("paymentsMgmt.refundLog.noRefunds")}</p>
           </div>
         ) : (
           <div className="divide-y divide-[#E4E7E4]">
@@ -372,7 +395,7 @@ function RefundLogView() {
                       −{b ? formatCurrency(b.refund_amount, b.currency) : "—"}
                     </span>
                     {isPartial && (
-                      <span className="text-xs text-gray-400">partial</span>
+                      <span className="text-xs text-gray-400">{t("paymentsMgmt.partial")}</span>
                     )}
                   </span>
                   <span className="text-xs font-mono text-gray-400 truncate">
@@ -388,7 +411,7 @@ function RefundLogView() {
       {/* Note row */}
       {entries.length > 0 && (
         <p className="text-xs text-gray-400 mt-2">
-          {total} refund{total !== 1 ? "s" : ""} recorded. Stripe Refund ID can be used to verify in the Stripe dashboard.
+          {t("paymentsMgmt.refundLog.note", { count: total })}
         </p>
       )}
 
@@ -396,16 +419,21 @@ function RefundLogView() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-xs text-gray-400">
-            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}
+            {t("paymentsMgmt.refundLog.showing")}{" "}
+            <span className="font-medium text-[#1F2933]">
+              {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}
+            </span>{" "}
+            {t("paymentsMgmt.refundLog.of")}{" "}
+            <span className="font-medium text-[#1F2933]">{total}</span>
           </p>
           <div className="flex gap-1">
             <button onClick={() => setPage((p) => p - 1)} disabled={page === 1 || loading}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors">
-              Previous
+              {t("paymentsMgmt.refundLog.previous")}
             </button>
             <button onClick={() => setPage((p) => p + 1)} disabled={page === totalPages || loading}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors">
-              Next
+              {t("paymentsMgmt.refundLog.next")}
             </button>
           </div>
         </div>
@@ -417,6 +445,7 @@ function RefundLogView() {
 // ─── Main section ─────────────────────────────────────────────────────────────
 
 const PaymentsOverviewSection = () => {
+  const { t } = useTranslation("adminDashboard");
   const [view, setView]                 = useState("transactions"); // "transactions" | "refund-log"
 
   const [transactions, setTransactions] = useState([]);
@@ -465,7 +494,6 @@ const PaymentsOverviewSection = () => {
   }, [page, search, activeFilter, fromDate, toDate]);
 
   useEffect(() => { load({ initial: true }); }, []); // eslint-disable-line
-
 
   const handleSearchChange = (e) => {
     const val = e.target.value;
@@ -531,11 +559,11 @@ const PaymentsOverviewSection = () => {
       {/* Page header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#1F2933]">Payment Overview</h1>
+          <h1 className="text-2xl font-bold text-[#1F2933]">{t("paymentsMgmt.pageTitle")}</h1>
           <p className="text-sm text-gray-400 mt-1">
             {view === "transactions"
-              ? "Platform-wide transaction list — view amounts, fees, payouts and Stripe references."
-              : "Audit log of all admin-initiated refunds with Stripe reference and initiating admin."}
+              ? t("paymentsMgmt.subtitleTransactions")
+              : t("paymentsMgmt.subtitleRefundLog")}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -547,7 +575,7 @@ const PaymentsOverviewSection = () => {
                 view === "transactions" ? "bg-[#445446] text-white" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
               }`}
             >
-              Transactions
+              {t("paymentsMgmt.viewTransactions")}
             </button>
             <button
               onClick={() => setView("refund-log")}
@@ -555,7 +583,7 @@ const PaymentsOverviewSection = () => {
                 view === "refund-log" ? "bg-[#445446] text-white" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
               }`}
             >
-              Refund Log
+              {t("paymentsMgmt.viewRefundLog")}
             </button>
           </div>
           {view === "transactions" && (
@@ -567,7 +595,7 @@ const PaymentsOverviewSection = () => {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
-              {exporting ? "Exporting…" : "Export CSV"}
+              {exporting ? t("paymentsMgmt.exporting") : t("paymentsMgmt.exportBtn")}
             </button>
           )}
         </div>
@@ -589,7 +617,7 @@ const PaymentsOverviewSection = () => {
             type="text"
             value={search}
             onChange={handleSearchChange}
-            placeholder="Search by booking ID, parent or specialist name…"
+            placeholder={t("paymentsMgmt.searchPlaceholder")}
             className="flex-1 text-sm bg-transparent outline-none placeholder-gray-300 text-[#1F2933]"
           />
           {search && (
@@ -610,10 +638,10 @@ const PaymentsOverviewSection = () => {
         </div>
 
         <div className="flex items-center gap-2 bg-white border border-[#E4E7E4] rounded-xl px-3 py-2 shadow-sm">
-          <span className="text-xs text-gray-400">From</span>
+          <span className="text-xs text-gray-400">{t("paymentsMgmt.from")}</span>
           <input type="date" value={fromDate} onChange={handleFromChange}
             className="text-sm outline-none bg-transparent text-[#1F2933]" />
-          <span className="text-xs text-gray-400">To</span>
+          <span className="text-xs text-gray-400">{t("paymentsMgmt.to")}</span>
           <input type="date" value={toDate} onChange={handleToChange}
             className="text-sm outline-none bg-transparent text-[#1F2933]" />
           {(fromDate || toDate) && (
@@ -624,7 +652,7 @@ const PaymentsOverviewSection = () => {
               }}
               className="text-xs text-gray-400 hover:text-gray-600"
             >
-              Clear
+              {t("paymentsMgmt.clear")}
             </button>
           )}
         </div>
@@ -632,7 +660,7 @@ const PaymentsOverviewSection = () => {
 
       {/* Filter tabs */}
       <div className="flex gap-1 flex-wrap mb-4">
-        {FILTERS.map(({ key, label }) => (
+        {FILTER_KEYS.map((key) => (
           <button
             key={key}
             onClick={() => applyFilter(key)}
@@ -642,7 +670,7 @@ const PaymentsOverviewSection = () => {
                 : "bg-white border border-[#E4E7E4] text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
             }`}
           >
-            {label}
+            {t(`paymentsMgmt.filter.${key}`)}
           </button>
         ))}
       </div>
@@ -650,7 +678,16 @@ const PaymentsOverviewSection = () => {
       {/* Table */}
       <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
         <div className="grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_110px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
-          {["ID", "Parent", "Specialist", "Amount", "Fee", "Payout", "Date", "Payment Status"].map((h) => (
+          {[
+            t("paymentsMgmt.col.id"),
+            t("paymentsMgmt.col.parent"),
+            t("paymentsMgmt.col.specialist"),
+            t("paymentsMgmt.col.amount"),
+            t("paymentsMgmt.col.fee"),
+            t("paymentsMgmt.col.payout"),
+            t("paymentsMgmt.col.date"),
+            t("paymentsMgmt.col.paymentStatus"),
+          ].map((h) => (
             <span key={h} className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</span>
           ))}
         </div>
@@ -661,24 +698,24 @@ const PaymentsOverviewSection = () => {
           </div>
         ) : transactions.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-sm text-gray-400">No transactions found.</p>
+            <p className="text-sm text-gray-400">{t("paymentsMgmt.noTransactions")}</p>
           </div>
         ) : (
           <div className={`divide-y divide-[#E4E7E4] ${fetching ? "opacity-60 pointer-events-none" : ""}`}>
-            {transactions.map((t) => (
+            {transactions.map((tx) => (
               <button
-                key={t.id}
-                onClick={() => setSelectedId(t.id)}
+                key={tx.id}
+                onClick={() => setSelectedId(tx.id)}
                 className="w-full grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_110px] gap-3 px-4 py-3 text-left hover:bg-[#F5F7F5] transition-colors items-center"
               >
-                <span className="text-sm font-mono text-gray-400">#{t.id}</span>
-                <span className="text-sm text-[#1F2933] truncate">{t.parent?.name || "—"}</span>
-                <span className="text-sm text-[#1F2933] truncate">{t.expert?.user?.name || "—"}</span>
-                <AmountCell transaction={t} />
-                <span className="text-sm text-gray-500">{formatCurrency(t.platform_fee, t.currency)}</span>
-                <span className="text-sm text-gray-500">{specialistPayout(t)}</span>
-                <span className="text-sm text-gray-500">{formatDate(t.scheduled_at)}</span>
-                <PaymentStatusBadge transaction={t} />
+                <span className="text-sm font-mono text-gray-400">#{tx.id}</span>
+                <span className="text-sm text-[#1F2933] truncate">{tx.parent?.name || "—"}</span>
+                <span className="text-sm text-[#1F2933] truncate">{tx.expert?.user?.name || "—"}</span>
+                <AmountCell transaction={tx} />
+                <span className="text-sm text-gray-500">{formatCurrency(tx.platform_fee, tx.currency)}</span>
+                <span className="text-sm text-gray-500">{specialistPayout(tx)}</span>
+                <span className="text-sm text-gray-500">{formatDate(tx.scheduled_at)}</span>
+                <PaymentStatusBadge transaction={tx} />
               </button>
             ))}
           </div>
@@ -689,7 +726,13 @@ const PaymentsOverviewSection = () => {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-xs text-gray-400">
-            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total} transactions
+            {t("paymentsMgmt.pagination.showing")}{" "}
+            <span className="font-medium text-[#1F2933]">
+              {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}
+            </span>{" "}
+            {t("paymentsMgmt.pagination.of")}{" "}
+            <span className="font-medium text-[#1F2933]">{total}</span>{" "}
+            {t("paymentsMgmt.pagination.transaction", { count: total })}
           </p>
           <div className="flex gap-1">
             <button
@@ -697,7 +740,7 @@ const PaymentsOverviewSection = () => {
               disabled={page === 1 || fetching}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
-              Previous
+              {t("paymentsMgmt.pagination.previous")}
             </button>
             {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
               const p = totalPages <= 7 ? i + 1 : page <= 4 ? i + 1 : page + i - 3;
@@ -722,7 +765,7 @@ const PaymentsOverviewSection = () => {
               disabled={page === totalPages || fetching}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
-              Next
+              {t("paymentsMgmt.pagination.next")}
             </button>
           </div>
         </div>

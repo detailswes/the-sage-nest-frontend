@@ -1,0 +1,961 @@
+{
+  "nav": {
+    "expertManagement": "Gestione Esperti",
+    "parentManagement": "Gestione Genitori",
+    "bookingManagement": "Gestione Prenotazioni",
+    "paymentOverview": "Panoramica Pagamenti",
+    "legalDocuments": "Documenti Legali",
+    "legalCompliance": "Conformità Legale"
+  },
+  "signOut": "Esci",
+  "signOutModal": {
+    "title": "Esci?",
+    "body": "Sei sicuro di voler uscire dal tuo account?",
+    "cancel": "Annulla",
+    "confirm": "Sì, esci"
+  },
+
+  "parentMgmt": {
+    "pageTitle": "Gestione Genitori",
+    "pageSubtitle": "Esamina e gestisci gli account dei genitori sulla piattaforma.",
+    "exportBtn": "Esporta .xlsx",
+    "exporting": "Esportazione…",
+    "searchPlaceholder": "Cerca per nome o email…",
+    "registeredFrom": "Registrati dal",
+    "to": "al",
+    "clearFilters": "Cancella filtri",
+    "loadError": "Impossibile caricare i genitori.",
+    "noParents": "Nessun genitore trovato.",
+    "viewBtn": "Visualizza",
+    "col": {
+      "parent": "Genitore",
+      "joined": "Iscritto",
+      "status": "Stato",
+      "bookings": "Prenotazioni"
+    },
+    "filter": {
+      "all": "Tutti",
+      "active": "Attivo",
+      "suspended": "Sospeso"
+    },
+    "badge": {
+      "active": "Attivo",
+      "suspended": "Sospeso"
+    },
+    "pagination": {
+      "showing": "Visualizzazione",
+      "of": "di",
+      "parent_one": "genitore",
+      "parent_other": "genitori",
+      "prev": "Prec.",
+      "next": "Succ."
+    }
+  },
+
+  "parentDetail": {
+    "breadcrumb": "Gestione Genitori",
+    "notFound": "Genitore non trovato",
+    "backToList": "← Torna a Gestione Genitori",
+    "badge": {
+      "active": "Attivo",
+      "suspended": "Sospeso",
+      "unverified": "Email non verificata"
+    },
+    "registered": "Registrato",
+    "totalBookings": "Prenotazioni totali",
+    "tabs": {
+      "overview": "Panoramica",
+      "bookings": "Prenotazioni",
+      "consents": "Consensi Legali",
+      "activity": "Attività"
+    },
+    "overview": {
+      "contactTitle": "Contatto",
+      "email": "Email",
+      "phone": "Telefono",
+      "emailVerified": "Email verificata",
+      "yes": "Sì",
+      "no": "No",
+      "accountTitle": "Account",
+      "status": "Stato",
+      "registered": "Registrato",
+      "totalBookings": "Prenotazioni totali"
+    },
+    "consents": {
+      "noData": "Nessun dato sui consensi disponibile.",
+      "upToDate": "Aggiornato",
+      "needsUpdate": "Aggiornamento necessario",
+      "privacyPolicy": "Informativa sulla Privacy",
+      "terms": "Termini e Condizioni",
+      "currentVersion": "Versione attuale",
+      "acceptedVersion": "Versione accettata",
+      "acceptedOn": "Accettato il",
+      "neverAccepted": "Mai accettato",
+      "ppHistory": "Informativa sulla Privacy — Cronologia Accettazioni",
+      "noPpHistory": "Nessuna accettazione dell'informativa sulla privacy registrata.",
+      "tcHistory": "Termini e Condizioni — Cronologia Accettazioni",
+      "noTcHistory": "Nessuna accettazione dei termini e condizioni registrata.",
+      "acceptedAtRegistration": "Accettato alla registrazione:",
+      "colVersion": "Versione",
+      "colAcceptedOn": "Accettato il",
+      "colMarketing": "Consenso marketing",
+      "colSource": "Fonte",
+      "granted": "Concesso",
+      "notGranted": "Non concesso",
+      "versionUpdate": "Aggiornamento versione"
+    },
+    "bookingsTab": {
+      "noBookings": "Nessuna prenotazione trovata.",
+      "col": {
+        "service": "Servizio",
+        "specialist": "Specialista",
+        "dateTime": "Data e ora",
+        "amount": "Importo",
+        "status": "Stato"
+      }
+    },
+    "activityTab": {
+      "noActivity": "Nessuna attività registrata."
+    },
+    "actionLabels": {
+      "ACTIVATE_PARENT": "Account attivato",
+      "SUSPEND_PARENT": "Account sospeso",
+      "GDPR_DELETE_PARENT": "Account eliminato (GDPR)",
+      "SEND_PASSWORD_RESET": "Reset password inviato",
+      "RESEND_VERIFICATION": "Email di verifica rinviata",
+      "MANUAL_VERIFY": "Email verificata manualmente",
+      "BOOKING_CANCELLED": "Prenotazione annullata",
+      "REFUND_ISSUED": "Rimborso emesso",
+      "BOOKING_CONFIRMED": "Prenotazione confermata",
+      "BOOKING_CANCELLED_BY_EXPERT": "Prenotazione annullata dallo specialista",
+      "LOGIN": "Accesso effettuato"
+    },
+    "statusActions": {
+      "title": "Stato Account",
+      "activate": "Attiva Account",
+      "activating": "Attivazione…",
+      "suspend": "Sospendi Account",
+      "suspending": "Sospensione…",
+      "success": "Stato account aggiornato con successo."
+    },
+    "supportTools": {
+      "title": "Strumenti di Supporto",
+      "passwordReset": "Invia Reset Password",
+      "sending": "Invio…",
+      "resendVerification": "Reinvia Email di Verifica",
+      "markVerified": "Segna come Verificato",
+      "verifying": "Verifica…",
+      "passwordResetSuccess": "Email di reset password inviata.",
+      "resendVerificationSuccess": "Email di verifica reinviata.",
+      "manualVerifySuccess": "Account contrassegnato come verificato."
+    },
+    "dangerZone": {
+      "title": "Zona Pericolosa",
+      "subtitle": "Elimina definitivamente tutti i dati personali. Questa operazione non può essere annullata.",
+      "deleteBtn": "Elimina Account (GDPR)"
+    },
+    "genericActionError": "Azione fallita. Riprova.",
+    "confirmModal": {
+      "defaultName": "Questo genitore",
+      "activate_title": "Attivare l'account?",
+      "activate_body": "L'account di {{name}} verrà riattivato e potranno effettuare nuovamente l'accesso.",
+      "activate_confirm": "Attiva",
+      "suspend_title": "Sospendere l'account?",
+      "suspend_body": "L'account di {{name}} verrà sospeso e tutte le sessioni attive verranno invalidate immediatamente.",
+      "suspend_confirm": "Sospendi",
+      "cancel": "Annulla"
+    },
+    "gdpr": {
+      "title": "Cancellazione Definitiva dell'Account",
+      "blockedTitle": "Questo account non può essere cancellato fino alla risoluzione dei seguenti problemi:",
+      "blockedUpcoming_one": "prenotazione futura",
+      "blockedUpcoming_other": "prenotazioni future",
+      "blockedUpcomingSuffix": " — annulla o riprogramma prima di procedere.",
+      "blockedOverdue_one": "prenotazione confermata con rimborso in sospeso",
+      "blockedOverdue_other": "prenotazioni confermate con rimborso in sospeso",
+      "blockedOverdueSuffix": " — il pagamento è stato acquisito per sessioni scadute senza risoluzione.",
+      "blockedRefunds_one": "rimborso in sospeso",
+      "blockedRefunds_other": "rimborsi in sospeso",
+      "blockedRefundsSuffix": " — attendi che i rimborsi vengano elaborati prima di procedere.",
+      "blockedDisputes_one": "controversia aperta",
+      "blockedDisputes_other": "controversie aperte",
+      "blockedDisputesSuffix": " — risolvi tutte le controversie prima di procedere.",
+      "blockedResolve": "Risolvi questi problemi nella scheda Prenotazioni, poi torna qui per procedere.",
+      "close": "Chiudi",
+      "irreversible": "Questa azione è irreversibile.",
+      "deletedTitle": "Eliminati definitivamente:",
+      "erase1": "Nome, indirizzo email e numero di telefono",
+      "erase2": "Password e credenziali dell'account",
+      "erase3": "Contenuti in formato libero (es. motivi di cancellazione)",
+      "erase4": "Tutte le sessioni attive",
+      "retainTitle": "Conservati in forma anonima:",
+      "retain1": "Registrazioni prenotazioni (data, servizio, durata, importo, riferimento di pagamento)",
+      "retain2": "Registrazioni transazioni (ID pagamento, importo, stato rimborso)",
+      "retainNote": "I tuoi dati personali verranno eliminati definitivamente. Le registrazioni anonimizzate di prenotazioni e pagamenti vengono conservate per scopi legali e fiscali — non possono essere utilizzate per identificarti.",
+      "typeEmail": "Digita l'indirizzo email del genitore per confermare:",
+      "cancel": "Annulla",
+      "eraseBtn": "Cancella Account",
+      "erasing": "Cancellazione…",
+      "deletionFailed": "Cancellazione fallita. Riprova."
+    }
+  },
+
+  "bookingsMgmt": {
+    "pageTitle": "Gestione Prenotazioni",
+    "pageSubtitle": "Elenco prenotazioni della piattaforma — cerca, filtra e intervieni su qualsiasi prenotazione.",
+    "searchPlaceholder": "Cerca per ID prenotazione, nome genitore o specialista…",
+    "from": "Dal",
+    "to": "Al",
+    "clear": "Cancella",
+    "noBookings": "Nessuna prenotazione trovata.",
+    "col": {
+      "id": "ID",
+      "parent": "Genitore",
+      "specialist": "Specialista",
+      "service": "Servizio",
+      "dateTime": "Data e ora",
+      "amount": "Importo",
+      "status": "Stato"
+    },
+    "filter": {
+      "ALL": "Tutti",
+      "UPCOMING": "Prossime",
+      "CONFIRMED": "Confermato",
+      "COMPLETED": "Completato",
+      "PENDING_PAYMENT": "Pagamento in attesa",
+      "CANCELLED": "Annullato",
+      "REFUNDED": "Rimborsato",
+      "DISPUTED": "In contestazione"
+    },
+    "pagination": {
+      "showing": "Visualizzazione",
+      "of": "di",
+      "booking_one": "prenotazione",
+      "booking_other": "prenotazioni",
+      "previous": "Precedente",
+      "next": "Successivo"
+    }
+  },
+
+  "paymentsMgmt": {
+    "pageTitle": "Panoramica Pagamenti",
+    "subtitleTransactions": "Elenco transazioni della piattaforma — visualizza importi, commissioni, pagamenti e riferimenti Stripe.",
+    "subtitleRefundLog": "Registro audit di tutti i rimborsi avviati dall'amministratore con riferimento Stripe e amministratore responsabile.",
+    "viewTransactions": "Transazioni",
+    "viewRefundLog": "Registro Rimborsi",
+    "exportBtn": "Esporta CSV",
+    "exporting": "Esportazione…",
+    "searchPlaceholder": "Cerca per ID prenotazione, nome genitore o specialista…",
+    "from": "Dal",
+    "to": "Al",
+    "clear": "Cancella",
+    "noTransactions": "Nessuna transazione trovata.",
+    "partial": "parziale",
+    "refundPending": "rimborso in attesa",
+    "col": {
+      "id": "ID",
+      "parent": "Genitore",
+      "specialist": "Specialista",
+      "amount": "Importo",
+      "fee": "Commissione",
+      "payout": "Pagamento",
+      "date": "Data",
+      "paymentStatus": "Stato Pagamento"
+    },
+    "filter": {
+      "ALL": "Tutti",
+      "succeeded": "Riuscito",
+      "refunded": "Rimborsato",
+      "pending": "In attesa",
+      "failed": "Fallito",
+      "transfer_failed": "Trasferimento fallito"
+    },
+    "paymentStatus": {
+      "succeeded": "Riuscito",
+      "refunded": "Rimborsato",
+      "refund_pending": "Rimborso in attesa",
+      "captured_cancelled": "Acquisito — Nessun rimborso",
+      "transfer_failed": "Acquisito — Trasferimento fallito",
+      "pending": "In attesa",
+      "failed": "Fallito"
+    },
+    "pagination": {
+      "showing": "Visualizzazione",
+      "of": "di",
+      "transaction_one": "transazione",
+      "transaction_other": "transazioni",
+      "previous": "Precedente",
+      "next": "Successivo"
+    },
+    "modal": {
+      "title": "Transazione #{{id}}",
+      "loadError": "Impossibile caricare i dettagli della transazione.",
+      "parentClient": "Genitore / Cliente",
+      "specialist": "Specialista",
+      "session": "Sessione",
+      "service": "Servizio",
+      "format": "Formato",
+      "dateTime": "Data e ora",
+      "duration": "Durata",
+      "min": "min",
+      "paymentBreakdown": "Dettaglio Pagamento",
+      "amountCharged": "Importo addebitato",
+      "platformFee": "Commissione piattaforma (Sage Nest)",
+      "specialistPayout": "Pagamento specialista",
+      "transferStatus": "Stato trasferimento",
+      "refundStatus": "Stato rimborso",
+      "amountRefunded": "Importo rimborsato",
+      "stripeRef": "Riferimento Stripe",
+      "paymentIntentId": "ID Intento di Pagamento",
+      "noPayment": "Nessun pagamento acquisito",
+      "chargeId": "ID Addebito",
+      "transferId": "ID Trasferimento",
+      "cancellationNote": "Nota di Cancellazione"
+    },
+    "refundLog": {
+      "noRefunds": "Nessun rimborso emesso finora.",
+      "note_one": "{{count}} rimborso registrato. L'ID rimborso Stripe può essere utilizzato per verificare nel dashboard Stripe.",
+      "note_other": "{{count}} rimborsi registrati. L'ID rimborso Stripe può essere utilizzato per verificare nel dashboard Stripe.",
+      "showing": "Visualizzazione",
+      "of": "di",
+      "previous": "Precedente",
+      "next": "Successivo",
+      "col": {
+        "timestamp": "Timestamp",
+        "admin": "Admin",
+        "booking": "Prenotazione",
+        "parent": "Genitore",
+        "original": "Originale",
+        "refunded": "Rimborsato",
+        "stripeRefundId": "ID Rimborso Stripe"
+      }
+    }
+  },
+
+  "expertMgmt": {
+    "pageTitle": "Gestione Esperti",
+    "pageSubtitle": "Esamina e gestisci gli account degli esperti sulla piattaforma.",
+    "exportBtn": "Esporta .xlsx",
+    "exporting": "Esportazione…",
+    "searchPlaceholder": "Cerca esperti per nome…",
+    "cityPlaceholder": "Filtra per città…",
+    "registeredFrom": "Registrati dal",
+    "to": "al",
+    "clear": "Cancella",
+    "noExpertsTitle": "Nessun esperto trovato",
+    "noExpertsFiltered": "Prova a modificare la ricerca o i filtri.",
+    "noExpertsYet": "Nessun account esperto registrato.",
+    "col": {
+      "name": "Nome",
+      "email": "Email",
+      "position": "Posizione",
+      "status": "Stato",
+      "joined": "Iscritto",
+      "bookings": "Prenotazioni",
+      "dac7": "DAC7",
+      "actions": "Azioni"
+    },
+    "filter": {
+      "all": "Tutti",
+      "pending": "In attesa",
+      "approved": "Approvato",
+      "rejected": "Rifiutato",
+      "suspended": "Sospeso",
+      "changes_requested": "Modifiche richieste"
+    },
+    "qual": {
+      "all": "Tutte le qualifiche",
+      "LACTATION_CONSULTANT": "Consulente per l'allattamento (IBCLC)",
+      "BREASTFEEDING_COUNSELLOR": "Consulente per l'allattamento al seno",
+      "INFANT_SLEEP_CONSULTANT": "Consulente per il sonno neonatale",
+      "DOULA": "Doula",
+      "MIDWIFE": "Ostetrica",
+      "BABY_OSTEOPATH": "Osteopata neonatale",
+      "PAEDIATRIC_NUTRITIONIST": "Nutrizionista pediatrico",
+      "EARLY_YEARS_SPECIALIST": "Specialista prima infanzia",
+      "POSTNATAL_PHYSIOTHERAPIST": "Fisioterapista post-parto",
+      "PARENTING_COACH": "Coach genitoriale",
+      "OTHER": "Altro"
+    },
+    "badge": {
+      "deleted": "Eliminato",
+      "APPROVED": "Approvato",
+      "REJECTED": "Rifiutato",
+      "SUSPENDED": "Sospeso",
+      "CHANGES_REQUESTED": "Modifiche richieste",
+      "PENDING": "In attesa"
+    },
+    "pagination": {
+      "showing": "Visualizzazione",
+      "of": "di",
+      "expert_one": "esperto",
+      "expert_other": "esperti",
+      "prev": "Prec.",
+      "next": "Succ."
+    },
+    "action": {
+      "reactivate": "Riattiva",
+      "reject": "Rifiuta",
+      "suspend": "Sospendi",
+      "approve": "Approva",
+      "deletedPlaceholder": "—"
+    },
+    "confirmModal": {
+      "approve_title": "Approvare l'esperto?",
+      "approve_prefix": "Sei sicuro di voler approvare",
+      "reject_title": "Rifiutare l'esperto?",
+      "reject_prefix": "Sei sicuro di voler rifiutare",
+      "suspend_title": "Sospendere l'esperto?",
+      "suspend_prefix": "Sei sicuro di voler sospendere",
+      "reactivate_title": "Riattivare l'esperto?",
+      "reactivate_prefix": "Sei sicuro di voler riattivare",
+      "password-reset_title": "Inviare il reset della password?",
+      "password-reset_prefix": "Invia un'email di reset password a",
+      "resend-verification_title": "Reinviare l'email di verifica?",
+      "resend-verification_prefix": "Reinvia l'email di verifica a",
+      "manual-verify_title": "Contrassegnare l'account come verificato?",
+      "manual-verify_prefix": "Verifica manualmente l'account di",
+      "cancel": "Annulla",
+      "confirm": "Conferma",
+      "noInsurance": "Questo esperto non ha caricato un'assicurazione. Conferma che desideri procedere comunque."
+    },
+    "success": {
+      "passwordReset": "Email di reset della password inviata con successo.",
+      "resendVerification": "Email di verifica reinviata con successo."
+    }
+  },
+
+  "expertDetail": {
+    "breadcrumb": "Gestione Esperti",
+    "notFoundError": "Esperto non trovato.",
+    "backToList": "← Torna alla lista esperti",
+    "tabs": {
+      "profile": "Profilo",
+      "bookings": "Prenotazioni",
+      "activity": "Attività"
+    },
+    "loadError": "Esperto non trovato o caricamento fallito.",
+    "genericActionError": "Azione fallita. Riprova.",
+    "badge": {
+      "unlisted": "Non pubblicato",
+      "emailVerified": "Email verificata",
+      "unverified": "Non verificato",
+      "failedLogin_one": "{{count}} accesso fallito",
+      "failedLogin_other": "{{count}} accessi falliti",
+      "lockedUntil": "Bloccato fino alle {{time}}",
+      "joined": "Iscritto il {{date}}"
+    },
+    "draft": {
+      "pendingTitle": "Modifica del profilo in attesa di revisione",
+      "submitted": "· inviato il {{date}}",
+      "liveCol": "Live (attuale)",
+      "proposedCol": "Modifiche proposte",
+      "approveBtn": "Approva e pubblica",
+      "approving": "Approvazione…",
+      "rejectBtn": "Rifiuta",
+      "rejectionPlaceholder": "Nota di rifiuto (opzionale)…",
+      "confirmReject": "Conferma rifiuto",
+      "rejecting": "…",
+      "cancel": "Annulla",
+      "approveError": "Impossibile approvare la bozza.",
+      "rejectError": "Impossibile rifiutare la bozza.",
+      "fields": {
+        "Summary": "Sommario",
+        "Bio": "Biografia",
+        "Professional title": "Titolo professionale",
+        "Location": "Posizione",
+        "Timezone": "Fuso orario",
+        "Languages": "Lingue",
+        "Instagram": "Instagram",
+        "Facebook": "Facebook",
+        "LinkedIn": "LinkedIn",
+        "Expertise": "Competenze"
+      }
+    },
+    "profile": {
+      "summary": "Sommario",
+      "noSummary": "Nessun sommario aggiunto.",
+      "fullBio": "Biografia completa",
+      "noBio": "Nessuna biografia aggiunta.",
+      "languagesSpoken": "Lingue parlate",
+      "noLanguages": "Nessuna lingua aggiunta.",
+      "pendingLanguages": "Approvazioni lingue in sospeso",
+      "langApproveQuestion": "Approvare?",
+      "langRejectQuestion": "Rifiutare?",
+      "langConfirm": "Conferma",
+      "langCancel": "Annulla",
+      "location": "Posizione",
+      "noLocation": "Nessuna posizione aggiunta.",
+      "qualifications": "Qualifiche",
+      "noQualifications": "Nessuna qualifica aggiunta.",
+      "certifications": "Certificazioni",
+      "noCertifications": "Nessuna certificazione aggiunta.",
+      "viewDocument": "Visualizza documento",
+      "noDocument": "Nessun documento",
+      "langApproveError": "Impossibile approvare la lingua.",
+      "langRejectError": "Impossibile rifiutare la lingua."
+    },
+    "bizInfo": {
+      "title": "Informazioni aziendali",
+      "subtitle": "Informazioni raccolte per scopi di conformità",
+      "yearLabel": "Anno",
+      "statusLabel": "Stato",
+      "statusAll": "Tutti",
+      "statusConfirmed": "Confermato",
+      "statusCompleted": "Completato",
+      "dac7Title": "Soglia di segnalazione DAC7 raggiunta ({{year}})",
+      "dac7Suffix_both": " — supera sia la soglia delle 30 transazioni che quella di £2.000.",
+      "dac7Suffix_transactions": " — soglia delle 30 transazioni raggiunta.",
+      "dac7Suffix_amount": " — soglia di £2.000 di guadagni lordi raggiunta.",
+      "dac7Advice": "Questo esperto potrebbe essere soggetto a segnalazione ai sensi della Direttiva UE 2021/514 (DAC7). Confermare la soglia applicabile con un consulente fiscale.",
+      "cards": {
+        "gross": "Guadagni lordi",
+        "fees": "Commissioni dedotte",
+        "net": "Guadagni netti",
+        "sessions": "Sessioni completate",
+        "refundCount": "Rimborsi emessi",
+        "refundTotal": "Totale rimborsato"
+      },
+      "exportBtn": "Esporta .xlsx",
+      "exporting": "Esportazione…",
+      "exportNoBiz": "L'esportazione CSV richiede le informazioni aziendali nel sistema",
+      "exportError": "Esportazione fallita. Riprova.",
+      "dac7Transaction_one": "transazione",
+      "dac7Transaction_other": "transazioni",
+      "dac7Gross": "lordo",
+      "rows": {
+        "entityType": "Tipo di entità",
+        "individual": "Persona fisica",
+        "company": "Società / Persona giuridica",
+        "legalName": "Ragione sociale completa",
+        "dob": "Data di nascita",
+        "street": "Via",
+        "city": "Città",
+        "postalCode": "Codice postale",
+        "country": "Paese",
+        "tin": "Codice fiscale",
+        "vat": "Partita IVA",
+        "companyReg": "Numero di registrazione aziendale",
+        "iban": "IBAN / Conto bancario",
+        "bizEmail": "Indirizzo email",
+        "municipality": "Comune",
+        "bizAddress": "Indirizzo aziendale"
+      },
+      "noBizInfo": "⚠️ Nessuna informazione aziendale inviata."
+    },
+    "insurance": {
+      "title": "Assicurazione professionale",
+      "expired": "Assicurazione scaduta",
+      "active": "Assicurazione attiva",
+      "expiresLabel": "Scade:",
+      "viewPolicy": "Visualizza polizza",
+      "isExpired": "⚠️ L'assicurazione è scaduta.",
+      "noInsurance": "⚠️ Nessuna assicurazione caricata."
+    },
+    "services": {
+      "title": "Servizi ({{count}})",
+      "noServices": "Nessun servizio aggiunto.",
+      "active": "Attivo",
+      "inactive": "Inattivo"
+    },
+    "stripe": {
+      "title": "Account Stripe",
+      "connected": "Connesso · Pagamenti abilitati",
+      "pendingOnboarding": "In attesa · Onboarding incompleto",
+      "viewInStripe": "Visualizza su Stripe",
+      "notConnected": "Non connesso"
+    },
+    "bookingsTab": {
+      "loading": "Caricamento prenotazioni…",
+      "noBookings": "Nessuna prenotazione registrata.",
+      "sessionFallback": "Sessione"
+    },
+    "activityTab": {
+      "loading": "Caricamento attività…",
+      "noActivity": "Nessuna attività registrata.",
+      "expertBadge": "Esperto",
+      "awaiting": "In attesa di risposta",
+      "resolved": "Risolto",
+      "expertSuffix": "(esperto)"
+    },
+    "actionLabels": {
+      "APPROVE": "Approvato",
+      "REJECT": "Rifiutato",
+      "SUSPEND": "Sospeso",
+      "REACTIVATE": "Riattivato",
+      "REQUEST_CHANGES": "Modifiche richieste",
+      "UNPUBLISH": "Rimosso dalla pubblicazione",
+      "REPUBLISH": "Ripubblicato",
+      "MANUAL_VERIFY": "Verificato manualmente",
+      "MANUAL_REFUND": "Rimborso manuale emesso",
+      "SEND_PASSWORD_RESET": "Reset password inviato",
+      "RESEND_VERIFICATION": "Email di verifica reinviata",
+      "GDPR_DELETE": "Account eliminato (GDPR)",
+      "APPROVE_PROFILE_DRAFT": "Bozza profilo approvata",
+      "REJECT_PROFILE_DRAFT": "Bozza profilo rifiutata",
+      "EXPERT_PROFILE_SAVED": "Profilo aggiornato",
+      "EXPERT_PROFILE_DRAFT_SUBMITTED": "Bozza profilo inviata",
+      "EXPERT_PROFILE_RESUBMITTED": "Profilo reinviato"
+    },
+    "statusBadge": {
+      "APPROVED": "Approvato",
+      "REJECTED": "Rifiutato",
+      "SUSPENDED": "Sospeso",
+      "PENDING": "In attesa di revisione",
+      "CHANGES_REQUESTED": "Modifiche richieste"
+    },
+    "bookingStatusBadge": {
+      "CONFIRMED": "Confermato",
+      "COMPLETED": "Completato",
+      "CANCELLED": "Annullato",
+      "REFUNDED": "Rimborsato",
+      "PENDING_PAYMENT": "Pagamento in sospeso"
+    },
+    "formatBadge": {
+      "ONLINE": "Online",
+      "IN_PERSON": "In presenza"
+    },
+    "clusterBadge": {
+      "FOR_PARENTS": "Per genitori",
+      "FOR_BABY": "Per bambini",
+      "PACKAGE": "Pacchetto",
+      "GIFT": "Regalo",
+      "EVENT": "Evento"
+    },
+    "statusActions": {
+      "title": "Azioni di stato",
+      "reactivate": "Riattiva esperto",
+      "reactivating": "Riattivazione…",
+      "reject": "Rifiuta esperto",
+      "rejecting": "Rifiuto…",
+      "suspend": "Sospendi esperto",
+      "suspending": "Sospensione…",
+      "approve": "Approva esperto",
+      "approving": "Approvazione…",
+      "cannotApprove": "Impossibile approvare — l'esperto non ha completato l'onboarding Stripe.",
+      "requestChanges": "Richiedi modifiche",
+      "approveSuccess": "Esperto approvato con successo.",
+      "rejectSuccess": "Esperto rifiutato con successo.",
+      "suspendSuccess": "Esperto sospeso con successo.",
+      "reactivateSuccess": "Esperto riattivato con successo."
+    },
+    "supportTools": {
+      "title": "Strumenti di supporto",
+      "passwordReset": "Invia reset password",
+      "sending": "Invio…",
+      "resendVerification": "Reinvia email di verifica",
+      "markVerified": "Segna come verificato",
+      "verifying": "Verifica…",
+      "passwordResetSuccess": "Email di reset password inviata.",
+      "resendVerificationSuccess": "Email di verifica reinviata.",
+      "manualVerifySuccess": "Account contrassegnato come verificato."
+    },
+    "dangerZone": {
+      "title": "Zona pericolosa",
+      "subtitle": "Cancella definitivamente tutti i dati personali. Questa operazione non può essere annullata.",
+      "deleteBtn": "Elimina account (cancellazione GDPR)"
+    },
+    "accountDeleted": {
+      "title": "Account eliminato",
+      "message": "Questo account è stato cancellato definitivamente (GDPR). Non sono disponibili ulteriori azioni."
+    },
+    "confirmModal": {
+      "approve_title": "Approvare l'esperto?",
+      "approve_body": "Sei sicuro di voler approvare {{name}}?",
+      "reject_title": "Rifiutare l'esperto?",
+      "reject_body": "Sei sicuro di voler rifiutare {{name}}?",
+      "suspend_title": "Sospendere l'esperto?",
+      "suspend_body": "{{name}} non potrà accedere finché non viene riattivato.",
+      "reactivate_title": "Riattivare l'esperto?",
+      "reactivate_body": "{{name}} verrà ripristinato allo stato approvato e potrà accedere di nuovo.",
+      "cancel": "Annulla",
+      "confirm": "Conferma",
+      "noInsurance": "Questo esperto non ha caricato un'assicurazione. Conferma che desideri procedere comunque."
+    },
+    "requestChanges": {
+      "title": "Richiedi modifiche al profilo",
+      "subtitle": "Descrivi cosa deve essere corretto. Lo specialista riceverà questa nota via email.",
+      "placeholder": "es. Carica una copia più chiara del tuo certificato assicurativo.",
+      "cancel": "Annulla",
+      "send": "Invia richiesta",
+      "sending": "Invio…",
+      "errorRequired": "Inserisci una nota.",
+      "success": "Richiesta di modifica inviata."
+    },
+    "gdpr": {
+      "title": "Cancellazione definitiva dell'account",
+      "pendingTitle": "Questo account non può essere eliminato finché tutti i pagamenti in sospeso non sono stati completati.",
+      "pendingBody_one": "{{count}} pagamento è ancora in sospeso. I pagamenti vengono generalmente elaborati entro 24 ore dal completamento di una sessione. Torna qui una volta completati tutti i pagamenti.",
+      "pendingBody_other": "{{count}} pagamenti sono ancora in sospeso. I pagamenti vengono generalmente elaborati entro 24 ore dal completamento di una sessione. Torna qui una volta completati tutti i pagamenti.",
+      "close": "Chiudi",
+      "eraseTitle": "Questa azione è irreversibile. Verranno cancellati i seguenti dati:",
+      "erase1": "Profilo, biografia, foto, credenziali di accesso e documenti caricati",
+      "erase2": "Email di contatto aziendale e sito web",
+      "erase3": "Tutte le prenotazioni future annullate e rimborsi Stripe emessi",
+      "erase4": "Tutte le sessioni attive invalidate immediatamente",
+      "erase5": "Lo specialista sarà mostrato come \"Specialista eliminato\" nella cronologia delle prenotazioni dei genitori",
+      "retainTitle": "Conservati per un minimo di 5 anni ai sensi della DAC7 (Direttiva UE 2021/514):",
+      "retain1": "Nome legale completo, data di nascita e tipo di entità",
+      "retain2": "Codice fiscale (CF) e partita IVA / numero di registrazione aziendale",
+      "retain3": "Indirizzo registrato e conto bancario (IBAN)",
+      "retain4": "Tutti i guadagni e i registri di prenotazione legati alle transazioni finanziarie",
+      "gdprNote": "Art. 17(3)(b) GDPR — questi dati devono rimanere identificabili per la rendicontazione fiscale e non possono essere anonimizzati.",
+      "typeEmail": "Digita l'email dello specialista per confermare:",
+      "emailPlaceholder": "specialista@email.com",
+      "cancel": "Annulla",
+      "eraseBtn": "Elimina account",
+      "erasing": "Eliminazione…",
+      "deletionFailed": "Eliminazione fallita."
+    }
+  },
+
+  "bookingModal": {
+    "title": "Prenotazione #{{id}}",
+    "loadError": "Impossibile caricare i dettagli della prenotazione.",
+    "notFound": "Prenotazione non trovata.",
+    "sections": {
+      "parentClient": "Genitore / Cliente",
+      "specialist": "Specialista",
+      "sessionDetails": "Dettagli sessione",
+      "payment": "Pagamento",
+      "refund": "Rimborso",
+      "cancellation": "Cancellazione",
+      "dispute": "Contestazione",
+      "internalNote": "Nota interna",
+      "internalNoteHint": "(non visibile al genitore o allo specialista)"
+    },
+    "labels": {
+      "service": "Servizio",
+      "format": "Formato",
+      "dateTime": "Data e ora",
+      "duration": "Durata",
+      "min": "min",
+      "amountCharged": "Importo addebitato",
+      "platformFee": "Commissione piattaforma",
+      "paymentStatus": "Stato pagamento",
+      "transferStatus": "Stato trasferimento",
+      "refundStatus": "Stato rimborso",
+      "amountRefunded": "Importo rimborsato",
+      "partial": "(parziale)",
+      "refundDate": "Data rimborso",
+      "stripeRefundId": "ID rimborso Stripe"
+    },
+    "paymentStatus": {
+      "noPayment": "Nessun pagamento",
+      "capturedTransferFailed": "Acquisito — trasferimento fallito",
+      "captured": "Pagamento acquisito",
+      "capturedRefunded": "Acquisito — rimborsato",
+      "capturedRefundPending": "Acquisito — rimborso in sospeso",
+      "capturedCancelled": "Acquisito — annullato"
+    },
+    "refundStatus": {
+      "refunded": "Rimborsato",
+      "pending": "Rimborso in sospeso",
+      "detailsNotRecorded": "(dettagli non registrati)",
+      "notRefunded": "Non rimborsato"
+    },
+    "cancellationNoReason": "Nessun motivo fornito — potrebbe essere necessario un follow-up",
+    "disputeNoReason": "Nessun motivo fornito",
+    "disputeFlaggedOn": "Segnalato il {{date}}",
+    "notePlaceholder": "Aggiungi una nota interna…",
+    "saveNote": "Salva nota",
+    "saving": "Salvataggio…",
+    "noteSaved": "Nota salvata.",
+    "noteSaveError": "Impossibile salvare la nota.",
+    "bookingStatus": {
+      "CONFIRMED": "Confermato",
+      "COMPLETED": "Completato",
+      "CANCELLED": "Annullato",
+      "REFUNDED": "Rimborsato",
+      "PENDING_PAYMENT": "Pagamento in sospeso",
+      "PENDING": "In attesa"
+    },
+    "disputed": "In contestazione"
+  },
+
+  "adminActions": {
+    "title": "Azioni amministratore",
+    "cancelBooking": "Annulla prenotazione",
+    "issueRefund": "Emetti rimborso",
+    "markDisputed": "Segna come contestato",
+    "resolveDispute": "Risolvi contestazione",
+    "resolving": "Risoluzione…",
+    "retryTransfer": "Ritenta trasferimento",
+    "markResolved": "Segna come risolto",
+    "genericError": "Azione fallita. Riprova.",
+    "cancel": {
+      "descWithRefund": "Annulla e rimborsa questa prenotazione. Un rimborso completo verrà emesso al genitore.",
+      "descNoRefund": "Annulla questa prenotazione.",
+      "placeholder": "Motivo della cancellazione (obbligatorio)…",
+      "confirmBtn": "Conferma annullamento",
+      "cancelling": "Annullamento…",
+      "dismiss": "Chiudi",
+      "success": "Prenotazione annullata con successo."
+    },
+    "refund": {
+      "policyLabel": "Politica:",
+      "amountLabel": "Importo rimborso (£)",
+      "amountHint": "— lascia vuoto per rimborso completo (£{{amount}})",
+      "reasonPlaceholder": "Motivo (opzionale)…",
+      "overrideWarning": "Questo importo si discosta dalla politica di cancellazione. È richiesto un motivo di deroga.",
+      "overridePlaceholder": "Spiega perché si deroga alla politica…",
+      "reviewBtn": "Rivedi rimborso",
+      "refunding": "Rimborso…",
+      "dismiss": "Chiudi",
+      "tierFull": "rimborso completo (>24 ore)",
+      "tierHalf": "rimborso 50% (12–24 ore)",
+      "tierNone": "nessun rimborso (<12 ore)",
+      "errGtZero": "L'importo deve essere maggiore di £0,00.",
+      "errExceedsTotal": "L'importo non può superare il totale della prenotazione (£{{amount}}).",
+      "errOverrideRequired": "È richiesto un motivo di deroga quando l'importo si discosta dalla politica di cancellazione.",
+      "successPartial": "Rimborso parziale di £{{amount}} emesso con successo.",
+      "successFull": "Rimborso completo emesso con successo."
+    },
+    "dispute": {
+      "desc": "Segna questa prenotazione come contestata. Qualsiasi pagamento in sospeso allo specialista verrà sospeso.",
+      "placeholder": "Motivo della contestazione (opzionale)…",
+      "confirmBtn": "Conferma contestazione",
+      "flagging": "Segnalazione…",
+      "dismiss": "Chiudi",
+      "success": "Prenotazione segnalata come contestata. Il pagamento in sospeso è sospeso.",
+      "resolveSuccess": "Contestazione risolta."
+    },
+    "retry": {
+      "desc": "Reimposta questo trasferimento come in sospeso in modo che il prossimo ciclo pianificato tenti nuovamente il pagamento. Assicurati che l'account Stripe dello specialista sia configurato correttamente prima di riprovare.",
+      "confirmBtn": "Conferma nuovo tentativo",
+      "processing": "Elaborazione…",
+      "cancel": "Annulla",
+      "success": "Trasferimento accodato per nuovo tentativo."
+    },
+    "resolve": {
+      "desc": "Segna questo trasferimento come risolto manualmente. Utilizza questa opzione quando il pagamento è stato gestito al di fuori del sistema automatizzato (es. bonifico bancario diretto).",
+      "noteLabel": "Nota (opzionale)",
+      "notePlaceholder": "es. Bonifico bancario manuale inviato il 22 apr 2026",
+      "confirmBtn": "Segna come risolto",
+      "processing": "Elaborazione…",
+      "cancel": "Annulla",
+      "success": "Trasferimento contrassegnato come risolto."
+    },
+    "refundConfirm": {
+      "titleOverride": "Conferma deroga alla politica",
+      "titlePartial": "Conferma rimborso parziale",
+      "titleFull": "Conferma rimborso completo",
+      "bodyPartial": "Emettere un rimborso parziale di £{{amount}} per la prenotazione #{{id}}?",
+      "bodyFull": "Emettere un rimborso completo di £{{amount}} per la prenotazione #{{id}}?",
+      "cannotUndo": "Questa azione non può essere annullata.",
+      "overrideLabel": "Motivo deroga:",
+      "cancel": "Annulla",
+      "confirm": "Sì, emetti rimborso"
+    }
+  },
+
+  "legalCompliance": {
+    "pageTitle": "Conformità Legale",
+    "pageSubtitle": "Genitori e il loro stato di accettazione per le versioni attuali dei documenti",
+    "searchPlaceholder": "Cerca per nome o email…",
+    "filter": {
+      "all": "Tutti",
+      "nonCompliant": "Non conforme"
+    },
+    "badge": {
+      "upToDate": "Aggiornato",
+      "needsUpdate": "Aggiornamento necessario"
+    },
+    "summary": {
+      "parent_one": "genitore",
+      "parent_other": "genitori",
+      "nonCompliant": "{{count}} su questa pagina devono accettare i documenti aggiornati"
+    },
+    "col": {
+      "parent": "Genitore",
+      "privacyPolicy": "Informativa sulla Privacy",
+      "terms": "Termini e Condizioni",
+      "overall": "Complessivo"
+    },
+    "joined": "Iscritto {{date}}",
+    "accepted": "Accettato {{version}} · {{date}}",
+    "neverAccepted": "Mai accettato",
+    "current": "Versione attuale: {{version}}",
+    "viewProfile": "Visualizza profilo →",
+    "allCompliant": "Tutti i genitori hanno accettato le versioni attuali dei documenti.",
+    "noParents": "Nessun genitore trovato.",
+    "pagination": {
+      "page": "Pagina {{page}} di {{pages}}",
+      "result_one": "risultato",
+      "result_other": "risultati",
+      "previous": "Precedente",
+      "next": "Successivo"
+    }
+  },
+
+  "legalDocs": {
+    "pageTitle": "Documenti Legali",
+    "pageSubtitle": "Visualizza le versioni attuali e pubblica aggiornamenti dopo che il contenuto della pagina è stato aggiornato dagli sviluppatori.",
+    "loadError": "Impossibile caricare le versioni dei documenti legali.",
+    "loading": "Caricamento…",
+    "docType": {
+      "PRIVACY_POLICY": "Informativa sulla Privacy",
+      "TERMS_CONDITIONS": "Termini e Condizioni"
+    },
+    "card": {
+      "version": "Versione {{v}}",
+      "published": "pubblicato {{date}}",
+      "acceptance_one": "accettazione",
+      "acceptance_other": "accettazioni",
+      "noVersion": "Nessuna versione pubblicata",
+      "viewCurrent": "Visualizza attuale",
+      "instructions": "Assicurarsi che il contenuto aggiornato sia già attivo sulla pagina {{path}} prima di pubblicare.",
+      "reacceptPrivacy": " Tutti gli utenti (genitori ed esperti) saranno invitati a ri-accettare al prossimo accesso.",
+      "reacceptTerms": " Tutti i genitori saranno invitati a ri-accettare prima della prossima prenotazione.",
+      "versionPlaceholder": "es. 1.1 o 2.0.1",
+      "publishBtn": "Pubblica",
+      "publishing": "Pubblicazione…",
+      "formatHint": "Usa il formato numerico, es. 1.1 o 2.0.1",
+      "publishError": "Impossibile pubblicare la versione.",
+      "versionHistoryBtn": "Cronologia versioni"
+    },
+    "confirmModal": {
+      "title": "Pubblicare {{docLabel}} v{{version}}?",
+      "body": "Assicurarsi che il contenuto aggiornato sia già attivo sulla pagina prima di confermare.",
+      "bodyPrivacy": " Tutti gli utenti (genitori ed esperti) saranno invitati a ri-accettare al prossimo accesso.",
+      "bodyTerms": " Tutti i genitori saranno invitati a ri-accettare prima della prossima prenotazione.",
+      "cannotUndo": " Questa operazione non può essere annullata.",
+      "cancel": "Annulla",
+      "confirm": "Sì, pubblica"
+    },
+    "versionHistory": {
+      "title": "Cronologia Versioni",
+      "col": {
+        "version": "Versione",
+        "published": "Pubblicato",
+        "acceptances": "Accettazioni"
+      },
+      "user_one": "utente",
+      "user_other": "utenti"
+    }
+  },
+
+  "sessionFormat": {
+    "ONLINE": "Online",
+    "IN_PERSON": "In presenza",
+    "BOTH": "Online e in presenza"
+  },
+
+  "transferStatus": {
+    "payoutSent": "Pagamento inviato",
+    "resolved": "Risolto — gestito manualmente",
+    "failed": "Fallito — azione manuale richiesta",
+    "skippedRefunded": "Saltato — prenotazione rimborsata",
+    "skippedCancelled": "Saltato — prenotazione annullata",
+    "skippedPartialRefund": "Saltato — rimborso parziale emesso",
+    "skippedRefund": "Saltato — rimborsato",
+    "skippedRefundPending": "Saltato — rimborso in attesa",
+    "skippedRefundIssued": "Saltato — rimborso emesso",
+    "skipped": "Saltato",
+    "onHoldDisputed": "In attesa — in contestazione",
+    "pendingAwaitingSession": "In attesa — sessione da svolgere",
+    "pendingPayoutDue": "In attesa — pagamento previsto il {{date}}",
+    "pendingPayoutOverdue": "In attesa — pagamento scaduto",
+    "pendingTransfer": "Trasferimento in attesa"
+  }
+}
