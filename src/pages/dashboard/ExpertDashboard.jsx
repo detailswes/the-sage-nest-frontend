@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
-import { getMyProfile } from "../../api/expertApi";
+import { getMyProfile, listAvailability } from "../../api/expertApi";
 import { getProfileImageUrl } from "../../utils/imageUrl";
+import LanguageSelector from "../../components/LanguageSelector";
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 const UserIcon = ({ active }) => (
@@ -118,16 +120,13 @@ const LogoutIcon = () => (
 
 // ─── Nav config ──────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: "profile", label: "Profile", Icon: UserIcon },
-  { key: "services", label: "Services", Icon: BriefcaseIcon },
-  { key: "availability", label: "Availability", Icon: CalendarIcon },
-  { key: "calendar", label: "Calendar", Icon: CalendarIcon },
-  {
-    key: "appointments",
-    label: "Upcoming Appointments",
-    Icon: AppointmentsIcon,
-  },
-  { key: "settings", label: "Settings", Icon: SettingsIcon },
+  { key: "profile",      tKey: "nav.profile",      Icon: UserIcon },
+  { key: "services",     tKey: "nav.services",     Icon: BriefcaseIcon },
+  { key: "availability", tKey: "nav.availability", Icon: CalendarIcon },
+  { key: "calendar",     tKey: "nav.calendar",     Icon: CalendarIcon },
+  { key: "appointments", tKey: "nav.appointments", Icon: AppointmentsIcon },
+  { key: "history",      tKey: "nav.history",      Icon: AppointmentsIcon },
+  { key: "settings",     tKey: "nav.settings",     Icon: SettingsIcon },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -137,17 +136,20 @@ const VALID_SECTIONS = [
   "availability",
   "calendar",
   "appointments",
+  "history",
   "settings",
 ];
 
 const ExpertDashboard = () => {
   const { user, logout } = useAuth();
+  const { t } = useTranslation('expertDashboard');
   const location = useLocation();
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [sidebarImage, setSidebarImage] = useState(null);
   const [expertStatus, setExpertStatus] = useState(null);
   const [changeRequestNote, setChangeRequestNote] = useState("");
   const [isPublished, setIsPublished] = useState(true);
+  const [hasAvailability, setHasAvailability] = useState(null);
 
   useEffect(() => {
     getMyProfile()
@@ -157,7 +159,10 @@ const ExpertDashboard = () => {
         setChangeRequestNote(data.change_request_note || "");
         setIsPublished(data.is_published ?? true);
       })
-      .catch(() => {}); // silently fall back to defaults
+      .catch(() => {});
+    listAvailability()
+      .then((slots) => setHasAvailability(slots.length > 0))
+      .catch(() => setHasAvailability(true)); // on error, hide banner
   }, []);
 
   // Derive active section from URL path
@@ -226,7 +231,7 @@ const ExpertDashboard = () => {
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ key, label, Icon }) => {
+          {NAV_ITEMS.map(({ key, tKey, Icon }) => {
             const isActive = activeSection === key;
             return (
               <Link
@@ -239,20 +244,21 @@ const ExpertDashboard = () => {
                 }`}
               >
                 <Icon active={isActive} />
-                {label}
+                {t(tKey)}
               </Link>
             );
           })}
         </nav>
 
         {/* Sign out */}
-        <div className="p-3 border-t border-[#E4E7E4]">
+        <div className="p-3 border-t border-[#E4E7E4] space-y-1">
+          <LanguageSelector />
           <button
             onClick={() => setShowSignOutConfirm(true)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-150"
           >
             <LogoutIcon />
-            Sign out
+            {t('signOut')}
           </button>
         </div>
       </aside>
@@ -279,7 +285,7 @@ const ExpertDashboard = () => {
                 </svg>
                 <div>
                   <p className="text-sm font-semibold text-amber-800">
-                    Profile changes requested
+                    {t('banners.changesRequested.title')}
                   </p>
                   {changeRequestNote && (
                     <p className="text-sm text-amber-700 mt-1 whitespace-pre-wrap">
@@ -287,9 +293,43 @@ const ExpertDashboard = () => {
                     </p>
                   )}
                   <p className="text-xs text-amber-600 mt-2">
-                    Please update your profile and save — this will resubmit it
-                    for review.
+                    {t('banners.changesRequested.footer')}
                   </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* No availability banner */}
+          {expertStatus === "APPROVED" && hasAvailability === false && (
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4">
+              <div className="flex items-start gap-3">
+                <svg
+                  className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
+                  />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-blue-800">
+                    {t('banners.noAvailability.title')}
+                  </p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    {t('banners.noAvailability.body')}
+                  </p>
+                  <Link
+                    to="/dashboard/expert/availability"
+                    className="inline-block mt-2.5 text-xs font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900"
+                  >
+                    {t('banners.noAvailability.cta')}
+                  </Link>
                 </div>
               </div>
             </div>
@@ -314,12 +354,10 @@ const ExpertDashboard = () => {
                 </svg>
                 <div>
                   <p className="text-sm font-semibold text-orange-800">
-                    Your profile is currently hidden from search
+                    {t('banners.unpublished.title')}
                   </p>
                   <p className="text-sm text-orange-700 mt-1">
-                    Your account is approved but has been temporarily removed
-                    from parent search results by the Sage Nest team. Please
-                    contact support if you have questions.
+                    {t('banners.unpublished.body')}
                   </p>
                 </div>
               </div>
@@ -355,23 +393,23 @@ const ExpertDashboard = () => {
               </svg>
             </div>
             <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
-              Sign out?
+              {t('signOutModal.title')}
             </h3>
             <p className="text-sm text-gray-500 text-center mb-6">
-              Are you sure you want to sign out of your account?
+              {t('signOutModal.body')}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowSignOutConfirm(false)}
                 className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t('signOutModal.cancel')}
               </button>
               <button
                 onClick={logout}
                 className="flex-1 py-2.5 px-4 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors"
               >
-                Yes, sign out
+                {t('signOutModal.confirm')}
               </button>
             </div>
           </div>

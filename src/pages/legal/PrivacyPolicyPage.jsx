@@ -1,3 +1,6 @@
+import { useState, useEffect } from 'react';
+import { getLegalVersionsApi } from '../../api/authApi';
+
 const Section = ({ title, children }) => (
   <div className="mb-8">
     <h2 className="text-lg font-semibold text-[#1F2933] mb-3">{title}</h2>
@@ -5,14 +8,30 @@ const Section = ({ title, children }) => (
   </div>
 );
 
-const PrivacyPolicyPage = () => (
+const formatDate = (iso) =>
+  new Date(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+const PrivacyPolicyPage = () => {
+  const [doc, setDoc] = useState(null);
+
+  useEffect(() => {
+    getLegalVersionsApi()
+      .then((data) => setDoc(data.privacy_policy))
+      .catch(() => {});
+  }, []);
+
+  return (
   <div className="min-h-screen bg-[#F5F7F5] py-10 px-4">
     <div className="max-w-2xl mx-auto">
 
       <div className="mb-8 text-center">
         <span className="text-xl font-bold text-[#1F2933]">Sage Nest</span>
         <h1 className="text-2xl font-semibold text-[#1F2933] mt-4 mb-1">Privacy Policy</h1>
-        <p className="text-sm text-gray-400">Version 1.0 · Last updated March 2026</p>
+        <p className="text-sm text-gray-400">
+          {doc
+            ? `Version ${doc.version} · Last updated ${formatDate(doc.effective_from)}`
+            : 'Loading…'}
+        </p>
       </div>
 
       <div className="bg-white rounded-2xl border border-[#E4E7E4] px-8 py-8">
@@ -59,6 +78,7 @@ const PrivacyPolicyPage = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default PrivacyPolicyPage;

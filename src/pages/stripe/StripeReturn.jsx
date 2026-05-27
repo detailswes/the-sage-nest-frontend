@@ -30,21 +30,37 @@ const ErrorIcon = () => (
 // ─── Component ────────────────────────────────────────────────────────────────
 const StripeReturn = () => {
   const navigate = useNavigate();
-  // 'verifying' | 'success' | 'incomplete' | 'error'
+  // 'verifying' | 'success' | 'pending' | 'incomplete' | 'error'
   const [status, setStatus] = useState('verifying');
   const [countdown, setCountdown] = useState(3);
+  const [retrying, setRetrying] = useState(false);
 
-  useEffect(() => {
+  const verify = () => {
+    setStatus('verifying');
     verifyStripeReturn()
       .then((data) => {
         if (data.onboarding_complete) {
           setStatus('success');
+        } else if (data.details_submitted && !data.card_payments_active) {
+          // Details submitted but Stripe hasn't activated card_payments yet —
+          // this is a brief propagation delay, not a user error.
+          setStatus('pending');
         } else {
           setStatus('incomplete');
         }
       })
       .catch(() => setStatus('error'));
-  }, []);
+  };
+
+  useEffect(() => { verify(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-retry once after 4 s when in the pending state
+  useEffect(() => {
+    if (status !== 'pending' || retrying) return;
+    setRetrying(true);
+    const t = setTimeout(() => { setRetrying(false); verify(); }, 4000);
+    return () => clearTimeout(t);
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-redirect countdown on success
   useEffect(() => {
@@ -104,6 +120,24 @@ const StripeReturn = () => {
             <p className="text-xs text-gray-400 mt-3">
               Redirecting automatically in {countdown}s…
             </p>
+          </>
+        )}
+
+        {/* Pending — details submitted, card_payments not yet active */}
+        {status === 'pending' && (
+          <>
+            <div className="w-16 h-16 rounded-full border-4 border-[#445446]/20 border-t-[#445446] animate-spin mx-auto mb-5" />
+            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">Activating your account…</h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Your details have been submitted. Stripe is activating your payment account — this usually takes a few seconds.
+              We'll check again automatically.
+            </p>
+            <button
+              onClick={() => { setRetrying(false); verify(); }}
+              className="w-full py-2.5 px-4 rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium transition-colors"
+            >
+              Check again now
+            </button>
           </>
         )}
 

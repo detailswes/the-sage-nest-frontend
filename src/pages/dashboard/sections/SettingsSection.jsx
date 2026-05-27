@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import {
   changePasswordApi,
   get2FAStatusApi,
@@ -58,64 +59,56 @@ const ToggleRow = ({
   checked,
   onChange,
   disabled = false,
-}) => (
-  <div className="flex items-start justify-between gap-4 py-4">
-    <div className="min-w-0">
-      <p
-        className={`text-sm font-medium ${
-          disabled ? "text-gray-400" : "text-[#1F2933]"
+}) => {
+  const { t } = useTranslation("expertDashboard");
+  return (
+    <div className="flex items-start justify-between gap-4 py-4">
+      <div className="min-w-0">
+        <p
+          className={`text-sm font-medium ${
+            disabled ? "text-gray-400" : "text-[#1F2933]"
+          }`}
+        >
+          {label}
+          {disabled && (
+            <span className="ml-2 text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+              {t("settings.comingSoon")}
+            </span>
+          )}
+        </p>
+        <p
+          className={`text-xs mt-0.5 ${
+            disabled ? "text-gray-300" : "text-gray-500"
+          }`}
+        >
+          {description}
+        </p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        disabled={disabled}
+        onClick={() => !disabled && onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#445446] focus:ring-offset-2 ${
+          disabled
+            ? "cursor-not-allowed bg-gray-200"
+            : checked
+            ? "bg-[#445446] cursor-pointer"
+            : "bg-gray-200 cursor-pointer"
         }`}
       >
-        {label}
-        {disabled && (
-          <span className="ml-2 text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-            Coming soon
-          </span>
-        )}
-      </p>
-      <p
-        className={`text-xs mt-0.5 ${
-          disabled ? "text-gray-300" : "text-gray-500"
-        }`}
-      >
-        {description}
-      </p>
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform duration-200 ${
+            checked && !disabled ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
     </div>
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={() => !disabled && onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#445446] focus:ring-offset-2 ${
-        disabled
-          ? "cursor-not-allowed bg-gray-200"
-          : checked
-          ? "bg-[#445446] cursor-pointer"
-          : "bg-gray-200 cursor-pointer"
-      }`}
-    >
-      <span
-        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform duration-200 ${
-          checked && !disabled ? "translate-x-5" : "translate-x-0"
-        }`}
-      />
-    </button>
-  </div>
-);
+  );
+};
 
-// ─── Password strength rules (mirror backend validatePasswordStrength) ─────────
-function getPasswordError(password) {
-  if (!password || password.length < 8) return "At least 8 characters";
-  if (!/[A-Z]/.test(password)) return "At least one uppercase letter";
-  if (!/[a-z]/.test(password)) return "At least one lowercase letter";
-  if (!/[0-9]/.test(password)) return "At least one number";
-  if (!/[^a-zA-Z0-9]/.test(password))
-    return "At least one special character (e.g. !, @, #)";
-  return null;
-}
-
-// ─── Password field (must be outside ChangePasswordCard to avoid focus loss) ───
+// ─── Password field ───────────────────────────────────────────────────────────
 const inputClass =
   "w-full px-4 py-3 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition pr-10";
 
@@ -159,7 +152,10 @@ const PasswordField = ({
 );
 
 // ─── Change Password card ─────────────────────────────────────────────────────
+const STRENGTH_KEYS = ["minLength", "uppercase", "lowercase", "number", "special"];
+
 const ChangePasswordCard = () => {
+  const { t } = useTranslation("expertDashboard");
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
   const [show, setShow] = useState({
     current: false,
@@ -181,13 +177,22 @@ const ChangePasswordCard = () => {
     if (success) setSuccess(false);
   };
 
+  const getPasswordError = (password) => {
+    if (!password || password.length < 8) return t("settings.password.errors.tooShort");
+    if (!/[A-Z]/.test(password))          return t("settings.password.errors.noUppercase");
+    if (!/[a-z]/.test(password))          return t("settings.password.errors.noLowercase");
+    if (!/[0-9]/.test(password))          return t("settings.password.errors.noNumber");
+    if (!/[^a-zA-Z0-9]/.test(password))  return t("settings.password.errors.noSpecial");
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errors = { current: "", next: "", confirm: "" };
     let hasError = false;
 
     if (!form.current.trim()) {
-      errors.current = "Current password is required.";
+      errors.current = t("settings.password.errors.currentRequired");
       hasError = true;
     }
 
@@ -196,16 +201,15 @@ const ChangePasswordCard = () => {
       errors.next = pwError;
       hasError = true;
     } else if (form.current && form.current === form.next) {
-      errors.next =
-        "New password must be different from your current password.";
+      errors.next = t("settings.password.errors.sameAsCurrent");
       hasError = true;
     }
 
     if (!form.confirm) {
-      errors.confirm = "Please confirm your new password.";
+      errors.confirm = t("settings.password.errors.confirmRequired");
       hasError = true;
     } else if (form.next !== form.confirm) {
-      errors.confirm = "Passwords do not match.";
+      errors.confirm = t("settings.password.errors.noMatch");
       hasError = true;
     }
 
@@ -228,8 +232,7 @@ const ChangePasswordCard = () => {
     } catch (err) {
       const msg =
         err?.response?.data?.error ||
-        "Failed to change password. Please try again.";
-      // "Current password is incorrect" → attach to current field
+        t("settings.password.errors.saveFailed");
       if (
         msg.toLowerCase().includes("current") ||
         msg.toLowerCase().includes("incorrect")
@@ -260,15 +263,15 @@ const ChangePasswordCard = () => {
           />
         </svg>
         <h2 className="text-sm font-semibold text-[#1F2933]">
-          Change Password
+          {t("settings.password.title")}
         </h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <PasswordField
           name="current"
-          label="Current password"
-          placeholder="Enter your current password"
+          label={t("settings.password.currentLabel")}
+          placeholder={t("settings.password.currentPlaceholder")}
           show={show}
           setShow={setShow}
           value={form.current}
@@ -278,8 +281,8 @@ const ChangePasswordCard = () => {
         <div>
           <PasswordField
             name="next"
-            label="New password"
-            placeholder="Min 8 chars, uppercase, number, symbol"
+            label={t("settings.password.newLabel")}
+            placeholder={t("settings.password.newPlaceholder")}
             show={show}
             setShow={setShow}
             value={form.next}
@@ -288,9 +291,9 @@ const ChangePasswordCard = () => {
           />
           {form.next && (
             <ul className="mt-2 space-y-1">
-              {checkPasswordStrength(form.next).map(({ label, ok }) => (
+              {checkPasswordStrength(form.next).map(({ ok }, i) => (
                 <li
-                  key={label}
+                  key={STRENGTH_KEYS[i]}
                   className={`flex items-center gap-1.5 text-xs ${
                     ok ? "text-green-600" : "text-gray-400"
                   }`}
@@ -320,7 +323,7 @@ const ChangePasswordCard = () => {
                       />
                     </svg>
                   )}
-                  {label}
+                  {t(`settings.password.strength.${STRENGTH_KEYS[i]}`)}
                 </li>
               ))}
             </ul>
@@ -328,8 +331,8 @@ const ChangePasswordCard = () => {
         </div>
         <PasswordField
           name="confirm"
-          label="Confirm new password"
-          placeholder="Repeat your new password"
+          label={t("settings.password.confirmLabel")}
+          placeholder={t("settings.password.confirmPlaceholder")}
           show={show}
           setShow={setShow}
           value={form.confirm}
@@ -350,8 +353,7 @@ const ChangePasswordCard = () => {
                 clipRule="evenodd"
               />
             </svg>
-            Password changed successfully. All other devices have been signed
-            out.
+            {t("settings.password.success")}
           </div>
         )}
 
@@ -364,7 +366,7 @@ const ChangePasswordCard = () => {
             {saving && (
               <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
             )}
-            {saving ? "Saving…" : "Update password"}
+            {saving ? t("settings.password.savingBtn") : t("settings.password.updateBtn")}
           </button>
         </div>
       </form>
@@ -374,10 +376,10 @@ const ChangePasswordCard = () => {
 
 // ─── Notification Preferences card ───────────────────────────────────────────
 const NotificationPreferencesCard = () => {
+  const { t } = useTranslation("expertDashboard");
   const [prefs, setPrefs] = useState({
     notify_new_booking: true,
     notify_cancellation: true,
-    notify_reminder: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -390,6 +392,11 @@ const NotificationPreferencesCard = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const handleToggle = async (field, value) => {
     const prev = prefs;
     setPrefs((p) => ({ ...p, [field]: value }));
@@ -397,18 +404,13 @@ const NotificationPreferencesCard = () => {
     try {
       const saved = await updateNotificationPreferences({ [field]: value });
       setPrefs((p) => ({ ...p, ...saved }));
-      showToast("success", "Preferences saved");
+      showToast("success", t("settings.notifications.toastSuccess"));
     } catch {
       setPrefs(prev);
-      showToast("error", "Failed to save — please try again");
+      showToast("error", t("settings.notifications.toastError"));
     } finally {
       setSaving(false);
     }
-  };
-
-  const showToast = (type, message) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3000);
   };
 
   return (
@@ -428,7 +430,7 @@ const NotificationPreferencesCard = () => {
           />
         </svg>
         <span className="text-sm font-semibold text-[#1F2933]">
-          Email Notifications
+          {t("settings.notifications.title")}
         </span>
         {saving && (
           <div className="ml-auto w-4 h-4 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -442,26 +444,20 @@ const NotificationPreferencesCard = () => {
       ) : (
         <div className="divide-y divide-[#F0F2F0]">
           <ToggleRow
-            label="New booking"
-            description="Receive an email when a parent books a session with you."
+            label={t("settings.notifications.newBooking.label")}
+            description={t("settings.notifications.newBooking.description")}
             checked={prefs.notify_new_booking}
             onChange={(v) => handleToggle("notify_new_booking", v)}
           />
           <ToggleRow
-            label="Cancellation"
-            description="Receive an email when a parent cancels a booking."
+            label={t("settings.notifications.cancellation.label")}
+            description={t("settings.notifications.cancellation.description")}
             checked={prefs.notify_cancellation}
             onChange={(v) => handleToggle("notify_cancellation", v)}
           />
           <ToggleRow
-            label="Session reminders"
-            description="Receive reminder emails 24 hours and 1 hour before each session."
-            checked={prefs.notify_reminder}
-            onChange={(v) => handleToggle("notify_reminder", v)}
-          />
-          <ToggleRow
-            label="Message received"
-            description="Receive an email when a parent sends you a message."
+            label={t("settings.notifications.messageReceived.label")}
+            description={t("settings.notifications.messageReceived.description")}
             checked={false}
             disabled
           />
@@ -510,9 +506,11 @@ const NotificationPreferencesCard = () => {
   );
 };
 
-// ─── Delete Account card (expert) ────────────────────────────────────────────
+// ─── Delete Account card ──────────────────────────────────────────────────────
 const DeleteAccountCard = () => {
-  const { logout } = useAuth();
+  const { t } = useTranslation("expertDashboard");
+  const { logout, user } = useAuth();
+  const isParent = user?.role === "PARENT";
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -521,7 +519,7 @@ const DeleteAccountCard = () => {
 
   const handleDelete = async () => {
     if (!password) {
-      setError("Please enter your password to confirm.");
+      setError(t("settings.deleteAccount.confirm.passwordRequired"));
       return;
     }
     setLoading(true);
@@ -531,8 +529,12 @@ const DeleteAccountCard = () => {
       logout();
     } catch (err) {
       const errData = err?.response?.data;
-      setError(errData?.error || "Could not delete account. Please try again.");
-      if (errData?.has_pending_payout) {
+      setError(errData?.error || t("settings.deleteAccount.confirm.saveFailed"));
+      if (
+        errData?.has_pending_payout ||
+        errData?.has_upcoming_bookings ||
+        errData?.has_pending_transactions
+      ) {
         setShowConfirm(false);
         setPassword("");
       }
@@ -546,7 +548,7 @@ const DeleteAccountCard = () => {
         <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
         </svg>
-        <h2 className="text-sm font-semibold text-red-600">Delete Account</h2>
+        <h2 className="text-sm font-semibold text-red-600">{t("settings.deleteAccount.title")}</h2>
       </div>
 
       {error && !showConfirm && (
@@ -558,46 +560,74 @@ const DeleteAccountCard = () => {
       {!showConfirm ? (
         <div className="mt-3 space-y-3">
           <div className="text-xs text-gray-500 leading-relaxed space-y-2">
-            <p>The following will be <strong>permanently deleted:</strong></p>
-            <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
-              <li>Profile photo, biography, and expertise</li>
-              <li>Address, social links, and contact details</li>
-              <li>Qualifications, certifications, and insurance documents</li>
-              <li>Your password and login access</li>
-            </ul>
-            <p className="mt-2">The following will be <strong>retained for 5 years</strong> under DAC7 (EU tax reporting obligations):</p>
-            <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
-              <li>Your full name and tax identification number</li>
-              <li>Bank account details (IBAN)</li>
-              <li>Earnings and booking records tied to financial transactions</li>
-            </ul>
+            <p>
+              <Trans
+                i18nKey="settings.deleteAccount.permanentTitle"
+                ns="expertDashboard"
+                components={{ bold: <strong /> }}
+              />
+            </p>
+            {isParent ? (
+              <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
+                <li>{t("settings.deleteAccount.parentList.item1")}</li>
+                <li>{t("settings.deleteAccount.parentList.item2")}</li>
+                <li>{t("settings.deleteAccount.parentList.item3")}</li>
+              </ul>
+            ) : (
+              <>
+                <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
+                  <li>{t("settings.deleteAccount.expertList.item1")}</li>
+                  <li>{t("settings.deleteAccount.expertList.item2")}</li>
+                  <li>{t("settings.deleteAccount.expertList.item3")}</li>
+                  <li>{t("settings.deleteAccount.expertList.item4")}</li>
+                </ul>
+                <p className="mt-2">
+                  <Trans
+                    i18nKey="settings.deleteAccount.retainedTitle"
+                    ns="expertDashboard"
+                    components={{ bold: <strong /> }}
+                  />
+                </p>
+                <ul className="list-disc list-inside text-gray-400 space-y-0.5 pl-1">
+                  <li>{t("settings.deleteAccount.retainedList.item1")}</li>
+                  <li>{t("settings.deleteAccount.retainedList.item2")}</li>
+                  <li>{t("settings.deleteAccount.retainedList.item3")}</li>
+                </ul>
+              </>
+            )}
           </div>
           <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            Deletion is blocked if you have a pending payout. Please wait for it to clear first.
+            {isParent
+              ? t("settings.deleteAccount.warningParent")
+              : t("settings.deleteAccount.warningExpert")}
           </p>
           <button
             type="button"
             onClick={() => setShowConfirm(true)}
             className="px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-sm font-medium rounded-lg transition-colors"
           >
-            Delete my account
+            {t("settings.deleteAccount.deleteBtn")}
           </button>
         </div>
       ) : (
         <div className="mt-3 space-y-3">
           <div className="px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
-            This action is <strong>permanent and irreversible.</strong> Your profile and login access will be deleted immediately.
+            <Trans
+              i18nKey="settings.deleteAccount.confirm.irreversibleMsg"
+              ns="expertDashboard"
+              components={{ bold: <strong /> }}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
-              Enter your password to confirm
+              {t("settings.deleteAccount.confirm.passwordLabel")}
             </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
-                placeholder="Your current password"
+                placeholder={t("settings.deleteAccount.confirm.passwordPlaceholder")}
                 className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition pr-10 ${error ? "border-red-400" : "border-[#E4E7E4]"}`}
               />
               <button
@@ -617,7 +647,7 @@ const DeleteAccountCard = () => {
               onClick={() => { setShowConfirm(false); setPassword(""); setError(""); }}
               className="flex-1 py-2.5 text-sm font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {t("settings.deleteAccount.confirm.cancelBtn")}
             </button>
             <button
               type="button"
@@ -625,7 +655,9 @@ const DeleteAccountCard = () => {
               onClick={handleDelete}
               className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
             >
-              {loading ? "Deleting…" : "Yes, delete my account"}
+              {loading
+                ? t("settings.deleteAccount.confirm.deletingBtn")
+                : t("settings.deleteAccount.confirm.confirmBtn")}
             </button>
           </div>
         </div>
@@ -634,9 +666,9 @@ const DeleteAccountCard = () => {
   );
 };
 
-
 // ─── Two-Factor Authentication card ──────────────────────────────────────────
 const TwoFactorCard = () => {
+  const { t } = useTranslation("expertDashboard");
   const [enabled, setEnabled] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [step, setStep] = useState("idle"); // 'idle' | 'entering_code'
@@ -644,7 +676,6 @@ const TwoFactorCard = () => {
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const codeInputRef = useRef(null);
@@ -656,18 +687,11 @@ const TwoFactorCard = () => {
       .finally(() => setLoadingStatus(false));
   }, []);
 
-  // OTP expiry countdown
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-    const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [timeLeft]);
-
   // Resend cooldown ticker
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
   }, [resendCooldown]);
 
   const handleSendCode = async (intentType) => {
@@ -680,13 +704,10 @@ const TwoFactorCard = () => {
       setIntent(intentType);
       setStep("entering_code");
       setCode("");
-      setTimeLeft(60);
-      setResendCooldown(30);
+      setResendCooldown(60);
       setTimeout(() => codeInputRef.current?.focus(), 50);
     } catch (err) {
-      const msg =
-        err?.response?.data?.error || "Failed to send code. Try again.";
-      setCodeError(msg);
+      setCodeError(err?.response?.data?.error || t("settings.twoFactor.errors.sendFailed"));
     } finally {
       setSaving(false);
     }
@@ -699,32 +720,25 @@ const TwoFactorCard = () => {
         purpose: intent === "enable" ? "enable_2fa" : "disable_2fa",
       });
       setCode("");
-      setTimeLeft(60);
-      setResendCooldown(30);
+      setResendCooldown(60);
     } catch (err) {
-      setCodeError(
-        err?.response?.data?.error || "Failed to resend. Try again."
-      );
+      setCodeError(err?.response?.data?.error || t("settings.twoFactor.errors.resendFailed"));
     }
   };
 
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    if (code.length !== 6) {
-      setCodeError("Enter the 6-digit code from your email.");
-      return;
-    }
+  const doVerify = async (codeVal) => {
+    if (saving || codeVal.length !== 6) return;
     setSaving(true);
     setCodeError("");
     try {
       if (intent === "enable") {
-        await enable2FAApi({ code });
+        await enable2FAApi({ code: codeVal });
         setEnabled(true);
-        setSuccessMsg("Two-factor authentication enabled.");
+        setSuccessMsg(t("settings.twoFactor.successEnabled"));
       } else {
-        await disable2FAApi({ code });
+        await disable2FAApi({ code: codeVal });
         setEnabled(false);
-        setSuccessMsg("Two-factor authentication disabled.");
+        setSuccessMsg(t("settings.twoFactor.successDisabled"));
       }
       setStep("idle");
       setCode("");
@@ -732,21 +746,24 @@ const TwoFactorCard = () => {
     } catch (err) {
       const errData = err?.response?.data;
       if (errData?.expired) {
-        setCodeError("Code expired. Please request a new one.");
-        setTimeLeft(0);
+        setCodeError(t("settings.twoFactor.errors.expired"));
       } else {
-        setCodeError(errData?.error || "Incorrect code. Please try again.");
+        setCodeError(errData?.error || t("settings.twoFactor.errors.incorrect"));
       }
     } finally {
       setSaving(false);
     }
   };
 
+  const handleVerify = (e) => {
+    e.preventDefault();
+    doVerify(code);
+  };
+
   const handleCancel = () => {
     setStep("idle");
     setCode("");
     setCodeError("");
-    setTimeLeft(0);
     setIntent(null);
   };
 
@@ -768,7 +785,7 @@ const TwoFactorCard = () => {
           />
         </svg>
         <h2 className="text-sm font-semibold text-[#1F2933]">
-          Two-Factor Authentication
+          {t("settings.twoFactor.title")}
         </h2>
         {!loadingStatus && (
           <span
@@ -778,7 +795,7 @@ const TwoFactorCard = () => {
                 : "bg-gray-100 text-gray-500 border border-gray-200"
             }`}
           >
-            {enabled ? "Enabled" : "Disabled"}
+            {enabled ? t("settings.twoFactor.statusEnabled") : t("settings.twoFactor.statusDisabled")}
           </span>
         )}
       </div>
@@ -791,8 +808,8 @@ const TwoFactorCard = () => {
         <>
           <p className="text-xs text-gray-500 mb-4 leading-relaxed">
             {enabled
-              ? "A verification code is sent to your email each time you sign in."
-              : "When enabled, you'll need to enter a code sent to your email each time you sign in."}
+              ? t("settings.twoFactor.descEnabled")
+              : t("settings.twoFactor.descDisabled")}
           </p>
 
           {successMsg && (
@@ -826,16 +843,22 @@ const TwoFactorCard = () => {
                 : "border-[#445446] text-[#445446] hover:bg-[#445446]/5"
             }`}
           >
-            {saving ? "Sending code…" : enabled ? "Disable 2FA" : "Enable 2FA"}
+            {saving
+              ? t("settings.twoFactor.sendingBtn")
+              : enabled
+              ? t("settings.twoFactor.disableBtn")
+              : t("settings.twoFactor.enableBtn")}
           </button>
         </>
       ) : (
         /* OTP entry */
         <form onSubmit={handleVerify} className="mt-3 space-y-3">
           <p className="text-xs text-gray-500 leading-relaxed">
-            A 6-digit code was sent to your email. Enter it below to{" "}
-            <strong>{intent === "enable" ? "enable" : "disable"}</strong>{" "}
-            two-factor authentication.
+            <Trans
+              i18nKey={`settings.twoFactor.otp.${intent === "enable" ? "instructionEnable" : "instructionDisable"}`}
+              ns="expertDashboard"
+              components={{ bold: <strong /> }}
+            />
           </p>
 
           <div>
@@ -849,27 +872,16 @@ const TwoFactorCard = () => {
                 const val = e.target.value.replace(/\D/g, "").slice(0, 6);
                 setCode(val);
                 if (codeError) setCodeError("");
+                if (val.length === 6) doVerify(val);
               }}
               placeholder="000000"
-              disabled={timeLeft === 0}
               className={`w-full px-4 py-3 rounded-lg border text-sm text-center tracking-[0.5em] font-mono text-[#1F2933] placeholder-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${
                 codeError ? "border-red-400" : "border-[#E4E7E4]"
-              } ${timeLeft === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+              }`}
             />
             <div className="flex items-center justify-between mt-1.5">
-              {codeError ? (
+              {codeError && (
                 <p className="text-xs text-red-500">{codeError}</p>
-              ) : (
-                <span />
-              )}
-              {timeLeft > 0 && (
-                <p
-                  className={`text-xs ${
-                    timeLeft <= 10 ? "text-red-500" : "text-gray-400"
-                  }`}
-                >
-                  Expires in {timeLeft}s
-                </p>
               )}
             </div>
           </div>
@@ -877,24 +889,24 @@ const TwoFactorCard = () => {
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              disabled={saving || code.length !== 6 || timeLeft === 0}
+              disabled={saving || code.length !== 6}
               className="flex items-center gap-2 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors"
             >
               {saving && (
                 <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
               )}
-              {saving ? "Verifying…" : "Confirm"}
+              {saving ? t("settings.twoFactor.otp.verifyingBtn") : t("settings.twoFactor.otp.confirmBtn")}
             </button>
             <button
               type="button"
               onClick={handleCancel}
               className="text-sm text-gray-400 hover:text-gray-600"
             >
-              Cancel
+              {t("settings.twoFactor.otp.cancelBtn")}
             </button>
             {resendCooldown > 0 ? (
               <span className="ml-auto text-xs text-gray-400">
-                Resend in {resendCooldown}s
+                {t("settings.twoFactor.otp.resendIn", { count: resendCooldown })}
               </span>
             ) : (
               <button
@@ -902,7 +914,7 @@ const TwoFactorCard = () => {
                 onClick={handleResend}
                 className="ml-auto text-xs text-[#445446] hover:underline"
               >
-                Resend code
+                {t("settings.twoFactor.otp.resendBtn")}
               </button>
             )}
           </div>
@@ -913,24 +925,26 @@ const TwoFactorCard = () => {
 };
 
 // ─── Main section ─────────────────────────────────────────────────────────────
-const SettingsSection = () => (
-  <div className="max-w-2xl space-y-5">
-    {/* Header */}
-    <div>
-      <h1 className="text-xl font-bold text-[#1F2933]">Settings</h1>
-      <p className="text-sm text-gray-500 mt-1">
-        Manage your account security and notification preferences.
-      </p>
+const SettingsSection = () => {
+  const { t } = useTranslation("expertDashboard");
+  return (
+    <div className="max-w-2xl space-y-5">
+      <div>
+        <h1 className="text-xl font-bold text-[#1F2933]">{t("settings.heading")}</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          {t("settings.subheading")}
+        </p>
+      </div>
+
+      <ChangePasswordCard />
+
+      <NotificationPreferencesCard />
+
+      <TwoFactorCard />
+
+      <DeleteAccountCard />
     </div>
-
-    <ChangePasswordCard />
-
-    <NotificationPreferencesCard />
-
-    <TwoFactorCard />
-
-    <DeleteAccountCard />
-  </div>
-);
+  );
+};
 
 export default SettingsSection;

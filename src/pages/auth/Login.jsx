@@ -13,18 +13,10 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(60);
   const [resendStatus, setResendStatus] = useState(null); // 'sent' | 'error'
   const [expired, setExpired] = useState(false);
   const inputRef = useRef(null);
-
-  // 60-second countdown for OTP expiry
-  const [timeLeft, setTimeLeft] = useState(60);
-  useEffect(() => {
-    if (timeLeft <= 0) { setExpired(true); return; }
-    const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [timeLeft]);
 
   // Resend cooldown ticker
   useEffect(() => {
@@ -35,16 +27,12 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    if (!code.trim() || code.length !== 6) {
-      setError("Enter the 6-digit code from your email.");
-      return;
-    }
+  const doVerify = async (codeVal) => {
+    if (loading || expired || codeVal.length !== 6) return;
     setLoading(true);
     setError("");
     try {
-      const data = await verifyOtpApi({ otp_token: otpToken, code: code.trim() });
+      const data = await verifyOtpApi({ otp_token: otpToken, code: codeVal.trim() });
       onSuccess(data);
     } catch (err) {
       const errData = err?.response?.data;
@@ -59,15 +47,19 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
     }
   };
 
+  const handleVerify = (e) => {
+    e.preventDefault();
+    doVerify(code);
+  };
+
   const handleResend = async () => {
     setError("");
     setResendStatus(null);
     try {
       await resendOtpApi({ otp_token: otpToken });
-      setTimeLeft(60);
       setExpired(false);
       setCode("");
-      setResendCooldown(30);
+      setResendCooldown(60);
       setResendStatus("sent");
     } catch {
       setResendStatus("error");
@@ -116,6 +108,7 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
               const val = e.target.value.replace(/\D/g, "").slice(0, 6);
               setCode(val);
               if (error) setError("");
+              if (val.length === 6) doVerify(val);
             }}
             placeholder="000000"
             disabled={expired}
@@ -123,11 +116,6 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
               error ? "border-red-400" : "border-[#E4E7E4]"
             } ${expired ? "opacity-50 cursor-not-allowed" : ""}`}
           />
-          {!expired && (
-            <p className={`mt-1.5 text-xs text-right ${timeLeft <= 10 ? "text-red-500" : "text-gray-400"}`}>
-              Expires in {timeLeft}s
-            </p>
-          )}
         </div>
 
         <button

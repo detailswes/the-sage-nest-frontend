@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { saveInsurance, deleteInsurance } from '../../../api/expertApi';
 import { getDocumentUrl } from '../../../utils/imageUrl';
 
@@ -9,17 +10,27 @@ const Spinner = () => (
   <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin flex-shrink-0" />
 );
 
-const formatDate = (iso) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+const formatDate = (iso, lng = 'en') =>
+  new Date(iso).toLocaleDateString(lng === 'it' ? 'it-IT' : 'en-GB', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  });
 
 const isExpired = (iso) => new Date(iso) <= new Date();
 
+const daysUntil = (iso) => {
+  const diff = new Date(iso).setHours(0,0,0,0) - new Date().setHours(0,0,0,0);
+  return Math.ceil(diff / 86_400_000);
+};
+
 const InsuranceCard = ({ initialData = null }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
   const [insurance, setInsurance]   = useState(initialData);
   const [showForm, setShowForm]     = useState(!initialData);
   const [form, setForm]             = useState({ policy_expires_at: '', document: null });
   const [docName, setDocName]       = useState('');
   const [formError, setFormError]   = useState('');
+  const [dateWarning, setDateWarning] = useState('');
   const [saving, setSaving]         = useState(false);
   const [deleting, setDeleting]     = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -34,7 +45,7 @@ const InsuranceCard = ({ initialData = null }) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > DOC_MAX) { setFormError('Document must be 5 MB or smaller.'); return; }
+    if (file.size > DOC_MAX) { setFormError(t('profile.insurance.errors.docSize')); return; }
     setForm((f) => ({ ...f, document: file }));
     setDocName(file.name);
     setFormError('');
@@ -44,12 +55,12 @@ const InsuranceCard = ({ initialData = null }) => {
     e.preventDefault();
     setFormError('');
 
-    if (!form.policy_expires_at) { setFormError('Policy expiry date is required.'); return; }
+    if (!form.policy_expires_at) { setFormError(t('profile.insurance.errors.expiryRequired')); return; }
     if (new Date(form.policy_expires_at) <= new Date()) {
-      setFormError('Expiry date must be in the future.'); return;
+      setFormError(t('profile.insurance.errors.expiryFuture')); return;
     }
     if (!insurance && !form.document) {
-      setFormError('Insurance document is required for initial setup.'); return;
+      setFormError(t('profile.insurance.errors.docRequired')); return;
     }
 
     setSaving(true);
@@ -61,9 +72,10 @@ const InsuranceCard = ({ initialData = null }) => {
       setInsurance(updated);
       setForm({ policy_expires_at: '', document: null });
       setDocName('');
+      setDateWarning('');
       setShowForm(false);
     } catch (err) {
-      setFormError(err?.response?.data?.error || 'Failed to save insurance record.');
+      setFormError(err?.response?.data?.error || t('profile.insurance.errors.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -86,18 +98,18 @@ const InsuranceCard = ({ initialData = null }) => {
     <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mt-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-base font-semibold text-[#1F2933] flex items-center gap-1.5">Professional Insurance <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-gray-100 text-gray-500 border border-gray-200 align-middle">Internal</span></h3>
+          <h3 className="text-base font-semibold text-[#1F2933]">{t('profile.insurance.title')}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Required before your profile can be approved. Upload proof of Public Liability or Professional Indemnity Insurance.
+            {t('profile.insurance.subtitle')}
           </p>
         </div>
         {insurance && !showForm && (
           <button
             type="button"
-            onClick={() => { setShowForm(true); setForm({ policy_expires_at: '', document: null }); setDocName(''); setFormError(''); }}
+            onClick={() => { setShowForm(true); setForm({ policy_expires_at: '', document: null }); setDocName(''); setFormError(''); setDateWarning(''); }}
             className="flex-shrink-0 ml-4 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-1.5 rounded-lg transition-colors"
           >
-            Update
+            {t('profile.insurance.updateBtn')}
           </button>
         )}
       </div>
@@ -112,11 +124,11 @@ const InsuranceCard = ({ initialData = null }) => {
                   <path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" />
                 </svg>
                 <span className={`text-sm font-medium ${expired ? 'text-red-700' : 'text-green-800'}`}>
-                  {expired ? 'Insurance Expired' : 'Insurance Active'}
+                  {expired ? t('profile.insurance.expired') : t('profile.insurance.active')}
                 </span>
               </div>
               <p className={`text-xs mb-1 ${expired ? 'text-red-600' : 'text-green-700'}`}>
-                Policy expires: <span className="font-medium">{formatDate(insurance.policy_expires_at)}</span>
+                {t('profile.insurance.expiresLabel')} <span className="font-medium">{formatDate(insurance.policy_expires_at, lng)}</span>
               </p>
               {insurance.document_url && (
                 <a
@@ -128,7 +140,7 @@ const InsuranceCard = ({ initialData = null }) => {
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
                   </svg>
-                  View document
+                  {t('profile.insurance.viewDocument')}
                 </a>
               )}
             </div>
@@ -151,7 +163,7 @@ const InsuranceCard = ({ initialData = null }) => {
                   onClick={() => setConfirmDelete(false)}
                   className="text-xs text-gray-500 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
                 >
-                  Keep
+                  {t('profile.insurance.keepBtn')}
                 </button>
                 <button
                   type="button"
@@ -160,14 +172,14 @@ const InsuranceCard = ({ initialData = null }) => {
                   className="flex items-center gap-1 text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-2.5 py-1 rounded-lg transition-colors"
                 >
                   {deleting && <Spinner />}
-                  {deleting ? 'Removing…' : 'Remove'}
+                  {deleting ? t('profile.insurance.removingBtn') : t('profile.insurance.removeBtn')}
                 </button>
               </div>
             )}
           </div>
           {expired && (
             <p className="mt-2 text-xs text-red-600 font-medium">
-              ⚠️ Your insurance has expired. Please upload a valid policy before your profile can be approved.
+              ⚠️ {t('profile.insurance.expiredWarning')}
             </p>
           )}
         </div>
@@ -178,13 +190,13 @@ const InsuranceCard = ({ initialData = null }) => {
           <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
           </svg>
-          <p className="text-xs text-amber-700">Insurance is required for profile approval. Please upload your policy.</p>
+          <p className="text-xs text-amber-700">{t('profile.insurance.missingMsg')}</p>
           <button
             type="button"
             onClick={() => setShowForm(true)}
             className="ml-auto flex-shrink-0 text-xs font-medium text-amber-700 border border-amber-300 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
           >
-            Upload now
+            {t('profile.insurance.uploadNow')}
           </button>
         </div>
       )}
@@ -197,21 +209,39 @@ const InsuranceCard = ({ initialData = null }) => {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-[#1F2933] mb-1">Policy expiry date</label>
+            <label className="block text-xs font-medium text-[#1F2933] mb-1">{t('profile.insurance.form.expiryLabel')}</label>
             <input
               type="date"
               value={form.policy_expires_at}
               min={new Date().toISOString().split('T')[0]}
-              onChange={(e) => { setForm((f) => ({ ...f, policy_expires_at: e.target.value })); setFormError(''); }}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm((f) => ({ ...f, policy_expires_at: val }));
+                setFormError('');
+                if (val) {
+                  const days = daysUntil(val);
+                  setDateWarning(days <= 30 && days > 0 ? t('profile.insurance.form.expiryWarning', { count: days }) : '');
+                } else {
+                  setDateWarning('');
+                }
+              }}
               className={inputClass(!form.policy_expires_at && !!formError)}
             />
+            {dateWarning && (
+              <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                </svg>
+                {dateWarning}
+              </p>
+            )}
           </div>
 
           <div>
             <label className="block text-xs font-medium text-[#1F2933] mb-1">
-              Insurance document
+              {t('profile.insurance.form.docLabel')}
               {insurance
-                ? <span className="font-normal text-gray-400"> (leave empty to keep existing)</span>
+                ? <span className="font-normal text-gray-400"> {t('profile.insurance.form.keepExisting')}</span>
                 : <span className="text-red-500"> *</span>
               }
               <span className="font-normal text-gray-400"> · PDF, JPG, PNG · max 5 MB</span>
@@ -222,9 +252,9 @@ const InsuranceCard = ({ initialData = null }) => {
                 onClick={() => fileRef.current?.click()}
                 className="flex-shrink-0 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-2 rounded-lg transition-colors"
               >
-                Choose file
+                {t('profile.insurance.form.chooseFile')}
               </button>
-              <span className="text-xs text-gray-500 truncate">{docName || 'No file chosen'}</span>
+              <span className="text-xs text-gray-500 truncate">{docName || t('profile.insurance.form.noFile')}</span>
             </div>
             <input ref={fileRef} type="file" accept={DOC_TYPES} className="hidden" onChange={handleFileChange} />
           </div>
@@ -233,10 +263,10 @@ const InsuranceCard = ({ initialData = null }) => {
             {insurance && (
               <button
                 type="button"
-                onClick={() => { setShowForm(false); setForm({ policy_expires_at: '', document: null }); setDocName(''); setFormError(''); }}
+                onClick={() => { setShowForm(false); setForm({ policy_expires_at: '', document: null }); setDocName(''); setFormError(''); setDateWarning(''); }}
                 className="text-sm text-gray-500 hover:text-[#1F2933] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t('profile.insurance.form.cancelBtn')}
               </button>
             )}
             <button
@@ -245,7 +275,11 @@ const InsuranceCard = ({ initialData = null }) => {
               className="flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               {saving && <Spinner />}
-              {saving ? 'Saving…' : insurance ? 'Update Insurance' : 'Save Insurance'}
+              {saving
+                ? t('profile.insurance.form.savingBtn')
+                : insurance
+                  ? t('profile.insurance.form.updateBtn')
+                  : t('profile.insurance.form.saveBtn')}
             </button>
           </div>
         </form>

@@ -4,11 +4,15 @@ import {
   getParentDetail,
   listParentBookings,
   activateParent,
-  deactivateParent,
   suspendParent,
   gdprDeleteParent,
   getAuditLog,
+  sendParentPasswordReset,
+  resendParentVerification,
+  manuallyVerifyParent,
 } from "../../../api/adminApi";
+import BookingDetailModal, { BookingStatusBadge } from "../../../components/admin/BookingDetailModal";
+import { formatBookingTime } from "../../../utils/formatBookingTime";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -19,14 +23,6 @@ const formatDate = (iso) =>
       })
     : "—";
 
-const formatDateTime = (iso) =>
-  iso
-    ? new Date(iso).toLocaleString("en-GB", {
-        day: "numeric", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      })
-    : "—";
-
 const formatCurrency = (amount) =>
   amount != null ? `£${parseFloat(amount).toFixed(2)}` : "—";
 
@@ -34,10 +30,19 @@ const getInitials = (name) =>
   name ? name.trim().split(/\s+/).map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "?";
 
 const ACTION_LABELS = {
-  ACTIVATE_PARENT:   "Account activated",
-  DEACTIVATE_PARENT: "Account deactivated",
-  SUSPEND_PARENT:    "Account suspended",
+  // Admin actions
+  ACTIVATE_PARENT:    "Account activated",
+  SUSPEND_PARENT:     "Account suspended",
   GDPR_DELETE_PARENT: "Account deleted (GDPR)",
+  SEND_PASSWORD_RESET: "Password reset sent",
+  RESEND_VERIFICATION: "Verification email resent",
+  MANUAL_VERIFY:       "Email manually verified",
+  BOOKING_CANCELLED:   "Booking cancelled",
+  REFUND_ISSUED:       "Refund issued",
+  // Parent self-service
+  BOOKING_CONFIRMED:          "Booking confirmed",
+  BOOKING_CANCELLED_BY_EXPERT: "Booking cancelled by specialist",
+  LOGIN:                       "Logged in",
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -49,31 +54,9 @@ const StatusBadge = ({ status }) => {
         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />Active
       </span>
     );
-  if (status === "DEACTIVATED")
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-        <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />Deactivated
-      </span>
-    );
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
       <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />Suspended
-    </span>
-  );
-};
-
-const BookingStatusBadge = ({ status }) => {
-  const cfg = {
-    CONFIRMED:       { cls: "bg-green-100 text-green-700",  label: "Confirmed" },
-    COMPLETED:       { cls: "bg-blue-100 text-blue-700",    label: "Completed" },
-    CANCELLED:       { cls: "bg-red-100 text-red-600",      label: "Cancelled" },
-    REFUNDED:        { cls: "bg-gray-100 text-gray-600",    label: "Refunded" },
-    PENDING_PAYMENT: { cls: "bg-amber-100 text-amber-700",  label: "Pending Payment" },
-    PENDING:         { cls: "bg-amber-100 text-amber-700",  label: "Pending" },
-  }[status] || { cls: "bg-gray-100 text-gray-500", label: status };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
-      {cfg.label}
     </span>
   );
 };
@@ -100,6 +83,8 @@ const AdminParentDetailSection = () => {
   const [actionError, setActionError]     = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
   const [showConfirm, setShowConfirm]     = useState(null);
+
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
 
   const [showGdprDelete, setShowGdprDelete] = useState(false);
   const [gdprEmail, setGdprEmail]           = useState("");
@@ -145,12 +130,6 @@ const AdminParentDetailSection = () => {
       btnCls: "bg-green-600 hover:bg-green-700",
       label:  "Activate",
     },
-    deactivate: {
-      title:  "Deactivate Account?",
-      body:   `${parent?.name || "This parent"} will no longer be able to log in until their account is reactivated.`,
-      btnCls: "bg-gray-700 hover:bg-gray-800",
-      label:  "Deactivate",
-    },
     suspend: {
       title:  "Suspend Account?",
       body:   `${parent?.name || "This parent"}'s account will be suspended and all active sessions will be invalidated immediately.`,
@@ -165,9 +144,8 @@ const AdminParentDetailSection = () => {
     setActionError("");
     setActionSuccess("");
     try {
-      if (type === "activate")   await activateParent(id);
-      if (type === "deactivate") await deactivateParent(id);
-      if (type === "suspend")    await suspendParent(id);
+      if (type === "activate") await activateParent(id);
+      if (type === "suspend")  await suspendParent(id);
       setActionSuccess("Account status updated successfully.");
       await loadParent();
       // Refresh audit log
@@ -189,6 +167,32 @@ const AdminParentDetailSection = () => {
       setGdprError(err?.response?.data?.error || "Deletion failed. Please try again.");
     } finally {
       setGdprLoading(false);
+    }
+  };
+
+  // ── Support tool actions ──────────────────────────────────────────────────
+
+  const handleSupportTool = async (action) => {
+    setActionLoading(action);
+    setActionError("");
+    setActionSuccess("");
+    try {
+      if (action === "passwordReset") {
+        await sendParentPasswordReset(id);
+        setActionSuccess("Password reset email sent.");
+      } else if (action === "resendVerification") {
+        await resendParentVerification(id);
+        setActionSuccess("Verification email resent.");
+      } else if (action === "manualVerify") {
+        await manuallyVerifyParent(id);
+        setActionSuccess("Account marked as verified.");
+        await loadParent();
+      }
+      getAuditLog(id, "PARENT", 1).then((res) => setAuditLog(res.data || [])).catch(() => {});
+    } catch (err) {
+      setActionError(err?.response?.data?.error || "Action failed. Please try again.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -219,6 +223,7 @@ const AdminParentDetailSection = () => {
   const TABS = [
     { key: "overview",  label: "Overview" },
     { key: "bookings",  label: `Bookings (${parent._count?.bookings_as_parent ?? bookings.length})` },
+    { key: "consents",  label: "Legal Consents" },
     { key: "activity",  label: "Activity" },
   ];
 
@@ -347,6 +352,122 @@ const AdminParentDetailSection = () => {
             </div>
           )}
 
+          {/* ── Legal Consents tab ───────────────────────────────────── */}
+          {activeTab === "consents" && (() => {
+            const lc = parent.legal_consents;
+            if (!lc) return <p className="text-sm text-gray-400 py-8 text-center">No consent data available.</p>;
+
+            const fmtDate = (iso) =>
+              iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+
+            const ComplianceBadge = ({ ok }) =>
+              ok ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                  Up to date
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
+                  Needs update
+                </span>
+              );
+
+            return (
+              <div className="space-y-5">
+                {/* Summary cards */}
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: "Privacy Policy", current: lc.current_pp_version, accepted: lc.pp_acceptances[0]?.version ?? null, at: lc.pp_acceptances[0]?.accepted_at ?? null, ok: lc.pp_compliant },
+                    { label: "Terms & Conditions", current: lc.current_tc_version, accepted: lc.tc_acceptances[0]?.version ?? lc.tc_at_registration?.tc_version ?? null, at: lc.tc_acceptances[0]?.accepted_at ?? lc.tc_at_registration?.accepted_at ?? null, ok: lc.tc_compliant },
+                  ].map(({ label, current, accepted, at, ok }) => (
+                    <div key={label} className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm px-5 py-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-semibold text-[#1F2933]">{label}</p>
+                        <ComplianceBadge ok={ok} />
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Current version</span>
+                          <span className="font-medium text-[#1F2933]">{current ?? "—"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Accepted version</span>
+                          <span className={`font-medium ${accepted && accepted === current ? "text-green-700" : "text-red-600"}`}>
+                            {accepted ?? "Never accepted"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Accepted on</span>
+                          <span className="font-medium text-[#1F2933]">{fmtDate(at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Privacy Policy history */}
+                <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm px-5 py-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Privacy Policy — Acceptance History</p>
+                  {lc.pp_acceptances.length === 0 ? (
+                    <p className="text-sm text-gray-400">No Privacy Policy acceptances recorded.</p>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead><tr className="border-b border-[#E4E7E4]">
+                        {["Version", "Accepted on", "Marketing consent"].map((h) => (
+                          <th key={h} className="text-left text-gray-400 font-semibold pb-2 pr-4">{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody className="divide-y divide-[#F0F2F0]">
+                        {lc.pp_acceptances.map((a, i) => (
+                          <tr key={i}>
+                            <td className="py-2 pr-4 font-medium text-[#1F2933]">{a.version}</td>
+                            <td className="py-2 pr-4 text-gray-500">{fmtDate(a.accepted_at)}</td>
+                            <td className="py-2">
+                              {a.marketing_consent
+                                ? <span className="text-green-700 font-medium">Granted {a.marketing_accepted_at ? `· ${fmtDate(a.marketing_accepted_at)}` : ""}</span>
+                                : <span className="text-gray-400">Not granted</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                {/* T&C history */}
+                <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm px-5 py-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Terms & Conditions — Acceptance History</p>
+                  {lc.tc_at_registration && (
+                    <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                      Accepted at registration: <span className="font-medium">{lc.tc_at_registration.tc_version}</span> on {fmtDate(lc.tc_at_registration.accepted_at)}
+                    </div>
+                  )}
+                  {lc.tc_acceptances.length === 0 && !lc.tc_at_registration ? (
+                    <p className="text-sm text-gray-400">No Terms & Conditions acceptances recorded.</p>
+                  ) : lc.tc_acceptances.length === 0 ? null : (
+                    <table className="w-full text-xs">
+                      <thead><tr className="border-b border-[#E4E7E4]">
+                        {["Version", "Accepted on", "Source"].map((h) => (
+                          <th key={h} className="text-left text-gray-400 font-semibold pb-2 pr-4">{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody className="divide-y divide-[#F0F2F0]">
+                        {lc.tc_acceptances.map((a, i) => (
+                          <tr key={i}>
+                            <td className="py-2 pr-4 font-medium text-[#1F2933]">{a.version}</td>
+                            <td className="py-2 pr-4 text-gray-500">{fmtDate(a.accepted_at)}</td>
+                            <td className="py-2 text-gray-500">Version update</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ── Bookings tab ─────────────────────────────────────────── */}
           {activeTab === "bookings" && (
             <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
@@ -369,7 +490,11 @@ const AdminParentDetailSection = () => {
                   </thead>
                   <tbody className="divide-y divide-[#E4E7E4]">
                     {bookings.map((b) => (
-                      <tr key={b.id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={b.id}
+                        onClick={() => setSelectedBookingId(b.id)}
+                        className="hover:bg-[#F5F7F5] cursor-pointer transition-colors"
+                      >
                         <td className="px-5 py-3.5">
                           <p className="font-medium text-[#1F2933] truncate max-w-[160px]">
                             {b.service?.title || "—"}
@@ -379,8 +504,16 @@ const AdminParentDetailSection = () => {
                         <td className="px-5 py-3.5 text-gray-500">
                           {b.expert?.user?.name || "—"}
                         </td>
-                        <td className="px-5 py-3.5 text-gray-500 whitespace-nowrap">
-                          {formatDateTime(b.scheduled_at)}
+                        <td className="px-5 py-3.5 text-gray-500 leading-tight">
+                          {(() => {
+                            const { primary, utc } = formatBookingTime(b.scheduled_at, b.expert?.timezone);
+                            return (
+                              <>
+                                <span className="block whitespace-nowrap">{primary}</span>
+                                {utc && <span className="block text-xs text-gray-400">{utc}</span>}
+                              </>
+                            );
+                          })()}
                         </td>
                         <td className="px-5 py-3.5 font-medium text-[#1F2933]">
                           {formatCurrency(b.amount)}
@@ -449,18 +582,6 @@ const AdminParentDetailSection = () => {
                   {actionLoading === "activate" ? "Activating…" : "Activate Account"}
                 </button>
               )}
-              {status !== "DEACTIVATED" && (
-                <button
-                  onClick={() => setShowConfirm("deactivate")}
-                  disabled={!!actionLoading}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
-                  </svg>
-                  {actionLoading === "deactivate" ? "Deactivating…" : "Deactivate Account"}
-                </button>
-              )}
               {status !== "SUSPENDED" && (
                 <button
                   onClick={() => setShowConfirm("suspend")}
@@ -472,6 +593,38 @@ const AdminParentDetailSection = () => {
                   </svg>
                   {actionLoading === "suspend" ? "Suspending…" : "Suspend Account"}
                 </button>
+              )}
+            </div>
+          </div>
+
+          {/* Support tools */}
+          <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm px-5 py-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Support Tools</p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => handleSupportTool("passwordReset")}
+                disabled={!!actionLoading}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                {actionLoading === "passwordReset" ? "Sending…" : "Send Password Reset"}
+              </button>
+              {!parent.is_verified && (
+                <>
+                  <button
+                    onClick={() => handleSupportTool("resendVerification")}
+                    disabled={!!actionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === "resendVerification" ? "Sending…" : "Resend Verification Email"}
+                  </button>
+                  <button
+                    onClick={() => handleSupportTool("manualVerify")}
+                    disabled={!!actionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === "manualVerify" ? "Verifying…" : "Mark as Verified"}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -495,6 +648,17 @@ const AdminParentDetailSection = () => {
 
         </div>
       </div>
+
+      {/* ── Booking detail modal ── */}
+      {selectedBookingId && (
+        <BookingDetailModal
+          bookingId={selectedBookingId}
+          onClose={() => setSelectedBookingId(null)}
+          onUpdated={() => {
+            listParentBookings(id).then(setBookings).catch(() => {});
+          }}
+        />
+      )}
 
       {/* ── Status confirm modal ─────────────────────────────────────────────── */}
       {showConfirm && (() => {
@@ -538,44 +702,121 @@ const AdminParentDetailSection = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
               </svg>
             </div>
-            <h3 className="text-base font-semibold text-red-700 text-center mb-2">Permanent Account Erasure</h3>
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-700 space-y-1">
-              <p className="font-semibold">This action is irreversible. It will:</p>
-              <ul className="list-disc list-inside space-y-0.5 text-red-600">
-                <li>Cancel all future bookings and issue Stripe refunds</li>
-                <li>Wipe all personal information from the database</li>
-                <li>Invalidate all active sessions immediately</li>
-                <li>Anonymise the account record (cannot be recovered)</li>
-              </ul>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">
-              Type the parent's email address to confirm:{" "}
-              <span className="font-medium text-[#1F2933]">{parent.email}</span>
-            </p>
-            <input
-              type="email"
-              value={gdprEmail}
-              onChange={(e) => setGdprEmail(e.target.value)}
-              placeholder={parent.email}
-              className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition mb-3"
-            />
-            {gdprError && <p className="text-xs text-red-600 mb-3 px-1">{gdprError}</p>}
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
-                disabled={gdprLoading}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleGdprDelete}
-                disabled={gdprLoading || gdprEmail.trim().toLowerCase() !== parent.email?.toLowerCase()}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {gdprLoading ? "Erasing…" : "Erase Account"}
-              </button>
-            </div>
+            <h3 className="text-base font-semibold text-red-700 text-center mb-4">Permanent Account Erasure</h3>
+            {(() => {
+              const now = new Date();
+              const upcomingBookings = bookings.filter(
+                (b) => ["PENDING_PAYMENT", "CONFIRMED"].includes(b.status) && new Date(b.scheduled_at) > now
+              );
+              const overdueUnresolved = bookings.filter(
+                (b) => b.status === "CONFIRMED" && new Date(b.scheduled_at) <= now
+              );
+              const pendingRefunds = bookings.filter(
+                (b) => b.refund_status === "pending"
+              );
+              const openDisputes = bookings.filter(
+                (b) => b.is_disputed === true
+              );
+              const isBlocked = upcomingBookings.length > 0 || overdueUnresolved.length > 0 || pendingRefunds.length > 0 || openDisputes.length > 0;
+
+              if (isBlocked) {
+                return (
+                  <>
+                    <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-4 text-xs text-amber-800 space-y-2">
+                      <p className="font-semibold">This account cannot be erased until the following are resolved:</p>
+                      {upcomingBookings.length > 0 && (
+                        <p>
+                          <span className="font-medium">{upcomingBookings.length} upcoming booking{upcomingBookings.length !== 1 ? "s" : ""}</span>
+                          {" "}— cancel or reschedule before proceeding.
+                        </p>
+                      )}
+                      {overdueUnresolved.length > 0 && (
+                        <p>
+                          <span className="font-medium">{overdueUnresolved.length} confirmed booking{overdueUnresolved.length !== 1 ? "s" : ""} with a pending refund</span>
+                          {" "}— payment was captured for sessions that have now passed without resolution.
+                        </p>
+                      )}
+                      {pendingRefunds.length > 0 && (
+                        <p>
+                          <span className="font-medium">{pendingRefunds.length} pending refund{pendingRefunds.length !== 1 ? "s" : ""}</span>
+                          {" "}— wait for refunds to settle before proceeding.
+                        </p>
+                      )}
+                      {openDisputes.length > 0 && (
+                        <p>
+                          <span className="font-medium">{openDisputes.length} open dispute{openDisputes.length !== 1 ? "s" : ""}</span>
+                          {" "}— resolve all disputes before proceeding.
+                        </p>
+                      )}
+                      <p className="text-amber-600 mt-1">Resolve these in the Bookings tab, then return here to proceed.</p>
+                    </div>
+                    <button
+                      onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
+                      className="w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </>
+                );
+              }
+
+              return (
+                <>
+                  <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-700 space-y-2">
+                    <p className="font-semibold">This action is irreversible.</p>
+                    <div>
+                      <p className="font-medium mb-0.5">Permanently deleted:</p>
+                      <ul className="list-disc list-inside space-y-0.5 text-red-600">
+                        <li>Name, email address, and phone number</li>
+                        <li>Password and account credentials</li>
+                        <li>Free-text content (e.g. cancellation reasons)</li>
+                        <li>All active sessions</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium mb-0.5">Retained in anonymised form:</p>
+                      <ul className="list-disc list-inside space-y-0.5 text-red-600">
+                        <li>Booking records (date, service, duration, amount, payment reference)</li>
+                        <li>Transaction records (payment intent ID, amount, refund status)</li>
+                      </ul>
+                    </div>
+                    <p className="text-red-600 border-t border-red-200 pt-2">
+                      Your personal details will be permanently deleted. Anonymised booking
+                      and payment records are retained for legal and tax purposes — these
+                      cannot be used to identify you.
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Type the parent's email address to confirm:{" "}
+                    <span className="font-medium text-[#1F2933]">{parent.email}</span>
+                  </p>
+                  <input
+                    type="email"
+                    value={gdprEmail}
+                    onChange={(e) => setGdprEmail(e.target.value)}
+                    placeholder={parent.email}
+                    className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition mb-3"
+                  />
+                  {gdprError && <p className="text-xs text-red-600 mb-3 px-1">{gdprError}</p>}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
+                      disabled={gdprLoading}
+                      className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleGdprDelete}
+                      disabled={gdprLoading || gdprEmail.trim().toLowerCase() !== parent.email?.toLowerCase()}
+                      className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {gdprLoading ? "Erasing…" : "Erase Account"}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

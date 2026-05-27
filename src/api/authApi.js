@@ -4,7 +4,10 @@ const BASE_URL = process.env.REACT_APP_API_URL;
 
 export const api = axios.create({
   baseURL: BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Requested-By': 'sage-nest', // CSRF defense: can't be sent by HTML forms; cross-origin fetch triggers CORS preflight
+  },
   withCredentials: true, // send the HTTP-only refresh token cookie on every request
 });
 
@@ -72,16 +75,16 @@ api.interceptors.response.use(
       const { data } = await axios.post(
         `${BASE_URL}/auth/refresh`,
         {},
-        { withCredentials: true }
+        { withCredentials: true, headers: { 'X-Requested-By': 'sage-nest' } }
       );
 
       setAuthHeader(data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Notify AuthContext of the new token
+      // Notify AuthContext of the new token (and any pending PP update)
       window.dispatchEvent(
         new CustomEvent('auth:tokenRefreshed', {
-          detail: { accessToken: data.accessToken, user: data.user },
+          detail: { accessToken: data.accessToken, user: data.user, pp_update_required: data.pp_update_required },
         })
       );
 
@@ -115,7 +118,7 @@ export const refreshAccessToken = async () => {
   const response = await axios.post(
     `${BASE_URL}/auth/refresh`,
     {},
-    { withCredentials: true }
+    { withCredentials: true, headers: { 'X-Requested-By': 'sage-nest' } }
   );
   return response.data;
 };
@@ -150,8 +153,8 @@ export const getProfileApi = async () => {
   return response.data;
 };
 
-export const updateProfileApi = async ({ name, phone }) => {
-  const response = await api.patch('/auth/profile', { name, phone });
+export const updateProfileApi = async ({ name, phone, city, timezone }) => {
+  const response = await api.patch('/auth/profile', { name, phone, city, timezone });
   return response.data;
 };
 
@@ -174,6 +177,34 @@ export const acceptPrivacyPolicyApi = async () => {
   const response = await api.post('/auth/accept-pp');
   return response.data;
 };
+
+export const exportMyDataApi = async () => {
+  const response = await api.get('/auth/data-export');
+  return response.data;
+};
+
+export const getParentNotificationPrefsApi = async () => {
+  const response = await api.get('/auth/notification-preferences');
+  return response.data;
+};
+
+export const getLegalConsentsApi = async () => {
+  const response = await api.get('/auth/legal-consents');
+  return response.data;
+};
+
+export const updateMarketingConsentApi = async (consent) => {
+  const response = await api.patch('/auth/marketing-consent', { consent });
+  return response.data;
+};
+
+export const updateParentNotificationPrefsApi = async (prefs) => {
+  const response = await api.patch('/auth/notification-preferences', prefs);
+  return response.data;
+};
+
+export const getLegalVersionsApi = () =>
+  axios.get(`${BASE_URL}/auth/legal-versions`).then((r) => r.data);
 
 // ── 2FA ───────────────────────────────────────────────────────────────────────
 export const verifyOtpApi = async ({ otp_token, code }) => {

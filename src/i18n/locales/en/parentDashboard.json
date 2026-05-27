@@ -1,0 +1,205 @@
+{
+  "nav": {
+    "findExpert": "Find an Expert",
+    "upcomingBookings": "Upcoming Bookings",
+    "pastBookings": "Past Bookings",
+    "myProfile": "My Profile",
+    "signOut": "Sign out"
+  },
+  "signOutModal": {
+    "title": "Sign out?",
+    "message": "Are you sure you want to sign out of your account?",
+    "cancel": "Cancel",
+    "confirm": "Yes, sign out"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your personal information and account settings.",
+    "loadError": "Could not load your profile.",
+    "loadErrorFallback": "Could not load profile."
+  },
+  "personalInfo": {
+    "title": "Personal information",
+    "description": "Your name, contact details, and location.",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "Jane Smith",
+    "phone": "Phone number",
+    "phonePlaceholder": "+44 7700 900000",
+    "phoneHint": "So your expert can reach you about your session.",
+    "city": "City / Location (optional)",
+    "cityPlaceholder": "e.g. London",
+    "cityHint": "Helps match you with nearby in-person specialists.",
+    "timezone": "Timezone",
+    "timezoneHint": "Used to display session times correctly.",
+    "timezoneReset": "Reset to detected ({{tz}})",
+    "saveBtn": "Save changes",
+    "savingBtn": "Saving…",
+    "saveSuccess": "Profile updated successfully.",
+    "saveError": "Could not save changes.",
+    "validation": {
+      "nameRequired": "Name is required.",
+      "phoneRequired": "Phone number is required.",
+      "phoneInvalid": "Please enter a valid phone number (e.g. +44 7700 900000)."
+    }
+  },
+  "email": {
+    "title": "Email address",
+    "description": "Used to log in and receive notifications.",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "changeLink": "Change email address",
+    "warning": "Changing your email will sign you out. You must verify the new address before logging back in.",
+    "newEmailLabel": "New email address",
+    "newEmailPlaceholder": "new@example.com",
+    "confirmPasswordLabel": "Confirm with current password",
+    "currentPasswordPlaceholder": "Your current password",
+    "cancel": "Cancel",
+    "sendVerification": "Send verification",
+    "sending": "Sending…",
+    "sentTitle": "Verify your new email",
+    "sentLine1": "We sent a verification link to <1>{{email}}</1>.",
+    "sentLine2": "Click it to activate your new address. You have been signed out.",
+    "signInNew": "Sign in with new email",
+    "errors": {
+      "required": "New email and current password are required.",
+      "failed": "Could not update email."
+    }
+  },
+  "password": {
+    "title": "Change password",
+    "description": "Requires your current password for confirmation.",
+    "currentLabel": "Current password",
+    "currentPlaceholder": "Enter current password",
+    "newLabel": "New password",
+    "newPlaceholder": "Minimum 8 characters",
+    "confirmLabel": "Confirm new password",
+    "confirmPlaceholder": "Repeat new password",
+    "updateBtn": "Update password",
+    "updatingBtn": "Updating…",
+    "errors": {
+      "allRequired": "All fields are required.",
+      "tooShort": "New password must be at least 8 characters.",
+      "mismatch": "New passwords do not match.",
+      "failed": "Could not change password."
+    },
+    "success": "Password changed. You have been signed out of all other sessions."
+  },
+  "notifications": {
+    "title": "Email notifications",
+    "description": "Choose which emails Sage Nest sends you.",
+    "rows": {
+      "bookingConfirmation": {
+        "label": "Booking confirmation",
+        "description": "Receive an email when your payment is processed and your booking is confirmed."
+      },
+      "sessionReminder": {
+        "label": "Session reminder",
+        "description": "Reminders sent 24 hours and 1 hour before your session."
+      },
+      "expertCancellation": {
+        "label": "Cancellation by specialist",
+        "description": "Receive an email if your specialist cancels an upcoming session."
+      },
+      "reschedule": {
+        "label": "Reschedule confirmation",
+        "description": "Receive a confirmation email after you move a booking to a new time."
+      },
+      "platformUpdates": {
+        "label": "Platform updates",
+        "description": "Occasional product news, tips, and announcements from Sage Nest."
+      }
+    },
+    "toastSuccess": "Preference saved",
+    "toastError": "Could not save — please try again"
+  },
+  "twoFactor": {
+    "title": "Two-factor authentication",
+    "description": "Require an email code each time you sign in.",
+    "statusEnabled": "Enabled",
+    "statusDisabled": "Disabled",
+    "bodyEnabled": "A 6-digit verification code is sent to your email each time you sign in.",
+    "bodyDisabled": "When enabled, you'll need to enter a one-time code sent to your email on every sign-in. This protects your account and payment information even if your password is compromised.",
+    "enableBtn": "Enable 2FA",
+    "disableBtn": "Disable 2FA",
+    "sendingCode": "Sending code…",
+    "codeInstructEnable": "A 6-digit code was sent to your email. Enter it below to enable two-factor authentication.",
+    "codeInstructDisable": "A 6-digit code was sent to your email. Enter it below to disable two-factor authentication.",
+    "confirmBtn": "Confirm",
+    "verifyingBtn": "Verifying…",
+    "cancelBtn": "Cancel",
+    "resendCode": "Resend code",
+    "resendIn": "Resend in {{count}}s",
+    "enabledMsg": "Two-factor authentication enabled.",
+    "disabledMsg": "Two-factor authentication disabled.",
+    "errors": {
+      "sendFailed": "Failed to send code. Try again.",
+      "expired": "Code expired. Please request a new one.",
+      "incorrect": "Incorrect code. Please try again."
+    }
+  },
+  "dataExport": {
+    "title": "Download my data",
+    "description": "Export a copy of all personal data we hold about you (GDPR Article 20).",
+    "body": "Your export will include your name, email, phone number, full booking history, reviews you have left, and all consent records in a structured JSON file.",
+    "downloadBtn": "Download my data",
+    "preparingBtn": "Preparing…",
+    "error": "Could not generate your data export. Please try again."
+  },
+  "legalConsents": {
+    "title": "Legal consents",
+    "description": "A record of the legal documents you have accepted and your consent choices.",
+    "ppLabel": "Privacy Policy",
+    "tcLabel": "Terms & Conditions",
+    "marketingLabel": "Marketing emails",
+    "version": "Version {{version}}",
+    "accepted": "Accepted {{date}}",
+    "acceptedAtReg": "Accepted at registration {{date}}",
+    "previousVersions_one": "Previously accepted {{count}} earlier version.",
+    "previousVersions_other": "Previously accepted {{count}} earlier versions.",
+    "reaccepted_one": "Re-accepted {{count}} updated version",
+    "reaccepted_other": "Re-accepted {{count}} updated versions",
+    "reacceptedLatest": " — most recently v{{version}} on {{date}}",
+    "viewLink": "View ↗",
+    "noRecord": "No record found.",
+    "ppRequired": "Required to use Sage Nest. Cannot be withdrawn without deleting your account.",
+    "tcRequired": "Required to book sessions. Cannot be withdrawn without cancelling all bookings and deleting your account.",
+    "optedIn": "Opted in",
+    "since": "— since {{date}}",
+    "notOptedIn": "Not opted in",
+    "marketingBody": "Occasional product news and tips from Sage Nest. Optional and independent of your bookings.",
+    "gdprNote": "You can withdraw or re-grant this consent at any time under GDPR Article 7(3). Withdrawal does not affect the lawfulness of processing based on consent before its withdrawal.",
+    "loadError": "Could not load consent records.",
+    "optInSuccess": "You have opted in to marketing emails.",
+    "optOutSuccess": "Marketing consent withdrawn. You will no longer receive marketing emails.",
+    "updateError": "Could not update marketing consent. Please try again.",
+    "withdrawWarning": "Withdrawing marketing consent means you will stop receiving product news and tips. Your bookings and account will not be affected.",
+    "withdrawConfirm": "Yes, withdraw consent",
+    "saving": "Saving…",
+    "cancel": "Cancel"
+  },
+  "deleteAccount": {
+    "title": "Delete account",
+    "description": "Permanently erase your personal data. This cannot be undone.",
+    "permanentlyDeleted": "Permanently deleted:",
+    "itemName": "Your name, email address, and phone number",
+    "itemCredentials": "Your password and account credentials",
+    "itemTextContent": "Any free-text content you submitted (e.g. cancellation reasons)",
+    "retainedAnon": "Retained in anonymised form:",
+    "itemBookings": "Booking records (date, service, duration, amount paid, payment reference)",
+    "itemTransactions": "Transaction records (payment intent ID, amount, refund status)",
+    "privacyNote": "Your personal details will be permanently deleted. Anonymised booking and payment records are retained for legal and tax purposes — these cannot be used to identify you.",
+    "warning": "You must cancel any upcoming bookings and wait for all transactions to be settled before your account can be deleted.",
+    "deleteBtn": "Delete my account",
+    "irreversibleWarning": "This action is <1>permanent and irreversible</1>.",
+    "irreversibleNote": "Your personal details will be permanently deleted. Anonymised booking and payment records are retained for legal and tax purposes — these cannot be used to identify you.",
+    "confirmPasswordLabel": "Enter your password to confirm",
+    "currentPasswordPlaceholder": "Your current password",
+    "cancel": "Cancel",
+    "confirmBtn": "Yes, delete my account",
+    "deleting": "Deleting…",
+    "errors": {
+      "passwordRequired": "Please enter your password to confirm.",
+      "failed": "Could not delete account. Please try again."
+    }
+  }
+}

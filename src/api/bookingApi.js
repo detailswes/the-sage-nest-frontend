@@ -33,16 +33,31 @@ export const getAvailableSlots = (expertId, date, serviceId) =>
     .get(`${BASE_URL}/availability/slots`, { params: { expertId, date, serviceId } })
     .then((r) => r.data);
 
+/** Returns the set of dates in a given month that have ≥1 available slot */
+export const getAvailableDatesInMonth = (expertId, year, month, serviceId) =>
+  axios
+    .get(`${BASE_URL}/availability/available-dates`, { params: { expertId, year, month, serviceId } })
+    .then((r) => new Set(r.data.available_dates));
+
 // ─── Expert dashboard ─────────────────────────────────────────────────────────
 
 export const getUpcomingAppointments = () =>
   api.get('/bookings/upcoming').then((r) => r.data);
+
+export const getPastAppointments = (page = 1) =>
+  api.get('/bookings/past', { params: { page } }).then((r) => r.data);
 
 export const getCalendarBookings = (from, to) =>
   api.get('/bookings/calendar', { params: { from, to } }).then((r) => r.data);
 
 export const markSessionLinkSent = (id) =>
   api.patch(`/bookings/${id}/link-sent`).then((r) => r.data);
+
+export const markBookingComplete = (id, note) =>
+  api.patch(`/bookings/${id}/complete`, { note }).then((r) => r.data);
+
+export const saveExpertNote = (id, note) =>
+  api.patch(`/bookings/${id}/expert-note`, { note }).then((r) => r.data);
 
 /** Expert cancels a confirmed booking — always triggers a full refund to the parent */
 export const expertCancelBooking = (id) =>
@@ -51,3 +66,25 @@ export const expertCancelBooking = (id) =>
 /** Reconcile a stuck PENDING_PAYMENT booking by checking Stripe directly */
 export const verifyPayment = (id) =>
   api.post(`/bookings/${id}/verify-payment`).then((r) => r.data);
+
+/** Abandon a PENDING_PAYMENT booking — cancels the PaymentIntent and frees the slot */
+export const abandonBooking = (id) =>
+  api.post(`/bookings/${id}/abandon`).then((r) => r.data);
+
+/** Get the current T&C version and whether it has changed since the user last accepted */
+export const getCurrentTcVersion = () =>
+  api.get('/bookings/tc-version').then((r) => r.data);
+
+/** Record acceptance of the current T&C version — idempotent */
+export const acceptTcApi = () =>
+  api.post('/bookings/accept-tc').then((r) => r.data);
+
+// ─── Slot locking ─────────────────────────────────────────────────────────────
+
+/** Reserve a slot for SLOT_LOCK_MINUTES; returns { lockId, expiresAt } */
+export const lockSlotApi = (expertId, slotStart) =>
+  api.post('/availability/lock-slot', { expertId, slotStart }).then((r) => r.data);
+
+/** Release a previously acquired slot lock */
+export const releaseLockApi = (lockId) =>
+  api.delete(`/availability/lock-slot/${lockId}`).then((r) => r.data);

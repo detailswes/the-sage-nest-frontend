@@ -1,33 +1,54 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { listServices, createService, updateService, deleteService, reorderServices } from '../../../api/expertApi';
 
 const FORMAT_OPTIONS  = [
-  { value: 'ONLINE',    label: 'Online' },
-  { value: 'IN_PERSON', label: 'In-Person' },
+  { value: 'ONLINE' },
+  { value: 'IN_PERSON' },
 ];
+const CURRENCY_OPTIONS = [
+  { value: 'EUR', label: 'EUR (€)' },
+  { value: 'GBP', label: 'GBP (£)' },
+  { value: 'DKK', label: 'DKK (kr)' },
+  { value: 'SEK', label: 'SEK (kr)' },
+  { value: 'NOK', label: 'NOK (kr)' },
+  { value: 'CHF', label: 'CHF (Fr)' },
+];
+const PRICE_LIMITS = {
+  EUR: { min: 5,   max: 2000  },
+  GBP: { min: 5,   max: 2000  },
+  DKK: { min: 50,  max: 10000 },
+  SEK: { min: 50,  max: 20000 },
+  NOK: { min: 50,  max: 20000 },
+  CHF: { min: 5,   max: 2000  },
+};
+
+function formatPrice(price, currency = 'EUR', lng = 'en') {
+  return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', { style: 'currency', currency }).format(Number(price));
+}
 const CLUSTER_OPTIONS = [
-  { value: 'FOR_PARENTS', label: 'For Parents' },
-  { value: 'FOR_BABY',    label: 'For Baby' },
-  { value: 'PACKAGE',     label: 'Package' },
-  { value: 'GIFT',        label: 'Gift' },
-  { value: 'EVENT',       label: 'Event' },
+  { value: 'FOR_PARENTS' },
+  { value: 'FOR_BABY' },
+  { value: 'PACKAGE' },
+  { value: 'GIFT' },
+  { value: 'EVENT' },
 ];
 
-const FORMAT_BADGE = {
-  ONLINE:    { label: 'Online',    cls: 'bg-blue-100 text-blue-700' },
-  IN_PERSON: { label: 'In-Person', cls: 'bg-purple-100 text-purple-700' },
+const FORMAT_BADGE_CLS = {
+  ONLINE:    'bg-blue-100 text-blue-700',
+  IN_PERSON: 'bg-purple-100 text-purple-700',
 };
-const CLUSTER_BADGE = {
-  FOR_PARENTS: { label: 'For Parents', cls: 'bg-pink-100 text-pink-700' },
-  FOR_BABY:    { label: 'For Baby',    cls: 'bg-cyan-100 text-cyan-700' },
-  PACKAGE:     { label: 'Package',     cls: 'bg-amber-100 text-amber-700' },
-  GIFT:        { label: 'Gift',        cls: 'bg-green-100 text-green-700' },
-  EVENT:       { label: 'Event',       cls: 'bg-violet-100 text-violet-700' },
+const CLUSTER_BADGE_CLS = {
+  FOR_PARENTS: 'bg-pink-100 text-pink-700',
+  FOR_BABY:    'bg-cyan-100 text-cyan-700',
+  PACKAGE:     'bg-amber-100 text-amber-700',
+  GIFT:        'bg-green-100 text-green-700',
+  EVENT:       'bg-violet-100 text-violet-700',
 };
 
 const EMPTY_FORM = {
   title: '', description: '',
-  duration_minutes: '', price: '',
+  duration_minutes: '', price: '', currency: 'EUR',
   format: '', cluster: '',
 };
 
@@ -68,6 +89,9 @@ const Spinner = ({ className = 'w-4 h-4' }) => (
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const ServicesSection = () => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
+
   const [services, setServices]       = useState([]);
   const [loading, setLoading]         = useState(true);
   const [listError, setListError]     = useState('');
@@ -89,9 +113,9 @@ const ServicesSection = () => {
   useEffect(() => {
     listServices()
       .then(setServices)
-      .catch(() => setListError('Failed to load services.'))
+      .catch(() => setListError(t('services.errors.loadFailed')))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const handleChange = (e) => {
@@ -104,24 +128,29 @@ const ServicesSection = () => {
   const validate = () => {
     const errs = {};
     if (!form.title.trim())
-      errs.title = 'Title is required';
+      errs.title = t('services.validation.titleRequired');
     if (!form.description.trim())
-      errs.description = 'Description is required';
-    const dur = parseInt(form.duration_minutes);
-    if (!form.duration_minutes || isNaN(dur) || dur < 15 || dur > 480)
-      errs.duration_minutes = 'Duration must be between 15 and 480 minutes';
-    const price = parseFloat(form.price);
-    if (!form.price || isNaN(price) || price < 1.00)
-      errs.price = 'Price must be at least €1.00';
+      errs.description = t('services.validation.descriptionRequired');
+    if (![30, 45, 60, 90, 120].includes(parseInt(form.duration_minutes)))
+      errs.duration_minutes = t('services.validation.durationRequired');
+    const price  = parseFloat(form.price);
+    const limits = PRICE_LIMITS[form.currency] || PRICE_LIMITS.EUR;
+    if (!form.currency)
+      errs.currency = t('services.validation.currencyRequired');
+    if (!form.price || isNaN(price) || price < limits.min)
+      errs.price = t('services.validation.priceMin', { min: formatPrice(limits.min, form.currency || 'EUR', lng) });
+    else if (price > limits.max)
+      errs.price = t('services.validation.priceMax', { max: formatPrice(limits.max, form.currency || 'EUR', lng) });
     if (!form.format)
-      errs.format = 'Please select a format';
+      errs.format = t('services.validation.formatRequired');
     if (!form.cluster)
-      errs.cluster = 'Please select a category';
+      errs.cluster = t('services.validation.categoryRequired');
     return errs;
   };
 
   const openAdd = () => {
     setEditingId(null);
+    setIsDuplicating(false);
     setForm(EMPTY_FORM);
     setFormErrors({});
     setFormError('');
@@ -136,6 +165,7 @@ const ServicesSection = () => {
       description:      svc.description  || '',
       duration_minutes: String(svc.duration_minutes),
       price:            String(svc.price),
+      currency:         svc.currency     || 'EUR',
       format:           svc.format       || '',
       cluster:          svc.cluster      || '',
     });
@@ -151,6 +181,7 @@ const ServicesSection = () => {
       description:      svc.description  || '',
       duration_minutes: String(svc.duration_minutes),
       price:            String(svc.price),
+      currency:         svc.currency     || 'EUR',
       format:           svc.format       || '',
       cluster:          svc.cluster      || '',
     });
@@ -180,6 +211,7 @@ const ServicesSection = () => {
         description:      form.description.trim() || null,
         duration_minutes: parseInt(form.duration_minutes),
         price:            parseFloat(form.price),
+        currency:         form.currency,
         format:           form.format  || null,
         cluster:          form.cluster || null,
       };
@@ -192,7 +224,7 @@ const ServicesSection = () => {
       }
       cancelForm();
     } catch (err) {
-      setFormError(err?.response?.data?.error || 'Failed to save service.');
+      setFormError(err?.response?.data?.error || t('services.errors.saveFailed'));
     } finally {
       setFormLoading(false);
     }
@@ -204,7 +236,7 @@ const ServicesSection = () => {
       await deleteService(id);
       setServices((s) => s.filter((sv) => sv.id !== id));
     } catch {
-      setListError('Failed to delete service.');
+      setListError(t('services.errors.deleteFailed'));
     } finally {
       setDeletingId(null);
     }
@@ -220,7 +252,7 @@ const ServicesSection = () => {
     try {
       await reorderServices(reordered.map((s) => s.id));
     } catch {
-      setListError('Failed to save new order.');
+      setListError(t('services.errors.reorderFailed'));
       setServices(services); // revert
     } finally {
       setIsReordering(false);
@@ -233,7 +265,7 @@ const ServicesSection = () => {
       const updated = await updateService(svc.id, { is_active: !svc.is_active });
       setServices((s) => s.map((sv) => (sv.id === svc.id ? updated : sv)));
     } catch {
-      setListError('Failed to update service.');
+      setListError(t('services.errors.updateFailed'));
     } finally {
       setTogglingId(null);
     }
@@ -257,8 +289,8 @@ const ServicesSection = () => {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-[#1F2933]">Services</h2>
-          <p className="text-sm text-gray-500 mt-1">Manage the services you offer to parents. All prices in EUR (€).</p>
+          <h2 className="text-xl font-semibold text-[#1F2933]">{t('services.heading')}</h2>
+          <p className="text-sm text-gray-500 mt-1">{t('services.subheading')}</p>
         </div>
         {!showForm && (
           <button
@@ -268,7 +300,7 @@ const ServicesSection = () => {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Add Service
+            {t('services.addServiceBtn')}
           </button>
         )}
       </div>
@@ -281,7 +313,7 @@ const ServicesSection = () => {
       {showForm && (
         <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mb-5">
           <h3 className="text-base font-semibold text-[#1F2933] mb-5">
-            {editingId ? 'Edit Service' : isDuplicating ? 'Duplicate Service' : 'Add New Service'}
+            {editingId ? t('services.form.editTitle') : isDuplicating ? t('services.form.duplicateTitle') : t('services.form.addTitle')}
           </h3>
           {formError && (
             <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{formError}</div>
@@ -289,9 +321,9 @@ const ServicesSection = () => {
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Service title</label>
+              <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.titleLabel')}</label>
               <input type="text" name="title" value={form.title} onChange={handleChange}
-                placeholder="e.g. 1-hour Nutrition Consultation" maxLength={80}
+                placeholder={t('services.form.titlePlaceholder')} maxLength={80}
                 className={inputClass(!!formErrors.title)} />
               <div className="flex items-center justify-between mt-1.5">
                 {formErrors.title
@@ -309,19 +341,19 @@ const ServicesSection = () => {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Description</label>
+              <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.descriptionLabel')}</label>
               <textarea name="description" value={form.description} onChange={handleChange} rows={2}
-                placeholder="Brief description of what this service includes…"
-                maxLength={300}
+                placeholder={t('services.form.descriptionPlaceholder')}
+                maxLength={500}
                 className={`${inputClass(!!formErrors.description)} resize-none`} />
               {formErrors.description && <p className="mt-1.5 text-xs text-red-500">{formErrors.description}</p>}
               <div className="flex justify-end mt-1.5">
                 <p className={`text-xs tabular-nums ${
-                  form.description.length >= 280 ? 'text-red-500' :
-                  form.description.length >= 240 ? 'text-amber-500' :
+                  form.description.length >= 480 ? 'text-red-500' :
+                  form.description.length >= 400 ? 'text-amber-500' :
                   'text-gray-400'
                 }`}>
-                  {form.description.length}/300
+                  {form.description.length}/500
                 </p>
               </div>
             </div>
@@ -330,36 +362,51 @@ const ServicesSection = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                  Format <span className="text-red-400">*</span>
+                  {t('services.form.formatLabel')} <span className="text-red-400">*</span>
                 </label>
                 <select name="format" value={form.format} onChange={handleChange} className={inputClass(!!formErrors.format)}>
-                  <option value="" disabled>Select a format…</option>
-                  {FORMAT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  <option value="" disabled>{t('services.form.formatSelect')}</option>
+                  {FORMAT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t('services.formats.' + o.value)}</option>)}
                 </select>
                 {formErrors.format && <p className="mt-1.5 text-xs text-red-500">{formErrors.format}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                  Category <span className="text-red-400">*</span>
+                  {t('services.form.categoryLabel')} <span className="text-red-400">*</span>
                 </label>
                 <select name="cluster" value={form.cluster} onChange={handleChange} className={inputClass(!!formErrors.cluster)}>
-                  <option value="" disabled>Select a category…</option>
-                  {CLUSTER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  <option value="" disabled>{t('services.form.categorySelect')}</option>
+                  {CLUSTER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t('services.clusters.' + o.value)}</option>)}
                 </select>
                 {formErrors.cluster && <p className="mt-1.5 text-xs text-red-500">{formErrors.cluster}</p>}
               </div>
             </div>
 
-            {/* Duration + Price */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Duration + Currency + Price */}
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Duration (min)</label>
-                <input type="number" name="duration_minutes" value={form.duration_minutes} onChange={handleChange}
-                  placeholder="60" min="15" max="480" className={inputClass(!!formErrors.duration_minutes)} />
+                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.durationLabel')}</label>
+                <select name="duration_minutes" value={form.duration_minutes} onChange={handleChange}
+                  className={inputClass(!!formErrors.duration_minutes)}>
+                  <option value="">{t('services.form.durationSelect')}</option>
+                  {[30, 45, 60, 90, 120].map(d => (
+                    <option key={d} value={String(d)}>{d} min</option>
+                  ))}
+                </select>
                 {formErrors.duration_minutes && <p className="mt-1.5 text-xs text-red-500">{formErrors.duration_minutes}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">Price (€)</label>
+                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.currencyLabel')}</label>
+                <select name="currency" value={form.currency} onChange={handleChange}
+                  className={inputClass(!!formErrors.currency)}>
+                  {CURRENCY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                {formErrors.currency && <p className="mt-1.5 text-xs text-red-500">{formErrors.currency}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.priceLabel')}</label>
                 <input type="number" name="price" value={form.price} onChange={handleChange}
                   placeholder="75.00" min="1.00" step="0.01" className={inputClass(!!formErrors.price)} />
                 {formErrors.price && <p className="mt-1.5 text-xs text-red-500">{formErrors.price}</p>}
@@ -369,11 +416,17 @@ const ServicesSection = () => {
             <div className="flex items-center justify-end gap-3 pt-1">
               <button type="button" onClick={cancelForm}
                 className="text-sm font-medium text-gray-500 hover:text-[#1F2933] py-2.5 px-4 rounded-lg hover:bg-gray-50 transition-colors">
-                Cancel
+                {t('services.form.cancelBtn')}
               </button>
               <button type="submit" disabled={formLoading}
                 className="bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200 text-sm">
-                {formLoading ? 'Saving…' : editingId ? 'Save Changes' : 'Add Service'}
+                {formLoading
+                  ? t('services.form.savingBtn')
+                  : editingId
+                    ? t('services.form.saveChangesBtn')
+                    : isDuplicating
+                      ? t('services.form.duplicateBtn')
+                      : t('services.form.addBtn')}
               </button>
             </div>
           </form>
@@ -386,8 +439,8 @@ const ServicesSection = () => {
           <svg className="w-12 h-12 mx-auto text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
           </svg>
-          <p className="text-sm font-medium text-gray-500">No services yet</p>
-          <p className="text-xs text-gray-400 mt-1">Add your first service to get started.</p>
+          <p className="text-sm font-medium text-gray-500">{t('services.empty.title')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('services.empty.body')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -399,16 +452,16 @@ const ServicesSection = () => {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${svc.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
-                      {svc.is_active ? 'Active' : 'Inactive'}
+                      {svc.is_active ? t('services.card.active') : t('services.card.inactive')}
                     </span>
-                    {svc.format && FORMAT_BADGE[svc.format] && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${FORMAT_BADGE[svc.format].cls}`}>
-                        {FORMAT_BADGE[svc.format].label}
+                    {svc.format && FORMAT_BADGE_CLS[svc.format] && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${FORMAT_BADGE_CLS[svc.format]}`}>
+                        {t('services.formats.' + svc.format)}
                       </span>
                     )}
-                    {svc.cluster && CLUSTER_BADGE[svc.cluster] && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${CLUSTER_BADGE[svc.cluster].cls}`}>
-                        {CLUSTER_BADGE[svc.cluster].label}
+                    {svc.cluster && CLUSTER_BADGE_CLS[svc.cluster] && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${CLUSTER_BADGE_CLS[svc.cluster]}`}>
+                        {t('services.clusters.' + svc.cluster)}
                       </span>
                     )}
                   </div>
@@ -416,7 +469,7 @@ const ServicesSection = () => {
                     <p className="text-xs text-gray-500 mb-1 line-clamp-2">{svc.description}</p>
                   )}
                   <p className="text-xs text-gray-400">
-                    {svc.duration_minutes} min &middot; €{parseFloat(svc.price).toFixed(2)}
+                    {svc.duration_minutes} min &middot; {formatPrice(svc.price, svc.currency || 'EUR', lng)}
                   </p>
                 </div>
 
@@ -448,12 +501,12 @@ const ServicesSection = () => {
                   </button>
                   {confirmDeleteId === svc.id ? (
                     <div className="flex items-center gap-1.5 pl-1">
-                      <span className="text-xs text-gray-500 whitespace-nowrap">Delete?</span>
+                      <span className="text-xs text-gray-500 whitespace-nowrap">{t('services.card.deleteConfirm')}</span>
                       <button
                         onClick={() => setConfirmDeleteId(null)}
                         className="text-xs text-gray-500 hover:text-[#1F2933] px-2 py-1 rounded hover:bg-gray-100 transition-colors"
                       >
-                        Cancel
+                        {t('services.card.cancelBtn')}
                       </button>
                       <button
                         onClick={() => { setConfirmDeleteId(null); handleDelete(svc.id); }}
@@ -461,7 +514,7 @@ const ServicesSection = () => {
                         className="flex items-center gap-1 text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-2.5 py-1 rounded-lg transition-colors"
                       >
                         {deletingId === svc.id ? <Spinner className="w-3 h-3" /> : null}
-                        Delete
+                        {t('services.card.deleteBtn')}
                       </button>
                     </div>
                   ) : (

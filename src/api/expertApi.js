@@ -19,6 +19,9 @@ export const getMyProfile = () => api.get('/experts/me').then((r) => r.data);
 export const updateMyProfile = (data) =>
   api.put('/experts/me', data).then((r) => r.data);
 
+export const getMyProfileDraft = () =>
+  api.get('/experts/me/draft').then((r) => r.data);
+
 export const uploadProfileImage = (file) => {
   const fd = new FormData();
   fd.append('profile_image', file);
@@ -110,7 +113,7 @@ export const updateNotificationPreferences = (prefs) =>
 
 // ─── GDPR Data Export ─────────────────────────────────────────────────────────
 export const exportMyData = () =>
-  api.get('/experts/me/export').then((r) => r.data);
+  api.get('/auth/data-export').then((r) => r.data);
 
 // ─── Services ─────────────────────────────────────────────────────────────────
 export const listServices = () => api.get('/services').then((r) => r.data);
@@ -123,3 +126,4 @@ export const reorderServices = (ids) => api.put('/services/reorder', { ids }).th
 export const listAvailability = () => api.get('/availability').then((r) => r.data);
 export const addAvailabilitySlot = (data) => api.post('/availability', data).then((r) => r.data);
 export const removeAvailabilitySlot = (id) => api.delete(`/availability/${id}`).then((r) => r.data);
+export const checkAvailabilityConflicts = (id) => api.get(`/availability/${id}/conflicts`).then((r) => r.data);

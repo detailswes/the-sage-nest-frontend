@@ -1,5 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getUpcomingAppointments, markSessionLinkSent, expertCancelBooking } from '../../../api/bookingApi';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  getUpcomingAppointments,
+  markSessionLinkSent,
+  expertCancelBooking,
+  markBookingComplete,
+  saveExpertNote,
+} from '../../../api/bookingApi';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const CalendarCheckIcon = () => (
@@ -33,9 +40,9 @@ const LinkIcon = () => (
 );
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatAppointmentDate(isoString) {
+function formatAppointmentDate(isoString, lng = 'en') {
   const d = new Date(isoString);
-  return d.toLocaleDateString('en-GB', {
+  return d.toLocaleDateString(lng === 'it' ? 'it-IT' : 'en-GB', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -43,60 +50,121 @@ function formatAppointmentDate(isoString) {
   });
 }
 
-function formatAppointmentTime(isoString) {
+function formatAppointmentTime(isoString, lng = 'en') {
   const d = new Date(isoString);
-  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(lng === 'it' ? 'it-IT' : 'en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatDuration(minutes) {
-  if (minutes < 60) return `${minutes} min`;
+function formatDuration(minutes, t) {
+  if (minutes < 60) return t('upcomingAppointments.duration.minutes', { count: minutes });
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return m ? `${h}h ${m}min` : `${h}h`;
+  return m
+    ? t('upcomingAppointments.duration.hoursMinutes', { h, m })
+    : t('upcomingAppointments.duration.hours', { h });
 }
 
 // ─── Cancel confirmation modal ────────────────────────────────────────────────
-const CancelModal = ({ booking, onConfirm, onDismiss, cancelling }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-    <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-xl w-full max-w-md p-6">
-      <h3 className="text-base font-semibold text-[#1F2933] mb-2">Cancel this appointment?</h3>
-      <p className="text-sm text-gray-500 mb-1">
-        <span className="font-medium text-[#1F2933]">{booking.parent?.name}</span>
-        {' — '}{booking.service?.title}
-      </p>
-      <p className="text-sm text-gray-500 mb-4">
-        {formatAppointmentDate(booking.scheduled_at)} at {formatAppointmentTime(booking.scheduled_at)}
-      </p>
-      <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-5">
-        <p className="text-xs text-amber-700 leading-relaxed">
-          <strong>This action cannot be undone.</strong> The parent will receive a full refund and
-          an email notifying them of the cancellation.
+const CancelModal = ({ booking, onConfirm, onDismiss, cancelling }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-xl w-full max-w-md p-6">
+        <h3 className="text-base font-semibold text-[#1F2933] mb-2">
+          {t('upcomingAppointments.cancelModal.title')}
+        </h3>
+        <p className="text-sm text-gray-500 mb-1">
+          <span className="font-medium text-[#1F2933]">{booking.parent?.name}</span>
+          {' — '}{booking.service?.title}
         </p>
-      </div>
-      <div className="flex gap-3">
-        <button
-          onClick={onDismiss}
-          disabled={cancelling}
-          className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-[#E4E7E4] rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-        >
-          Keep appointment
-        </button>
-        <button
-          onClick={onConfirm}
-          disabled={cancelling}
-          className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60"
-        >
-          {cancelling ? 'Cancelling…' : 'Yes, cancel'}
-        </button>
+        <p className="text-sm text-gray-500 mb-4">
+          {formatAppointmentDate(booking.scheduled_at, lng)} {t('upcomingAppointments.cancelModal.at')} {formatAppointmentTime(booking.scheduled_at, lng)}
+        </p>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-5">
+          <p className="text-xs text-amber-700 leading-relaxed">
+            <strong>{t('upcomingAppointments.cancelModal.warningBold')}</strong>
+            {t('upcomingAppointments.cancelModal.warningBody')}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onDismiss}
+            disabled={cancelling}
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-[#E4E7E4] rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            {t('upcomingAppointments.cancelModal.keepBtn')}
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={cancelling}
+            className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60"
+          >
+            {cancelling ? t('upcomingAppointments.cancelModal.cancellingBtn') : t('upcomingAppointments.cancelModal.cancelBtn')}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
+
+// ─── Note editor — shared by card and past-row ────────────────────────────────
+const NoteEditor = ({ bookingId, initialNote, onSaved }) => {
+  const { t } = useTranslation('expertDashboard');
+  const [note,      setNote]      = useState(initialNote || '');
+  const [saveState, setSaveState] = useState('idle'); // idle | saving | saved | error
+  const timerRef = useRef(null);
+
+  const persist = useCallback(async (value) => {
+    setSaveState('saving');
+    try {
+      const res = await saveExpertNote(bookingId, value);
+      setSaveState('saved');
+      if (onSaved) onSaved(res.expert_note);
+      timerRef.current = setTimeout(() => setSaveState('idle'), 2000);
+    } catch {
+      setSaveState('error');
+    }
+  }, [bookingId, onSaved]);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  return (
+    <div className="px-4 pb-4">
+      <p className="text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">
+        {t('upcomingAppointments.noteEditor.label')}
+        <span className="ml-1 normal-case font-normal text-gray-300">
+          {t('upcomingAppointments.noteEditor.parentNote')}
+        </span>
+      </p>
+      <textarea
+        value={note}
+        onChange={(e) => { setNote(e.target.value); setSaveState('idle'); }}
+        onBlur={() => persist(note)}
+        placeholder={t('upcomingAppointments.noteEditor.placeholder')}
+        rows={3}
+        className="w-full text-sm text-[#1F2933] placeholder-gray-300 border border-[#E4E7E4] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#445446] focus:border-[#445446] transition-colors"
+      />
+      <p className={`text-xs mt-1 transition-opacity ${saveState === 'idle' ? 'opacity-0' : 'opacity-100'} ${
+        saveState === 'error' ? 'text-red-500' : 'text-gray-400'
+      }`}>
+        {saveState === 'saving' && t('upcomingAppointments.noteEditor.saving')}
+        {saveState === 'saved'  && t('upcomingAppointments.noteEditor.saved')}
+        {saveState === 'error'  && t('upcomingAppointments.noteEditor.error')}
+      </p>
+    </div>
+  );
+};
 
 // ─── Appointment card ─────────────────────────────────────────────────────────
-const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
-  const [marking, setMarking] = useState(false);
-  const isOnline = booking.format === 'ONLINE';
+const AppointmentCard = ({ booking, onMarkSent, onCancelRequest, onComplete }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
+  const [marking,    setMarking]    = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [note,       setNote]       = useState(booking.expert_note || '');
+  const isOnline  = booking.format === 'ONLINE';
+  const isPast    = new Date(booking.scheduled_at) < new Date();
   const needsLinkReminder = isOnline && !booking.session_link_sent;
 
   const handleMark = async () => {
@@ -105,16 +173,26 @@ const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
     setMarking(false);
   };
 
+  const handleComplete = async () => {
+    setCompleting(true);
+    try {
+      await markBookingComplete(booking.id, note);
+      onComplete(booking.id);
+    } catch {
+      setCompleting(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-[#E4E7E4] overflow-hidden">
       {/* Date/time header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
         <div>
           <p className="text-xs font-semibold text-[#445446]">
-            {formatAppointmentDate(booking.scheduled_at)}
+            {formatAppointmentDate(booking.scheduled_at, lng)}
           </p>
           <p className="text-sm font-bold text-[#1F2933] mt-0.5">
-            {formatAppointmentTime(booking.scheduled_at)}
+            {formatAppointmentTime(booking.scheduled_at, lng)}
           </p>
         </div>
         <span
@@ -124,7 +202,7 @@ const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
               : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
           }`}
         >
-          {isOnline ? 'Online' : 'In-Person'}
+          {isOnline ? t('upcomingAppointments.card.online') : t('upcomingAppointments.card.inPerson')}
         </span>
       </div>
 
@@ -152,7 +230,7 @@ const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
           <span className="text-sm text-gray-600">
             {booking.service?.title || '—'}
             <span className="ml-2 text-xs text-gray-400">
-              · {formatDuration(booking.duration_minutes || booking.service?.duration_minutes || 0)}
+              · {formatDuration(booking.duration_minutes || booking.service?.duration_minutes || 0, t)}
             </span>
           </span>
         </div>
@@ -164,7 +242,7 @@ const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
           <div className="flex items-center gap-2 min-w-0">
             <LinkIcon />
             <p className="text-xs font-medium text-amber-700 truncate">
-              Session link not yet sent to parent
+              {t('upcomingAppointments.card.linkReminder')}
             </p>
           </div>
           <button
@@ -172,18 +250,41 @@ const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
             disabled={marking}
             className="flex-shrink-0 text-xs font-semibold text-amber-700 border border-amber-300 bg-white hover:bg-amber-50 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-60"
           >
-            {marking ? 'Saving…' : 'Mark sent'}
+            {marking ? t('upcomingAppointments.card.markSentSaving') : t('upcomingAppointments.card.markSent')}
           </button>
         </div>
       )}
 
-      {/* Cancel button */}
-      <div className="px-4 pb-4">
+      {/* Notes */}
+      <NoteEditor
+        bookingId={booking.id}
+        initialNote={note}
+        onSaved={(v) => setNote(v || '')}
+      />
+
+      {/* Actions */}
+      <div className="px-4 pb-4 flex flex-col gap-2">
+        {isPast && (
+          <button
+            onClick={handleComplete}
+            disabled={completing}
+            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[#445446] border border-[#445446]/40 bg-[#445446]/5 hover:bg-[#445446]/10 py-2 rounded-lg transition-colors disabled:opacity-60"
+          >
+            {completing ? (
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+            )}
+            {completing ? t('upcomingAppointments.card.markingComplete') : t('upcomingAppointments.card.markComplete')}
+          </button>
+        )}
         <button
           onClick={() => onCancelRequest(booking)}
           className="w-full text-xs font-medium text-red-600 border border-red-200 bg-white hover:bg-red-50 py-2 rounded-lg transition-colors"
         >
-          Cancel appointment
+          {t('upcomingAppointments.card.cancelBtn')}
         </button>
       </div>
     </div>
@@ -192,6 +293,7 @@ const AppointmentCard = ({ booking, onMarkSent, onCancelRequest }) => {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const UpcomingAppointmentsSection = () => {
+  const { t } = useTranslation('expertDashboard');
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -201,9 +303,9 @@ const UpcomingAppointmentsSection = () => {
   useEffect(() => {
     getUpcomingAppointments()
       .then(setAppointments)
-      .catch(() => setError('Failed to load appointments.'))
+      .catch(() => setError(t('upcomingAppointments.loadError')))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const handleMarkSent = useCallback(async (id) => {
     try {
@@ -216,6 +318,10 @@ const UpcomingAppointmentsSection = () => {
     }
   }, []);
 
+  const handleComplete = useCallback((id) => {
+    setAppointments((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
   const handleCancelConfirm = async () => {
     if (!cancelTarget) return;
     setCancelling(true);
@@ -224,7 +330,7 @@ const UpcomingAppointmentsSection = () => {
       setAppointments((prev) => prev.filter((a) => a.id !== cancelTarget.id));
       setCancelTarget(null);
     } catch {
-      setError('Failed to cancel the appointment. Please try again.');
+      setError(t('upcomingAppointments.cancelError'));
       setCancelTarget(null);
     } finally {
       setCancelling(false);
@@ -252,9 +358,9 @@ const UpcomingAppointmentsSection = () => {
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">Upcoming Appointments</h2>
+        <h2 className="text-xl font-semibold text-[#1F2933]">{t('upcomingAppointments.title')}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Your next scheduled sessions with parents.
+          {t('upcomingAppointments.subtitle')}
         </p>
       </div>
 
@@ -267,9 +373,9 @@ const UpcomingAppointmentsSection = () => {
       {appointments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <CalendarCheckIcon />
-          <p className="mt-4 text-sm font-medium text-gray-500">No upcoming appointments.</p>
+          <p className="mt-4 text-sm font-medium text-gray-500">{t('upcomingAppointments.empty.title')}</p>
           <p className="mt-1 text-sm text-gray-400">
-            Your availability is live and parents can book you.
+            {t('upcomingAppointments.empty.subtitle')}
           </p>
         </div>
       ) : (
@@ -280,6 +386,7 @@ const UpcomingAppointmentsSection = () => {
               booking={booking}
               onMarkSent={handleMarkSent}
               onCancelRequest={setCancelTarget}
+              onComplete={handleComplete}
             />
           ))}
         </div>
