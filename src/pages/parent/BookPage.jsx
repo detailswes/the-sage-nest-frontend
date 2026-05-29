@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
-import { listExperts, getExpertPublic } from '../../api/expertApi';
+import { getExpertPublic } from '../../api/expertApi';
 import { getAvailableSlots, getAvailableDatesInMonth, createBooking, getCurrentTcVersion, acceptTcApi, lockSlotApi, releaseLockApi } from '../../api/bookingApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
 
-// ─── T&C acceptance modal — blocks booking until parent accepts ───────────────
+const WEBFLOW_DIRECTORY_URL = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL || 'https://www.sagenest.org/experts';
+
+// ─── T&C acceptance modal ─────────────────────────────────────────────────────
 const TcModal = ({ isFirstBooking, onAccept, onDecline }) => {
   const { t } = useTranslation('parentBookings');
   return (
@@ -89,12 +91,7 @@ function formatSlotTime(isoString, lng = 'en') {
 }
 
 function todayISO() {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
-}
-
-function minDate() {
-  return todayISO();
+  return new Date().toISOString().slice(0, 10);
 }
 
 function maxDate(advanceDays) {
@@ -104,58 +101,6 @@ function maxDate(advanceDays) {
   return d.toISOString().slice(0, 10);
 }
 
-// ─── Expert card ─────────────────────────────────────────────────────────────
-const ExpertCard = ({ expert, onSelect }) => {
-  const [imgSrc, setImgSrc] = useState(getProfileImageUrl(expert.profile_image));
-  const initials = expert.user?.name
-    ? expert.user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-    : '?';
-
-  return (
-    <button
-      onClick={() => onSelect(expert)}
-      className="w-full text-left bg-white rounded-xl border border-[#E4E7E4] p-5 hover:border-[#445446] hover:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#445446]/30"
-    >
-      <div className="flex items-start gap-4">
-        {imgSrc ? (
-          <img src={imgSrc} alt={expert.user?.name}
-            onError={() => setImgSrc(null)}
-            className="w-14 h-14 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0" />
-        ) : (
-          <div className="w-14 h-14 rounded-full bg-[#445446] text-white flex items-center justify-center text-base font-bold flex-shrink-0 select-none">
-            {initials}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[#1F2933]">{expert.user?.name}</p>
-          {expert.position && (
-            <p className="text-sm text-[#445446] mt-0.5">{expert.position}</p>
-          )}
-          {expert.summary && (
-            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{expert.summary}</p>
-          )}
-          <div className="flex flex-wrap gap-2 mt-2">
-            {expert.address_city && (
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {expert.address_city}
-              </span>
-            )}
-          </div>
-          {expert.services?.length > 0 && (() => {
-            const cheapest = expert.services.reduce((a, b) => Number(a.price) <= Number(b.price) ? a : b);
-            return (
-              <p className="text-xs text-gray-400 mt-2">
-                {expert.services.length} service{expert.services.length !== 1 ? 's' : ''} ·
-                from {formatPrice(cheapest.price, cheapest.currency || 'EUR')}
-              </p>
-            );
-          })()}
-        </div>
-      </div>
-    </button>
-  );
-};
-
 const DESCRIPTION_WORD_LIMIT = 20;
 
 function truncateWords(text, limit) {
@@ -164,21 +109,59 @@ function truncateWords(text, limit) {
   return { short: words.slice(0, limit).join(' ') + '…', truncated: true };
 }
 
+// ─── Expert header — shown at top of service selection ───────────────────────
+const ExpertHeader = ({ expert, returnUrl }) => {
+  const [imgSrc, setImgSrc] = useState(getProfileImageUrl(expert?.profile_image));
+  const initials = expert?.user?.name
+    ? expert.user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
+
+  return (
+    <div className="flex items-center gap-4 bg-white rounded-xl border border-[#E4E7E4] p-4 mb-6">
+      {imgSrc ? (
+        <img src={imgSrc} alt={expert?.user?.name}
+          onError={() => setImgSrc(null)}
+          className="w-16 h-16 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0" />
+      ) : (
+        <div className="w-16 h-16 rounded-full bg-[#445446] text-white flex items-center justify-center text-lg font-bold flex-shrink-0 select-none">
+          {initials}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold text-[#1F2933] text-base">{expert?.user?.name}</p>
+        {expert?.position && <p className="text-sm text-[#445446] mt-0.5">{expert.position}</p>}
+        {expert?.summary && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{expert.summary}</p>}
+      </div>
+      {returnUrl && (
+        <a href={returnUrl}
+          className="flex-shrink-0 text-xs text-gray-400 hover:text-[#445446] transition-colors underline-offset-2 hover:underline">
+          View profile
+        </a>
+      )}
+    </div>
+  );
+};
+
+// ─── Steps ───────────────────────────────────────────────────────────────────
+const STEPS = { SERVICE: 'service', SLOT: 'slot' };
+
 // ─── Main component ───────────────────────────────────────────────────────────
-const STEPS = { BROWSE: 'browse', SERVICE: 'service', SLOT: 'slot' };
-
 const BookPage = () => {
-  const navigate      = useNavigate();
+  const navigate               = useNavigate();
   const { state: locationState } = useLocation();
-  const { t, i18n }  = useTranslation('parentBookings');
-  const lng           = i18n.language;
+  const [searchParams]         = useSearchParams();
+  const { t, i18n }            = useTranslation('parentBookings');
+  const lng                    = i18n.language;
 
-  const [step, setStep]           = useState(STEPS.BROWSE);
-  const [experts, setExperts]     = useState([]);
+  // URL params — set by Webflow "Book a Meeting" button
+  const expertIdParam  = searchParams.get('expertId');
+  const serviceIdParam = searchParams.get('serviceId');
+  const returnUrl      = searchParams.get('return_url') || WEBFLOW_DIRECTORY_URL;
+
+  const [step, setStep]           = useState(STEPS.SERVICE);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
 
-  // Selections
   const [selectedExpert,  setSelectedExpert]  = useState(null);
   const [expertDetail,    setExpertDetail]    = useState(null);
   const [selectedService, setSelectedService] = useState(null);
@@ -196,27 +179,58 @@ const BookPage = () => {
   const [tcIsFirstBooking,     setTcIsFirstBooking]     = useState(false);
   const [tcModalOpen,          setTcModalOpen]          = useState(false);
 
-  // Slot locking
   const [lockId,        setLockId]        = useState(null);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
   const [lockSecsLeft,  setLockSecsLeft]  = useState(null);
   const [locking,       setLocking]       = useState(false);
   const [lockErr,       setLockErr]       = useState('');
-  const lockIdRef = useRef(null); // stable ref for cleanup callbacks
+  const lockIdRef = useRef(null);
 
   const summaryRef = useRef(null);
 
-  // Restore state when returning from checkout via "Edit booking"
+  // ── Consume booking context from sessionStorage or URL params ──────────────
   useEffect(() => {
-    if (!locationState?.restore) return;
-    const { expert, service, format: fmt } = locationState.restore;
-    if (expert)   setSelectedExpert(expert);
-    if (service)  setSelectedService(service);
-    if (fmt)      setSelectedFormat(fmt);
-    if (expert && service) setStep(STEPS.SLOT);
+    // Clear saved booking context — we are now on the booking page
+    sessionStorage.removeItem('sage_booking_ctx');
+
+    // Restore from checkout "Edit booking" navigation
+    if (locationState?.restore) {
+      const { expert, service, format: fmt } = locationState.restore;
+      if (expert) { setSelectedExpert(expert); setExpertDetail(expert); }
+      if (service) setSelectedService(service);
+      if (fmt) setSelectedFormat(fmt);
+      if (expert && service) setStep(STEPS.SLOT);
+      setLoading(false);
+      return;
+    }
+
+    if (!expertIdParam) {
+      setError('No expert specified. Please start from the expert directory.');
+      setLoading(false);
+      return;
+    }
+
+    getExpertPublic(Number(expertIdParam))
+      .then((expert) => {
+        setSelectedExpert(expert);
+        setExpertDetail(expert);
+
+        if (serviceIdParam) {
+          const svc = (expert.services || []).find(
+            (s) => s.id === Number(serviceIdParam) && s.is_active !== false,
+          );
+          if (svc) {
+            setSelectedService(svc);
+            if (svc.format) setSelectedFormat(svc.format);
+            setStep(STEPS.SLOT);
+          }
+        }
+      })
+      .catch(() => setError('Could not load expert. Please try again.'))
+      .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Release any active lock when component unmounts (page navigation)
+  // Release lock on unmount
   useEffect(() => {
     return () => {
       if (lockIdRef.current) {
@@ -226,7 +240,7 @@ const BookPage = () => {
     };
   }, []);
 
-  // Countdown timer — ticks every second while a lock is held
+  // Lock countdown timer
   useEffect(() => {
     if (!lockExpiresAt) { setLockSecsLeft(null); return; }
     const tick = () => {
@@ -245,44 +259,26 @@ const BookPage = () => {
     return () => clearInterval(interval);
   }, [lockExpiresAt, t]);
 
-  // Scroll the booking summary into view whenever a slot is selected
+  // Scroll summary into view when slot is selected
   useEffect(() => {
     if (selectedSlot && summaryRef.current) {
       summaryRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [selectedSlot]);
 
-  // Check T&C status on mount — used to gate "Proceed to payment".
-  // Does NOT block browsing; the modal only fires when the button is clicked.
+  // T&C status on mount
   useEffect(() => {
     getCurrentTcVersion()
       .then(({ version_updated, is_first_booking }) => {
         setTcAcceptanceRequired(!!version_updated);
         setTcIsFirstBooking(!!is_first_booking);
       })
-      .catch(() => {}); // non-fatal — backend also validates tcAccepted
+      .catch(() => {});
   }, []);
 
-  // Load expert list on mount
-  useEffect(() => {
-    listExperts()
-      .then(setExperts)
-      .catch(() => setError('Could not load experts. Please try again.'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Load expert detail when selected
-  useEffect(() => {
-    if (!selectedExpert) return;
-    getExpertPublic(selectedExpert.id)
-      .then(setExpertDetail)
-      .catch(() => setExpertDetail(selectedExpert));
-  }, [selectedExpert]);
-
-  // Load slots when date or service changes (step = SLOT)
+  // Load slots when entering SLOT step
   const loadSlots = useCallback(async () => {
     if (!selectedExpert || !selectedService || !selectedDate) return;
-    // Release active lock whenever the date (or service) changes
     if (lockIdRef.current) {
       releaseLockApi(lockIdRef.current).catch(() => {});
       lockIdRef.current = null;
@@ -303,17 +299,8 @@ const BookPage = () => {
   }, [selectedExpert, selectedService, selectedDate]);
 
   useEffect(() => {
-    if (step === STEPS.SLOT) {
-      loadSlots();
-    }
+    if (step === STEPS.SLOT) loadSlots();
   }, [step, loadSlots]);
-
-  const handleSelectExpert = (expert) => {
-    setSelectedExpert(expert);
-    setSelectedService(null);
-    setSelectedSlot(null);
-    setStep(STEPS.SERVICE);
-  };
 
   const handleSelectSlot = async (slot) => {
     if (locking) return;
@@ -357,7 +344,7 @@ const BookPage = () => {
       );
       setAvailableDates(dates);
     } catch {
-      setAvailableDates(undefined); // fall back to unmarked calendar on error
+      setAvailableDates(undefined);
     } finally {
       setLoadingDates(false);
     }
@@ -365,8 +352,7 @@ const BookPage = () => {
 
   const handleSelectService = (service) => {
     setSelectedService(service);
-    setAvailableDates(undefined); // reset until calendar fires onMonthChange
-    // Auto-set format based on service format
+    setAvailableDates(undefined);
     if (service.format) setSelectedFormat(service.format);
     setStep(STEPS.SLOT);
   };
@@ -382,7 +368,6 @@ const BookPage = () => {
         format:      selectedFormat,
         lockId,
       });
-      // Lock was consumed atomically inside createBooking — clear local state
       lockIdRef.current = null;
       setLockId(null);
       setLockExpiresAt(null);
@@ -394,16 +379,15 @@ const BookPage = () => {
 
       navigate('/checkout', {
         state: {
-          bookingId:       result.bookingId,
-          clientSecret:    result.clientSecret,
-          expertName:      selectedExpert.user?.name,
-          serviceTitle:    selectedService.title,
-          amount:          selectedService.price,
-          currency:        result.currency || selectedService.currency || 'EUR',
-          scheduledAt:     selectedSlot.start,
-          format:          selectedFormat,
+          bookingId:    result.bookingId,
+          clientSecret: result.clientSecret,
+          expertName:   selectedExpert.user?.name,
+          serviceTitle: selectedService.title,
+          amount:       selectedService.price,
+          currency:     result.currency || selectedService.currency || 'EUR',
+          scheduledAt:  selectedSlot.start,
+          format:       selectedFormat,
           sessionLocation,
-          // Passed back to BookPage when the parent clicks "Edit booking"
           restore: {
             expert:  selectedExpert,
             service: selectedService,
@@ -419,52 +403,34 @@ const BookPage = () => {
 
   const handleBook = () => {
     if (!selectedSlot) return;
-    if (tcAcceptanceRequired) {
-      setTcModalOpen(true);
-      return;
-    }
+    if (tcAcceptanceRequired) { setTcModalOpen(true); return; }
     proceedToPayment();
   };
 
   const handleTcAccept = async () => {
     setTcModalOpen(false);
-    try {
-      await acceptTcApi();
-    } catch {
-      // Non-fatal — createBooking will reject if acceptance wasn't recorded
-    }
+    try { await acceptTcApi(); } catch { /* non-fatal */ }
     setTcAcceptanceRequired(false);
     proceedToPayment();
   };
 
-  // ── Step: Browse ──────────────────────────────────────────────────────────
-  if (step === STEPS.BROWSE) {
+  // ── Loading / error ───────────────────────────────────────────────────────
+  if (loading) {
     return (
-      <div>
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-[#1F2933]">Find an Expert</h2>
-          <p className="text-sm text-gray-500 mt-1">Browse our vetted experts and book a session.</p>
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
-        {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>
-        )}
-
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-          </div>
-        ) : experts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-sm font-medium text-gray-500">No experts available yet.</p>
-          </div>
-        ) : (
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
-            {experts.map((e) => (
-              <ExpertCard key={e.id} expert={e} onSelect={handleSelectExpert} />
-            ))}
-          </div>
-        )}
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="text-sm text-red-600 mb-4">{error}</p>
+        <a href={WEBFLOW_DIRECTORY_URL}
+          className="text-sm text-[#445446] underline hover:text-[#3a4a3b]">
+          Browse experts
+        </a>
       </div>
     );
   }
@@ -476,14 +442,17 @@ const BookPage = () => {
 
     return (
       <div>
-        {/* Back */}
-        <button onClick={() => setStep(STEPS.BROWSE)}
+        {/* Back → Webflow expert profile */}
+        <a href={returnUrl}
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
-          Back to experts
-        </button>
+          Back to expert profile
+        </a>
+
+        {/* Expert header */}
+        <ExpertHeader expert={detail} returnUrl={null} />
 
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-[#1F2933]">
@@ -496,58 +465,68 @@ const BookPage = () => {
           <p className="text-sm text-gray-500">This expert has no active services yet.</p>
         ) : (
           <div className="space-y-3">
-            {services.map((service) => (
-              <button key={service.id} onClick={() => handleSelectService(service)}
-                className="w-full text-left bg-white rounded-xl border border-[#E4E7E4] p-5 hover:border-[#445446] hover:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#445446]/30">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-[#1F2933]">{service.title}</p>
-                    {service.description && (() => {
-                      const { short, truncated } = truncateWords(service.description, DESCRIPTION_WORD_LIMIT);
-                      const isExpanded = !!expandedDesc[service.id];
-                      return (
-                        <p className="text-sm text-gray-500 mt-1">
-                          {isExpanded ? service.description : short}
-                          {truncated && (
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={(e) => { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}
-                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}}
-                              className="ml-1 text-[#445446] font-medium cursor-pointer hover:underline"
-                            >
-                              {isExpanded ? 'Show less' : 'Read more'}
-                            </span>
-                          )}
-                        </p>
-                      );
-                    })()}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                        {formatDuration(service.duration_minutes)}
-                      </span>
-                      {service.format && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          service.format === 'ONLINE'
-                            ? 'bg-blue-50 text-blue-600'
-                            : 'bg-[#445446]/10 text-[#445446]'
-                        }`}>
-                          {service.format === 'ONLINE' ? 'Online' : 'In-Person'}
+            {services.map((service) => {
+              const isPreSelected = service.id === Number(serviceIdParam);
+              return (
+                <button key={service.id} onClick={() => handleSelectService(service)}
+                  className={`w-full text-left bg-white rounded-xl border p-5 hover:border-[#445446] hover:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 ${
+                    isPreSelected ? 'border-[#445446] ring-1 ring-[#445446]/20' : 'border-[#E4E7E4]'
+                  }`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-[#1F2933]">{service.title}</p>
+                        {isPreSelected && (
+                          <span className="text-xs bg-[#445446]/10 text-[#445446] px-2 py-0.5 rounded-full font-medium">Selected</span>
+                        )}
+                      </div>
+                      {service.description && (() => {
+                        const { short, truncated } = truncateWords(service.description, DESCRIPTION_WORD_LIMIT);
+                        const isExpanded = !!expandedDesc[service.id];
+                        return (
+                          <p className="text-sm text-gray-500 mt-1">
+                            {isExpanded ? service.description : short}
+                            {truncated && (
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}}
+                                className="ml-1 text-[#445446] font-medium cursor-pointer hover:underline"
+                              >
+                                {isExpanded ? 'Show less' : 'Read more'}
+                              </span>
+                            )}
+                          </p>
+                        );
+                      })()}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                          {formatDuration(service.duration_minutes)}
                         </span>
-                      )}
-                      {service.cluster && CLUSTER_BADGE[service.cluster] && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CLUSTER_BADGE[service.cluster].cls}`}>
-                          {CLUSTER_BADGE[service.cluster].label}
-                        </span>
-                      )}
+                        {service.format && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            service.format === 'ONLINE'
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'bg-[#445446]/10 text-[#445446]'
+                          }`}>
+                            {service.format === 'ONLINE' ? 'Online' : 'In-Person'}
+                          </span>
+                        )}
+                        {service.cluster && CLUSTER_BADGE[service.cluster] && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CLUSTER_BADGE[service.cluster].cls}`}>
+                            {CLUSTER_BADGE[service.cluster].label}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-lg font-bold text-[#1F2933]">{formatPrice(service.price, service.currency || 'EUR')}</p>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 text-right">
-                    <p className="text-lg font-bold text-[#1F2933]">{formatPrice(service.price, service.currency || 'EUR')}</p>
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -557,7 +536,6 @@ const BookPage = () => {
   // ── Step: Select slot ─────────────────────────────────────────────────────
   return (
     <div>
-      {/* T&C acceptance modal — shown when "Proceed to payment" is clicked */}
       {tcModalOpen && (
         <TcModal
           isFirstBooking={tcIsFirstBooking}
@@ -565,7 +543,8 @@ const BookPage = () => {
           onDecline={() => setTcModalOpen(false)}
         />
       )}
-      {/* Back */}
+
+      {/* Back → service selection */}
       <button onClick={handleBackToServices}
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -573,6 +552,9 @@ const BookPage = () => {
         </svg>
         {t('slotStep.backToServices')}
       </button>
+
+      {/* Expert header — always visible */}
+      <ExpertHeader expert={expertDetail || selectedExpert} returnUrl={returnUrl} />
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-[#1F2933]">{t('slotStep.title')}</h2>
@@ -582,7 +564,7 @@ const BookPage = () => {
         </p>
       </div>
 
-      {/* Format selector — only show if service supports both */}
+      {/* Format selector — only if service supports both */}
       {!selectedService?.format && (
         <div className="mb-5 flex gap-3">
           {['ONLINE', 'IN_PERSON'].map((f) => (
@@ -604,7 +586,7 @@ const BookPage = () => {
         <BookingCalendar
           selectedDate={selectedDate}
           onSelect={setSelectedDate}
-          minDateISO={minDate()}
+          minDateISO={todayISO()}
           maxDateISO={maxDate(expertDetail?.advance_booking_days)}
           availableDates={availableDates}
           loadingDates={loadingDates}
@@ -612,7 +594,7 @@ const BookPage = () => {
         />
       </div>
 
-      {/* Slots grid */}
+      {/* Slots */}
       {slotsLoading ? (
         <div className="flex items-center gap-2 py-4">
           <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -625,39 +607,32 @@ const BookPage = () => {
         </div>
       ) : (
         <>
-        <p className="text-xs text-gray-400 mb-2">{t('slotStep.timezone')}</p>
-        {lockErr && (
-          <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{lockErr}</div>
-        )}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
-          {slots.map((slot) => (
-            <button key={slot.start} onClick={() => handleSelectSlot(slot)}
-              disabled={locking}
-              className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all duration-150 disabled:opacity-60 ${
-                selectedSlot?.start === slot.start
-                  ? 'bg-[#445446] text-white border-[#445446]'
-                  : 'bg-white text-[#1F2933] border-[#E4E7E4] hover:border-[#445446]'
-              }`}>
-              {formatSlotTime(slot.start, lng)}
-            </button>
-          ))}
-        </div>
+          <p className="text-xs text-gray-400 mb-2">{t('slotStep.timezone')}</p>
+          {lockErr && (
+            <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{lockErr}</div>
+          )}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
+            {slots.map((slot) => (
+              <button key={slot.start} onClick={() => handleSelectSlot(slot)}
+                disabled={locking}
+                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all duration-150 disabled:opacity-60 ${
+                  selectedSlot?.start === slot.start
+                    ? 'bg-[#445446] text-white border-[#445446]'
+                    : 'bg-white text-[#1F2933] border-[#E4E7E4] hover:border-[#445446]'
+                }`}>
+                {formatSlotTime(slot.start, lng)}
+              </button>
+            ))}
+          </div>
         </>
       )}
 
-      {/* Cancellation policy — full version, hidden once a slot is selected */}
-      {!selectedSlot && (
-        <div className="mt-5">
-          <CancellationPolicy />
-        </div>
-      )}
+      {!selectedSlot && <div className="mt-5"><CancellationPolicy /></div>}
 
-      {/* Summary + Book button */}
       {selectedSlot && (
         <div ref={summaryRef} className="bg-white rounded-xl border border-[#E4E7E4] p-5 mt-2">
           <h3 className="text-sm font-semibold text-[#1F2933] mb-3">{t('slotStep.summary.title')}</h3>
 
-          {/* Slot reservation countdown */}
           {lockSecsLeft !== null && (
             <div className={`mb-4 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
               lockSecsLeft > 120 ? 'bg-green-50 border-green-200 text-green-700'
@@ -672,6 +647,7 @@ const BookPage = () => {
               })}
             </div>
           )}
+
           <div className="space-y-1 text-sm text-gray-600 mb-4">
             <p><span className="font-medium text-[#1F2933]">{t('slotStep.summary.expertLabel')}</span> {selectedExpert?.user?.name}</p>
             <p><span className="font-medium text-[#1F2933]">{t('slotStep.summary.serviceLabel')}</span> {selectedService?.title}</p>
@@ -687,17 +663,12 @@ const BookPage = () => {
             <p className="text-base font-semibold text-[#1F2933] mt-2">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</p>
           </div>
 
-          {/* Cancellation policy — compact one-liner in the summary */}
-          <div className="mb-4">
-            <CancellationPolicy compact />
-          </div>
+          <div className="mb-4"><CancellationPolicy compact /></div>
 
-          {/* Currency notice */}
           <div className="mb-4 p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
             {t('slotStep.summary.currencyNotice', { currency: selectedService?.currency || 'EUR' })}
           </div>
 
-          {/* Health disclaimer */}
           <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
             {t('slotStep.summary.healthDisclaimer')}
           </div>

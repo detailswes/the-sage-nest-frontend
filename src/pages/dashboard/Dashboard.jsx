@@ -10,7 +10,7 @@ const Dashboard = () => {
   if (user.role === 'ADMIN')  return <Navigate to="/dashboard/admin" replace />;
 
   // PARENT — redirect to their dashboard
-  return <Navigate to="/dashboard/parent/browse" replace />;
+  return <Navigate to="/dashboard/parent/upcoming" replace />;
 };
 
 export default Dashboard;
