@@ -197,7 +197,7 @@ const BookingsManagementSection = () => {
       {/* Table */}
       <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
         {/* Table header */}
-        <div className="grid grid-cols-[60px_1fr_1fr_1fr_160px_90px_90px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
+        <div className="grid grid-cols-[60px_1fr_1fr_1fr_160px_90px_120px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
           {[
             t("bookingsMgmt.col.id"),
             t("bookingsMgmt.col.parent"),
@@ -225,7 +225,7 @@ const BookingsManagementSection = () => {
               <button
                 key={b.id}
                 onClick={() => setSelectedId(b.id)}
-                className="w-full grid grid-cols-[60px_1fr_1fr_1fr_160px_90px_90px] gap-3 px-4 py-3 text-left hover:bg-[#F5F7F5] transition-colors"
+                className="w-full grid grid-cols-[60px_1fr_1fr_1fr_160px_90px_120px] gap-3 px-4 py-3 text-left hover:bg-[#F5F7F5] transition-colors"
               >
                 <span className="text-sm font-mono text-gray-400">#{b.id}</span>
                 <span className="text-sm text-[#1F2933] truncate">{b.parent?.name || "—"}</span>
@@ -243,7 +243,7 @@ const BookingsManagementSection = () => {
                   })()}
                 </span>
                 <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(b.amount)}</span>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-col items-start gap-1">
                   <BookingStatusBadge status={b.status} />
                   {b.is_disputed && <DisputedBadge />}
                 </div>

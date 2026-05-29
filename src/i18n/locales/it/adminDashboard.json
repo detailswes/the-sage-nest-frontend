@@ -274,10 +274,14 @@
       "succeeded": "Riuscito",
       "refunded": "Rimborsato",
       "refund_pending": "Rimborso in attesa",
-      "captured_cancelled": "Acquisito — Nessun rimborso",
-      "transfer_failed": "Acquisito — Trasferimento fallito",
+      "captured_cancelled": "Nessun rimborso",
+      "transfer_failed": "Trasferimento fallito",
       "pending": "In attesa",
-      "failed": "Fallito"
+      "failed": "Fallito",
+      "verbose": {
+        "captured_cancelled": "Acquisito — Nessun rimborso",
+        "transfer_failed": "Acquisito — Trasferimento fallito"
+      }
     },
     "pagination": {
       "showing": "Visualizzazione",
