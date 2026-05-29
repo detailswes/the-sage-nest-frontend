@@ -71,13 +71,16 @@ const PAYMENT_STATUS_CLS = {
   failed:             "bg-red-100 text-red-600",
 };
 
-const PaymentStatusBadge = ({ transaction }) => {
+const PaymentStatusBadge = ({ transaction, verbose = false }) => {
   const { t } = useTranslation("adminDashboard");
   const ps = getPaymentStatus(transaction);
   const cls = PAYMENT_STATUS_CLS[ps] || "bg-gray-100 text-gray-500";
+  const label = verbose
+    ? t(`paymentsMgmt.paymentStatus.verbose.${ps}`, { defaultValue: t(`paymentsMgmt.paymentStatus.${ps}`, { defaultValue: ps }) })
+    : t(`paymentsMgmt.paymentStatus.${ps}`, { defaultValue: ps });
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
-      {t(`paymentsMgmt.paymentStatus.${ps}`, { defaultValue: ps })}
+    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${cls}`}>
+      {label}
     </span>
   );
 };
@@ -150,7 +153,7 @@ function TransactionDetailModal({ bookingId, onClose }) {
             <h2 className="text-base font-semibold text-[#1F2933]">
               {t("paymentsMgmt.modal.title", { id: bookingId })}
             </h2>
-            {booking && <PaymentStatusBadge transaction={booking} />}
+            {booking && <PaymentStatusBadge transaction={booking} verbose />}
           </div>
           <button
             onClick={onClose}
@@ -677,7 +680,7 @@ const PaymentsOverviewSection = () => {
 
       {/* Table */}
       <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
-        <div className="grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_110px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
+        <div className="grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_140px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
           {[
             t("paymentsMgmt.col.id"),
             t("paymentsMgmt.col.parent"),
@@ -706,7 +709,7 @@ const PaymentsOverviewSection = () => {
               <button
                 key={tx.id}
                 onClick={() => setSelectedId(tx.id)}
-                className="w-full grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_110px] gap-3 px-4 py-3 text-left hover:bg-[#F5F7F5] transition-colors items-center"
+                className="w-full grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_140px] gap-3 px-4 py-3 text-left hover:bg-[#F5F7F5] transition-colors items-center"
               >
                 <span className="text-sm font-mono text-gray-400">#{tx.id}</span>
                 <span className="text-sm text-[#1F2933] truncate">{tx.parent?.name || "—"}</span>

@@ -80,12 +80,12 @@ const AdminComplianceSection = () => {
         <div className="flex items-center gap-3 text-xs text-gray-500">
           {meta.current_pp_version && (
             <span className="px-2.5 py-1 rounded-full bg-gray-100 font-medium">
-              PP: <span className="text-[#1F2933]">{meta.current_pp_version}</span>
+              Privacy Policy: <span className="text-[#1F2933]">{meta.current_pp_version}</span>
             </span>
           )}
           {meta.current_tc_version && (
             <span className="px-2.5 py-1 rounded-full bg-gray-100 font-medium">
-              T&C: <span className="text-[#1F2933]">{meta.current_tc_version}</span>
+              Terms & Conditions: <span className="text-[#1F2933]">{meta.current_tc_version}</span>
             </span>
           )}
         </div>
