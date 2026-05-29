@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { listServices, createService, updateService, deleteService, reorderServices } from '../../../api/expertApi';
+import { listServices, createService, updateService, deleteService, reorderServices, getMyProfile } from '../../../api/expertApi';
 
 const FORMAT_OPTIONS  = [
   { value: 'ONLINE' },
@@ -92,6 +92,8 @@ const ServicesSection = () => {
   const { t, i18n } = useTranslation('expertDashboard');
   const lng = i18n.language;
 
+  const [sessionFormat, setSessionFormat] = useState(null); // expert's profile-level format
+
   const [services, setServices]       = useState([]);
   const [loading, setLoading]         = useState(true);
   const [listError, setListError]     = useState('');
@@ -111,11 +113,22 @@ const ServicesSection = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   useEffect(() => {
-    listServices()
-      .then(setServices)
+    Promise.all([
+      listServices(),
+      getMyProfile(),
+    ])
+      .then(([svcs, profile]) => {
+        setServices(svcs);
+        setSessionFormat(profile.session_format || null);
+      })
       .catch(() => setListError(t('services.errors.loadFailed')))
       .finally(() => setLoading(false));
   }, [t]);
+
+  // Derives the locked format value when the expert has a single-mode session_format.
+  const lockedFormat = sessionFormat === 'ONLINE' ? 'ONLINE'
+    : sessionFormat === 'IN_PERSON' ? 'IN_PERSON'
+    : null; // null means BOTH — dropdown is free
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const handleChange = (e) => {
@@ -151,7 +164,7 @@ const ServicesSection = () => {
   const openAdd = () => {
     setEditingId(null);
     setIsDuplicating(false);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, format: lockedFormat || '' });
     setFormErrors({});
     setFormError('');
     setShowForm(true);
@@ -166,7 +179,7 @@ const ServicesSection = () => {
       duration_minutes: String(svc.duration_minutes),
       price:            String(svc.price),
       currency:         svc.currency     || 'EUR',
-      format:           svc.format       || '',
+      format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
     });
     setFormErrors({});
@@ -182,7 +195,7 @@ const ServicesSection = () => {
       duration_minutes: String(svc.duration_minutes),
       price:            String(svc.price),
       currency:         svc.currency     || 'EUR',
-      format:           svc.format       || '',
+      format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
     });
     setFormErrors({});
@@ -364,10 +377,21 @@ const ServicesSection = () => {
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
                   {t('services.form.formatLabel')} <span className="text-red-400">*</span>
                 </label>
-                <select name="format" value={form.format} onChange={handleChange} className={inputClass(!!formErrors.format)}>
+                <select
+                  name="format"
+                  value={form.format}
+                  onChange={handleChange}
+                  disabled={!!lockedFormat}
+                  className={`${inputClass(!!formErrors.format)} ${lockedFormat ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''}`}
+                >
                   <option value="" disabled>{t('services.form.formatSelect')}</option>
                   {FORMAT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t('services.formats.' + o.value)}</option>)}
                 </select>
+                {lockedFormat && (
+                  <p className="mt-1 text-xs text-gray-400">
+                    Set by your profile session format. Change it in your Profile settings.
+                  </p>
+                )}
                 {formErrors.format && <p className="mt-1.5 text-xs text-red-500">{formErrors.format}</p>}
               </div>
               <div>
