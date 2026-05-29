@@ -5,24 +5,6 @@ import { useAuth } from "../../context/AuthContext";
 import LanguageSelector from "../../components/LanguageSelector";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
-const SearchIcon = ({ active }) => (
-  <svg
-    className={`w-5 h-5 flex-shrink-0 ${
-      active ? "text-[#445446]" : "text-current"
-    }`}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={1.8}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-    />
-  </svg>
-);
-
 const UpcomingIcon = ({ active }) => (
   <svg
     className={`w-5 h-5 flex-shrink-0 ${
@@ -95,13 +77,12 @@ const LogoutIcon = () => (
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: "browse", tKey: "nav.findExpert", Icon: SearchIcon },
   { key: "upcoming", tKey: "nav.upcomingBookings", Icon: UpcomingIcon },
   { key: "past", tKey: "nav.pastBookings", Icon: PastIcon },
   { key: "profile", tKey: "nav.myProfile", Icon: ProfileIcon },
 ];
 
-const VALID_SECTIONS = ["browse", "upcoming", "past", "profile"];
+const VALID_SECTIONS = ["upcoming", "past", "profile"];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const ParentDashboard = () => {
@@ -113,7 +94,7 @@ const ParentDashboard = () => {
   const lastSegment = location.pathname.split("/").pop();
   const activeSection = VALID_SECTIONS.includes(lastSegment)
     ? lastSegment
-    : "browse";
+    : "upcoming";
 
   const initials = user?.name
     ? user.name
@@ -131,7 +112,7 @@ const ParentDashboard = () => {
       <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-[#E4E7E4] flex flex-col z-10">
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-[#E4E7E4]">
-          <Link to="/dashboard/parent/browse" className="flex items-center gap-2.5">
+          <a href="https://the-sage-nest.webflow.io/" className="flex items-center gap-2.5">
             <img
               src="/assets/images/Sage-Nest_Final.svg"
               alt="Sage Nest"
@@ -143,7 +124,7 @@ const ParentDashboard = () => {
             <span className="text-[#1F2933] font-bold text-base tracking-tight">
               Sage Nest
             </span>
-          </Link>
+          </a>
         </div>
 
         {/* User info */}

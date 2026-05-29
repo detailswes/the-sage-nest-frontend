@@ -1,14 +1,9 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-/**
- * Wraps a route to require authentication.
- * - While session is being restored: shows a loading screen.
- * - If not logged in: redirects to /login.
- * - If logged in but wrong role: redirects to /dashboard (role router handles the rest).
- */
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -19,6 +14,18 @@ const PrivateRoute = ({ children, allowedRoles }) => {
   }
 
   if (!user) {
+    // Preserve booking context so it survives through login/register
+    if (location.pathname === '/book') {
+      const params = new URLSearchParams(location.search);
+      const expertId = params.get('expertId');
+      if (expertId) {
+        sessionStorage.setItem('sage_booking_ctx', JSON.stringify({
+          expertId,
+          serviceId: params.get('serviceId'),
+          returnUrl: params.get('return_url'),
+        }));
+      }
+    }
     return <Navigate to="/login" replace />;
   }
 

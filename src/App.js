@@ -98,13 +98,27 @@ function App() {
               </PrivateRoute>
             }
           >
-            <Route index element={<Navigate to="browse" replace />} />
-            <Route path="browse"    element={<BookPage />} />
+            <Route index element={<Navigate to="upcoming" replace />} />
+            <Route path="browse"    element={<Navigate to="upcoming" replace />} />
             <Route path="upcoming"  element={<MyBookingsPage view="upcoming" />} />
             <Route path="past"      element={<MyBookingsPage view="past" />} />
             <Route path="bookings"  element={<Navigate to="upcoming" replace />} />
             <Route path="profile"   element={<ParentProfilePage />} />
           </Route>
+
+          {/* Booking entry — Webflow handoff, standalone (no dashboard shell) */}
+          <Route
+            path="/book"
+            element={
+              <PrivateRoute allowedRoles={["PARENT"]}>
+                <div className="min-h-screen bg-[#F5F7F5]">
+                  <div className="max-w-2xl mx-auto px-4 py-10">
+                    <BookPage />
+                  </div>
+                </div>
+              </PrivateRoute>
+            }
+          />
 
           {/* Booking flow — standalone pages (outside dashboard layout) */}
           <Route
