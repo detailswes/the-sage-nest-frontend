@@ -111,9 +111,16 @@ const LangChip = ({ label, selected, onToggle }) => (
 );
 
 // ─── Main component ───────────────────────────────────────────────────────────
+const SESSION_FORMAT_OPTIONS = [
+  { value: 'ONLINE',    label: 'Online only' },
+  { value: 'IN_PERSON', label: 'In-person only' },
+  { value: 'BOTH',      label: 'Both online and in-person' },
+];
+
 const EMPTY_FORM = {
   bio: '', expertise: '',
   summary: '', position: '',
+  session_format: '',
   timezone: 'Europe/Rome',
   address_street: '', address_city: '', address_postcode: '',
   languages: [],
@@ -168,6 +175,7 @@ const ProfileSection = () => {
           expertise:        data.expertise        || '',
           summary:          data.summary          || '',
           position:         data.position         || '',
+          session_format:   data.session_format   || '',
           timezone:         data.timezone         || 'Europe/Rome',
           address_street:   data.address_street   || '',
           address_city:     data.address_city     || '',
@@ -287,6 +295,9 @@ const ProfileSection = () => {
     if (!form.address_postcode?.trim()) {
       setError(t('profile.validation.postcodeRequired')); return;
     }
+    if (!form.session_format) {
+      setError('Please select how you deliver your sessions.'); return;
+    }
     setSaving(true);
     setError('');
     setSuccess(false);
@@ -297,6 +308,7 @@ const ProfileSection = () => {
         expertise:        form.expertise        || null,
         summary:          form.summary          || null,
         position:         form.position         || null,
+        session_format:   form.session_format   || null,
         timezone:         form.timezone         || 'Europe/Rome',
         address_street:   form.address_street   || null,
         address_city:     form.address_city     || null,
@@ -582,6 +594,35 @@ const ProfileSection = () => {
             />
             <p className={`mt-1 text-xs text-right font-medium ${form.bio.length > BIO_MAX ? 'text-red-500' : form.bio.length > BIO_MAX - 70 ? 'text-amber-500' : 'text-gray-400'}`}>
               {form.bio.length} / {BIO_MAX}
+            </p>
+          </div>
+
+          {/* Session format */}
+          <div>
+            <label className="block text-sm font-medium text-[#1F2933] mb-2">
+              How do you deliver your sessions? <span className="text-red-400">*</span> <PublicBadge />
+            </label>
+            <div className="flex flex-col gap-2">
+              {SESSION_FORMAT_OPTIONS.map((opt) => (
+                <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all duration-150 ${
+                  form.session_format === opt.value
+                    ? 'border-[#445446] bg-[#445446]/5 text-[#1F2933]'
+                    : 'border-[#E4E7E4] bg-white text-gray-600 hover:border-[#445446]/40'
+                }`}>
+                  <input
+                    type="radio"
+                    name="session_format"
+                    value={opt.value}
+                    checked={form.session_format === opt.value}
+                    onChange={handleChange}
+                    className="accent-[#445446]"
+                  />
+                  <span className="text-sm font-medium">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-gray-400">
+              This controls the format options available when creating services and the filter shown on the expert directory.
             </p>
           </div>
 

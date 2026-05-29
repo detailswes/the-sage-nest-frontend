@@ -274,10 +274,14 @@
       "succeeded": "Succeeded",
       "refunded": "Refunded",
       "refund_pending": "Refund Pending",
-      "captured_cancelled": "Captured — No Refund",
-      "transfer_failed": "Captured — Transfer Failed",
+      "captured_cancelled": "No Refund",
+      "transfer_failed": "Transfer Failed",
       "pending": "Pending",
-      "failed": "Failed"
+      "failed": "Failed",
+      "verbose": {
+        "captured_cancelled": "Captured — No Refund",
+        "transfer_failed": "Captured — Transfer Failed"
+      }
     },
     "pagination": {
       "showing": "Showing",
@@ -463,6 +467,7 @@
         "Summary": "Summary",
         "Bio": "Bio",
         "Professional title": "Professional title",
+        "Session format": "Session format",
         "Location": "Location",
         "Timezone": "Timezone",
         "Languages": "Languages",
@@ -484,6 +489,8 @@
       "langRejectQuestion": "Reject?",
       "langConfirm": "Confirm",
       "langCancel": "Cancel",
+      "sessionFormat": "Session Format",
+      "noSessionFormat": "Not set",
       "location": "Location",
       "noLocation": "No location added.",
       "qualifications": "Qualifications",

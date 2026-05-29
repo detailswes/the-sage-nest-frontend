@@ -500,10 +500,15 @@ const AdminExpertDetailSection = () => {
                 <>
                   {/* ── Pending draft review card ── */}
                   {expert.profile_draft?.status === "PENDING_REVIEW" && (() => {
+                    const fmtSessionFormat = (val) => {
+                      if (!val) return null;
+                      return { ONLINE: "Online", IN_PERSON: "In-Person", BOTH: "Online & In-Person" }[val] || val;
+                    };
                     const draftFields = [
                       { key: "Summary",            live: expert.summary,       proposed: expert.profile_draft.summary },
                       { key: "Bio",                live: expert.bio,           proposed: expert.profile_draft.bio },
                       { key: "Professional title", live: expert.position,      proposed: expert.profile_draft.position },
+                      { key: "Session format",     live: fmtSessionFormat(expert.session_format), proposed: fmtSessionFormat(expert.profile_draft.session_format) },
                       { key: "Location",           live: [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null, proposed: [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null },
                       { key: "Timezone",           live: expert.timezone,      proposed: expert.profile_draft.timezone },
                       { key: "Languages",          live: expert.languages?.join(", ") || null, proposed: expert.profile_draft.languages?.join(", ") || null },
@@ -622,6 +627,19 @@ const AdminExpertDetailSection = () => {
                         ? <p className="text-sm text-[#1F2933] leading-relaxed">{expert.bio}</p>
                         : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noBio")}</p>}
                     </div>
+                  </div>
+
+                  <div>
+                    <SectionLabel>{t("expertDetail.profile.sessionFormat")}</SectionLabel>
+                    {expert.session_format ? (
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                        expert.session_format === "ONLINE"    ? "bg-blue-100 text-blue-700"   :
+                        expert.session_format === "IN_PERSON" ? "bg-purple-100 text-purple-700" :
+                        "bg-teal-100 text-teal-700"
+                      }`}>
+                        {{ ONLINE: "Online", IN_PERSON: "In-Person", BOTH: "Online & In-Person" }[expert.session_format]}
+                      </span>
+                    ) : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noSessionFormat")}</p>}
                   </div>
 
                   <div>
