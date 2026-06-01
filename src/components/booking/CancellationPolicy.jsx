@@ -1,6 +1,6 @@
 import { useTranslation, Trans } from 'react-i18next';
 
-const CancellationPolicy = ({ compact = false }) => {
+const CancellationPolicy = ({ compact = false, small = false }) => {
   const { t } = useTranslation('parentBookings');
 
   if (compact) {
@@ -13,7 +13,7 @@ const CancellationPolicy = ({ compact = false }) => {
   }
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900 text-sm leading-relaxed space-y-3">
+    <div className={`rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900 leading-relaxed space-y-3 ${small ? 'text-xs' : 'text-sm'}`}>
       <p>{t('cancellationPolicy.intro')}</p>
 
       <ul className="space-y-1.5 pl-2">
@@ -50,7 +50,7 @@ const CancellationPolicy = ({ compact = false }) => {
         />
       </p>
 
-      <p className="text-xs text-amber-700">
+      <p className={`text-amber-700 ${small ? 'text-[10px]' : 'text-xs'}`}>
         {t('cancellationPolicy.footer')}
       </p>
     </div>
