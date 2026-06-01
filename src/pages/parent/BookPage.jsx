@@ -145,32 +145,26 @@ function truncateWords(text, limit) {
 }
 
 // ─── Expert header (SERVICE step only) ───────────────────────────────────────
-const ExpertHeader = ({ expert, effectiveReturnUrl }) => {
+const ExpertHeader = ({ expert }) => {
   const [imgSrc, setImgSrc] = useState(getProfileImageUrl(expert?.profile_image));
   const initials = expert?.user?.name
     ? expert.user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?';
 
   return (
-    <div className="flex items-center gap-4 bg-white rounded-xl border border-[#E4E7E4] p-4 mb-6">
+    <div className="flex items-center gap-3 mb-6">
       {imgSrc ? (
         <img src={imgSrc} alt={expert?.user?.name} onError={() => setImgSrc(null)}
-          className="w-16 h-16 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0" />
+          className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
       ) : (
-        <div className="w-16 h-16 rounded-full bg-[#445446] text-white flex items-center justify-center text-lg font-bold flex-shrink-0 select-none">
+        <div className="w-12 h-12 rounded-full bg-[#445446] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 select-none">
           {initials}
         </div>
       )}
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold text-[#1F2933] text-base">{expert?.user?.name}</p>
-        {expert?.position && <p className="text-sm text-[#445446] mt-0.5">{expert.position}</p>}
-        {expert?.summary && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{expert.summary}</p>}
+      <div className="min-w-0">
+        <p className="font-semibold text-[#1F2933]">{expert?.user?.name}</p>
+        {expert?.position && <p className="text-sm text-[#445446]">{expert.position}</p>}
       </div>
-      {effectiveReturnUrl && (
-        <a href={effectiveReturnUrl} className="flex-shrink-0 text-xs text-gray-400 hover:text-[#445446] transition-colors underline-offset-2 hover:underline">
-          View profile
-        </a>
-      )}
     </div>
   );
 };
@@ -382,7 +376,8 @@ const BookPage = () => {
   const [lockSecsLeft,  setLockSecsLeft]  = useState(null);
   const [locking,       setLocking]       = useState(false);
   const [lockErr,       setLockErr]       = useState('');
-  const lockIdRef = useRef(null);
+  const lockIdRef    = useRef(null);
+  const continueRef  = useRef(null);
 
   // ── Init: load expert from URL params ─────────────────────────────────────
   useEffect(() => {
@@ -452,6 +447,13 @@ const BookPage = () => {
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [lockExpiresAt]);
+
+  // Auto-scroll to Continue button when slot is selected
+  useEffect(() => {
+    if (selectedSlot && continueRef.current) {
+      continueRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [selectedSlot]);
 
   // T&C status
   useEffect(() => {
@@ -593,7 +595,7 @@ const BookPage = () => {
         </a>
 
         <StepIndicator step={STEPS.SERVICE} />
-        <ExpertHeader expert={detail} effectiveReturnUrl={null} />
+        <ExpertHeader expert={detail} />
 
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-[#1F2933]">Book with {selectedExpert?.user?.name}</h2>
@@ -748,12 +750,14 @@ const BookPage = () => {
           </>
         )}
 
-        <CancellationPolicy />
+        <div className="mt-6">
+          <CancellationPolicy compact />
+        </div>
 
         {/* Continue button — only when slot selected */}
         {selectedSlot && (
-          <button onClick={() => setStep(STEPS.CONFIRM)}
-            className="w-full mt-6 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors">
+          <button ref={continueRef} onClick={() => setStep(STEPS.CONFIRM)}
+            className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors">
             Continue →
           </button>
         )}
@@ -872,14 +876,14 @@ const BookPage = () => {
                 </>
               ) : (
                 <>
-                  <p className="text-base font-semibold text-[#1F2933] mb-4">Create your account</p>
-                  <InlineRegister onSuccess={handleAuthSuccess} />
-                  <p className="text-sm text-gray-500 text-center mt-4">
+                  <p className="text-base font-semibold text-[#1F2933] mb-1">Your Details</p>
+                  <p className="text-sm text-gray-500 mb-4">
                     Already have an account?{' '}
                     <button onClick={() => setAuthTab('login')} className="text-[#445446] font-medium hover:underline">
                       Sign in
                     </button>
                   </p>
+                  <InlineRegister onSuccess={handleAuthSuccess} />
                 </>
               )}
               {proceedErr && <p className="mt-3 text-sm text-red-600">{proceedErr}</p>}
