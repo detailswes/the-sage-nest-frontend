@@ -106,17 +106,22 @@ function App() {
             <Route path="profile"   element={<ParentProfilePage />} />
           </Route>
 
-          {/* Booking entry — Webflow handoff, standalone (no dashboard shell) */}
+          {/* Booking entry — public, no auth required until confirm step */}
           <Route
             path="/book"
             element={
-              <PrivateRoute allowedRoles={["PARENT"]}>
-                <div className="min-h-screen bg-[#F5F7F5]">
-                  <div className="max-w-2xl mx-auto px-4 py-10">
-                    <BookPage />
+              <div className="min-h-screen bg-[#F5F7F5]">
+                <div className="max-w-2xl mx-auto px-4 py-10">
+                  {/* Logo */}
+                  <div className="mb-8 text-center">
+                    <a href="https://the-sage-nest.webflow.io/">
+                      <img src="/assets/images/Sage-Nest_Final.svg" alt="Sage Nest" className="h-10 mx-auto"
+                        onError={(e) => { e.target.style.display = 'none'; }} />
+                    </a>
                   </div>
+                  <BookPage />
                 </div>
-              </PrivateRoute>
+              </div>
             }
           />
 
