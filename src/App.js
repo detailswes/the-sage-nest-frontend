@@ -112,13 +112,6 @@ function App() {
             element={
               <div className="min-h-screen bg-[#F5F7F5]">
                 <div className="max-w-2xl mx-auto px-4 py-10">
-                  {/* Logo */}
-                  <div className="mb-8 text-center">
-                    <a href="https://the-sage-nest.webflow.io/">
-                      <img src="/assets/images/Sage-Nest_Final.svg" alt="Sage Nest" className="h-10 mx-auto"
-                        onError={(e) => { e.target.style.display = 'none'; }} />
-                    </a>
-                  </div>
                   <BookPage />
                 </div>
               </div>
