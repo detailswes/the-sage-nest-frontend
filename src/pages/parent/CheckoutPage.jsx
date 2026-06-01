@@ -41,7 +41,7 @@ const CheckoutPage = () => {
   // Guard: redirect if no booking state
   useEffect(() => {
     if (!bookingId || !clientSecret) {
-      navigate('/dashboard/parent/browse', { replace: true });
+      navigate('/dashboard/parent/upcoming', { replace: true });
     }
   }, [bookingId, clientSecret, navigate]);
 
@@ -96,7 +96,7 @@ const CheckoutPage = () => {
     } catch {
       // If abandon fails the PI will expire naturally — don't block the user
     }
-    navigate('/dashboard/parent/browse', { state: { restore } });
+    navigate('/book', { state: { restore } });
   };
 
   const handleSubmit = async (e) => {

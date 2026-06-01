@@ -389,7 +389,7 @@ const BookPage = () => {
       if (expert) { setSelectedExpert(expert); setExpertDetail(expert); }
       if (service) setSelectedService(service);
       if (fmt) setSelectedFormat(fmt);
-      if (expert && service) setStep(STEPS.CONFIRM);
+      if (expert && service) setStep(STEPS.SLOT);
       setLoading(false);
       return;
     }
@@ -616,20 +616,20 @@ const BookPage = () => {
                     if (service.format) setSelectedFormat(service.format);
                     setStep(STEPS.SLOT);
                   }}
-                  className={`w-full text-left bg-white rounded-xl border p-5 hover:border-[#445446] hover:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 ${
+                  className={`w-full text-left bg-white rounded-xl border p-4 hover:border-[#445446] hover:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 ${
                     isPreSelected ? 'border-[#445446] ring-1 ring-[#445446]/20' : 'border-[#E4E7E4]'
                   }`}>
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[#1F2933]">{service.title}</p>
-                        {isPreSelected && <span className="text-xs bg-[#445446]/10 text-[#445446] px-2 py-0.5 rounded-full font-medium">Selected</span>}
+                        <p className="text-sm font-semibold text-[#1F2933]">{service.title}</p>
+                        {isPreSelected && <span className="text-[10px] bg-[#445446]/10 text-[#445446] px-1.5 py-0.5 rounded-full font-medium">Selected</span>}
                       </div>
                       {service.description && (() => {
                         const { short, truncated } = truncateWords(service.description, DESCRIPTION_WORD_LIMIT);
                         const isExpanded = !!expandedDesc[service.id];
                         return (
-                          <p className="text-sm text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 mt-1">
                             {isExpanded ? service.description : short}
                             {truncated && (
                               <span role="button" tabIndex={0}
@@ -642,22 +642,22 @@ const BookPage = () => {
                           </p>
                         );
                       })()}
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{formatDuration(service.duration_minutes)}</span>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{formatDuration(service.duration_minutes)}</span>
                         {service.format && (
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${service.format === 'ONLINE' ? 'bg-blue-50 text-blue-600' : 'bg-[#445446]/10 text-[#445446]'}`}>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${service.format === 'ONLINE' ? 'bg-blue-50 text-blue-600' : 'bg-[#445446]/10 text-[#445446]'}`}>
                             {service.format === 'ONLINE' ? 'Online' : 'In-Person'}
                           </span>
                         )}
                         {service.cluster && CLUSTER_BADGE[service.cluster] && (
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CLUSTER_BADGE[service.cluster].cls}`}>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${CLUSTER_BADGE[service.cluster].cls}`}>
                             {CLUSTER_BADGE[service.cluster].label}
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="flex-shrink-0 text-right">
-                      <p className="text-lg font-bold text-[#1F2933]">{formatPrice(service.price, service.currency || 'EUR')}</p>
+                      <p className="text-sm font-bold text-[#1F2933]">{formatPrice(service.price, service.currency || 'EUR')}</p>
                     </div>
                   </div>
                 </button>
@@ -751,7 +751,7 @@ const BookPage = () => {
         )}
 
         <div className="mt-6">
-          <CancellationPolicy compact />
+          <CancellationPolicy small />
         </div>
 
         {/* Continue button — only when slot selected */}
