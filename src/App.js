@@ -111,7 +111,7 @@ function App() {
             path="/book"
             element={
               <div className="min-h-screen bg-[#F5F7F5]">
-                <div className="max-w-2xl mx-auto px-4 py-10">
+                <div className="max-w-xl mx-auto px-4 py-10">
                   <BookPage />
                 </div>
               </div>
