@@ -4,7 +4,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { getExpertPublic } from '../../api/expertApi';
 import { getAvailableSlots, getAvailableDatesInMonth, createBooking, getCurrentTcVersion, acceptTcApi, lockSlotApi, releaseLockApi } from '../../api/bookingApi';
-import { loginUser, registerUser, verifyOtpApi, resendOtpApi } from '../../api/authApi';
+import { loginUser, registerUser, verifyOtpApi } from '../../api/authApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import { validateLoginForm, validateRegisterForm } from '../../utils/validation';
 import PasswordInput from '../../components/auth/PasswordInput';
@@ -369,7 +369,7 @@ const BookPage = () => {
   const [expandedDesc,    setExpandedDesc]    = useState({});
 
   // Confirm + payment state
-  const [authTab,              setAuthTab]              = useState('login'); // 'login' | 'register'
+  const [authTab,              setAuthTab]              = useState('register'); // 'login' | 'register'
   const [proceeding,           setProceeding]           = useState(false);
   const [proceedErr,           setProceedErr]           = useState('');
   const [tcAcceptanceRequired, setTcAcceptanceRequired] = useState(false);
@@ -719,27 +719,27 @@ const BookPage = () => {
           </div>
         </div>
 
-        {/* Slots — bigger buttons */}
+        {/* Slots */}
         {slotsLoading ? (
           <div className="flex items-center gap-2 py-4 justify-center">
             <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
             <span className="text-sm text-gray-500">{t('slotStep.loadingSlots')}</span>
           </div>
         ) : slots.length === 0 ? (
-          <div className="py-8 text-center bg-white rounded-xl border border-[#E4E7E4]">
+          <div className="py-6 text-center bg-white rounded-xl border border-[#E4E7E4]">
             <p className="text-sm font-medium text-gray-500">{t('slotStep.noSlots')}</p>
             <p className="text-xs text-gray-400 mt-1">{t('slotStep.noSlotsHint')}</p>
           </div>
         ) : (
           <>
-            <p className="text-xs text-gray-400 mb-3 text-center">{t('slotStep.timezone')}</p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-8">
+            <p className="text-xs text-gray-400 mb-2 text-center">{t('slotStep.timezone')}</p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
               {slots.map((slot) => (
                 <button key={slot.start} onClick={() => setSelectedSlot(slot)}
-                  className={`py-4 px-3 rounded-xl border text-sm font-semibold transition-all duration-150 ${
+                  className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all duration-150 ${
                     selectedSlot?.start === slot.start
-                      ? 'bg-[#445446] text-white border-[#445446] shadow-md'
-                      : 'bg-white text-[#1F2933] border-[#E4E7E4] hover:border-[#445446] hover:shadow-sm'
+                      ? 'bg-[#445446] text-white border-[#445446]'
+                      : 'bg-white text-[#1F2933] border-[#E4E7E4] hover:border-[#445446]'
                   }`}>
                   {formatSlotTime(slot.start, lng)}
                 </button>
@@ -781,114 +781,124 @@ const BookPage = () => {
       <h2 className="text-xl font-semibold text-[#1F2933] mb-1">Confirm your booking</h2>
       <p className="text-sm text-gray-500 mb-6">Review your details below before proceeding to payment.</p>
 
-      {/* Booking summary card */}
-      <div className="bg-white rounded-xl border border-[#E4E7E4] p-5 mb-6">
-        <div className="flex items-center gap-3 pb-4 mb-4 border-b border-[#E4E7E4]">
-          {(() => {
-            const imgSrc = getProfileImageUrl(detail?.profile_image);
-            const initials = detail?.user?.name
-              ? detail.user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-              : '?';
-            return imgSrc ? (
-              <img src={imgSrc} alt={detail?.user?.name} className="w-10 h-10 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-[#445446] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">{initials}</div>
-            );
-          })()}
-          <div>
-            <p className="font-semibold text-[#1F2933] text-sm">{detail?.user?.name}</p>
-            <p className="text-xs text-gray-500">{selectedService?.title}</p>
-          </div>
-        </div>
+      {/* Single card: booking summary + auth/proceed + footer text */}
+      <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden">
 
-        <div className="space-y-2 text-sm">
-          {[
-            { label: 'Format',   value: selectedFormat === 'ONLINE' ? 'Online (video call)' : 'In-person' },
-            { label: 'When',     value: `${formatSlotDate(selectedSlot?.start, lng)}, ${formatSlotTime(selectedSlot?.start, lng)}` },
-            { label: 'Duration', value: formatDuration(selectedService?.duration_minutes, t) },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex justify-between gap-4">
-              <span className="text-gray-500">{label}</span>
-              <span className="text-[#1F2933] font-medium text-right">{value}</span>
+        {/* Booking summary */}
+        <div className="p-5 border-b border-[#E4E7E4]">
+          <div className="flex items-center gap-3 pb-4 mb-4 border-b border-[#E4E7E4]">
+            {(() => {
+              const imgSrc = getProfileImageUrl(detail?.profile_image);
+              const initials = detail?.user?.name
+                ? detail.user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+                : '?';
+              return imgSrc ? (
+                <img src={imgSrc} alt={detail?.user?.name} className="w-10 h-10 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-[#445446] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">{initials}</div>
+              );
+            })()}
+            <div>
+              <p className="font-semibold text-[#1F2933] text-sm">{detail?.user?.name}</p>
+              <p className="text-xs text-gray-500">{selectedService?.title}</p>
             </div>
-          ))}
-          {selectedFormat === 'IN_PERSON' && (() => {
-            const loc = [detail?.address_street, detail?.address_city, detail?.address_postcode].filter(Boolean).join(', ');
-            return loc ? (
-              <div className="flex justify-between gap-4">
-                <span className="text-gray-500">Location</span>
-                <span className="text-[#1F2933] font-medium text-right">{loc}</span>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            {[
+              { label: 'Format',   value: selectedFormat === 'ONLINE' ? 'Online (video call)' : 'In-person' },
+              { label: 'When',     value: `${formatSlotDate(selectedSlot?.start, lng)}, ${formatSlotTime(selectedSlot?.start, lng)}` },
+              { label: 'Duration', value: formatDuration(selectedService?.duration_minutes, t) },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex justify-between gap-4">
+                <span className="text-gray-500">{label}</span>
+                <span className="text-[#1F2933] font-medium text-right">{value}</span>
               </div>
-            ) : null;
-          })()}
-          <div className="flex justify-between gap-4 pt-3 border-t border-[#E4E7E4] mt-3">
-            <span className="font-semibold text-[#1F2933]">Total</span>
-            <span className="font-bold text-lg text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
-          </div>
-        </div>
-
-        {/* Lock countdown — shown once slot is locked */}
-        {lockSecsLeft !== null && (
-          <div className={`mt-4 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
-            lockSecsLeft > 120 ? 'bg-green-50 border-green-200 text-green-700'
-            : lockSecsLeft > 30  ? 'bg-amber-50 border-amber-200 text-amber-700'
-            : 'bg-red-50 border-red-200 text-red-700'
-          }`}>
-            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
-            </svg>
-            Slot reserved for {Math.floor(lockSecsLeft / 60)}:{String(lockSecsLeft % 60).padStart(2, '0')}
-          </div>
-        )}
-        {lockErr && (
-          <div className="mt-4 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">{lockErr}</div>
-        )}
-      </div>
-
-      <div className="mb-6"><CancellationPolicy compact /></div>
-
-      <div className="mb-6 p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
-        {t('slotStep.summary.currencyNotice', { currency: selectedService?.currency || 'EUR' })}
-      </div>
-      <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
-        {t('slotStep.summary.healthDisclaimer')}
-      </div>
-
-      {/* ── Authenticated: show proceed button ── */}
-      {user ? (
-        <div>
-          {proceedErr && <p className="mb-3 text-sm text-red-600">{proceedErr}</p>}
-          <button onClick={handleProceed} disabled={proceeding || locking}
-            className="w-full py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-            {proceeding || locking ? 'Preparing payment…' : 'Proceed to payment →'}
-          </button>
-          <p className="text-xs text-gray-400 text-center mt-2">{t('slotStep.summary.noChargeYet')}</p>
-        </div>
-      ) : (
-        /* ── Not authenticated: inline login / register ── */
-        <div>
-          <div className="border border-[#E4E7E4] rounded-xl overflow-hidden">
-            <div className="flex border-b border-[#E4E7E4]">
-              {[{ key: 'login', label: 'Sign in' }, { key: 'register', label: 'Create account' }].map(({ key, label }) => (
-                <button key={key} onClick={() => setAuthTab(key)}
-                  className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                    authTab === key ? 'bg-white text-[#445446] border-b-2 border-[#445446]' : 'bg-[#F5F7F5] text-gray-500 hover:text-[#1F2933]'
-                  }`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="p-5">
-              {authTab === 'login'
-                ? <InlineLogin    onSuccess={handleAuthSuccess} />
-                : <InlineRegister onSuccess={handleAuthSuccess} />
-              }
+            ))}
+            {selectedFormat === 'IN_PERSON' && (() => {
+              const loc = [detail?.address_street, detail?.address_city, detail?.address_postcode].filter(Boolean).join(', ');
+              return loc ? (
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-500">Location</span>
+                  <span className="text-[#1F2933] font-medium text-right">{loc}</span>
+                </div>
+              ) : null;
+            })()}
+            <div className="flex justify-between gap-4 pt-3 border-t border-[#E4E7E4] mt-3">
+              <span className="font-semibold text-[#1F2933]">Total</span>
+              <span className="font-bold text-lg text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
             </div>
           </div>
-          {proceedErr && <p className="mt-3 text-sm text-red-600">{proceedErr}</p>}
-          <p className="text-xs text-gray-400 text-center mt-3">{t('slotStep.summary.noChargeYet')}</p>
+
+          {lockSecsLeft !== null && (
+            <div className={`mt-4 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
+              lockSecsLeft > 120 ? 'bg-green-50 border-green-200 text-green-700'
+              : lockSecsLeft > 30 ? 'bg-amber-50 border-amber-200 text-amber-700'
+              : 'bg-red-50 border-red-200 text-red-700'
+            }`}>
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
+              </svg>
+              Slot reserved for {Math.floor(lockSecsLeft / 60)}:{String(lockSecsLeft % 60).padStart(2, '0')}
+            </div>
+          )}
+          {lockErr && (
+            <div className="mt-4 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">{lockErr}</div>
+          )}
         </div>
-      )}
+
+        {/* Auth / proceed */}
+        <div className="p-5">
+          {user ? (
+            <>
+              {proceedErr && <p className="mb-3 text-sm text-red-600">{proceedErr}</p>}
+              <button onClick={handleProceed} disabled={proceeding || locking}
+                className="w-full py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                {proceeding || locking ? 'Preparing payment…' : 'Proceed to payment →'}
+              </button>
+            </>
+          ) : (
+            <>
+              {authTab === 'login' ? (
+                <>
+                  <p className="text-base font-semibold text-[#1F2933] mb-4">Sign in to continue</p>
+                  <InlineLogin onSuccess={handleAuthSuccess} />
+                  <p className="text-sm text-gray-500 text-center mt-4">
+                    Don't have an account?{' '}
+                    <button onClick={() => setAuthTab('register')} className="text-[#445446] font-medium hover:underline">
+                      Create one
+                    </button>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-base font-semibold text-[#1F2933] mb-4">Create your account</p>
+                  <InlineRegister onSuccess={handleAuthSuccess} />
+                  <p className="text-sm text-gray-500 text-center mt-4">
+                    Already have an account?{' '}
+                    <button onClick={() => setAuthTab('login')} className="text-[#445446] font-medium hover:underline">
+                      Sign in
+                    </button>
+                  </p>
+                </>
+              )}
+              {proceedErr && <p className="mt-3 text-sm text-red-600">{proceedErr}</p>}
+            </>
+          )}
+        </div>
+
+        {/* Footer text */}
+        <div className="px-5 pb-5 space-y-3">
+          <p className="text-xs text-gray-400 text-center">{t('slotStep.summary.noChargeYet')}</p>
+          <div className="p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
+            {t('slotStep.summary.currencyNotice', { currency: selectedService?.currency || 'EUR' })}
+          </div>
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
+            {t('slotStep.summary.healthDisclaimer')}
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };
