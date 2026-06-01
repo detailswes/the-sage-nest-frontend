@@ -414,7 +414,7 @@ const BookPage = () => {
           if (svc) {
             setSelectedService(svc);
             if (svc.format) setSelectedFormat(svc.format);
-            setStep(STEPS.SLOT);
+            // Stay on SERVICE step — service is highlighted, user clicks "Check Availability" to proceed
           }
         }
       })
@@ -607,24 +607,21 @@ const BookPage = () => {
         ) : (
           <div className="space-y-3">
             {services.map((service) => {
-              const isPreSelected = service.id === Number(serviceIdParam);
+              const isSelected = selectedService?.id === service.id;
               return (
-                <button key={service.id}
+                <div key={service.id}
                   onClick={() => {
                     setSelectedService(service);
-                    setAvailableDates(undefined);
                     if (service.format) setSelectedFormat(service.format);
-                    setStep(STEPS.SLOT);
                   }}
-                  className={`w-full text-left bg-white rounded-xl border p-4 hover:border-[#445446] hover:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 ${
-                    isPreSelected ? 'border-[#445446] ring-1 ring-[#445446]/20' : 'border-[#E4E7E4]'
+                  className={`bg-white rounded-xl border p-4 cursor-pointer transition-all duration-150 ${
+                    isSelected
+                      ? 'border-[#1F2933] ring-1 ring-[#1F2933]/20 shadow-sm'
+                      : 'border-[#E4E7E4] hover:border-gray-400 hover:shadow-sm'
                   }`}>
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-[#1F2933]">{service.title}</p>
-                        {isPreSelected && <span className="text-[10px] bg-[#445446]/10 text-[#445446] px-1.5 py-0.5 rounded-full font-medium">Selected</span>}
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-[#1F2933]">{service.title}</p>
                       {service.description && (() => {
                         const { short, truncated } = truncateWords(service.description, DESCRIPTION_WORD_LIMIT);
                         const isExpanded = !!expandedDesc[service.id];
@@ -660,7 +657,20 @@ const BookPage = () => {
                       <p className="text-sm font-bold text-[#1F2933]">{formatPrice(service.price, service.currency || 'EUR')}</p>
                     </div>
                   </div>
-                </button>
+
+                  {/* Check Availability button — only on selected card */}
+                  {isSelected && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAvailableDates(undefined);
+                        setStep(STEPS.SLOT);
+                      }}
+                      className="mt-3 w-full py-2 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-xs font-semibold rounded-lg transition-colors">
+                      Check Availability →
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
