@@ -7,7 +7,8 @@ import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
 
-const WEBFLOW_DIRECTORY_URL = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL || 'https://www.sagenest.org/experts';
+const WEBFLOW_DIRECTORY_URL  = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL  || 'https://the-sage-nest.webflow.io/experts';
+const WEBFLOW_EXPERT_BASE_URL = process.env.REACT_APP_WEBFLOW_EXPERT_BASE_URL || 'https://the-sage-nest.webflow.io/experts';
 
 // ─── T&C acceptance modal ─────────────────────────────────────────────────────
 const TcModal = ({ isFirstBooking, onAccept, onDecline }) => {
@@ -110,7 +111,7 @@ function truncateWords(text, limit) {
 }
 
 // ─── Expert header — shown at top of service selection ───────────────────────
-const ExpertHeader = ({ expert, returnUrl }) => {
+const ExpertHeader = ({ expert, effectiveReturnUrl }) => {
   const [imgSrc, setImgSrc] = useState(getProfileImageUrl(expert?.profile_image));
   const initials = expert?.user?.name
     ? expert.user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
@@ -132,8 +133,8 @@ const ExpertHeader = ({ expert, returnUrl }) => {
         {expert?.position && <p className="text-sm text-[#445446] mt-0.5">{expert.position}</p>}
         {expert?.summary && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{expert.summary}</p>}
       </div>
-      {returnUrl && (
-        <a href={returnUrl}
+      {effectiveReturnUrl && (
+        <a href={effectiveReturnUrl}
           className="flex-shrink-0 text-xs text-gray-400 hover:text-[#445446] transition-colors underline-offset-2 hover:underline">
           View profile
         </a>
@@ -156,7 +157,10 @@ const BookPage = () => {
   // URL params — set by Webflow "Book a Meeting" button
   const expertIdParam  = searchParams.get('expertId');
   const serviceIdParam = searchParams.get('serviceId');
-  const returnUrl      = searchParams.get('return_url') || WEBFLOW_DIRECTORY_URL;
+  const returnUrlParam = searchParams.get('return_url'); // may be absent
+
+  // Resolved after expert loads: explicit return_url → expert's webflow slug URL → directory
+  const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(returnUrlParam || WEBFLOW_DIRECTORY_URL);
 
   const [step, setStep]           = useState(STEPS.SERVICE);
   const [loading, setLoading]     = useState(true);
@@ -214,6 +218,11 @@ const BookPage = () => {
       .then((expert) => {
         setSelectedExpert(expert);
         setExpertDetail(expert);
+
+        // Resolve return URL: explicit param > expert's Webflow profile > directory
+        if (!returnUrlParam && expert.webflow_slug) {
+          setEffectiveReturnUrl(`${WEBFLOW_EXPERT_BASE_URL}/${expert.webflow_slug}`);
+        }
 
         if (serviceIdParam) {
           const svc = (expert.services || []).find(
@@ -443,7 +452,7 @@ const BookPage = () => {
     return (
       <div>
         {/* Back → Webflow expert profile */}
-        <a href={returnUrl}
+        <a href={effectiveReturnUrl}
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
@@ -452,7 +461,7 @@ const BookPage = () => {
         </a>
 
         {/* Expert header */}
-        <ExpertHeader expert={detail} returnUrl={null} />
+        <ExpertHeader expert={detail} effectiveReturnUrl={null} />
 
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-[#1F2933]">
@@ -554,7 +563,7 @@ const BookPage = () => {
       </button>
 
       {/* Expert header — always visible */}
-      <ExpertHeader expert={expertDetail || selectedExpert} returnUrl={returnUrl} />
+      <ExpertHeader expert={expertDetail || selectedExpert} effectiveReturnUrl={effectiveReturnUrl} />
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-[#1F2933]">{t('slotStep.title')}</h2>
