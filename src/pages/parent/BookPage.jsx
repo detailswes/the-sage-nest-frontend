@@ -409,12 +409,11 @@ const BookPage = () => {
         }
         if (serviceIdParam) {
           const svc = (expert.services || []).find(
-            (s) => s.id === Number(serviceIdParam) && s.is_active !== false,
+            (s) => String(s.id) === String(serviceIdParam),
           );
           if (svc) {
             setSelectedService(svc);
             if (svc.format) setSelectedFormat(svc.format);
-            // Stay on SERVICE step — service is highlighted, user clicks "Check Availability" to proceed
           }
         }
       })
@@ -658,18 +657,22 @@ const BookPage = () => {
                     </div>
                   </div>
 
-                  {/* Check Availability button — only on selected card */}
-                  {isSelected && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAvailableDates(undefined);
-                        setStep(STEPS.SLOT);
-                      }}
-                      className="mt-3 w-full py-2 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-xs font-semibold rounded-lg transition-colors">
-                      Check Availability →
-                    </button>
-                  )}
+                  {/* Check Availability button — always visible */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedService(service);
+                      if (service.format) setSelectedFormat(service.format);
+                      setAvailableDates(undefined);
+                      setStep(STEPS.SLOT);
+                    }}
+                    className={`mt-3 w-full py-2 px-4 text-xs font-semibold rounded-lg transition-colors ${
+                      isSelected
+                        ? 'bg-[#445446] hover:bg-[#3a4a3b] text-white'
+                        : 'bg-[#F5F7F5] hover:bg-[#E4E7E4] text-[#445446] border border-[#E4E7E4]'
+                    }`}>
+                    Check Availability →
+                  </button>
                 </div>
               );
             })}
