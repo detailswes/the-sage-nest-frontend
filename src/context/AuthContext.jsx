@@ -67,11 +67,26 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(() => !!readStoredUser());
   const [ppUpdateRequired, setPpUpdateRequired] = useState(false);
   const [ppAccepting, setPpAccepting]           = useState(false);
+  const ppPendingRef = useRef(false); // deferred PP modal for booking routes
 
   const applyToken = useCallback((token) => {
     setAccessTokenState(token);
     setAuthHeader(token);
   }, []);
+
+  // PP modal is suppressed on booking routes — shown only on the parent dashboard.
+  const isBookingRoute = () => {
+    const p = window.location.pathname;
+    return p === '/book' || p.startsWith('/checkout') || p.startsWith('/booking');
+  };
+
+  const showOrDeferPp = useCallback(() => {
+    if (isBookingRoute()) {
+      ppPendingRef.current = true;
+    } else {
+      setTimeout(() => setPpUpdateRequired(true), 800);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Prevents React StrictMode's double-invocation from firing two concurrent
   // refresh calls, which causes the second one to 401 (token already rotated).
@@ -96,7 +111,7 @@ export const AuthProvider = ({ children }) => {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         if (data.pp_update_required && data.user?.role !== 'ADMIN') {
-          setTimeout(() => setPpUpdateRequired(true), 800);
+          showOrDeferPp();
         }
       } catch (err) {
         const status = err?.response?.status;
@@ -193,6 +208,14 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Called by the parent dashboard on mount to fire any deferred PP modal.
+  const triggerPpCheck = useCallback(() => {
+    if (ppPendingRef.current) {
+      ppPendingRef.current = false;
+      setPpUpdateRequired(true);
+    }
+  }, []);
+
   // Updates the user in state + localStorage after a profile edit
   const updateUser = useCallback((partial) => {
     setUser((prev) => {
@@ -203,7 +226,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout, loading, updateUser }}>
+    <AuthContext.Provider value={{ user, accessToken, login, logout, loading, updateUser, triggerPpCheck }}>
       {children}
       {ppUpdateRequired && window.location.pathname !== '/privacy-policy' && (
         <PrivacyPolicyUpdateModal
