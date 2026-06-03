@@ -407,19 +407,24 @@ const BookPage = () => {
         if (!returnUrlParam && expert.webflow_slug) {
           setEffectiveReturnUrl(`${WEBFLOW_EXPERT_BASE_URL}/${expert.webflow_slug}`);
         }
-        if (serviceIdParam) {
-          const svc = (expert.services || []).find(
-            (s) => String(s.id) === String(serviceIdParam),
-          );
-          if (svc) {
-            setSelectedService(svc);
-            if (svc.format) setSelectedFormat(svc.format);
-          }
-        }
       })
       .catch(() => setError('Could not load expert. Please try again.'))
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Pre-select service from URL param once expert data is available ──────────
+  // Kept in a separate effect so it fires reactively whenever expertDetail loads,
+  // avoiding the stale-closure risk of doing it inside the async .then() above.
+  useEffect(() => {
+    if (!serviceIdParam || !expertDetail || selectedService) return;
+    const svc = (expertDetail.services || []).find(
+      (s) => String(s.id) === String(serviceIdParam),
+    );
+    if (svc) {
+      setSelectedService(svc);
+      if (svc.format) setSelectedFormat(svc.format);
+    }
+  }, [expertDetail]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Release lock on unmount
   useEffect(() => {
@@ -555,9 +560,22 @@ const BookPage = () => {
     doCheckout(lockId || null);
   };
 
-  // Called after inline auth succeeds
-  const handleAuthSuccess = () => {
-    if (tcAcceptanceRequired) { setTcModalOpen(true); return; }
+  // Called after inline auth succeeds.
+  // Re-fetches T&C status with the newly-issued auth token before proceeding.
+  // New registrations: T&C already accepted via checkboxes → version_updated will be false.
+  // Returning users: version_updated true → show modal before payment.
+  const handleAuthSuccess = async () => {
+    try {
+      const { version_updated, is_first_booking } = await getCurrentTcVersion();
+      if (version_updated) {
+        setTcAcceptanceRequired(true);
+        setTcIsFirstBooking(!!is_first_booking);
+        setTcModalOpen(true);
+        return;
+      }
+    } catch {
+      // Non-fatal — backend validates T&C on createBooking
+    }
     doCheckout(null);
   };
 

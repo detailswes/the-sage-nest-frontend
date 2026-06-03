@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
 import { getMyBookings, cancelBooking, rescheduleBooking, verifyPayment, getAvailableSlots, getAvailableDatesInMonth } from '../../api/bookingApi';
+import { useAuth } from '../../context/AuthContext';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
@@ -843,6 +844,10 @@ const PastBookingCard = ({ booking, onViewDetails }) => {
 // ─── Main page ────────────────────────────────────────────────────────────────
 const MyBookingsPage = ({ view = 'upcoming' }) => {
   const { t } = useTranslation('parentBookings');
+  const { triggerPpCheck } = useAuth();
+
+  // Fire any deferred Privacy Policy update modal — PP is only shown on the dashboard, never during booking.
+  useEffect(() => { triggerPpCheck(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [bookings,        setBookings]        = useState([]);
   const [loading,         setLoading]         = useState(true);
   const [error,           setError]           = useState('');
