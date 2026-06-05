@@ -35,11 +35,11 @@ const useResendVerification = () => {
     }, 1000);
   };
 
-  const resend = async (email) => {
+  const resend = async (email, returnTo) => {
     if (status === 'sending' || countdown > 0) return;
     setStatus('sending');
     try {
-      await resendVerificationApi(email);
+      await resendVerificationApi(email, returnTo);
       setStatus('sent');
       startCooldown();
     } catch (err) {
