@@ -27,33 +27,35 @@ const StepIndicator = ({ step }) => {
   const currentIndex = steps.findIndex((s) => s.key === step);
 
   return (
-    <div className="flex items-center gap-0 mb-8">
-      {steps.map((s, i) => {
-        const done    = i < currentIndex;
-        const active  = i === currentIndex;
-        return (
-          <div key={s.key} className="flex items-center">
-            <div className="flex flex-col items-center">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                done   ? 'bg-[#445446] text-white'
-                : active ? 'bg-[#445446] text-white ring-4 ring-[#445446]/20'
-                : 'bg-[#E4E7E4] text-gray-400'
-              }`}>
-                {done ? (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : i + 1}
-              </div>
-              <span className={`text-xs mt-1 font-medium ${active ? 'text-[#445446]' : done ? 'text-[#445446]' : 'text-gray-400'}`}>
-                {s.label}
-              </span>
+    <div className="flex items-start w-full mb-8">
+      {steps.flatMap((s, i) => {
+        const done   = i < currentIndex;
+        const active = i === currentIndex;
+        const els = [
+          <div key={s.key} className="flex flex-col items-center flex-shrink-0">
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+              done   ? 'bg-[#445446] text-white'
+              : active ? 'bg-[#445446] text-white ring-4 ring-[#445446]/20'
+              : 'bg-[#E4E7E4] text-gray-400'
+            }`}>
+              {done ? (
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : i + 1}
             </div>
-            {i < steps.length - 1 && (
-              <div className={`h-px w-12 mx-1 mb-4 transition-colors ${i < currentIndex ? 'bg-[#445446]' : 'bg-[#E4E7E4]'}`} />
-            )}
-          </div>
-        );
+            <span className={`text-xs mt-1 font-medium ${active ? 'text-[#445446]' : done ? 'text-[#445446]' : 'text-gray-400'}`}>
+              {s.label}
+            </span>
+          </div>,
+        ];
+        if (i < steps.length - 1) {
+          els.push(
+            <div key={`line-${i}`}
+              className={`flex-1 h-px mt-3.5 mx-2 transition-colors ${done ? 'bg-[#445446]' : 'bg-[#E4E7E4]'}`} />
+          );
+        }
+        return els;
       })}
     </div>
   );
@@ -768,7 +770,7 @@ const BookPage = () => {
             <p className="text-xs text-gray-400 mb-2 text-center">{t('slotStep.timezone')}</p>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
               {slots.map((slot) => (
-                <button key={slot.start} onClick={() => setSelectedSlot(slot)}
+                <button key={slot.start} onClick={() => { setSelectedSlot(slot); setLockErr(''); setProceedErr(''); }}
                   className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all duration-150 ${
                     selectedSlot?.start === slot.start
                       ? 'bg-[#445446] text-white border-[#445446]'
@@ -787,7 +789,20 @@ const BookPage = () => {
 
         {/* Continue button — only when slot selected */}
         {selectedSlot && (
-          <button ref={continueRef} onClick={() => setStep(STEPS.CONFIRM)}
+          <button ref={continueRef} onClick={async () => {
+              // Re-fetch slots to catch any race-condition bookings before entering confirm
+              const fresh = await getAvailableSlots(selectedExpert.id, selectedDate, selectedService.id).catch(() => null);
+              if (fresh !== null) {
+                const stillAvailable = fresh.some((s) => s.start === selectedSlot.start);
+                if (!stillAvailable) {
+                  setSlots(fresh);
+                  setSelectedSlot(null);
+                  setLockErr('This slot was just taken by someone else. Please select another time.');
+                  return;
+                }
+              }
+              setStep(STEPS.CONFIRM);
+            }}
             className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors">
             Continue →
           </button>
@@ -803,7 +818,7 @@ const BookPage = () => {
         <TcModal isFirstBooking={tcIsFirstBooking} onAccept={handleTcAccept} onDecline={() => setTcModalOpen(false)} />
       )}
 
-      <button onClick={() => { setLockErr(''); setStep(STEPS.SLOT); }}
+      <button onClick={() => { setLockErr(''); setProceedErr(''); setSelectedSlot(null); setStep(STEPS.SLOT); }}
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
