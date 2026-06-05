@@ -8,6 +8,7 @@ import { loginUser, registerUser, verifyOtpApi } from '../../api/authApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import { validateLoginForm, validateRegisterForm } from '../../utils/validation';
 import PasswordInput from '../../components/auth/PasswordInput';
+import useResendVerification from '../../hooks/useResendVerification';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
 
@@ -97,6 +98,45 @@ const TcModal = ({ isFirstBooking, onAccept, onDecline }) => {
   );
 };
 
+// ─── Verification pending panel ───────────────────────────────────────────────
+const VerificationPendingPanel = ({ email, returnTo, onSwitchToLogin }) => {
+  const { resend, status, countdown } = useResendVerification();
+  return (
+    <div className="text-center py-2">
+      <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
+        <svg className="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+        </svg>
+      </div>
+      <h3 className="text-base font-semibold text-[#1F2933] mb-2">Check your inbox</h3>
+      <p className="text-sm text-gray-500 mb-1">We sent a verification link to</p>
+      <p className="text-sm font-medium text-[#1F2933] mb-5 break-all">{email}</p>
+      <p className="text-xs text-gray-400 leading-relaxed mb-5">
+        Click the link in the email to verify your account — you'll be returned here to complete your booking.
+      </p>
+      {status === 'sent' && countdown > 0 ? (
+        <div className="w-full mb-3 py-2.5 px-4 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700 text-center">
+          Email sent! Resend available in {countdown}s.
+        </div>
+      ) : (
+        <button
+          onClick={() => resend(email, returnTo)}
+          disabled={status === 'sending' || countdown > 0}
+          className="w-full mb-3 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:border-[#445446] hover:text-[#445446] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {status === 'sending' ? 'Sending…' : status === 'error' ? 'Failed — try again' : 'Resend verification email'}
+        </button>
+      )}
+      <button
+        onClick={onSwitchToLogin}
+        className="w-full py-2 text-sm text-[#445446] font-medium hover:underline"
+      >
+        Already verified? Sign in
+      </button>
+    </div>
+  );
+};
+
 // ─── Cluster badges ───────────────────────────────────────────────────────────
 const CLUSTER_BADGE = {
   FOR_PARENTS: { label: 'For the Parents', cls: 'bg-pink-100 text-pink-700' },
@@ -172,7 +212,7 @@ const ExpertHeader = ({ expert }) => {
 };
 
 // ─── Inline Login form ────────────────────────────────────────────────────────
-const InlineLogin = ({ onSuccess }) => {
+const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
@@ -193,7 +233,11 @@ const InlineLogin = ({ onSuccess }) => {
       if (data.otp_token) { setOtpToken(data.otp_token); }
       else { login(data); onSuccess(); }
     } catch (err) {
-      setError(err?.response?.data?.error || 'Login failed. Please try again.');
+      if (err?.response?.data?.email_not_verified && onVerificationNeeded) {
+        onVerificationNeeded(email);
+      } else {
+        setError(err?.response?.data?.error || 'Login failed. Please try again.');
+      }
     } finally { setLoading(false); }
   };
 
@@ -246,7 +290,7 @@ const InlineLogin = ({ onSuccess }) => {
 };
 
 // ─── Inline Register form ─────────────────────────────────────────────────────
-const InlineRegister = ({ onSuccess }) => {
+const InlineRegister = ({ onVerificationSent, returnTo }) => {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
@@ -254,7 +298,6 @@ const InlineRegister = ({ onSuccess }) => {
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketing, setMarketing] = useState(false);
-  const { login } = useAuth();
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -267,17 +310,20 @@ const InlineRegister = ({ onSuccess }) => {
     setLoading(true); setServerError('');
     try {
       const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; } })();
-      const data = await registerUser({
+      await registerUser({
         name: form.name, email: form.email, password: form.password,
         role: 'PARENT', phone: form.phone.trim(),
         privacyPolicyAccepted: true, termsAccepted: true,
         marketingConsent: marketing, timezone: tz,
+        returnTo,
       });
-      // Parents are auto-logged in (no email verification)
-      login(data);
-      onSuccess();
+      onVerificationSent(form.email);
     } catch (err) {
-      setServerError(err?.response?.data?.error || 'Registration failed. Please try again.');
+      if (err?.response?.status === 409) {
+        setServerError('This email is already registered. Check your inbox for a verification link, or sign in instead.');
+      } else {
+        setServerError(err?.response?.data?.error || 'Registration failed. Please try again.');
+      }
     } finally { setLoading(false); }
   };
 
@@ -345,6 +391,9 @@ const BookPage = () => {
   const expertIdParam  = searchParams.get('expertId');
   const serviceIdParam = searchParams.get('serviceId');
   const returnUrlParam = searchParams.get('return_url');
+  // Stable return URL for the booking page — embedded in the verification email link
+  // so the parent lands back here (with expert+service pre-selected) after verifying.
+  const bookReturnUrl  = `/book?expertId=${expertIdParam || ''}${serviceIdParam ? `&serviceId=${serviceIdParam}` : ''}`;
 
   const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(returnUrlParam || WEBFLOW_DIRECTORY_URL);
 
@@ -371,6 +420,9 @@ const BookPage = () => {
   const [tcAcceptanceRequired, setTcAcceptanceRequired] = useState(false);
   const [tcIsFirstBooking,     setTcIsFirstBooking]     = useState(false);
   const [tcModalOpen,          setTcModalOpen]          = useState(false);
+  // Set to the registrant's email after a successful register call —
+  // shows the "check your inbox" panel. Cleared when they switch to sign-in.
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState(null);
 
   // Slot lock (held during CONFIRM after auth)
   const [lockId,        setLockId]        = useState(null);
@@ -907,12 +959,21 @@ const BookPage = () => {
                 {proceeding || locking ? 'Preparing payment…' : 'Proceed to payment →'}
               </button>
             </>
+          ) : pendingVerificationEmail ? (
+            <VerificationPendingPanel
+              email={pendingVerificationEmail}
+              returnTo={bookReturnUrl}
+              onSwitchToLogin={() => { setPendingVerificationEmail(null); setAuthTab('login'); }}
+            />
           ) : (
             <>
               {authTab === 'login' ? (
                 <>
                   <p className="text-base font-semibold text-[#1F2933] mb-4">Sign in to continue</p>
-                  <InlineLogin onSuccess={handleAuthSuccess} />
+                  <InlineLogin
+                    onSuccess={handleAuthSuccess}
+                    onVerificationNeeded={setPendingVerificationEmail}
+                  />
                   <p className="text-sm text-gray-500 text-center mt-4">
                     Don't have an account?{' '}
                     <button onClick={() => setAuthTab('register')} className="text-[#445446] font-medium hover:underline">
@@ -929,7 +990,10 @@ const BookPage = () => {
                       Sign in
                     </button>
                   </p>
-                  <InlineRegister onSuccess={handleAuthSuccess} />
+                  <InlineRegister
+                    onVerificationSent={setPendingVerificationEmail}
+                    returnTo={bookReturnUrl}
+                  />
                 </>
               )}
               {proceedErr && <p className="mt-3 text-sm text-red-600">{proceedErr}</p>}

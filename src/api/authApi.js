@@ -133,8 +133,11 @@ export const verifyEmail = async ({ userId, verificationCode }) => {
   return response.data;
 };
 
-export const resendVerificationApi = async (email) => {
-  const response = await api.post('/auth/resend-verification', { email });
+export const resendVerificationApi = async (email, returnTo) => {
+  const response = await api.post('/auth/resend-verification', {
+    email,
+    ...(returnTo ? { returnTo } : {}),
+  });
   return response.data;
 };
 

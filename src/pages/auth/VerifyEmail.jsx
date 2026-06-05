@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { verifyEmail } from '../../api/authApi';
+import { useAuth } from '../../context/AuthContext';
 import AuthLayout from '../../components/auth/AuthLayout';
 import useResendVerification from '../../hooks/useResendVerification';
 
@@ -62,11 +63,21 @@ const ResendForm = ({ title, description }) => {
 // states: 'verifying' | 'success' | 'already_verified' | 'expired' | 'invalid' | 'error'
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState('verifying');
+  const [status,   setStatus]   = useState('verifying');
+  const [returnTo, setReturnTo] = useState(null);
+  const { login } = useAuth();
+  const navigate  = useNavigate();
+  // Prevents React StrictMode's double-invocation from consuming the verification
+  // code twice (second call would fail with "already verified" and not return tokens).
+  const hasRanRef = useRef(false);
 
   useEffect(() => {
-    const userId = searchParams.get('userId');
+    if (hasRanRef.current) return;
+    hasRanRef.current = true;
+
+    const userId           = searchParams.get('userId');
     const verificationCode = searchParams.get('verificationCode');
+    const rt               = searchParams.get('returnTo');
 
     if (!userId || !verificationCode) {
       setStatus('invalid');
@@ -75,6 +86,15 @@ const VerifyEmail = () => {
 
     verifyEmail({ userId, verificationCode })
       .then((data) => {
+        // Auto-login only on first-time verification (tokens are only returned then).
+        // The already_verified case intentionally omits tokens — issuing them without
+        // re-checking the verification code would be a security gap.
+        if (data.accessToken && data.user) {
+          login(data);
+        }
+        // Validate returnTo is a relative path before trusting it
+        const safeReturnTo = rt && rt.startsWith('/') ? rt : null;
+        setReturnTo(safeReturnTo);
         setStatus(data.already_verified ? 'already_verified' : 'success');
       })
       .catch((err) => {
@@ -99,21 +119,42 @@ const VerifyEmail = () => {
           </>
         )}
 
-        {/* Success */}
-        {(status === 'success' || status === 'already_verified') && (
+        {/* Success — auto-logged in, redirect to booking or dashboard */}
+        {status === 'success' && (
           <>
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-5">
               <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
               </svg>
             </div>
-            <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">
-              {status === 'already_verified' ? 'Already verified!' : 'Email verified!'}
-            </h1>
+            <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">Email verified!</h1>
             <p className="text-sm text-gray-500 mb-8">
-              {status === 'already_verified'
-                ? 'Your account is already active. Sign in to continue.'
-                : 'Your expert account is now active. Sign in to complete your profile and start receiving bookings.'}
+              {returnTo?.startsWith('/book')
+                ? 'Your account is active and you are signed in. Continue to complete your booking.'
+                : 'Your account is now active and you are signed in.'}
+            </p>
+            <button
+              onClick={() => navigate(returnTo || '/')}
+              className="w-full bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium py-3 rounded-lg transition-colors duration-200"
+            >
+              {returnTo?.startsWith('/book') ? 'Continue to booking →' : 'Go to my dashboard'}
+            </button>
+          </>
+        )}
+
+        {/* Already verified — user must sign in manually (no token issued for security) */}
+        {status === 'already_verified' && (
+          <>
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-5">
+              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">Already verified!</h1>
+            <p className="text-sm text-gray-500 mb-8">
+              {returnTo?.startsWith('/book')
+                ? 'Your account is already active. Sign in to continue your booking.'
+                : 'Your account is already active. Sign in to continue.'}
             </p>
             <Link
               to="/login"
