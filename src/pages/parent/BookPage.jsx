@@ -631,6 +631,7 @@ const BookPage = () => {
           expertName: selectedExpert.user?.name, serviceTitle: selectedService.title,
           amount: selectedService.price, currency: result.currency || selectedService.currency || 'EUR',
           scheduledAt: selectedSlot.start, format: selectedFormat, sessionLocation,
+          paymentExpiresAt: result.paymentExpiresAt,
           restore: { expert: selectedExpert, service: selectedService, format: selectedFormat },
         },
       });

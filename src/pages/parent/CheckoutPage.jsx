@@ -23,6 +23,7 @@ const CheckoutPage = () => {
   const {
     bookingId, clientSecret,
     expertName, serviceTitle, amount, currency = 'EUR', scheduledAt, format, sessionLocation,
+    paymentExpiresAt,
     restore,
   } = state || {};
 
@@ -30,6 +31,8 @@ const CheckoutPage = () => {
   const [paying,       setPaying]       = useState(false);
   const [payError,     setPayError]     = useState('');
   const [abandoning,   setAbandoning]   = useState(false);
+  const [secsLeft,     setSecsLeft]     = useState(null);
+  const [expired,      setExpired]      = useState(false);
   const stripeRef         = useRef(null);
   const elementsRef       = useRef(null);
   const paymentElementRef = useRef(null);
@@ -37,6 +40,21 @@ const CheckoutPage = () => {
 
   // Scroll to top on mount so the order summary is the first thing visible
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, []);
+
+  // Payment window countdown — counts down to paymentExpiresAt
+  useEffect(() => {
+    if (!paymentExpiresAt) return;
+    const expiryMs = new Date(paymentExpiresAt).getTime();
+
+    const tick = () => {
+      const secs = Math.max(0, Math.round((expiryMs - Date.now()) / 1000));
+      setSecsLeft(secs);
+      if (secs === 0) setExpired(true);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [paymentExpiresAt]);
 
   // Guard: redirect if no booking state
   useEffect(() => {
@@ -176,40 +194,80 @@ const CheckoutPage = () => {
 
         {/* Payment form */}
         <form onSubmit={handleSubmit} className="px-6 py-6">
-          <p className="text-sm font-medium text-[#1F2933] mb-4">{t('checkout.paymentDetails')}</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-[#1F2933]">{t('checkout.paymentDetails')}</p>
 
-          {/* Loading spinner — outside the Stripe mount target so React never
-              renders children inside the div Stripe takes over */}
-          {!stripeReady && (
-            <div className="flex items-center gap-2 py-8 justify-center mb-4">
-              <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-              <span className="text-sm text-gray-400">{t('checkout.loadingPayment')}</span>
-            </div>
-          )}
-
-          {/* Stripe Payment Element mounts here — must stay empty, no React children */}
-          <div id="payment-element" className="mb-4" />
-
-          {payError && (
-            <div className="mb-4 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-              {payError}
-            </div>
-          )}
-
-          {/* Currency notice */}
-          <div className="mb-4 p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
-            {t('checkout.currencyNotice', { currency })}
+            {/* Payment window countdown */}
+            {secsLeft !== null && !expired && (
+              <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                secsLeft > 600 ? 'bg-green-50 text-green-700'
+                : secsLeft > 180 ? 'bg-amber-50 text-amber-700'
+                : 'bg-red-50 text-red-700'
+              }`}>
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
+                </svg>
+                {Math.floor(secsLeft / 60)}:{String(secsLeft % 60).padStart(2, '0')} left to pay
+              </div>
+            )}
           </div>
 
-          <button type="submit"
-            disabled={!stripeReady || paying || abandoning}
-            className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-            {paying ? t('checkout.processingBtn') : t('checkout.payBtn', { amount: formatPrice(amount, currency, lng) })}
-          </button>
+          {/* Expired — slot released, show message instead of form */}
+          {expired ? (
+            <div className="py-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-[#1F2933] mb-1">Payment window expired</p>
+              <p className="text-xs text-gray-500 mb-5">
+                Your slot reservation has been released. Please go back and select a new time.
+              </p>
+              <button
+                type="button"
+                onClick={handleEditBooking}
+                disabled={abandoning}
+                className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60"
+              >
+                {abandoning ? t('checkout.releasingSlot') : 'Choose a new time'}
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Loading spinner — outside the Stripe mount target so React never
+                  renders children inside the div Stripe takes over */}
+              {!stripeReady && (
+                <div className="flex items-center gap-2 py-8 justify-center mb-4">
+                  <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+                  <span className="text-sm text-gray-400">{t('checkout.loadingPayment')}</span>
+                </div>
+              )}
 
-          <p className="text-xs text-gray-400 text-center mt-3">
-            {t('checkout.stripeNote')}
-          </p>
+              {/* Stripe Payment Element mounts here — must stay empty, no React children */}
+              <div id="payment-element" className="mb-4" />
+
+              {payError && (
+                <div className="mb-4 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                  {payError}
+                </div>
+              )}
+
+              {/* Currency notice */}
+              <div className="mb-4 p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
+                {t('checkout.currencyNotice', { currency })}
+              </div>
+
+              <button type="submit"
+                disabled={!stripeReady || paying || abandoning}
+                className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                {paying ? t('checkout.processingBtn') : t('checkout.payBtn', { amount: formatPrice(amount, currency, lng) })}
+              </button>
+              <p className="text-xs text-gray-400 text-center mt-3">
+                {t('checkout.stripeNote')}
+              </p>
+            </>
+          )}
         </form>
       </div>
     </div>
