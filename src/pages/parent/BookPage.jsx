@@ -434,9 +434,12 @@ const BookPage = () => {
 
   // Return URL embedded in the verification email — includes slot+format so the
   // parent lands directly back on the CONFIRM step after verifying their email.
+  // Use selectedService.id from state as fallback: users arriving from Webflow hit
+  // /book?expertId=X with no serviceId in the URL, so we must read it from state.
+  const effectiveServiceId = serviceIdParam || selectedService?.id;
   const bookReturnUrl =
     `/book?expertId=${expertIdParam || ''}` +
-    (serviceIdParam ? `&serviceId=${serviceIdParam}` : '') +
+    (effectiveServiceId ? `&serviceId=${effectiveServiceId}` : '') +
     (selectedSlot?.start ? `&slotStart=${encodeURIComponent(selectedSlot.start)}` : '') +
     (selectedFormat ? `&format=${encodeURIComponent(selectedFormat)}` : '');
 
