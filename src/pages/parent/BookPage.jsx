@@ -436,12 +436,15 @@ const BookPage = () => {
   // parent lands directly back on the CONFIRM step after verifying their email.
   // Use selectedService.id from state as fallback: users arriving from Webflow hit
   // /book?expertId=X with no serviceId in the URL, so we must read it from state.
+  // NOTE: Do NOT pre-encode values here. The backend's sendVerificationEmail wraps
+  // the entire returnTo with encodeURIComponent, so pre-encoding causes double-encoding
+  // (%3A → %253A) which some email clients mangle, stripping the returnTo param.
   const effectiveServiceId = serviceIdParam || selectedService?.id;
   const bookReturnUrl =
     `/book?expertId=${expertIdParam || ''}` +
     (effectiveServiceId ? `&serviceId=${effectiveServiceId}` : '') +
-    (selectedSlot?.start ? `&slotStart=${encodeURIComponent(selectedSlot.start)}` : '') +
-    (selectedFormat ? `&format=${encodeURIComponent(selectedFormat)}` : '');
+    (selectedSlot?.start ? `&slotStart=${selectedSlot.start}` : '') +
+    (selectedFormat ? `&format=${selectedFormat}` : '');
 
   // ── Init: load expert from URL params ─────────────────────────────────────
   useEffect(() => {
