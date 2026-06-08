@@ -118,7 +118,7 @@ const VerifyEmail = () => {
             <p className="text-sm text-gray-500">Just a moment while we activate your account.</p>
           </>
         )}
-
+ 
         {/* Success — auto-logged in, redirect to booking or dashboard */}
         {status === 'success' && (
           <>
