@@ -468,14 +468,34 @@ const BookPage = () => {
         if (!returnUrlParam && expert.webflow_slug) {
           setEffectiveReturnUrl(`${WEBFLOW_EXPERT_BASE_URL}/${expert.webflow_slug}`);
         }
+        // Pre-select service + restore slot inline so all state updates batch into
+        // one render — avoids a flash of the SERVICE step before the effect fires.
+        // URL params are stable values, no stale-closure risk here.
+        if (serviceIdParam) {
+          const svc = (expert.services || []).find(
+            (s) => String(s.id) === String(serviceIdParam),
+          );
+          if (svc) {
+            setSelectedService(svc);
+            const fmt = formatParam || svc.format;
+            if (fmt) setSelectedFormat(fmt);
+            // Returning from email verification with a pre-chosen slot → land on CONFIRM.
+            // Slot availability is re-checked when the parent clicks "Proceed to payment".
+            if (slotStartParam) {
+              setSelectedSlot({ start: slotStartParam });
+              setStep(STEPS.CONFIRM);
+            }
+          }
+        }
       })
       .catch(() => setError('Could not load expert. Please try again.'))
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Pre-select service from URL param once expert data is available ──────────
-  // Kept in a separate effect so it fires reactively whenever expertDetail loads,
-  // avoiding the stale-closure risk of doing it inside the async .then() above.
+  // ── Pre-select service from URL param (reactive fallback) ────────────────────
+  // Handles the rare case where expertDetail is set outside the init effect
+  // (e.g. "Edit booking" restore path). The inline pre-selection above already
+  // covers the normal load path; selectedService guard skips double-application.
   useEffect(() => {
     if (!serviceIdParam || !expertDetail || selectedService) return;
     const svc = (expertDetail.services || []).find(
@@ -485,8 +505,6 @@ const BookPage = () => {
       setSelectedService(svc);
       const fmt = formatParam || svc.format;
       if (fmt) setSelectedFormat(fmt);
-      // Returning from email verification — restore the slot and jump to CONFIRM.
-      // Slot availability is re-checked when the parent clicks "Proceed to payment".
       if (slotStartParam) {
         setSelectedSlot({ start: slotStartParam });
         setStep(STEPS.CONFIRM);
