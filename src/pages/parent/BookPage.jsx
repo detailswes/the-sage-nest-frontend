@@ -391,9 +391,8 @@ const BookPage = () => {
   const expertIdParam  = searchParams.get('expertId');
   const serviceIdParam = searchParams.get('serviceId');
   const returnUrlParam = searchParams.get('return_url');
-  // Stable return URL for the booking page — embedded in the verification email link
-  // so the parent lands back here (with expert+service pre-selected) after verifying.
-  const bookReturnUrl  = `/book?expertId=${expertIdParam || ''}${serviceIdParam ? `&serviceId=${serviceIdParam}` : ''}`;
+  const slotStartParam = searchParams.get('slotStart');
+  const formatParam    = searchParams.get('format');
 
   const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(returnUrlParam || WEBFLOW_DIRECTORY_URL);
 
@@ -432,6 +431,14 @@ const BookPage = () => {
   const [lockErr,       setLockErr]       = useState('');
   const lockIdRef    = useRef(null);
   const continueRef  = useRef(null);
+
+  // Return URL embedded in the verification email — includes slot+format so the
+  // parent lands directly back on the CONFIRM step after verifying their email.
+  const bookReturnUrl =
+    `/book?expertId=${expertIdParam || ''}` +
+    (serviceIdParam ? `&serviceId=${serviceIdParam}` : '') +
+    (selectedSlot?.start ? `&slotStart=${encodeURIComponent(selectedSlot.start)}` : '') +
+    (selectedFormat ? `&format=${encodeURIComponent(selectedFormat)}` : '');
 
   // ── Init: load expert from URL params ─────────────────────────────────────
   useEffect(() => {
@@ -476,7 +483,14 @@ const BookPage = () => {
     );
     if (svc) {
       setSelectedService(svc);
-      if (svc.format) setSelectedFormat(svc.format);
+      const fmt = formatParam || svc.format;
+      if (fmt) setSelectedFormat(fmt);
+      // Returning from email verification — restore the slot and jump to CONFIRM.
+      // Slot availability is re-checked when the parent clicks "Proceed to payment".
+      if (slotStartParam) {
+        setSelectedSlot({ start: slotStartParam });
+        setStep(STEPS.CONFIRM);
+      }
     }
   }, [expertDetail]); // eslint-disable-line react-hooks/exhaustive-deps
 
