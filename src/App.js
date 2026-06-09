@@ -36,6 +36,7 @@ import AdminExpertDetailSection from "./pages/dashboard/sections/AdminExpertDeta
 import AdminParentDetailSection from "./pages/dashboard/sections/AdminParentDetailSection";
 import PaymentsOverviewSection from "./pages/dashboard/sections/PaymentsOverviewSection";
 import AdminComplianceSection from "./pages/dashboard/sections/AdminComplianceSection";
+import LanguageSelector from "./components/LanguageSelector";
 
 function App() {
   return (
@@ -111,7 +112,10 @@ function App() {
             path="/book"
             element={
               <div className="min-h-screen bg-[#F5F7F5]">
-                <div className="max-w-xl mx-auto px-4 py-10">
+                <div className="max-w-xl mx-auto px-4 pt-4 flex justify-end">
+                  <LanguageSelector />
+                </div>
+                <div className="max-w-xl mx-auto px-4 pb-10">
                   <BookPage />
                 </div>
               </div>

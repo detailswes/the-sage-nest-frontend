@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
+import { STORAGE_KEY } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import { getExpertPublic } from '../../api/expertApi';
 import { getAvailableSlots, getAvailableDatesInMonth, createBooking, getCurrentTcVersion, acceptTcApi, lockSlotApi, releaseLockApi } from '../../api/bookingApi';
@@ -20,10 +21,11 @@ const STEPS = { SERVICE: 'service', SLOT: 'slot', CONFIRM: 'confirm' };
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
 const StepIndicator = ({ step }) => {
+  const { t } = useTranslation('parentBookings');
   const steps = [
-    { key: STEPS.SERVICE, label: 'Service' },
-    { key: STEPS.SLOT,    label: 'Time' },
-    { key: STEPS.CONFIRM, label: 'Confirm' },
+    { key: STEPS.SERVICE, label: t('steps.service') },
+    { key: STEPS.SLOT,    label: t('steps.time') },
+    { key: STEPS.CONFIRM, label: t('steps.confirm') },
   ];
   const currentIndex = steps.findIndex((s) => s.key === step);
 
@@ -393,6 +395,16 @@ const BookPage = () => {
   const returnUrlParam = searchParams.get('return_url');
   const slotStartParam = searchParams.get('slotStart');
   const formatParam    = searchParams.get('format');
+  const langParam      = searchParams.get('lang');
+
+  // Apply ?lang= URL param on first render so Webflow can pre-set the language
+  // by linking to /book?expertId=...&lang=it from Italian-language pages.
+  useEffect(() => {
+    if (langParam && ['en', 'it'].includes(langParam) && i18n.language !== langParam) {
+      i18n.changeLanguage(langParam);
+      localStorage.setItem(STORAGE_KEY, langParam);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(returnUrlParam || WEBFLOW_DIRECTORY_URL);
 
@@ -536,13 +548,18 @@ const BookPage = () => {
       setLockSecsLeft(secs);
       if (secs === 0) {
         lockIdRef.current = null;
-        setLockId(null); setLockExpiresAt(null); setLockErr('Slot reservation expired. Please select a new time.');
+        setLockId(null); setLockExpiresAt(null); setLockErr(t('slotStep.lockExpired'));
       }
     };
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [lockExpiresAt]);
+
+  // Scroll to top on every step change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [step]);
 
   // Auto-scroll to Continue button when slot is selected
   useEffect(() => {
@@ -589,19 +606,25 @@ const BookPage = () => {
     finally { setLoadingDates(false); }
   }, [selectedExpert, selectedService]);
 
-  // ── Slot lock (called after auth, before createBooking) ──────────────────
-  const lockSlot = async () => {
+  // ── Slot lock ─────────────────────────────────────────────────────────────
+  // slotArg: pass the slot object directly when calling from a click handler to
+  // avoid reading stale state (setSelectedSlot is async). Falls back to selectedSlot.
+  const lockSlot = async (slotArg = null) => {
+    const slot = slotArg || selectedSlot;
+    if (!slot) return null;
     setLocking(true); setLockErr('');
     try {
-      const { lockId: id, expiresAt } = await lockSlotApi(selectedExpert.id, selectedSlot.start);
+      const { lockId: id, expiresAt } = await lockSlotApi(selectedExpert.id, slot.start);
       lockIdRef.current = id;
       setLockId(id); setLockExpiresAt(new Date(expiresAt));
       return id;
     } catch (err) {
-      const msg = err.response?.status === 409
-        ? 'This slot was just taken. Please go back and choose another time.'
-        : 'Could not reserve the slot. Please try again.';
-      setLockErr(msg);
+      if (err.response?.status === 409) {
+        setLockErr(t('slotStep.slotUnavailable'));
+        setSelectedSlot(null);
+      } else {
+        setLockErr(t('slotStep.lockError'));
+      }
       return null;
     } finally { setLocking(false); }
   };
@@ -701,15 +724,15 @@ const BookPage = () => {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
-          Back to expert profile
+          {t('serviceStep.back')}
         </a>
 
         <StepIndicator step={STEPS.SERVICE} />
         <ExpertHeader expert={detail} />
 
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-[#1F2933]">Book with {selectedExpert?.user?.name}</h2>
-          <p className="text-sm text-gray-500 mt-1">Select a service to continue.</p>
+          <h2 className="text-xl font-semibold text-[#1F2933]">{t('serviceStep.title', { name: selectedExpert?.user?.name })}</h2>
+          <p className="text-sm text-gray-500 mt-1">{t('serviceStep.subtitle')}</p>
         </div>
 
         {services.length === 0 ? (
@@ -802,13 +825,13 @@ const BookPage = () => {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
-          Back to services
+          {t('slotStep.backToServices')}
         </button>
 
         <StepIndicator step={STEPS.SLOT} />
 
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-[#1F2933]">Select a time</h2>
+          <h2 className="text-xl font-semibold text-[#1F2933]">{t('slotStep.title')}</h2>
           <p className="text-sm text-gray-500 mt-1">
             {selectedService?.title} · {formatDuration(selectedService?.duration_minutes)} ·{' '}
             <span className="font-medium text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
@@ -861,7 +884,10 @@ const BookPage = () => {
             <p className="text-xs text-gray-400 mb-2 text-center">{t('slotStep.timezone')}</p>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
               {slots.map((slot) => (
-                <button key={slot.start} onClick={() => { setSelectedSlot(slot); setLockErr(''); setProceedErr(''); }}
+                <button key={slot.start} onClick={() => {
+                    setSelectedSlot(slot); setLockErr(''); setProceedErr('');
+                    if (user) lockSlot(slot); // start 10-min lock immediately if authenticated
+                  }}
                   className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all duration-150 ${
                     selectedSlot?.start === slot.start
                       ? 'bg-[#445446] text-white border-[#445446]'
@@ -880,22 +906,27 @@ const BookPage = () => {
 
         {/* Continue button — only when slot selected */}
         {selectedSlot && (
-          <button ref={continueRef} onClick={async () => {
-              // Re-fetch slots to catch any race-condition bookings before entering confirm
+          <button ref={continueRef} disabled={locking} onClick={async () => {
+              // Authenticated: lock is already active — no re-fetch needed, the lock is our reservation
+              if (lockId) {
+                setStep(STEPS.CONFIRM);
+                return;
+              }
+              // Not authenticated: do a quick freshness check before proceeding
               const fresh = await getAvailableSlots(selectedExpert.id, selectedDate, selectedService.id).catch(() => null);
               if (fresh !== null) {
                 const stillAvailable = fresh.some((s) => s.start === selectedSlot.start);
                 if (!stillAvailable) {
                   setSlots(fresh);
                   setSelectedSlot(null);
-                  setLockErr('This slot was just taken by someone else. Please select another time.');
+                  setLockErr(t('slotStep.lockConflict'));
                   return;
                 }
               }
               setStep(STEPS.CONFIRM);
             }}
-            className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors">
-            Continue →
+            className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            {locking ? t('slotStep.reservingSlot') : `${t('slotStep.continueBtn')} →`}
           </button>
         )}
       </div>
@@ -914,7 +945,7 @@ const BookPage = () => {
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
         </svg>
-        Back to time selection
+        {t('confirmStep.back')}
       </button>
 
       <StepIndicator step={STEPS.CONFIRM} />
@@ -971,18 +1002,6 @@ const BookPage = () => {
             </div>
           </div>
 
-          {lockSecsLeft !== null && (
-            <div className={`mt-4 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
-              lockSecsLeft > 120 ? 'bg-green-50 border-green-200 text-green-700'
-              : lockSecsLeft > 30 ? 'bg-amber-50 border-amber-200 text-amber-700'
-              : 'bg-red-50 border-red-200 text-red-700'
-            }`}>
-              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
-              </svg>
-              Slot reserved for {Math.floor(lockSecsLeft / 60)}:{String(lockSecsLeft % 60).padStart(2, '0')}
-            </div>
-          )}
           {lockErr && (
             <div className="mt-4 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">{lockErr}</div>
           )}

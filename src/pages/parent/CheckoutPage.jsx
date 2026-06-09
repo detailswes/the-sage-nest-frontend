@@ -207,7 +207,9 @@ const CheckoutPage = () => {
                 <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
                 </svg>
-                {Math.floor(secsLeft / 60)}:{String(secsLeft % 60).padStart(2, '0')} left to pay
+                {t('checkout.timeLeftToPay', {
+                  time: `${Math.floor(secsLeft / 60)}:${String(secsLeft % 60).padStart(2, '0')}`,
+                })}
               </div>
             )}
           </div>
@@ -220,9 +222,9 @@ const CheckoutPage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
                 </svg>
               </div>
-              <p className="text-sm font-semibold text-[#1F2933] mb-1">Payment window expired</p>
+              <p className="text-sm font-semibold text-[#1F2933] mb-1">{t('checkout.paymentExpiredTitle')}</p>
               <p className="text-xs text-gray-500 mb-5">
-                Your slot reservation has been released. Please go back and select a new time.
+                {t('checkout.paymentExpiredBody')}
               </p>
               <button
                 type="button"
@@ -230,7 +232,7 @@ const CheckoutPage = () => {
                 disabled={abandoning}
                 className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60"
               >
-                {abandoning ? t('checkout.releasingSlot') : 'Choose a new time'}
+                {abandoning ? t('checkout.releasingSlot') : t('checkout.chooseNewTimeBtn')}
               </button>
             </div>
           ) : (
