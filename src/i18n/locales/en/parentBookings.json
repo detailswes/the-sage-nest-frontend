@@ -116,9 +116,22 @@
     "acceptBtn":    "I accept the Terms & Conditions",
     "cancelBtn":    "Cancel and go back"
   },
+  "serviceStep": {
+    "back":     "Back to expert profile",
+    "title":    "Book with {{name}}",
+    "subtitle": "Select a service to continue."
+  },
+  "steps": {
+    "service": "Service",
+    "time":    "Time",
+    "confirm": "Confirm"
+  },
+  "confirmStep": {
+    "back": "Back to time selection"
+  },
   "slotStep": {
-    "backToServices": "Back to services",
-    "title":          "Choose a time",
+    "backToServices":  "Back to services",
+    "title":           "Choose a time",
     "formatOnline":   "Online",
     "formatInPerson": "In-Person",
     "selectDate":     "Select date",
@@ -129,7 +142,10 @@
     "lockExpired":    "Your slot reservation expired. Please select a time again.",
     "lockConflict":   "This slot was just reserved by another parent. Please select a different time.",
     "lockError":      "Could not reserve this slot. Please try again.",
-    "bookError":      "Could not create booking. Please try again.",
+    "bookError":        "Could not create booking. Please try again.",
+    "slotUnavailable":  "This slot is no longer available. Please select a different time.",
+    "continueBtn":      "Continue",
+    "reservingSlot":    "Reserving slot…",
     "duration": {
       "minutes":      "{{count}} min",
       "hours":        "{{h}}h",
@@ -166,7 +182,11 @@
     "currencyNotice": "Prices are set by the expert in their local currency ({{currency}}). Your bank may apply a conversion fee if this differs from your card currency.",
     "payBtn":         "Pay {{amount}}",
     "processingBtn":  "Processing…",
-    "stripeNote":     "Secured by Stripe. Your card details are never stored by Sage Nest."
+    "stripeNote":          "Secured by Stripe. Your card details are never stored by Sage Nest.",
+    "timeLeftToPay":       "{{time}} left to pay",
+    "paymentExpiredTitle": "Payment window expired",
+    "paymentExpiredBody":  "Your slot reservation has been released. Please go back and select a new time.",
+    "chooseNewTimeBtn":    "Choose a new time"
   },
   "bookingStatus": {
     "loadError":    "Could not load booking status.",

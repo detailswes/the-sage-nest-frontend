@@ -116,9 +116,22 @@
     "acceptBtn":    "Accetto i Termini e Condizioni",
     "cancelBtn":    "Annulla e torna indietro"
   },
+  "serviceStep": {
+    "back":     "Torna al profilo dell'esperto",
+    "title":    "Prenota con {{name}}",
+    "subtitle": "Seleziona un servizio per continuare."
+  },
+  "steps": {
+    "service": "Servizio",
+    "time":    "Orario",
+    "confirm": "Conferma"
+  },
+  "confirmStep": {
+    "back": "Torna alla selezione dell'orario"
+  },
   "slotStep": {
-    "backToServices": "Torna ai servizi",
-    "title":          "Scegli un orario",
+    "backToServices":  "Torna ai servizi",
+    "title":           "Scegli un orario",
     "formatOnline":   "Online",
     "formatInPerson": "Di persona",
     "selectDate":     "Seleziona una data",
@@ -129,7 +142,10 @@
     "lockExpired":    "La prenotazione del tuo slot è scaduta. Seleziona di nuovo un orario.",
     "lockConflict":   "Questo slot è stato appena prenotato da un altro genitore. Seleziona un orario diverso.",
     "lockError":      "Impossibile prenotare questo slot. Riprova.",
-    "bookError":      "Impossibile creare la prenotazione. Riprova.",
+    "bookError":        "Impossibile creare la prenotazione. Riprova.",
+    "slotUnavailable":  "Questo slot non è più disponibile. Seleziona un orario diverso.",
+    "continueBtn":      "Continua",
+    "reservingSlot":    "Prenotazione slot…",
     "duration": {
       "minutes":      "{{count}} min",
       "hours":        "{{h}}h",
@@ -166,7 +182,11 @@
     "currencyNotice": "I prezzi sono impostati dall'esperto nella propria valuta locale ({{currency}}). La tua banca potrebbe applicare una commissione di conversione se questa è diversa dalla valuta della tua carta.",
     "payBtn":         "Paga {{amount}}",
     "processingBtn":  "Elaborazione…",
-    "stripeNote":     "Pagamento protetto da Stripe. I dati della tua carta non vengono mai salvati da Sage Nest."
+    "stripeNote":          "Pagamento protetto da Stripe. I dati della tua carta non vengono mai salvati da Sage Nest.",
+    "timeLeftToPay":       "{{time}} per pagare",
+    "paymentExpiredTitle": "Finestra di pagamento scaduta",
+    "paymentExpiredBody":  "La prenotazione del tuo slot è stata rilasciata. Torna indietro e seleziona un nuovo orario.",
+    "chooseNewTimeBtn":    "Scegli un nuovo orario"
   },
   "bookingStatus": {
     "loadError":    "Impossibile caricare lo stato della prenotazione.",
