@@ -673,7 +673,6 @@ const BookPage = () => {
     setTcModalOpen(false);
     try { await acceptTcApi(); } catch { /* non-fatal */ }
     setTcAcceptanceRequired(false);
-    doCheckout(lockId || null);
   };
 
   // Called after inline auth succeeds.
@@ -900,7 +899,13 @@ const BookPage = () => {
           </>
         )}
 
-        <div className="mt-6">
+        {lockErr && (
+          <div className="mt-4 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">
+            {lockErr}
+          </div>
+        )}
+
+        <div className="mt-4">
           <CancellationPolicy small />
         </div>
 
