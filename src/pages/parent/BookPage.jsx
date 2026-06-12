@@ -438,7 +438,6 @@ const BookPage = () => {
   // Slot lock (held during CONFIRM after auth)
   const [lockId,        setLockId]        = useState(null);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
-  const [lockSecsLeft,  setLockSecsLeft]  = useState(null);
   const [locking,       setLocking]       = useState(false);
   const [lockErr,       setLockErr]       = useState('');
   const lockIdRef    = useRef(null);
@@ -542,10 +541,8 @@ const BookPage = () => {
 
   // Lock countdown
   useEffect(() => {
-    if (!lockExpiresAt) { setLockSecsLeft(null); return; }
     const tick = () => {
       const secs = Math.max(0, Math.round((lockExpiresAt.getTime() - Date.now()) / 1000));
-      setLockSecsLeft(secs);
       if (secs === 0) {
         lockIdRef.current = null;
         setLockId(null); setLockExpiresAt(null); setLockErr(t('slotStep.lockExpired'));
