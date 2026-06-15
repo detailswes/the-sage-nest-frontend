@@ -87,6 +87,12 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (!noteSuccess) return;
+    const t = setTimeout(() => setNoteSuccess(""), 5000);
+    return () => clearTimeout(t);
+  }, [noteSuccess]);
+
   const handleSaveNote = async () => {
     setNoteError(""); setNoteSuccess("");
     setNoteSaving(true);
@@ -329,7 +335,14 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
               {(noteError || noteSuccess) && (
                 <div className="mb-2">
                   {noteError   && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{noteError}</p>}
-                  {noteSuccess && <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">{noteSuccess}</p>}
+                  {noteSuccess && (
+                    <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
+                      <span className="flex-1">{noteSuccess}</span>
+                      <button type="button" onClick={() => setNoteSuccess("")} className="p-0.5 text-green-400 hover:text-green-600 transition-colors flex-shrink-0">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               <textarea

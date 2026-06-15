@@ -69,6 +69,12 @@ const AdminParentDetailSection = () => {
   const [actionLoading, setActionLoading] = useState(null);
   const [actionError, setActionError]     = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+
+  useEffect(() => {
+    if (!actionSuccess) return;
+    const t = setTimeout(() => setActionSuccess(""), 5000);
+    return () => clearTimeout(t);
+  }, [actionSuccess]);
   const [showConfirm, setShowConfirm]     = useState(null);
 
   const [selectedBookingId, setSelectedBookingId] = useState(null);
@@ -272,8 +278,11 @@ const AdminParentDetailSection = () => {
 
           {/* Feedback banner */}
           {(actionError || actionSuccess) && (
-            <div className={`mb-4 px-4 py-3 rounded-lg text-sm ${actionError ? "bg-red-50 border border-red-200 text-red-600" : "bg-green-50 border border-green-200 text-green-700"}`}>
-              {actionError || actionSuccess}
+            <div className={`mb-4 flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${actionError ? "bg-red-50 border border-red-200 text-red-600" : "bg-green-50 border border-green-200 text-green-700"}`}>
+              <span className="flex-1">{actionError || actionSuccess}</span>
+              <button type="button" onClick={() => { setActionError(""); setActionSuccess(""); }} className={`p-0.5 transition-colors flex-shrink-0 ${actionError ? "text-red-400 hover:text-red-600" : "text-green-400 hover:text-green-600"}`}>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              </button>
             </div>
           )}
 
