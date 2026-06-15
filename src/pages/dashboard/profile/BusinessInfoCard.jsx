@@ -456,7 +456,15 @@ const BusinessInfoCard = ({ initialData = null }) => {
             />
             {fieldErrors.iban && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.iban}</p>}
             <p className="mt-1.5 text-xs text-gray-400">
-              {t("profile.business.form.ibanNote")}
+              {t("profile.business.form.ibanNote")}{" "}
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-gray-200"
+              >
+                {t("profile.business.form.ibanPrivacyLink")}
+              </a>.
             </p>
           </div>
 

@@ -438,7 +438,6 @@ const BookPage = () => {
   // Slot lock (held during CONFIRM after auth)
   const [lockId,        setLockId]        = useState(null);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
-  const [lockSecsLeft,  setLockSecsLeft]  = useState(null);
   const [locking,       setLocking]       = useState(false);
   const [lockErr,       setLockErr]       = useState('');
   const lockIdRef    = useRef(null);
@@ -542,10 +541,8 @@ const BookPage = () => {
 
   // Lock countdown
   useEffect(() => {
-    if (!lockExpiresAt) { setLockSecsLeft(null); return; }
     const tick = () => {
       const secs = Math.max(0, Math.round((lockExpiresAt.getTime() - Date.now()) / 1000));
-      setLockSecsLeft(secs);
       if (secs === 0) {
         lockIdRef.current = null;
         setLockId(null); setLockExpiresAt(null); setLockErr(t('slotStep.lockExpired'));
@@ -561,12 +558,19 @@ const BookPage = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [step]);
 
-  // Auto-scroll to Continue button when slot is selected
+  // Unauthenticated: scroll to Continue as soon as a slot is selected (no lock to wait for)
   useEffect(() => {
-    if (selectedSlot && continueRef.current) {
+    if (selectedSlot && !user && continueRef.current) {
       continueRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [selectedSlot]);
+  }, [selectedSlot]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Authenticated: scroll only after the lock confirms the slot is available
+  useEffect(() => {
+    if (lockId && step === STEPS.SLOT && continueRef.current) {
+      continueRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [lockId, step]);
 
   // T&C status
   useEffect(() => {
@@ -910,8 +914,8 @@ const BookPage = () => {
         </div>
 
         {/* Continue button — only when slot selected */}
-        {selectedSlot && (
-          <button ref={continueRef} disabled={locking} onClick={async () => {
+        {selectedSlot && !locking && (
+          <button ref={continueRef} onClick={async () => {
               // Authenticated: lock is already active — no re-fetch needed, the lock is our reservation
               if (lockId) {
                 setStep(STEPS.CONFIRM);
@@ -930,8 +934,8 @@ const BookPage = () => {
               }
               setStep(STEPS.CONFIRM);
             }}
-            className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-            {locking ? t('slotStep.reservingSlot') : `${t('slotStep.continueBtn')} →`}
+            className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors">
+            {t('slotStep.continueBtn')} →
           </button>
         )}
       </div>
