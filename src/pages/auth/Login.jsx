@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import AuthLayout from "../../components/auth/AuthLayout";
 import PasswordInput from "../../components/auth/PasswordInput";
 import useAuthForm from "../../hooks/useAuthForm";
@@ -10,6 +11,7 @@ import useResendVerification from "../../hooks/useResendVerification";
 
 // ─── OTP step ─────────────────────────────────────────────────────────────────
 const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
+  const { t } = useTranslation("auth");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,11 +20,10 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
   const [expired, setExpired] = useState(false);
   const inputRef = useRef(null);
 
-  // Resend cooldown ticker
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
   }, [resendCooldown]);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
@@ -38,9 +39,9 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
       const errData = err?.response?.data;
       if (errData?.expired) {
         setExpired(true);
-        setError("Your code has expired. Please request a new one.");
+        setError(t("otp.errorExpired"));
       } else {
-        setError(errData?.error || "Incorrect code. Please try again.");
+        setError(errData?.error || t("otp.errorIncorrect"));
       }
     } finally {
       setLoading(false);
@@ -74,9 +75,9 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
             <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
           </svg>
         </div>
-        <h1 className="text-2xl font-semibold text-[#1F2933] mb-1">Check your email</h1>
+        <h1 className="text-2xl font-semibold text-[#1F2933] mb-1">{t("otp.title")}</h1>
         <p className="text-sm text-gray-500">
-          We sent a 6-digit code to<br />
+          {t("otp.sentTo")}<br />
           <span className="font-medium text-[#1F2933]">{userEmail}</span>
         </p>
       </div>
@@ -89,14 +90,14 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
 
       {resendStatus === "sent" && (
         <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-          New code sent — check your inbox.
+          {t("otp.newCodeSent")}
         </div>
       )}
 
       <form onSubmit={handleVerify} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
-            Verification code
+            {t("otp.codeLabel")}
           </label>
           <input
             ref={inputRef}
@@ -123,20 +124,20 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
           disabled={loading || expired || code.length !== 6}
           className="w-full bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors duration-200 text-sm"
         >
-          {loading ? "Verifying…" : "Verify"}
+          {loading ? t("otp.verifyingBtn") : t("otp.verifyBtn")}
         </button>
       </form>
 
       <div className="mt-4 text-center">
         {resendCooldown > 0 ? (
-          <p className="text-xs text-gray-400">Resend in {resendCooldown}s</p>
+          <p className="text-xs text-gray-400">{t("otp.resendIn", { count: resendCooldown })}</p>
         ) : (
           <button
             type="button"
             onClick={handleResend}
             className="text-sm text-[#445446] hover:underline"
           >
-            Resend code
+            {t("otp.resendBtn")}
           </button>
         )}
       </div>
@@ -146,6 +147,7 @@ const OtpStep = ({ otpToken, userEmail, onSuccess }) => {
 
 // ─── Login form ───────────────────────────────────────────────────────────────
 const Login = () => {
+  const { t } = useTranslation("auth");
   const { login } = useAuth();
   const {
     form,
@@ -158,19 +160,17 @@ const Login = () => {
     handleChange,
   } = useAuthForm({ email: "", password: "" });
 
-  // Set when backend returns 403 email_not_verified
   const [unverifiedEmail, setUnverifiedEmail] = useState(null);
   const [lockedMessage, setLockedMessage] = useState(null);
-  // Set when backend returns two_factor_required
   const [otpPending, setOtpPending] = useState(null); // { otp_token, email }
   const { resend, status: resendStatus, countdown } = useResendVerification();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const validationErrors = validateLoginForm(form);
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    const rawErrors = validateLoginForm(form);
+    if (Object.keys(rawErrors).length > 0) {
+      setErrors(Object.fromEntries(Object.entries(rawErrors).map(([k, v]) => [k, t(v)])));
       return;
     }
 
@@ -184,7 +184,6 @@ const Login = () => {
         return;
       }
       login(data);
-      // GuestRoute reactively redirects to /dashboard once user state updates
     } catch (err) {
       const errData = err?.response?.data;
       if (errData?.email_not_verified) {
@@ -194,11 +193,7 @@ const Login = () => {
         setLockedMessage(errData.error);
         setServerError("");
       } else {
-        const message =
-          errData?.error ||
-          errData?.message ||
-          "Login failed. Please check your credentials.";
-        setServerError(message);
+        setServerError(errData?.error || errData?.message || t("login.defaultError"));
       }
     } finally {
       setLoading(false);
@@ -220,7 +215,7 @@ const Login = () => {
             onClick={() => setOtpPending(null)}
             className="text-sm text-gray-400 hover:text-gray-600"
           >
-            ← Back to sign in
+            {t("otp.backToSignIn")}
           </button>
         </p>
       </AuthLayout>
@@ -230,30 +225,20 @@ const Login = () => {
   return (
     <AuthLayout>
       <h1 className="text-2xl font-semibold text-[#1F2933] text-center mb-2">
-        Welcome
+        {t("login.title")}
       </h1>
       <p className="text-sm text-gray-500 text-center mb-8">
-        Sign in to your Sage Nest account
+        {t("login.subtitle")}
       </p>
 
       {/* Account locked callout */}
       {lockedMessage && (
         <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 flex items-start gap-3">
-          <svg
-            className="w-5 h-5 text-amber-600 flex-shrink-0 mt-px"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z"
-              clipRule="evenodd"
-            />
+          <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" />
           </svg>
           <div>
-            <p className="text-sm font-medium text-amber-800">
-              Account temporarily locked
-            </p>
+            <p className="text-sm font-medium text-amber-800">{t("locked.title")}</p>
             <p className="text-xs text-amber-700 mt-0.5">{lockedMessage}</p>
           </div>
         </div>
@@ -270,25 +255,13 @@ const Login = () => {
       {unverifiedEmail && (
         <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
           <div className="flex items-start gap-3 mb-3">
-            <svg
-              className="w-5 h-5 text-amber-600 flex-shrink-0 mt-px"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-                clipRule="evenodd"
-              />
+            <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
             </svg>
             <div>
-              <p className="text-sm font-medium text-amber-800">
-                Email not verified
-              </p>
+              <p className="text-sm font-medium text-amber-800">{t("unverified.title")}</p>
               <p className="text-xs text-amber-700 mt-0.5">
-                Please verify{" "}
-                <span className="font-medium">{unverifiedEmail}</span> before
-                signing in.
+                {t("unverified.message", { email: unverifiedEmail })}
               </p>
             </div>
           </div>
@@ -297,10 +270,10 @@ const Login = () => {
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-amber-600">
               {resendStatus === "sent" && countdown > 0
-                ? `Email sent! Resend in ${countdown}s`
+                ? t("unverified.sentCountdown", { count: countdown })
                 : resendStatus === "error"
-                ? "Failed to send. Try again."
-                : "Didn't get the email?"}
+                ? t("unverified.sendError")
+                : t("unverified.didntGet")}
             </p>
             <button
               type="button"
@@ -309,10 +282,10 @@ const Login = () => {
               className="flex-shrink-0 text-xs font-semibold text-amber-700 bg-white border border-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-100 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
               {resendStatus === "sending"
-                ? "Sending…"
+                ? t("unverified.sending")
                 : countdown > 0
-                ? `Resend in ${countdown}s`
-                : "Resend email"}
+                ? t("unverified.resendCountdown", { count: countdown })
+                : t("unverified.resendBtn")}
             </button>
           </div>
         </div>
@@ -321,11 +294,8 @@ const Login = () => {
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Email */}
         <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-[#1F2933] mb-1.5"
-          >
-            Email
+          <label htmlFor="email" className="block text-sm font-medium text-[#1F2933] mb-1.5">
+            {t("login.emailLabel")}
           </label>
           <input
             id="email"
@@ -336,7 +306,7 @@ const Login = () => {
               handleChange(e);
               setUnverifiedEmail(null);
             }}
-            placeholder="you@example.com"
+            placeholder={t("login.emailPlaceholder")}
             className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
               errors.email ? "border-red-400" : "border-[#E4E7E4]"
             }`}
@@ -349,11 +319,8 @@ const Login = () => {
         {/* Password */}
         <div>
           <div className="mb-1.5">
-            <label
-              htmlFor="password"
-              className="text-sm font-medium text-[#1F2933]"
-            >
-              Password
+            <label htmlFor="password" className="text-sm font-medium text-[#1F2933]">
+              {t("login.passwordLabel")}
             </label>
           </div>
           <PasswordInput
@@ -361,7 +328,7 @@ const Login = () => {
             name="password"
             value={form.password}
             onChange={handleChange}
-            placeholder="Enter your password"
+            placeholder={t("login.passwordPlaceholder")}
             hasError={!!errors.password}
           />
           {errors.password && (
@@ -375,23 +342,20 @@ const Login = () => {
           disabled={loading}
           className="w-full bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors duration-200 text-sm mt-2"
         >
-          {loading ? "Signing in..." : "Sign in"}
+          {loading ? t("login.submittingBtn") : t("login.submitBtn")}
         </button>
       </form>
 
       <p className="mt-4 text-center text-sm">
         <Link to="/forgot-password" className="text-[#445446] hover:underline">
-          Forgot password?
+          {t("login.forgotPassword")}
         </Link>
       </p>
 
       <p className="mt-3 text-center text-sm text-gray-500">
-        Don't have an account?{" "}
-        <Link
-          to="/register"
-          className="text-[#445446] font-medium hover:underline"
-        >
-          Create one
+        {t("login.noAccount")}{" "}
+        <Link to="/register" className="text-[#445446] font-medium hover:underline">
+          {t("login.createOne")}
         </Link>
       </p>
     </AuthLayout>

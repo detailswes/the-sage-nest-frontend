@@ -218,5 +218,15 @@
       "takingLonger":    "This is taking longer than usual.",
       "checkBookings":   "Check My Bookings"
     }
+  },
+  "consentLabels": {
+    "privacyPrefix":       "I have read and agree to the",
+    "privacyLink":         "Privacy Policy",
+    "termsPrefix":         "I have read and agree to the",
+    "termsLink":           "Terms & Conditions",
+    "marketingOptIn":      "I'd like to receive tips, expert advice, and updates from Sage Nest by email. You can unsubscribe at any time.",
+    "marketingOptInShort": "I'd like occasional parenting tips from Sage Nest (optional)",
+    "privacyRequired":     "You must accept the Privacy Policy to continue.",
+    "termsRequired":       "You must accept the Terms & Conditions to continue."
   }
 }

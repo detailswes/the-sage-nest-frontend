@@ -293,6 +293,7 @@ const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
 
 // ─── Inline Register form ─────────────────────────────────────────────────────
 const InlineRegister = ({ onVerificationSent, returnTo }) => {
+  const { t } = useTranslation('parentBookings');
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
@@ -306,8 +307,8 @@ const InlineRegister = ({ onVerificationSent, returnTo }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validateRegisterForm({ ...form, role: 'PARENT' });
-    if (!privacyAccepted) errs.privacyPolicy = 'You must accept the Privacy Policy.';
-    if (!termsAccepted)   errs.termsConditions = 'You must accept the Terms & Conditions.';
+    if (!privacyAccepted) errs.privacyPolicy = t('consentLabels.privacyRequired');
+    if (!termsAccepted)   errs.termsConditions = t('consentLabels.termsRequired');
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true); setServerError('');
     try {
@@ -358,9 +359,9 @@ const InlineRegister = ({ onVerificationSent, returnTo }) => {
 
       <div className="space-y-2 pt-1">
         {[
-          { id: 'terms',   checked: termsAccepted,   onChange: () => setTermsAccepted((v) => !v),   label: <>I agree to Sage Nest's <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">Terms of Service</a></>, err: errors.termsConditions },
-          { id: 'privacy', checked: privacyAccepted, onChange: () => setPrivacyAccepted((v) => !v), label: <>I have read the <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">Privacy Policy</a></>,           err: errors.privacyPolicy },
-          { id: 'mkt',     checked: marketing,       onChange: () => setMarketing((v) => !v),       label: 'I\'d like occasional parenting tips from Sage Nest (optional)' },
+          { id: 'terms',   checked: termsAccepted,   onChange: () => setTermsAccepted((v) => !v),   label: <>{t('consentLabels.termsPrefix')} <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">{t('consentLabels.termsLink')}</a></>, err: errors.termsConditions },
+          { id: 'privacy', checked: privacyAccepted, onChange: () => setPrivacyAccepted((v) => !v), label: <>{t('consentLabels.privacyPrefix')} <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">{t('consentLabels.privacyLink')}</a></>,           err: errors.privacyPolicy },
+          { id: 'mkt',     checked: marketing,       onChange: () => setMarketing((v) => !v),       label: t('consentLabels.marketingOptInShort') },
         ].map(({ id, checked, onChange, label, err }) => (
           <div key={id}>
             <label className="flex items-start gap-2 cursor-pointer select-none">
@@ -1016,8 +1017,15 @@ const BookPage = () => {
           )}
         </div>
 
+        {/* Health disclaimer — must appear before the payment button */}
+        <div className="px-5 pb-4">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
+            {t('slotStep.summary.healthDisclaimer')}
+          </div>
+        </div>
+
         {/* Auth / proceed */}
-        <div className="p-5">
+        <div className="p-5 pt-0">
           {user ? (
             <>
               {proceedErr && <p className="mb-3 text-sm text-red-600">{proceedErr}</p>}
@@ -1073,9 +1081,6 @@ const BookPage = () => {
           <p className="text-xs text-gray-400 text-center">{t('slotStep.summary.noChargeYet')}</p>
           <div className="p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
             {t('slotStep.summary.currencyNotice', { currency: selectedService?.currency || 'EUR' })}
-          </div>
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
-            {t('slotStep.summary.healthDisclaimer')}
           </div>
         </div>
 
