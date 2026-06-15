@@ -218,5 +218,15 @@
       "takingLonger":    "Ci sta mettendo più del solito.",
       "checkBookings":   "Controlla le mie prenotazioni"
     }
+  },
+  "consentLabels": {
+    "privacyPrefix":       "Ho letto e accetto la",
+    "privacyLink":         "Informativa sulla Privacy",
+    "termsPrefix":         "Ho letto e accetto i",
+    "termsLink":           "Termini e Condizioni",
+    "marketingOptIn":      "Desidero ricevere suggerimenti, consigli di esperti e aggiornamenti da Sage Nest via email. Puoi annullare l'iscrizione in qualsiasi momento.",
+    "marketingOptInShort": "Desidero ricevere consigli occasionali da Sage Nest (opzionale)",
+    "privacyRequired":     "Devi accettare l'Informativa sulla Privacy per continuare.",
+    "termsRequired":       "Devi accettare i Termini e Condizioni per continuare."
   }
 }

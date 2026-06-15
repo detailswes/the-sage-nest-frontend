@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import AuthLayout from '../../components/auth/AuthLayout';
 import PasswordInput from '../../components/auth/PasswordInput';
 import useAuthForm from '../../hooks/useAuthForm';
@@ -8,31 +9,20 @@ import { registerUser } from '../../api/authApi';
 import { useAuth } from '../../context/AuthContext';
 import useResendVerification from '../../hooks/useResendVerification';
 
-const ROLES = [
-  {
-    key: 'EXPERT',
-    label: 'Expert',
-    description: 'Offer your expertise and services',
-  },
-  {
-    key: 'PARENT',
-    label: 'Parent',
-    description: 'Find trusted experts for your family',
-  },
-];
+const ROLE_KEYS = ['EXPERT', 'PARENT'];
 
 const Register = () => {
+  const { t }  = useTranslation('auth');
+  const { t: tConsent } = useTranslation('parentBookings');
   const { login } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [emailSent, setEmailSent] = useState(null); // { email } when verification sent
+  const [emailSent, setEmailSent] = useState(null); // { email }
   const { resend, status: resendStatus, countdown } = useResendVerification();
 
   const roleParam = searchParams.get('user')?.toUpperCase();
-  const activeRole = ROLES.find((r) => r.key === roleParam) ? roleParam : 'EXPERT';
+  const activeRole = ROLE_KEYS.includes(roleParam) ? roleParam : 'EXPERT';
 
-  const handleTabChange = (roleKey) => {
-    setSearchParams({ user: roleKey });
-  };
+  const handleTabChange = (roleKey) => setSearchParams({ user: roleKey });
 
   const {
     form,
@@ -52,18 +42,18 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const validationErrors = validateRegisterForm({ ...form, confirmPassword: form.confirmPassword, role: activeRole });
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    const rawErrors = validateRegisterForm({ ...form, role: activeRole });
+    if (Object.keys(rawErrors).length > 0) {
+      setErrors(Object.fromEntries(Object.entries(rawErrors).map(([k, v]) => [k, t(v)])));
       return;
     }
 
     if (!privacyPolicyAccepted) {
-      setErrors((prev) => ({ ...prev, privacyPolicy: 'You must accept the Privacy Policy to continue.' }));
+      setErrors((prev) => ({ ...prev, privacyPolicy: tConsent('consentLabels.privacyRequired') }));
       return;
     }
     if (!termsAccepted) {
-      setErrors((prev) => ({ ...prev, termsConditions: 'You must accept the Terms & Conditions to continue.' }));
+      setErrors((prev) => ({ ...prev, termsConditions: tConsent('consentLabels.termsRequired') }));
       return;
     }
 
@@ -88,27 +78,20 @@ const Register = () => {
       const data = await registerUser(payload);
 
       if (data.verification_email_sent) {
-        // EXPERT — show inline "check your email" state
         setEmailSent({ email: data.email });
       } else {
-        // PARENT — auto-login and redirect
         login(data);
       }
     } catch (err) {
       const message =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
-        'Registration failed. Please try again.';
+        t('register.defaultError');
       setServerError(message);
     } finally {
       setLoading(false);
     }
   };
-             
-  const textFields = [
-    { id: 'name', label: 'Full name', type: 'text', placeholder: 'Jane Smith' },
-    { id: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com' },
-  ];
 
   // ── Email sent state ────────────────────────────────────────────────────────
   if (emailSent) {
@@ -121,86 +104,84 @@ const Register = () => {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">Check your email</h1>
-          <p className="text-sm text-gray-500 mb-1">We sent a verification link to</p>
+          <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">{t('emailSent.title')}</h1>
+          <p className="text-sm text-gray-500 mb-1">{t('emailSent.sentTo')}</p>
           <p className="text-sm font-semibold text-[#1F2933] mb-6">{emailSent.email}</p>
 
           <p className="text-sm text-gray-500 leading-relaxed mb-8">
-            Click the link in the email to verify your account and get started.
-            The link will open Sage Nest and activate your profile automatically.
+            {t('emailSent.body')}
           </p>
 
           <div className="bg-[#F5F7F5] rounded-xl border border-[#E4E7E4] p-4 text-left mb-5">
-            <p className="text-xs font-medium text-[#1F2933] mb-1">Can't find the email?</p>
+            <p className="text-xs font-medium text-[#1F2933] mb-1">{t('emailSent.cantFind')}</p>
             <p className="text-xs text-gray-500 leading-relaxed">
-              Check your spam or junk folder. The email comes from Sage Nest with the
-              subject <span className="font-medium">"Verify your Sage Nest email address"</span>.
+              {t('emailSent.spamNote')}{' '}
+              <span className="font-medium">"{t('emailSent.subjectLine')}"</span>.
             </p>
           </div>
 
-          {/* Resend button */}
           <button
             type="button"
             onClick={() => resend(emailSent.email)}
             disabled={resendStatus === 'sending' || countdown > 0}
             className="w-full mb-5 py-2.5 px-4 rounded-lg border border-[#445446]/30 text-sm font-medium text-[#445446] bg-white hover:bg-[#445446]/5 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >
-            {resendStatus === 'sending' && 'Sending…'}
-            {resendStatus === 'sent' && countdown > 0 && `Email sent — resend in ${countdown}s`}
-            {resendStatus === 'error' && 'Failed to send — try again'}
-            {(resendStatus === 'idle' || (resendStatus === 'sent' && countdown === 0)) && 'Resend verification email'}
+            {resendStatus === 'sending' && t('emailSent.sendingBtn')}
+            {resendStatus === 'sent' && countdown > 0 && t('emailSent.resentBtn', { count: countdown })}
+            {resendStatus === 'error' && t('emailSent.errorBtn')}
+            {(resendStatus === 'idle' || (resendStatus === 'sent' && countdown === 0)) && t('emailSent.resendBtn')}
           </button>
 
-          {/* Success feedback */}
           {resendStatus === 'sent' && countdown > 0 && (
-            <p className="text-xs text-green-600 mb-4">
-              A new verification email is on its way.
-            </p>
+            <p className="text-xs text-green-600 mb-4">{t('emailSent.resentNote')}</p>
           )}
 
-          <Link
-            to="/login"
-            className="text-sm text-[#445446] font-medium hover:underline"
-          >
-            Back to sign in
+          <Link to="/login" className="text-sm text-[#445446] font-medium hover:underline">
+            {t('emailSent.backToSignIn')}
           </Link>
         </div>
       </AuthLayout>
     );
   }
 
+  const submitLabel = loading
+    ? t('register.submittingBtn')
+    : t('register.submitBtn', {
+        role: t(activeRole === 'EXPERT' ? 'register.expertRole' : 'register.parentRole'),
+      });
+
   return (
     <AuthLayout>
       <h1 className="text-2xl font-semibold text-[#1F2933] text-center mb-2">
-        Create your account
+        {t('register.title')}
       </h1>
       <p className="text-sm text-gray-500 text-center mb-6">
-        Join Sage Nest and start connecting
+        {t('register.subtitle')}
       </p>
 
       {/* Role Tabs */}
       <div className="mb-5">
         <div className="flex rounded-xl bg-[#F5F7F5] border border-[#E4E7E4] p-1">
-          {ROLES.map((role) => {
-            const isActive = activeRole === role.key;
+          {ROLE_KEYS.map((roleKey) => {
+            const isActive = activeRole === roleKey;
             return (
               <button
-                key={role.key}
+                key={roleKey}
                 type="button"
-                onClick={() => handleTabChange(role.key)}
+                onClick={() => handleTabChange(roleKey)}
                 className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? 'bg-[#445446] text-white shadow-sm'
                     : 'text-gray-500 hover:text-[#1F2933]'
                 }`}
               >
-                {role.label}
+                {t(`register.roles.${roleKey}.label`)}
               </button>
             );
           })}
         </div>
         <p className="text-xs text-gray-400 text-center mt-2.5">
-          {ROLES.find((r) => r.key === activeRole)?.description}
+          {t(`register.roles.${activeRole}.description`)}
         </p>
       </div>
 
@@ -211,36 +192,49 @@ const Register = () => {
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
-        {textFields.map(({ id, label, type, placeholder }) => (
-          <div key={id}>
-            <label
-              htmlFor={id}
-              className="block text-sm font-medium text-[#1F2933] mb-1.5"
-            >
-              {label}
-            </label>
-            <input
-              id={id}
-              type={type}
-              name={id}
-              value={form[id]}
-              onChange={handleChange}
-              placeholder={placeholder}
-              className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
-                errors[id] ? 'border-red-400' : 'border-[#E4E7E4]'
-              }`}
-            />
-            {errors[id] && (
-              <p className="mt-1.5 text-xs text-red-500">{errors[id]}</p>
-            )}
-          </div>
-        ))}
+        {/* Full name */}
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-[#1F2933] mb-1.5">
+            {t('register.fullNameLabel')}
+          </label>
+          <input
+            id="name"
+            type="text"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            placeholder={t('register.fullNamePlaceholder')}
+            className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
+              errors.name ? 'border-red-400' : 'border-[#E4E7E4]'
+            }`}
+          />
+          {errors.name && <p className="mt-1.5 text-xs text-red-500">{errors.name}</p>}
+        </div>
+
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-[#1F2933] mb-1.5">
+            {t('register.emailLabel')}
+          </label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder={t('register.emailPlaceholder')}
+            className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
+              errors.email ? 'border-red-400' : 'border-[#E4E7E4]'
+            }`}
+          />
+          {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email}</p>}
+        </div>
 
         {/* Phone — Parent only */}
         {activeRole === 'PARENT' && (
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-              Phone number
+              {t('register.phoneLabel')}
             </label>
             <input
               id="phone"
@@ -248,36 +242,34 @@ const Register = () => {
               name="phone"
               value={form.phone}
               onChange={handleChange}
-              placeholder="+44 7700 900000"
+              placeholder={t('register.phonePlaceholder')}
               className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
                 errors.phone ? 'border-red-400' : 'border-[#E4E7E4]'
               }`}
             />
-              <p className="mt-1.5 text-xs text-red-500">{errors.phone}</p>
+            {errors.phone && <p className="mt-1.5 text-xs text-red-500">{errors.phone}</p>}
           </div>
         )}
 
         {/* Password */}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-            Password
+            {t('register.passwordLabel')}
           </label>
           <PasswordInput
             id="password"
             name="password"
             value={form.password}
             onChange={handleChange}
-            placeholder="At least 8 characters"
+            placeholder={t('register.passwordPlaceholder')}
             hasError={!!errors.password}
           />
-          {errors.password && (
-            <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>
-          )}
+          {errors.password && <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>}
           {/* Live strength checklist */}
           {form.password && (
             <ul className="mt-2 space-y-1">
-              {checkPasswordStrength(form.password).map(({ label, ok }) => (
-                <li key={label} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
+              {checkPasswordStrength(form.password).map(({ key, ok }) => (
+                <li key={key} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
                   {ok ? (
                     <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
@@ -287,7 +279,7 @@ const Register = () => {
                       <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-.75-4.75a.75.75 0 0 0 1.5 0V8.75a.75.75 0 0 0-1.5 0v4.5Zm.75-7a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
                     </svg>
                   )}
-                  {label}
+                  {t(key)}
                 </li>
               ))}
             </ul>
@@ -297,14 +289,14 @@ const Register = () => {
         {/* Confirm password */}
         <div>
           <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-            Confirm password
+            {t('register.confirmPasswordLabel')}
           </label>
           <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
             value={form.confirmPassword}
             onChange={handleChange}
-            placeholder="Re-enter your password"
+            placeholder={t('register.confirmPasswordPlaceholder')}
             hasError={!!errors.confirmPassword}
           />
           {errors.confirmPassword && (
@@ -326,9 +318,9 @@ const Register = () => {
               className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
             />
             <span className="text-sm text-[#1F2933] leading-snug">
-              I have read and agree to the{' '}
+              {tConsent('consentLabels.privacyPrefix')}{' '}
               <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
-                Privacy Policy
+                {tConsent('consentLabels.privacyLink')}
               </a>
               <span className="text-red-500 ml-0.5">*</span>
             </span>
@@ -349,9 +341,9 @@ const Register = () => {
               className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
             />
             <span className="text-sm text-[#1F2933] leading-snug">
-              I have read and agree to the{' '}
+              {tConsent('consentLabels.termsPrefix')}{' '}
               <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
-                Terms &amp; Conditions
+                {tConsent('consentLabels.termsLink')}
               </a>
               <span className="text-red-500 ml-0.5">*</span>
             </span>
@@ -369,7 +361,7 @@ const Register = () => {
               className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
             />
             <span className="text-sm text-gray-500 leading-snug">
-              I'd like to receive tips, expert advice, and updates from Sage Nest by email. You can unsubscribe at any time.
+              {tConsent('consentLabels.marketingOptIn')}
             </span>
           </label>
         </div>
@@ -379,16 +371,14 @@ const Register = () => {
           disabled={loading || !privacyPolicyAccepted || !termsAccepted}
           className="w-full bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors duration-200 text-sm mt-2"
         >
-          {loading
-            ? 'Creating account...'
-            : `Create ${activeRole === 'EXPERT' ? 'Expert' : 'Parent'} account`}
+          {submitLabel}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-500">
-        Already have an account?{' '}
+        {t('register.hasAccount')}{' '}
         <Link to="/login" className="text-[#445446] font-medium hover:underline">
-          Sign in
+          {t('register.signIn')}
         </Link>
       </p>
     </AuthLayout>

@@ -14,27 +14,23 @@ export const validatePhone = (phone) => {
   return /^0?\d{6,14}$/.test(normalized);
 };
 
-// Returns array of unmet criteria labels (empty = all passed)
+// Returns array of { key, ok } pairs. key maps to auth.json passwordStrength.*
 export const checkPasswordStrength = (password) => [
-  { label: 'At least 8 characters',        ok: password.length >= 8 },
-  { label: 'One uppercase letter',          ok: /[A-Z]/.test(password) },
-  { label: 'One lowercase letter',          ok: /[a-z]/.test(password) },
-  { label: 'One number',                    ok: /[0-9]/.test(password) },
-  { label: 'One special character (!, @, #, $…)', ok: /[^a-zA-Z0-9]/.test(password) },
+  { key: 'passwordStrength.minLength', ok: password.length >= 8 },
+  { key: 'passwordStrength.uppercase', ok: /[A-Z]/.test(password) },
+  { key: 'passwordStrength.lowercase', ok: /[a-z]/.test(password) },
+  { key: 'passwordStrength.number',    ok: /[0-9]/.test(password) },
+  { key: 'passwordStrength.special',   ok: /[^a-zA-Z0-9]/.test(password) },
 ];
 
+// Returns an object of { field: 'auth:validation.*' } keys — translate at call site
 export const validateLoginForm = ({ email, password }) => {
   const errors = {};
 
-  if (!email) {
-    errors.email = 'Email is required.';
-  } else if (!validateEmail(email)) {
-    errors.email = 'Please enter a valid email address.';
-  }
+  if (!email)                 errors.email    = 'validation.emailRequired';
+  else if (!validateEmail(email)) errors.email = 'validation.emailInvalid';
 
-  if (!password) {
-    errors.password = 'Password is required.';
-  }
+  if (!password)              errors.password = 'validation.passwordRequired';
 
   return errors;
 };
@@ -42,37 +38,24 @@ export const validateLoginForm = ({ email, password }) => {
 export const validateRegisterForm = ({ name, email, password, confirmPassword, phone, role }) => {
   const errors = {};
 
-  if (!name || !name.trim()) {
-    errors.name = 'Name is required.';
-  }
+  if (!name || !name.trim()) errors.name = 'validation.nameRequired';
 
-  if (!email) {
-    errors.email = 'Email is required.';
-  } else if (!validateEmail(email)) {
-    errors.email = 'Please enter a valid email address.';
-  }
+  if (!email)                     errors.email = 'validation.emailRequired';
+  else if (!validateEmail(email)) errors.email = 'validation.emailInvalid';
 
   if (!password) {
-    errors.password = 'Password is required.';
+    errors.password = 'validation.passwordRequired';
   } else {
     const unmet = checkPasswordStrength(password).filter((c) => !c.ok);
-    if (unmet.length > 0) {
-      errors.password = unmet[0].label + ' is required.';
-    }
+    if (unmet.length > 0) errors.password = 'validation.passwordWeak';
   }
 
-  if (!confirmPassword) {
-    errors.confirmPassword = 'Please confirm your password.';
-  } else if (password !== confirmPassword) {
-    errors.confirmPassword = 'Passwords do not match.';
-  }
+  if (!confirmPassword)               errors.confirmPassword = 'validation.confirmPasswordRequired';
+  else if (password !== confirmPassword) errors.confirmPassword = 'validation.passwordsMismatch';
 
   if (role === 'PARENT') {
-    if (!phone || !phone.trim()) {
-      errors.phone = 'Phone number is required.';
-    } else if (!validatePhone(phone)) {
-      errors.phone = 'Please enter a valid phone number (e.g. +44 7700 900000).';
-    }
+    if (!phone || !phone.trim())  errors.phone = 'validation.phoneRequired';
+    else if (!validatePhone(phone)) errors.phone = 'validation.phoneInvalid';
   }
 
   return errors;
