@@ -218,6 +218,12 @@ const AdminExpertDetailSection = () => {
 
   const clearFeedback = () => { setActionError(""); setActionSuccess(""); };
 
+  useEffect(() => {
+    if (!actionSuccess) return;
+    const t = setTimeout(() => setActionSuccess(""), 5000);
+    return () => clearTimeout(t);
+  }, [actionSuccess]);
+
   const handleApproveLanguage = async (language) => {
     setLangConfirm(null);
     setLangActionLoading(language);
@@ -412,8 +418,22 @@ const AdminExpertDetailSection = () => {
       {/* Feedback banner */}
       {(actionError || actionSuccess) && (
         <div className="mb-4">
-          {actionError   && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">{actionError}</p>}
-          {actionSuccess && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">{actionSuccess}</p>}
+          {actionError && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <span className="flex-1">{actionError}</span>
+              <button type="button" onClick={() => setActionError("")} className="p-0.5 text-red-400 hover:text-red-600 transition-colors flex-shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          )}
+          {actionSuccess && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <span className="flex-1">{actionSuccess}</span>
+              <button type="button" onClick={() => setActionSuccess("")} className="p-0.5 text-green-400 hover:text-green-600 transition-colors flex-shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          )}
         </div>
       )}
 

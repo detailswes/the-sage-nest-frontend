@@ -158,6 +158,18 @@ const ProfileSection = () => {
   const [success, setSuccess]     = useState(false);
   const [savedAsDraft, setSavedAsDraft] = useState(false);
 
+  useEffect(() => {
+    if (!success) return;
+    const t = setTimeout(() => setSuccess(false), 5000);
+    return () => clearTimeout(t);
+  }, [success]);
+
+  useEffect(() => {
+    if (!savedAsDraft) return;
+    const t = setTimeout(() => setSavedAsDraft(false), 5000);
+    return () => clearTimeout(t);
+  }, [savedAsDraft]);
+
   // Stripe
   const [stripeStatus, setStripeStatus]     = useState('idle');
   const [stripeError, setStripeError]       = useState('');
@@ -781,10 +793,13 @@ const ProfileSection = () => {
               <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
               </svg>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-amber-800">{t('profile.savedAsDraft.title')}</p>
                 <p className="text-xs text-amber-600 mt-0.5">{t('profile.savedAsDraft.body')}</p>
               </div>
+              <button type="button" onClick={() => setSavedAsDraft(false)} className="p-0.5 text-amber-400 hover:text-amber-600 transition-colors flex-shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              </button>
             </div>
           )}
           {success && (
@@ -792,10 +807,13 @@ const ProfileSection = () => {
               <svg className="w-4 h-4 text-green-600 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
               </svg>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-green-800">{t('profile.saveSuccess.title')}</p>
                 <p className="text-xs text-green-600 mt-0.5">{t('profile.saveSuccess.body')}</p>
               </div>
+              <button type="button" onClick={() => setSuccess(false)} className="p-0.5 text-green-400 hover:text-green-600 transition-colors flex-shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              </button>
             </div>
           )}
 

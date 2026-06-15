@@ -170,6 +170,12 @@ const ChangePasswordCard = () => {
   });
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!success) return;
+    const t = setTimeout(() => setSuccess(false), 5000);
+    return () => clearTimeout(t);
+  }, [success]);
+
   const handleChange = (e) => {
     const { name } = e.target;
     setForm((f) => ({ ...f, [name]: e.target.value }));
@@ -353,7 +359,10 @@ const ChangePasswordCard = () => {
                 clipRule="evenodd"
               />
             </svg>
-            {t("settings.password.success")}
+            <span className="flex-1">{t("settings.password.success")}</span>
+            <button type="button" onClick={() => setSuccess(false)} className="p-0.5 text-green-400 hover:text-green-600 transition-colors flex-shrink-0">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+            </button>
           </div>
         )}
 
