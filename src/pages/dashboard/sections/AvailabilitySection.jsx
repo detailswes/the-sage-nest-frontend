@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from 'react-i18next';
+import ConfirmModal from '../../../components/ConfirmModal';
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import {
   format,
@@ -565,32 +566,7 @@ const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formE
                           </span>
                         </div>
 
-                        {isChecking ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-gray-400">{t('availability.weekly.checking')}</span>
-                            <div className="w-3 h-3 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" />
-                          </div>
-                        ) : isPending ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setPendingRemove(null)}
-                              className="text-xs text-gray-500 px-1.5 py-0.5 rounded hover:bg-gray-100 transition-colors"
-                            >
-                              {t('availability.weekly.cancelBtn')}
-                            </button>
-                            <button
-                              onClick={() => { setPendingRemove(null); onRemove(slot.id); }}
-                              disabled={removingId === slot.id}
-                              className={`text-xs font-medium text-white disabled:opacity-60 px-2 py-0.5 rounded transition-colors ${
-                                hasConflicts
-                                  ? "bg-amber-600 hover:bg-amber-700"
-                                  : "bg-red-500 hover:bg-red-600"
-                              }`}
-                            >
-                              {hasConflicts ? t('availability.weekly.removeAnywayBtn') : t('availability.weekly.removeBtn')}
-                            </button>
-                          </div>
-                        ) : (
+                        {isChecking || isPending ? null : (
                           <button
                             onClick={() => handleStartRemove(slot)}
                             disabled={removingId === slot.id}
@@ -637,6 +613,24 @@ const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formE
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        open={pendingRemove !== null}
+        checking={pendingRemove?.checking === true}
+        title={t('availability.weekly.removeBtn')}
+        message={!pendingRemove?.checking && !pendingRemove?.conflicts?.length
+          ? t('availability.weekly.removeConfirmMsg', 'This time slot will be removed from your schedule.')
+          : null}
+        warning={pendingRemove?.conflicts?.length
+          ? t('availability.weekly.removeConflictWarning', 'This slot has upcoming bookings. Removing it will not cancel those bookings, but parents won\'t be able to book new sessions in this slot.')
+          : null}
+        confirmLabel={pendingRemove?.conflicts?.length
+          ? t('availability.weekly.removeAnywayBtn')
+          : t('availability.weekly.removeBtn')}
+        loading={removingId === pendingRemove?.id}
+        onClose={() => setPendingRemove(null)}
+        onConfirm={() => { const id = pendingRemove.id; setPendingRemove(null); onRemove(id); }}
+      />
     </div>
   );
 };
@@ -656,7 +650,7 @@ const BlockoutPanel = ({
   const lng = i18n.language;
   const [form, setForm] = useState(EMPTY_BLOCK_FORM);
   const [formErrors, setFormErrors] = useState({});
-  const [confirmRestoreId, setConfirmRestoreId] = useState(null);
+  const [deleteBlockoutModal, setDeleteBlockoutModal] = useState({ open: false, id: null });
 
   const noAvailabilityWarning = useMemo(() => {
     if (form.block_type !== "time_slot" || !form.date_from || form.date_from !== form.date_to) return "";
@@ -884,36 +878,28 @@ const BlockoutPanel = ({
                     : t('availability.blockout.fullDayLabel')}
                 </p>
               </div>
-              {confirmRestoreId === b.id ? (
-                <div className="flex items-center gap-1 ml-3 flex-shrink-0">
-                  <button
-                    onClick={() => setConfirmRestoreId(null)}
-                    className="text-xs text-gray-500 px-1.5 py-0.5 rounded hover:bg-red-100 transition-colors"
-                  >
-                    {t('availability.blockout.cancelBtn')}
-                  </button>
-                  <button
-                    onClick={() => { setConfirmRestoreId(null); onDelete(b.id); }}
-                    disabled={deletingId === b.id}
-                    className="text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-2 py-0.5 rounded transition-colors"
-                  >
-                    {t('availability.blockout.restoreBtn')}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setConfirmRestoreId(b.id)}
-                  disabled={deletingId === b.id}
-                  title={t('availability.blockout.restoreTitle')}
-                  className="ml-3 flex-shrink-0 text-xs font-medium text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors disabled:opacity-40"
-                >
-                  {deletingId === b.id ? t('availability.blockout.restoringBtn') : t('availability.blockout.restoreBtn')}
-                </button>
-              )}
+              <button
+                onClick={() => setDeleteBlockoutModal({ open: true, id: b.id })}
+                disabled={deletingId === b.id}
+                title={t('availability.blockout.restoreTitle')}
+                className="ml-3 flex-shrink-0 text-xs font-medium text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors disabled:opacity-40"
+              >
+                {deletingId === b.id ? t('availability.blockout.restoringBtn') : t('availability.blockout.restoreBtn')}
+              </button>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        open={deleteBlockoutModal.open}
+        title={t('availability.blockout.restoreBtn')}
+        message={t('availability.blockout.deleteConfirmMsg', 'This will remove the blockout and restore availability for this period.')}
+        confirmLabel={t('availability.blockout.restoreBtn')}
+        loading={deletingId === deleteBlockoutModal.id}
+        onClose={() => setDeleteBlockoutModal({ open: false, id: null })}
+        onConfirm={() => { const id = deleteBlockoutModal.id; setDeleteBlockoutModal({ open: false, id: null }); onDelete(id); }}
+      />
     </div>
   );
 };

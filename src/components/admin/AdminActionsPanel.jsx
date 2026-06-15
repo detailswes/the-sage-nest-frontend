@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   adminCancelBooking,
@@ -52,6 +52,12 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
   const canResDisp     = booking.is_disputed;
   const canRetry       = booking.transfer_status === "failed" && ["CONFIRMED", "COMPLETED"].includes(booking.status);
   const canMarkResolved = booking.transfer_status === "failed" && ["CONFIRMED", "COMPLETED"].includes(booking.status);
+
+  useEffect(() => {
+    if (!success) return;
+    const t = setTimeout(() => setSuccess(""), 5000);
+    return () => clearTimeout(t);
+  }, [success]);
 
   if (!canCancel && !canRefund && !canDispute && !canResDisp && !canRetry && !canMarkResolved) return null;
 
@@ -163,7 +169,14 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
       {(error || success) && (
         <div className="mb-3">
           {error   && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
-          {success && <p className="text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">{success}</p>}
+          {success && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
+              <span className="flex-1">{success}</span>
+              <button type="button" onClick={() => setSuccess("")} className="p-0.5 text-green-400 hover:text-green-600 transition-colors flex-shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          )}
         </div>
       )}
 

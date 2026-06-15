@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { listServices, createService, updateService, deleteService, reorderServices, getMyProfile } from '../../../api/expertApi';
+import ConfirmModal from '../../../components/ConfirmModal';
 
 const FORMAT_OPTIONS  = [
   { value: 'ONLINE' },
@@ -110,7 +111,7 @@ const ServicesSection = () => {
 
   const [deletingId, setDeletingId]     = useState(null);
   const [togglingId, setTogglingId]     = useState(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deleteModal, setDeleteModal]   = useState({ open: false, id: null });
 
   useEffect(() => {
     Promise.all([
@@ -523,39 +524,29 @@ const ServicesSection = () => {
                     className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors">
                     <EditIcon />
                   </button>
-                  {confirmDeleteId === svc.id ? (
-                    <div className="flex items-center gap-1.5 pl-1">
-                      <span className="text-xs text-gray-500 whitespace-nowrap">{t('services.card.deleteConfirm')}</span>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="text-xs text-gray-500 hover:text-[#1F2933] px-2 py-1 rounded hover:bg-gray-100 transition-colors"
-                      >
-                        {t('services.card.cancelBtn')}
-                      </button>
-                      <button
-                        onClick={() => { setConfirmDeleteId(null); handleDelete(svc.id); }}
-                        disabled={deletingId === svc.id}
-                        className="flex items-center gap-1 text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-2.5 py-1 rounded-lg transition-colors"
-                      >
-                        {deletingId === svc.id ? <Spinner className="w-3 h-3" /> : null}
-                        {t('services.card.deleteBtn')}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDeleteId(svc.id)}
-                      title="Delete"
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <TrashIcon />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setDeleteModal({ open: true, id: svc.id })}
+                    title="Delete"
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <TrashIcon />
+                  </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        open={deleteModal.open}
+        title={t('services.card.deleteConfirm')}
+        message={t('services.card.deleteMessage', 'This action cannot be undone.')}
+        confirmLabel={t('services.card.deleteBtn')}
+        loading={deletingId === deleteModal.id}
+        onClose={() => setDeleteModal({ open: false, id: null })}
+        onConfirm={() => { handleDelete(deleteModal.id); setDeleteModal({ open: false, id: null }); }}
+      />
     </div>
   );
 };
