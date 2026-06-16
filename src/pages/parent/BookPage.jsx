@@ -682,9 +682,9 @@ const BookPage = () => {
   };
 
   // Called after inline auth succeeds.
-  // Re-fetches T&C status with the newly-issued auth token before proceeding.
-  // New registrations: T&C already accepted via checkboxes → version_updated will be false.
-  // Returning users: version_updated true → show modal before payment.
+  // Re-fetches T&C status with the newly-issued auth token.
+  // If T&C is outdated, show the modal so the user accepts before proceeding.
+  // Either way, the user must click "Proceed to payment" manually.
   const handleAuthSuccess = async () => {
     try {
       const { version_updated, is_first_booking } = await getCurrentTcVersion();
@@ -692,12 +692,10 @@ const BookPage = () => {
         setTcAcceptanceRequired(true);
         setTcIsFirstBooking(!!is_first_booking);
         setTcModalOpen(true);
-        return;
       }
     } catch {
       // Non-fatal — backend validates T&C on createBooking
     }
-    doCheckout(null);
   };
 
   // ── Loading / error ───────────────────────────────────────────────────────

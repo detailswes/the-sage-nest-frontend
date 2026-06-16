@@ -680,7 +680,7 @@ const PastBookingCard = ({ booking, onViewDetails }) => {
   const sk               = statusKey(booking);
 
   const handleBookAgain = () => {
-    navigate('/dashboard/parent/browse', {
+    navigate('/book', {
       state: {
         restore: {
           expert:  { id: booking.expert_id, ...booking.expert },
