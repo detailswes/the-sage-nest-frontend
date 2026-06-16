@@ -1019,7 +1019,7 @@ const BookPage = () => {
         </div>
 
         {/* Health disclaimer — must appear before the payment button */}
-        <div className="px-5 pb-4">
+        <div className="px-5 pt-4 pb-4">
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
             {t('slotStep.summary.healthDisclaimer')}
           </div>
