@@ -18,7 +18,7 @@ import { getProfileImageUrl } from "../../../utils/imageUrl";
 const PAGE_LIMIT = 10;
 
 // Keys only — labels resolved via t() at render time
-const STATUS_FILTER_KEYS = ["all", "pending", "approved", "rejected", "suspended", "changes_requested"];
+const STATUS_FILTER_KEYS = ["all", "pending", "approved", "rejected", "suspended", "changes_requested", "deleted"];
 
 const QUAL_OPTION_VALUES = [
   "",
@@ -258,6 +258,7 @@ const ExpertManagementSection = () => {
     REJECTED: 0,
     SUSPENDED: 0,
     CHANGES_REQUESTED: 0,
+    DELETED: 0,
   });
   const [actionLoading, setActionLoading] = useState(null);
   const [actionError, setActionError] = useState("");
