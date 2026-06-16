@@ -683,8 +683,9 @@ const PastBookingCard = ({ booking, onViewDetails }) => {
     navigate('/book', {
       state: {
         restore: {
-          expert:  { id: booking.expert_id, ...booking.expert },
-          service: { id: booking.service_id, ...booking.service },
+          expert:           { id: booking.expert_id, ...booking.expert },
+          service:          { id: booking.service_id, ...booking.service },
+          fromPastBookings: true,
         },
       },
     });

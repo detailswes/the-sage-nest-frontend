@@ -131,6 +131,7 @@
   },
   "slotStep": {
     "backToServices":  "Back to services",
+    "backToBookings":  "Back to bookings",
     "title":           "Choose a time",
     "formatOnline":   "Online",
     "formatInPerson": "In-Person",
