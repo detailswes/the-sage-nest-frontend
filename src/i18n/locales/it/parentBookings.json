@@ -131,6 +131,7 @@
   },
   "slotStep": {
     "backToServices":  "Torna ai servizi",
+    "backToBookings":  "Torna alle prenotazioni",
     "title":           "Scegli un orario",
     "formatOnline":   "Online",
     "formatInPerson": "Di persona",

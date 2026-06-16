@@ -408,6 +408,7 @@ const BookPage = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(returnUrlParam || WEBFLOW_DIRECTORY_URL);
+  const fromPastBookings = !!locationState?.restore?.fromPastBookings;
 
   const [step,            setStep]           = useState(STEPS.SERVICE);
   const [loading,         setLoading]        = useState(true);
@@ -823,12 +824,13 @@ const BookPage = () => {
   if (step === STEPS.SLOT) {
     return (
       <div>
-        <button onClick={() => setStep(STEPS.SERVICE)}
+        <button
+          onClick={() => fromPastBookings ? navigate('/dashboard/parent/past') : setStep(STEPS.SERVICE)}
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
-          {t('slotStep.backToServices')}
+          {fromPastBookings ? t('slotStep.backToBookings') : t('slotStep.backToServices')}
         </button>
 
         <StepIndicator step={STEPS.SLOT} />
