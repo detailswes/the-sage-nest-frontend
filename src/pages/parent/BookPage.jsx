@@ -542,6 +542,7 @@ const BookPage = () => {
 
   // Lock countdown
   useEffect(() => {
+    if (!lockExpiresAt) return;
     const tick = () => {
       const secs = Math.max(0, Math.round((lockExpiresAt.getTime() - Date.now()) / 1000));
       if (secs === 0) {
