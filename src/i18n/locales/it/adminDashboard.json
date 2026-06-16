@@ -365,7 +365,8 @@
       "approved": "Approvato",
       "rejected": "Rifiutato",
       "suspended": "Sospeso",
-      "changes_requested": "Modifiche richieste"
+      "changes_requested": "Modifiche richieste",
+      "deleted": "Eliminato"
     },
     "qual": {
       "all": "Tutte le qualifiche",
