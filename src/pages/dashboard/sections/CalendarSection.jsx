@@ -203,7 +203,8 @@ const eventPropGetter = (event) => {
 
 // ─── Event components ─────────────────────────────────────────────────────────
 const MonthEvent = ({ event }) => {
-  const { t } = useTranslation('expertDashboard');
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
   if (event.type === 'availability') {
     return (
       <span title={`${t('calendar.available')} ${event.startLabel}–${event.endLabel}`}>
@@ -212,7 +213,8 @@ const MonthEvent = ({ event }) => {
     );
   }
   const b = event.resource;
-  return <span title={event.title}>{b?.parent?.name || event.title}</span>;
+  const timeStr = fmtTime(event.start, lng);
+  return <span title={event.title}>{timeStr} · {b?.parent?.name || event.title}</span>;
 };
 
 const TimeGridEvent = ({ event }) => {
