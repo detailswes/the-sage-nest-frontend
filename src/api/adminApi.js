@@ -68,8 +68,9 @@ export const getParentDetail    = (id) => api.get(`/admin/parents/${id}`).then((
 export const listParentBookings = (parentId) => api.get(`/admin/parents/${parentId}/bookings`).then((r) => r.data);
 
 // ── Parent status actions ─────────────────────────────────────────────────────
-export const activateParent = (id) => api.post(`/admin/parents/${id}/activate`).then((r) => r.data);
-export const suspendParent  = (id) => api.post(`/admin/parents/${id}/suspend`).then((r) => r.data);
+export const activateParent             = (id) => api.post(`/admin/parents/${id}/activate`).then((r) => r.data);
+export const suspendParent              = (id, reason) => api.post(`/admin/parents/${id}/suspend`, { reason }).then((r) => r.data);
+export const getParentSuspensionPreview = (id) => api.get(`/admin/parents/${id}/suspension-preview`).then((r) => r.data);
 
 // ── Parent support tools ──────────────────────────────────────────────────────
 export const sendParentPasswordReset  = (id) => api.post(`/admin/parents/${id}/send-password-reset`).then((r) => r.data);
