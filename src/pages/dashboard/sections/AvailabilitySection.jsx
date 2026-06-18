@@ -217,7 +217,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
         </button>
         <button
           onClick={() => onNavigate("TODAY")}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#E4E7E4] hover:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#c5ceba] hover:bg-gray-50 transition-colors"
         >
           {t('availability.toolbar.today')}
         </button>
@@ -232,7 +232,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
         </button>
         <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
       </div>
-      <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
+      <div className="flex rounded-lg border border-[#c5ceba] overflow-hidden">
         {["day", "week", "month"].map((v) => (
           <button
             key={v}
@@ -454,7 +454,7 @@ const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formE
   })).filter(({ slots: ds }) => ds.length > 0);
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5">
       <h3 className="text-sm font-semibold text-[#1F2933] mb-4">
         {t('availability.weekly.title')}
       </h3>
@@ -475,7 +475,7 @@ const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formE
               <select
                 value={form.day_of_week}
                 onChange={(e) => setForm((f) => ({ ...f, day_of_week: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] appearance-none pr-7"
+                className="w-full px-3 py-2 rounded-lg border border-[#c5ceba] text-sm text-[#1F2933] bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] appearance-none pr-7"
               >
                 {Array.from({ length: 7 }, (_, i) => (
                   <option key={i} value={i}>{t('availability.days.' + i)}</option>
@@ -712,7 +712,7 @@ const BlockoutPanel = ({
   const sortedBlockouts = [...blockouts].sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5">
       <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
         {t('availability.blockout.title')}
       </h3>
@@ -787,7 +787,7 @@ const BlockoutPanel = ({
           <label className="block text-xs font-medium text-gray-600 mb-1">
             {t('availability.blockout.blockTypeLabel')}
           </label>
-          <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
+          <div className="flex rounded-lg border border-[#c5ceba] overflow-hidden">
             {[
               { value: "full_day",  label: t('availability.blockout.fullDayBtn') },
               { value: "time_slot", label: t('availability.blockout.timeSlotBtn') },
@@ -1142,8 +1142,8 @@ const AvailabilitySection = () => {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">{t('availability.heading')}</h2>
-        <p className="text-sm text-gray-500 mt-1">{t('availability.subheading')}</p>
+        <h2 className="text-xl font-semibold text-[#445446]">{t('availability.heading')}</h2>
+        <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('availability.subheading')}</p>
       </div>
 
       {slotsError && (
@@ -1153,7 +1153,7 @@ const AvailabilitySection = () => {
       )}
 
       {/* Calendar */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5 mb-5">
         <Legend />
         <CustomToolbar
           label={calendarLabel}
@@ -1194,7 +1194,7 @@ const AvailabilitySection = () => {
 
       {/* Timezone notice */}
       {expertTz ? (
-        <div className="mb-4 px-4 py-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-sm text-gray-600">
+        <div className="mb-4 px-4 py-3 bg-[#dfe2d7]/30 border border-[#c5ceba] rounded-lg text-sm text-gray-600">
           {t('availability.timezone.setPre')}{" "}
           <span className="font-semibold text-[#1F2933]">{expertTz}</span>
         </div>
@@ -1210,7 +1210,7 @@ const AvailabilitySection = () => {
       )}
 
       {/* Buffer Between Sessions */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5 mb-5">
         <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
           {t('availability.buffer.title')}
         </h3>
@@ -1253,7 +1253,7 @@ const AvailabilitySection = () => {
       </div>
 
       {/* Advance Booking Limit */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5 mb-5">
         <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
           {t('availability.advance.title')}
         </h3>
@@ -1296,7 +1296,7 @@ const AvailabilitySection = () => {
       </div>
 
       {/* Minimum Notice Period */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5 mb-5">
         <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
           {t('availability.notice.title')}
         </h3>

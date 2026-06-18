@@ -206,7 +206,7 @@ const BookingStatusPage = () => {
   const error  = isError ? t('bookingStatus.loadError') : '';
 
   return (
-    <div className="min-h-screen bg-[#F5F7F5] flex flex-col items-center justify-center py-10 px-4">
+    <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex flex-col items-center justify-center py-10 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl border border-[#E4E7E4] shadow-lg px-8 py-10">
 
         {/* Logo */}

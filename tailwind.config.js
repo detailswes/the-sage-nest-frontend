@@ -5,7 +5,14 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      backgroundImage: {
+        'sage-stripes': 'linear-gradient(90deg, #dfe2d7 50%, #f4eee5 50%)',
+      },
+      backgroundSize: {
+        'stripe-size': '340px 100%',
+      },
+    },
   },
   plugins: [],
 }

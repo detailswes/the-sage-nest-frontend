@@ -80,7 +80,7 @@ const StripeReturn = () => {
     navigate('/dashboard/expert/profile?stripe=success', { replace: true });
 
   return (
-    <div className="min-h-screen bg-[#F5F7F5] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg border border-[#E4E7E4] w-full max-w-md px-8 py-10 text-center">
 
         {/* Logo */}

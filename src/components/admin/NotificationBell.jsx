@@ -143,12 +143,14 @@ const NotificationBell = () => {
           <div className="max-h-[420px] overflow-y-auto divide-y divide-[#F0F2F0]">
             {visibleNotifs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                <svg className="w-8 h-8 text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round"
-                    d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                </svg>
-                <p className="text-sm font-medium text-gray-400">All caught up</p>
-                <p className="text-xs text-gray-300 mt-0.5">No pending actions right now.</p>
+                <div className="w-10 h-10 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
+                  <svg className="w-4 h-4 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                  </svg>
+                </div>
+                <p className="text-sm font-semibold text-[#445446]">All caught up</p>
+                <p className="text-xs text-[#5e6d5b]/70 mt-0.5">No pending actions right now.</p>
               </div>
             ) : (
               visibleNotifs.map((notif) => {

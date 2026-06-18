@@ -313,7 +313,9 @@ const ExpertManagementSection = () => {
   }
 
   const tabCount = (key) => key === "all" ? counts.all : counts[key.toUpperCase()] ?? 0;
-  const filterInputCls = "px-3 py-2 text-sm border border-[#E4E7E4] rounded-lg bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition";
+
+  const filterInputCls =
+    "px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition";
 
   return (
     <>
@@ -321,12 +323,14 @@ const ExpertManagementSection = () => {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold text-[#1F2933]">{t("expertMgmt.pageTitle")}</h2>
-          <p className="text-sm text-gray-500 mt-1">{t("expertMgmt.pageSubtitle")}</p>
+          <p className="text-sm text-[#5e6d5b] font-medium mt-1">
+            {t("expertMgmt.pageSubtitle")}
+          </p>
         </div>
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="flex items-center gap-2 text-sm font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 disabled:opacity-50 px-3.5 py-2 rounded-lg transition-colors flex-shrink-0 ml-4"
+          className="flex items-center gap-2 text-sm font-medium bg-[#445446] text-white hover:bg-[#3a4a3b] active:scale-95 disabled:opacity-50 px-4 py-2.5 rounded-lg transition-all duration-150 flex-shrink-0 ml-4 shadow-sm"
         >
           {exporting ? (
             <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
@@ -339,17 +343,31 @@ const ExpertManagementSection = () => {
         </button>
       </div>
 
+     
+      {/* ── Search + Filters unified box (Webflow pattern) ── */}
+      <div className="mb-5 bg-white rounded-2xl border-2 border-[#c5ceba] p-4 space-y-3">
+
       {/* Search */}
-      <div className="mb-4 relative">
-        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+      <div className="relative">
+        <svg
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+          />
         </svg>
         <input
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder={t("expertMgmt.searchPlaceholder")}
-          className="w-full pl-10 pr-10 py-2.5 text-sm border border-[#E4E7E4] rounded-xl bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+          className="w-full pl-10 pr-10 py-2.5 text-sm border border-[#c5ceba] rounded-xl bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
         />
         {searchInput && (
           <button
@@ -364,8 +382,8 @@ const ExpertManagementSection = () => {
       </div>
 
       {/* Status tabs + filter controls */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="inline-flex items-center bg-white border border-[#E4E7E4] rounded-xl p-1 gap-0.5">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex items-center bg-white border border-[#c5ceba] rounded-xl p-1 gap-0.5">
           {STATUS_FILTER_KEYS.map((key) => {
             const isActive = activeFilter === key;
             return (
@@ -434,29 +452,37 @@ const ExpertManagementSection = () => {
         )}
       </div>
 
+      </div>{/* end search+filters box */}
+
       {/* Table */}
       {experts.length === 0 && !isFetching ? (
-        <div className="bg-white rounded-2xl border border-[#E4E7E4] p-14 text-center">
-          <svg className="w-12 h-12 mx-auto text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-          </svg>
-          <p className="text-sm font-medium text-gray-500">{t("expertMgmt.noExpertsTitle")}</p>
-          <p className="text-xs text-gray-400 mt-1">
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
+            <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-[#445446]">{t("expertMgmt.noExpertsTitle")}</p>
+          <p className="text-xs text-[#5e6d5b]/70 mt-1">
             {hasActiveFilters || activeFilter !== "all" ? t("expertMgmt.noExpertsFiltered") : t("expertMgmt.noExpertsYet")}
           </p>
         </div>
       ) : (
-        <div className={`bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden transition-opacity duration-150 ${isFetching ? "opacity-60 pointer-events-none" : ""}`}>
+        <div
+          className={`bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden transition-opacity duration-150 ${
+            isFetching ? "opacity-60 pointer-events-none" : ""
+          }`}
+        >
           {/* Header row */}
-          <div className="grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.name")}</p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.email")}</p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.position")}</p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.status")}</p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.joined")}</p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("expertMgmt.col.bookings")}</p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider" title="EU Directive 2021/514 — DAC7 reporting threshold">{t("expertMgmt.col.dac7")}</p>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">{t("expertMgmt.col.actions")}</p>
+          <div className="grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-3 bg-[#445446] border-b border-[#3a4a3b]">
+            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.name")}</p>
+            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.email")}</p>
+            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.position")}</p>
+            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.status")}</p>
+            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.joined")}</p>
+            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.bookings")}</p>
+            <p className="text-xs font-semibold text-white uppercase tracking-wider" title="EU Directive 2021/514 — DAC7 reporting threshold">{t("expertMgmt.col.dac7")}</p>
+            <p className="text-xs font-semibold text-white uppercase tracking-wider text-right">{t("expertMgmt.col.actions")}</p>
           </div>
 
           {experts.map((expert, idx) => {
@@ -468,7 +494,9 @@ const ExpertManagementSection = () => {
             return (
               <div
                 key={expert.id}
-                className={`grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-4 items-center hover:bg-gray-50 transition-colors ${idx > 0 ? "border-t border-[#E4E7E4]" : ""}`}
+                className={`grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-3 items-center hover:bg-[#dfe2d7]/50 transition-colors ${
+                  "bg-white"
+                } ${idx > 0 ? "border-t border-[#dfe2d7]" : ""}`}
               >
                 {/* Name — opens detail page */}
                 <button

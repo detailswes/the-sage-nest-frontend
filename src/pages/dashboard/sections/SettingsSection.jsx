@@ -110,7 +110,7 @@ const ToggleRow = ({
 
 // ─── Password field ───────────────────────────────────────────────────────────
 const inputClass =
-  "w-full px-4 py-3 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition pr-10";
+  "w-full px-4 py-3 rounded-lg border border-[#c5ceba] text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition pr-10";
 
 const PasswordField = ({
   name,
@@ -251,7 +251,7 @@ const ChangePasswordCard = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E4E7E4] px-6 py-5">
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
       <div className="flex items-center gap-2.5 mb-5">
         <svg
           className="w-4 h-4 text-[#445446]"
@@ -413,8 +413,8 @@ const NotificationPreferencesCard = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E4E7E4] px-6">
-      <div className="flex items-center gap-2.5 py-4 border-b border-[#E4E7E4]">
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6">
+      <div className="flex items-center gap-2.5 py-4 border-b border-[#c5ceba]">
         <svg
           className="w-4 h-4 text-[#445446]"
           fill="none"
@@ -626,7 +626,7 @@ const DeleteAccountCard = () => {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
                 placeholder={t("settings.deleteAccount.confirm.passwordPlaceholder")}
-                className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition pr-10 ${error ? "border-red-400" : "border-[#E4E7E4]"}`}
+                className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition pr-10 ${error ? "border-red-400" : "border-[#c5ceba]"}`}
               />
               <button
                 type="button"
@@ -643,7 +643,7 @@ const DeleteAccountCard = () => {
             <button
               type="button"
               onClick={() => { setShowConfirm(false); setPassword(""); setError(""); }}
-              className="flex-1 py-2.5 text-sm font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex-1 py-2.5 text-sm font-medium border border-[#c5ceba] rounded-lg text-[#5e6d5b] hover:bg-[#dfe2d7]/50 transition-colors"
             >
               {t("settings.deleteAccount.confirm.cancelBtn")}
             </button>
@@ -756,7 +756,7 @@ const TwoFactorCard = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E4E7E4] px-6 py-5">
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-1">
         <svg
@@ -864,7 +864,7 @@ const TwoFactorCard = () => {
               }}
               placeholder="000000"
               className={`w-full px-4 py-3 rounded-lg border text-sm text-center tracking-[0.5em] font-mono text-[#1F2933] placeholder-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${
-                codeError ? "border-red-400" : "border-[#E4E7E4]"
+                codeError ? "border-red-400" : "border-[#c5ceba]"
               }`}
             />
             <div className="flex items-center justify-between mt-1.5">
@@ -918,8 +918,8 @@ const SettingsSection = () => {
   return (
     <div className="max-w-2xl space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-[#1F2933]">{t("settings.heading")}</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h2 className="text-xl font-semibold text-[#445446]">{t("settings.heading")}</h2>
+        <p className="text-sm text-[#5e6d5b] font-medium mt-1">
           {t("settings.subheading")}
         </p>
       </div>

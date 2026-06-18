@@ -15,7 +15,7 @@ const TermsConditionsPage = () => {
   const doc = data?.terms_conditions ?? null;
 
   return (
-  <div className="min-h-screen bg-[#F5F7F5] py-10 px-4">
+  <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x py-10 px-4">
     <div className="max-w-2xl mx-auto">
 
       <div className="mb-8 text-center">

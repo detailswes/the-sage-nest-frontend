@@ -134,7 +134,7 @@ function App() {
           <Route
             path="/book"
             element={
-              <div className="min-h-screen bg-[#F5F7F5]">
+              <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x">
                 <div className="max-w-xl mx-auto px-4 pt-4 flex justify-end">
                   <LanguageSelector />
                 </div>
