@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { listAllBookings } from "../../../api/adminApi";
+import { useListAllBookingsQuery } from "../../../api/adminApi";
 import BookingDetailModal, {
   BookingStatusBadge,
   DisputedBadge,
@@ -22,101 +22,61 @@ const FILTER_KEYS = [
   "DISPUTED",
 ];
 
+const LIMIT = 25;
+
 // ─── Main section ─────────────────────────────────────────────────────────────
 
 const BookingsManagementSection = () => {
   const location = useLocation();
   const { t } = useTranslation("adminDashboard");
 
-  const [bookings, setBookings]         = useState([]);
-  const [total, setTotal]               = useState(0);
-  const [page, setPage]                 = useState(1);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [fetching, setFetching]         = useState(false);
-
-  const [search, setSearch]             = useState("");
+  // Initialize search from ?search= URL param on first render
+  const [searchInput, setSearchInput] = useState(() => {
+    const p = new URLSearchParams(location.search);
+    return p.get("search") || "";
+  });
+  const [search,       setSearch]       = useState(() => {
+    const p = new URLSearchParams(location.search);
+    return p.get("search") || "";
+  });
   const [activeFilter, setActiveFilter] = useState("ALL");
-  const [fromDate, setFromDate]         = useState("");
-  const [toDate, setToDate]             = useState("");
+  const [fromDate,     setFromDate]     = useState("");
+  const [toDate,       setToDate]       = useState("");
+  const [page,         setPage]         = useState(1);
+  const [selectedId,   setSelectedId]   = useState(null);
 
-  const [selectedId, setSelectedId]     = useState(null);
-  const debounceRef                     = useRef(null);
-
-  const LIMIT = 25;
-
-  const load = useCallback(async (opts = {}) => {
-    const isInitial = opts.initial;
-    if (isInitial) setInitialLoading(true); else setFetching(true);
-    try {
-      const resolvedSearch = opts.search !== undefined ? opts.search : search;
-      const resolvedFilter = opts.filter ?? activeFilter;
-      const resolvedPage   = opts.page   ?? page;
-      const resolvedFrom   = opts.from   !== undefined ? opts.from  : fromDate;
-      const resolvedTo     = opts.to     !== undefined ? opts.to    : toDate;
-      const params = {
-        page:   resolvedPage,
-        limit:  LIMIT,
-        search: resolvedSearch,
-        ...(resolvedFilter === "DISPUTED"
-          ? { disputed: "true", status: "ALL" }
-          : { status: resolvedFilter }),
-        ...(resolvedFrom ? { from: resolvedFrom } : {}),
-        ...(resolvedTo   ? { to:   resolvedTo   } : {}),
-      };
-      const data = await listAllBookings(params);
-      setBookings(data.bookings);
-      setTotal(data.total);
-    } catch {
-      // silently keep existing list on error
-    } finally {
-      if (isInitial) setInitialLoading(false); else setFetching(false);
-    }
-  }, [page, search, activeFilter, fromDate, toDate]);
-
-  // On mount: read ?search= from URL (e.g. coming from expert listing bookings count link)
+  // Debounce searchInput → search
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const q = params.get("search") || "";
-    setSearch(q);
-    load({ initial: true, search: q });
-  }, []); // eslint-disable-line
+    const id = setTimeout(() => setSearch(searchInput), 400);
+    return () => clearTimeout(id);
+  }, [searchInput]);
+
+  const queryParams = {
+    page,
+    limit: LIMIT,
+    ...(search ? { search } : {}),
+    ...(activeFilter === "DISPUTED"
+      ? { disputed: "true", status: "ALL" }
+      : { status: activeFilter }),
+    ...(fromDate ? { from: fromDate } : {}),
+    ...(toDate   ? { to: toDate }     : {}),
+  };
+
+  const { data, isLoading, isFetching } = useListAllBookingsQuery(queryParams);
+
+  const bookings   = data?.bookings ?? [];
+  const total      = data?.total    ?? 0;
+  const totalPages = Math.ceil(total / LIMIT);
 
   const handleSearchChange = (e) => {
-    const val = e.target.value;
-    setSearch(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setPage(1);
-      load({ search: val, page: 1, filter: activeFilter, from: fromDate, to: toDate });
-    }, 400);
-  };
-
-  const handleFromChange = (e) => {
-    const val = e.target.value;
-    setFromDate(val);
+    setSearchInput(e.target.value);
     setPage(1);
-    load({ page: 1, search, filter: activeFilter, from: val, to: toDate });
   };
 
-  const handleToChange = (e) => {
-    const val = e.target.value;
-    setToDate(val);
-    setPage(1);
-    load({ page: 1, search, filter: activeFilter, from: fromDate, to: val });
-  };
+  const handleFromChange = (e) => { setFromDate(e.target.value); setPage(1); };
+  const handleToChange   = (e) => { setToDate(e.target.value);   setPage(1); };
 
-  const applyFilter = (key) => {
-    setActiveFilter(key);
-    setPage(1);
-    load({ filter: key, page: 1, search, from: fromDate, to: toDate, initial: !bookings.length });
-  };
-
-  const goToPage = (p) => {
-    setPage(p);
-    load({ page: p, search, filter: activeFilter, from: fromDate, to: toDate });
-  };
-
-  const totalPages = Math.ceil(total / LIMIT);
+  const applyFilter = (key) => { setActiveFilter(key); setPage(1); };
 
   return (
     <div>
@@ -134,19 +94,14 @@ const BookingsManagementSection = () => {
           </svg>
           <input
             type="text"
-            value={search}
+            value={searchInput}
             onChange={handleSearchChange}
             placeholder={t("bookingsMgmt.searchPlaceholder")}
             className="flex-1 text-sm bg-transparent outline-none placeholder-gray-300 text-[#1F2933]"
           />
-          {search && (
+          {searchInput && (
             <button
-              onClick={() => {
-                setSearch("");
-                if (debounceRef.current) clearTimeout(debounceRef.current);
-                setPage(1);
-                load({ search: "", page: 1, filter: activeFilter, from: fromDate, to: toDate });
-              }}
+              onClick={() => { setSearchInput(""); setPage(1); }}
               className="text-gray-300 hover:text-gray-500"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -165,10 +120,7 @@ const BookingsManagementSection = () => {
             className="text-sm outline-none bg-transparent text-[#1F2933]" />
           {(fromDate || toDate) && (
             <button
-              onClick={() => {
-                setFromDate(""); setToDate(""); setPage(1);
-                load({ page: 1, search, filter: activeFilter, from: "", to: "" });
-              }}
+              onClick={() => { setFromDate(""); setToDate(""); setPage(1); }}
               className="text-xs text-gray-400 hover:text-gray-600"
             >
               {t("bookingsMgmt.clear")}
@@ -211,7 +163,7 @@ const BookingsManagementSection = () => {
           ))}
         </div>
 
-        {initialLoading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
@@ -220,7 +172,7 @@ const BookingsManagementSection = () => {
             <p className="text-sm text-gray-400">{t("bookingsMgmt.noBookings")}</p>
           </div>
         ) : (
-          <div className={`divide-y divide-[#E4E7E4] ${fetching ? "opacity-60 pointer-events-none" : ""}`}>
+          <div className={`divide-y divide-[#E4E7E4] ${isFetching ? "opacity-60 pointer-events-none" : ""}`}>
             {bookings.map((b) => (
               <button
                 key={b.id}
@@ -267,8 +219,8 @@ const BookingsManagementSection = () => {
           </p>
           <div className="flex gap-1">
             <button
-              onClick={() => goToPage(page - 1)}
-              disabled={page === 1 || fetching}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || isFetching}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
               {t("bookingsMgmt.pagination.previous")}
@@ -279,8 +231,8 @@ const BookingsManagementSection = () => {
               return (
                 <button
                   key={p}
-                  onClick={() => goToPage(p)}
-                  disabled={fetching}
+                  onClick={() => setPage(p)}
+                  disabled={isFetching}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                     p === page
                       ? "bg-[#445446] text-white"
@@ -292,8 +244,8 @@ const BookingsManagementSection = () => {
               );
             })}
             <button
-              onClick={() => goToPage(page + 1)}
-              disabled={page === totalPages || fetching}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages || isFetching}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
               {t("bookingsMgmt.pagination.next")}
@@ -307,7 +259,7 @@ const BookingsManagementSection = () => {
         <BookingDetailModal
           bookingId={selectedId}
           onClose={() => setSelectedId(null)}
-          onUpdated={() => load({ page, search, filter: activeFilter })}
+          onUpdated={() => {}}
         />
       )}
     </div>

@@ -1,10 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  listParents,
-  exportParentsXlsx,
-} from "../../../api/adminApi";
+import { useListParentsQuery, useExportParentsXlsxMutation } from "../../../api/adminApi";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAGE_LIMIT = 10;
@@ -108,52 +105,34 @@ const ParentManagementSection = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("adminDashboard");
 
-  const [parents, setParents]           = useState([]);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [fetching, setFetching]         = useState(false);
-  const [error, setError]               = useState("");
+  const [searchInput,  setSearchInput]  = useState("");
+  const [search,       setSearch]       = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
-  const [page, setPage]                 = useState(1);
-  const [pagination, setPagination]     = useState({ total: 0, totalPages: 1 });
-  const [counts, setCounts]             = useState({ all: 0, ACTIVE: 0, SUSPENDED: 0 });
+  const [page,         setPage]         = useState(1);
+  const [fromDate,     setFromDate]     = useState("");
+  const [toDate,       setToDate]       = useState("");
 
-  const [exporting, setExporting]     = useState(false);
+  // Debounce search
+  useEffect(() => {
+    const id = setTimeout(() => setSearch(searchInput), 400);
+    return () => clearTimeout(id);
+  }, [searchInput]);
 
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch]           = useState("");
-  const [fromDate, setFromDate]       = useState("");
-  const [toDate, setToDate]           = useState("");
-  const debounceRef = useRef(null);
-
-  const handleSearchChange = (val) => {
-    setSearchInput(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => { setSearch(val); setPage(1); }, 400);
+  const queryParams = {
+    page,
+    limit: PAGE_LIMIT,
+    ...(activeFilter !== "all" ? { status: activeFilter.toUpperCase() } : {}),
+    ...(search   ? { search }         : {}),
+    ...(fromDate ? { from: fromDate } : {}),
+    ...(toDate   ? { to: toDate }     : {}),
   };
 
-  const fetchParents = useCallback(async () => {
-    setFetching(true);
-    setError("");
-    try {
-      const params = { page, limit: PAGE_LIMIT };
-      if (activeFilter !== "all") params.status = activeFilter.toUpperCase();
-      if (search)   params.search = search;
-      if (fromDate) params.from   = fromDate;
-      if (toDate)   params.to     = toDate;
+  const { data, isLoading, isFetching, isError } = useListParentsQuery(queryParams);
+  const [exportParentsXlsx, { isLoading: exporting }] = useExportParentsXlsxMutation();
 
-      const result = await listParents(params);
-      setParents(result.data);
-      setPagination(result.pagination);
-      setCounts(result.counts);
-    } catch (err) {
-      setError(err?.response?.data?.error || t("parentMgmt.loadError"));
-    } finally {
-      setFetching(false);
-      setInitialLoading(false);
-    }
-  }, [page, activeFilter, search, fromDate, toDate, t]);
-
-  useEffect(() => { fetchParents(); }, [fetchParents]);
+  const parents    = data?.data        ?? [];
+  const pagination = data?.pagination  ?? { total: 0, totalPages: 1 };
+  const counts     = data?.counts      ?? { all: 0, ACTIVE: 0, SUSPENDED: 0 };
 
   const handleFilterChange = (key) => {
     if (key === activeFilter) return;
@@ -167,16 +146,14 @@ const ParentManagementSection = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const params = {};
-      if (activeFilter !== "all") params.status = activeFilter.toUpperCase();
-      if (search)   params.search = search;
-      if (fromDate) params.from   = fromDate;
-      if (toDate)   params.to     = toDate;
+  const handleSearchChange = (val) => {
+    setSearchInput(val);
+    setPage(1);
+  };
 
-      const blob = await exportParentsXlsx(params);
+  const handleExport = async () => {
+    try {
+      const blob = await exportParentsXlsx(queryParams).unwrap();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
       a.href     = url;
@@ -185,18 +162,16 @@ const ParentManagementSection = () => {
       URL.revokeObjectURL(url);
     } catch {
       // silently fail — user can retry
-    } finally {
-      setExporting(false);
     }
   };
 
   const tabCount = (key) =>
-    key === "all" ? counts.all : counts[key.toUpperCase()] ?? 0;
+    key === "all" ? (counts.all ?? 0) : (counts[key.toUpperCase()] ?? 0);
 
   const filterInputCls =
     "px-3 py-2 text-sm border border-[#E4E7E4] rounded-lg bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition";
 
-  if (initialLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -228,9 +203,9 @@ const ParentManagementSection = () => {
         </button>
       </div>
 
-      {error && (
+      {isError && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {error}
+          {t("parentMgmt.loadError")}
         </div>
       )}
 
@@ -333,7 +308,7 @@ const ParentManagementSection = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E4E7E4]">
-              {fetching && parents.length === 0 ? (
+              {isFetching && parents.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-16 text-center">
                     <div className="w-6 h-6 rounded-full border-2 border-[#445446] border-t-transparent animate-spin mx-auto" />
@@ -352,7 +327,7 @@ const ParentManagementSection = () => {
                   return (
                     <tr
                       key={p.id}
-                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${fetching ? "opacity-60" : ""}`}
+                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isFetching ? "opacity-60" : ""}`}
                       onClick={() => navigate(`/dashboard/admin/parents/${p.id}`)}
                     >
                       <td className="px-5 py-3.5">
@@ -400,7 +375,6 @@ const ParentManagementSection = () => {
         onPageChange={handlePageChange}
         t={t}
       />
-
     </>
   );
 };

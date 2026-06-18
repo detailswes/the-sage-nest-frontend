@@ -1,9 +1,9 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  addCertification,
-  updateCertification,
-  deleteCertification,
+  useAddCertificationMutation,
+  useUpdateCertificationMutation,
+  useDeleteCertificationMutation,
 } from "../../../api/expertApi";
 import { getDocumentUrl } from "../../../utils/imageUrl";
 import ConfirmModal from "../../../components/ConfirmModal";
@@ -53,16 +53,18 @@ const CertificationsCard = ({ initialData = [] }) => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [docName, setDocName] = useState("");
   const [formError, setFormError] = useState("");
-  const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
+
+  const [addCertification, { isLoading: saving }]        = useAddCertificationMutation();
+  const [updateCertification, { isLoading: editSaving }] = useUpdateCertificationMutation();
+  const [deleteCertification]                            = useDeleteCertificationMutation();
 
   // Edit state
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: "", document: null });
   const [editDocName, setEditDocName] = useState("");
   const [editError, setEditError] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
 
   const fileRef = useRef(null);
   const editFileRef = useRef(null);
@@ -94,22 +96,19 @@ const CertificationsCard = ({ initialData = [] }) => {
       setFormError(t("profile.certs.errors.nameRequired"));
       return;
     }
-    setSaving(true);
     try {
       const created = await addCertification({
         name: form.name.trim(),
         document: form.document || undefined,
-      });
+      }).unwrap();
       setItems((prev) => [...prev, created]);
       setForm(EMPTY_FORM);
       setDocName("");
       setShowForm(false);
     } catch (err) {
       setFormError(
-        err?.response?.data?.error || t("profile.certs.errors.addFailed")
+        err?.data?.error || t("profile.certs.errors.addFailed")
       );
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -157,22 +156,20 @@ const CertificationsCard = ({ initialData = [] }) => {
       setEditError(t("profile.certs.errors.nameRequired"));
       return;
     }
-    setEditSaving(true);
     try {
-      const updated = await updateCertification(c.id, {
+      const updated = await updateCertification({
+        id: c.id,
         name: editForm.name.trim(),
         document: editForm.document || undefined,
-      });
+      }).unwrap();
       setItems((prev) =>
         prev.map((item) => (item.id === c.id ? updated : item))
       );
       cancelEdit();
     } catch (err) {
       setEditError(
-        err?.response?.data?.error || t("profile.certs.errors.updateFailed")
+        err?.data?.error || t("profile.certs.errors.updateFailed")
       );
-    } finally {
-      setEditSaving(false);
     }
   };
 
@@ -181,7 +178,7 @@ const CertificationsCard = ({ initialData = [] }) => {
   const handleDelete = async (id) => {
     setDeletingId(id);
     try {
-      await deleteCertification(id);
+      await deleteCertification(id).unwrap();
       setItems((prev) => prev.filter((c) => c.id !== id));
       setDeleteModal({ open: false, id: null });
     } catch {

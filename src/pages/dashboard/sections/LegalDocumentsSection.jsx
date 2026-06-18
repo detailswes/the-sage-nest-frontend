@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import { getLegalDocuments, bumpLegalDocument } from "../../../api/adminApi";
+import { useGetLegalDocumentsQuery, useBumpLegalDocumentMutation } from "../../../api/adminApi";
 
 // Accepts x.x, x.x.x, 2.0.1, etc. — at least two numeric segments.
 const VERSION_RE = /^\d+(\.\d+)+$/;
@@ -66,11 +67,11 @@ const VersionHistory = ({ docs }) => {
 };
 
 // ─── Doc card ──────────────────────────────────────────────────────────────────
-const DocCard = ({ type, docs, onBumped }) => {
+const DocCard = ({ type, docs }) => {
   const { t } = useTranslation("adminDashboard");
+  const [bumpLegalDocument, { isLoading: loading }] = useBumpLegalDocumentMutation();
+
   const [version,        setVersion]        = useState("");
-  const [loading,        setLoading]        = useState(false);
-  const [error,          setError]          = useState("");
   const [confirmPending, setConfirmPending] = useState(false);
   const [historyOpen,    setHistoryOpen]    = useState(false);
 
@@ -91,16 +92,12 @@ const DocCard = ({ type, docs, onBumped }) => {
 
   const handleConfirmedBump = async () => {
     setConfirmPending(false);
-    setLoading(true);
-    setError("");
     try {
-      const updatedDocs = await bumpLegalDocument(type, version.trim());
-      onBumped(type, updatedDocs);
+      await bumpLegalDocument({ type, version: trimmed }).unwrap();
       setVersion("");
+      toast.success(t("legalDocs.card.publishSuccess", { version: trimmed, docLabel }));
     } catch (err) {
-      setError(err?.response?.data?.error || t("legalDocs.card.publishError"));
-    } finally {
-      setLoading(false);
+      toast.error(err?.data?.error || t("legalDocs.card.publishError"));
     }
   };
 
@@ -192,7 +189,7 @@ const DocCard = ({ type, docs, onBumped }) => {
             <input
               type="text"
               value={version}
-              onChange={(e) => { setVersion(e.target.value); setError(""); }}
+              onChange={(e) => { setVersion(e.target.value); }}
               placeholder={t("legalDocs.card.versionPlaceholder")}
               className={`flex-1 px-3 py-2 rounded-lg border text-sm text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 transition-colors ${
                 showFmtHint
@@ -208,10 +205,9 @@ const DocCard = ({ type, docs, onBumped }) => {
               {loading ? t("legalDocs.card.publishing") : t("legalDocs.card.publishBtn")}
             </button>
           </div>
-          {showFmtHint && !error && (
+          {showFmtHint && (
             <p className="text-xs text-red-500">{t("legalDocs.card.formatHint")}</p>
           )}
-          {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
 
         {/* Version history — collapsible */}
@@ -244,21 +240,10 @@ const DocCard = ({ type, docs, onBumped }) => {
 // ─── Main section ──────────────────────────────────────────────────────────────
 const LegalDocumentsSection = () => {
   const { t } = useTranslation("adminDashboard");
-  const [docs,    setDocs]    = useState({ privacy_policy: [], terms_conditions: [] });
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState("");
+  const { data, isLoading, isError } = useGetLegalDocumentsQuery();
 
-  useEffect(() => {
-    getLegalDocuments()
-      .then(setDocs)
-      .catch(() => setError(t("legalDocs.loadError")))
-      .finally(() => setLoading(false));
-  }, []); // eslint-disable-line
-
-  const handleBumped = (type, updatedDocs) => {
-    const key = type === "PRIVACY_POLICY" ? "privacy_policy" : "terms_conditions";
-    setDocs((prev) => ({ ...prev, [key]: updatedDocs }));
-  };
+  const privacyDocs = data?.privacy_policy   ?? [];
+  const termsDocs   = data?.terms_conditions ?? [];
 
   return (
     <div>
@@ -267,21 +252,21 @@ const LegalDocumentsSection = () => {
         <p className="text-sm text-gray-500 mt-1">{t("legalDocs.pageSubtitle")}</p>
       </div>
 
-      {error && (
+      {isError && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {error}
+          {t("legalDocs.loadError")}
         </div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center gap-2 py-10">
           <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           <span className="text-sm text-gray-400">{t("legalDocs.loading")}</span>
         </div>
       ) : (
         <div className="space-y-4 max-w-lg">
-          <DocCard type="PRIVACY_POLICY"   docs={docs.privacy_policy}   onBumped={handleBumped} />
-          <DocCard type="TERMS_CONDITIONS" docs={docs.terms_conditions} onBumped={handleBumped} />
+          <DocCard type="PRIVACY_POLICY"   docs={privacyDocs} />
+          <DocCard type="TERMS_CONDITIONS" docs={termsDocs}   />
         </div>
       )}
     </div>

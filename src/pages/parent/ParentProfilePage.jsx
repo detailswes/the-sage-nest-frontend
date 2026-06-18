@@ -1,23 +1,24 @@
 import { useState, useEffect, useRef } from "react";
+import toast from "react-hot-toast";
 import { useTranslation, Trans } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { validatePhone } from "../../utils/validation";
 import {
-  getProfileApi,
-  updateProfileApi,
-  updateEmailApi,
-  changePasswordApi,
-  deleteAccountApi,
-  exportMyDataApi,
-  get2FAStatusApi,
-  sendSetupOtpApi,
-  enable2FAApi,
-  disable2FAApi,
-  getParentNotificationPrefsApi,
-  updateParentNotificationPrefsApi,
-  getLegalConsentsApi,
-  updateMarketingConsentApi,
-} from "../../api/authApi";
+  useGetProfileQuery,
+  useUpdateProfileMutation,
+  useUpdateEmailMutation,
+  useChangePasswordMutation,
+  useDeleteAccountMutation,
+  useExportMyDataMutation,
+  useGet2FAStatusQuery,
+  useSendSetupOtpMutation,
+  useEnable2FAMutation,
+  useDisable2FAMutation,
+  useGetNotificationPrefsQuery,
+  useUpdateNotificationPrefsMutation,
+  useGetLegalConsentsQuery,
+  useUpdateMarketingConsentMutation,
+} from "../../api/userApi";
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 const Section = ({ title, description, children }) => (
@@ -51,19 +52,6 @@ const Input = ({ error, ...props }) => (
   />
 );
 
-// ─── Feedback banner ──────────────────────────────────────────────────────────
-const Banner = ({ type, message }) => {
-  if (!message) return null;
-  const styles =
-    type === "success"
-      ? "bg-green-50 border-green-200 text-green-700"
-      : "bg-red-50 border-red-200 text-red-600";
-  return (
-    <div className={`px-4 py-3 rounded-lg border text-sm ${styles}`}>
-      {message}
-    </div>
-  );
-};
 
 // ─── Timezone list ────────────────────────────────────────────────────────────
 const TIMEZONES = [
@@ -101,8 +89,8 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
     profile.timezone || detectedTimezone || TIMEZONES[0].value
   );
   const [fieldErrors, setFieldErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [banner, setBanner] = useState(null);
+
+  const [updateProfile, { isLoading: loading }] = useUpdateProfileMutation();
 
   const handleSave = async () => {
     const errs = {};
@@ -117,24 +105,17 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
       return;
     }
     setFieldErrors({});
-    setLoading(true);
-    setBanner(null);
     try {
-      const updated = await updateProfileApi({
+      const updated = await updateProfile({
         name:     name.trim(),
         phone:    phone.trim(),
         city:     city.trim() || null,
         timezone: timezone || null,
-      });
+      }).unwrap();
       onUpdated(updated);
-      setBanner({ type: "success", message: t("personalInfo.saveSuccess") });
+      toast.success(t("personalInfo.saveSuccess"));
     } catch (err) {
-      setBanner({
-        type: "error",
-        message: err?.response?.data?.error || t("personalInfo.saveError"),
-      });
-    } finally {
-      setLoading(false);
+      toast.error(err?.data?.error || t("personalInfo.saveError"));
     }
   };
 
@@ -146,7 +127,6 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
       description={t("personalInfo.description")}
     >
       <div className="space-y-4">
-        <Banner type={banner?.type} message={banner?.message} />
         <Field label={t("personalInfo.fullName")}>
           <Input
             type="text"
@@ -228,26 +208,20 @@ const EmailSection = ({ profile, onLogout }) => {
   const [newEmail, setNewEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [banner, setBanner] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
+
+  const [updateEmail, { isLoading: loading }] = useUpdateEmailMutation();
 
   const handleChange = async () => {
     if (!newEmail.trim() || !password) {
-      setBanner({ type: "error", message: t("email.errors.required") });
+      toast.error(t("email.errors.required"));
       return;
     }
-    setLoading(true);
-    setBanner(null);
     try {
-      await updateEmailApi({ email: newEmail.trim(), password });
+      await updateEmail({ email: newEmail.trim(), password }).unwrap();
       setEmailSent(true);
     } catch (err) {
-      setBanner({
-        type: "error",
-        message: err?.response?.data?.error || t("email.errors.failed"),
-      });
-      setLoading(false);
+      toast.error(err?.data?.error || t("email.errors.failed"));
     }
   };
 
@@ -315,7 +289,6 @@ const EmailSection = ({ profile, onLogout }) => {
             <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
               {t("email.warning")}
             </div>
-            <Banner type={banner?.type} message={banner?.message} />
             <Field label={t("email.newEmailLabel")}>
               <Input
                 type="email"
@@ -336,7 +309,6 @@ const EmailSection = ({ profile, onLogout }) => {
               <button
                 onClick={() => {
                   setShowForm(false);
-                  setBanner(null);
                   setNewEmail("");
                   setPassword("");
                 }}
@@ -365,44 +337,37 @@ const ChangePasswordSection = ({ onLogout }) => {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [banner, setBanner] = useState(null);
+
+  const [changePassword, { isLoading: loading }] = useChangePasswordMutation();
 
   const handleSave = async () => {
     if (!current || !next || !confirm) {
-      setBanner({ type: "error", message: t("password.errors.allRequired") });
+      toast.error(t("password.errors.allRequired"));
       return;
     }
     if (next.length < 8) {
-      setBanner({ type: "error", message: t("password.errors.tooShort") });
+      toast.error(t("password.errors.tooShort"));
       return;
     }
     if (next !== confirm) {
-      setBanner({ type: "error", message: t("password.errors.mismatch") });
+      toast.error(t("password.errors.mismatch"));
       return;
     }
-    setLoading(true);
-    setBanner(null);
     try {
-      await changePasswordApi({ currentPassword: current, newPassword: next });
-      setBanner({ type: "success", message: t("password.success") });
+      await changePassword({ currentPassword: current, newPassword: next }).unwrap();
+      toast.success(t("password.success"));
       setCurrent("");
       setNext("");
       setConfirm("");
       setTimeout(onLogout, 2000);
     } catch (err) {
-      setBanner({
-        type: "error",
-        message: err?.response?.data?.error || t("password.errors.failed"),
-      });
-      setLoading(false);
+      toast.error(err?.data?.error || t("password.errors.failed"));
     }
   };
 
   return (
     <Section title={t("password.title")} description={t("password.description")}>
       <div className="space-y-4">
-        <Banner type={banner?.type} message={banner?.message} />
         <Field label={t("password.currentLabel")}>
           <Input
             type="password"
@@ -450,6 +415,10 @@ const NOTIF_ROWS = [
   { field: "notify_platform_updates",     tKey: "platformUpdates" },
 ];
 
+const defaultNotifPrefs = Object.fromEntries(
+  NOTIF_ROWS.map((r) => [r.field, r.field !== "notify_platform_updates"])
+);
+
 const Toggle = ({ checked, onChange, disabled }) => (
   <button
     type="button"
@@ -471,39 +440,22 @@ const Toggle = ({ checked, onChange, disabled }) => (
 
 const NotificationSection = () => {
   const { t } = useTranslation("parentDashboard");
-  const defaultPrefs = Object.fromEntries(
-    NOTIF_ROWS.map((r) => [r.field, r.field === "notify_platform_updates" ? false : true])
-  );
-  const [prefs, setPrefs] = useState(defaultPrefs);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [localPrefs, setLocalPrefs] = useState(null);
 
-  useEffect(() => {
-    getParentNotificationPrefsApi()
-      .then(setPrefs)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: fetchedPrefs, isLoading: loading } = useGetNotificationPrefsQuery();
+  const [updatePrefs, { isLoading: saving }] = useUpdateNotificationPrefsMutation();
 
-  const showToast = (type, message) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3000);
-  };
+  const prefs = localPrefs ?? fetchedPrefs ?? defaultNotifPrefs;
 
   const handleToggle = async (field, value) => {
-    const prev = prefs;
-    setPrefs((p) => ({ ...p, [field]: value }));
-    setSaving(true);
+    const basePrefs = localPrefs ?? fetchedPrefs ?? defaultNotifPrefs;
+    setLocalPrefs({ ...basePrefs, [field]: value });
     try {
-      const saved = await updateParentNotificationPrefsApi({ [field]: value });
-      setPrefs((p) => ({ ...p, ...saved }));
-      showToast("success", t("notifications.toastSuccess"));
+      await updatePrefs({ [field]: value }).unwrap();
+      toast.success(t("notifications.toastSuccess"));
     } catch {
-      setPrefs(prev);
-      showToast("error", t("notifications.toastError"));
-    } finally {
-      setSaving(false);
+      setLocalPrefs(null);
+      toast.error(t("notifications.toastError"));
     }
   };
 
@@ -547,24 +499,6 @@ const NotificationSection = () => {
         </div>
       )}
 
-      {toast && (
-        <div
-          className={`fixed bottom-6 right-6 flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white z-50 transition-opacity ${
-            toast.type === "success" ? "bg-[#445446]" : "bg-red-500"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-          )}
-          {toast.message}
-        </div>
-      )}
     </div>
   );
 };
@@ -573,22 +507,24 @@ const NotificationSection = () => {
 const TwoFactorSection = () => {
   const { t } = useTranslation("parentDashboard");
   const [enabled, setEnabled] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState(true);
-  const [step, setStep] = useState("idle"); // 'idle' | 'entering_code'
-  const [intent, setIntent] = useState(null); // 'enable' | 'disable'
+  const [step, setStep] = useState("idle");
+  const [intent, setIntent] = useState(null);
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
-  const [saving, setSaving] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [successMsg, setSuccessMsg] = useState("");
   const codeInputRef = useRef(null);
 
+  const { data: status2fa, isLoading: loadingStatus } = useGet2FAStatusQuery();
+  const [sendSetupOtp, { isLoading: sendingOtp }] = useSendSetupOtpMutation();
+  const [enable2FA,    { isLoading: enablingFA }]  = useEnable2FAMutation();
+  const [disable2FA,   { isLoading: disablingFA }] = useDisable2FAMutation();
+
+  const saving = sendingOtp || enablingFA || disablingFA;
+
+  // Sync enabled state from query on initial load
   useEffect(() => {
-    get2FAStatusApi()
-      .then((data) => setEnabled(data.enabled))
-      .catch(() => {})
-      .finally(() => setLoadingStatus(false));
-  }, []);
+    if (status2fa != null) setEnabled(status2fa.enabled);
+  }, [status2fa]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -597,63 +533,56 @@ const TwoFactorSection = () => {
   }, [resendCooldown]);
 
   const handleSendCode = async (intentType) => {
-    setSaving(true);
     setCodeError("");
     try {
-      await sendSetupOtpApi({
+      await sendSetupOtp({
         purpose: intentType === "enable" ? "enable_2fa" : "disable_2fa",
-      });
+      }).unwrap();
       setIntent(intentType);
       setStep("entering_code");
       setCode("");
       setResendCooldown(60);
       setTimeout(() => codeInputRef.current?.focus(), 50);
     } catch (err) {
-      setCodeError(err?.response?.data?.error || t("twoFactor.errors.sendFailed"));
-    } finally {
-      setSaving(false);
+      toast.error(err?.data?.error || t("twoFactor.errors.sendFailed"));
     }
   };
 
   const handleResend = async () => {
     setCodeError("");
     try {
-      await sendSetupOtpApi({
+      await sendSetupOtp({
         purpose: intent === "enable" ? "enable_2fa" : "disable_2fa",
-      });
+      }).unwrap();
       setCode("");
       setResendCooldown(60);
     } catch (err) {
-      setCodeError(err?.response?.data?.error || t("twoFactor.errors.sendFailed"));
+      toast.error(err?.data?.error || t("twoFactor.errors.sendFailed"));
     }
   };
 
   const doVerify = async (codeVal) => {
     if (saving || codeVal.length !== 6) return;
-    setSaving(true);
     setCodeError("");
     try {
       if (intent === "enable") {
-        await enable2FAApi({ code: codeVal });
+        await enable2FA({ code: codeVal }).unwrap();
         setEnabled(true);
-        setSuccessMsg(t("twoFactor.enabledMsg"));
+        toast.success(t("twoFactor.enabledMsg"));
       } else {
-        await disable2FAApi({ code: codeVal });
+        await disable2FA({ code: codeVal }).unwrap();
         setEnabled(false);
-        setSuccessMsg(t("twoFactor.disabledMsg"));
+        toast.success(t("twoFactor.disabledMsg"));
       }
       setStep("idle");
       setCode("");
-      setTimeout(() => setSuccessMsg(""), 4000);
     } catch (err) {
-      const errData = err?.response?.data;
+      const errData = err?.data;
       if (errData?.expired) {
         setCodeError(t("twoFactor.errors.expired"));
       } else {
         setCodeError(errData?.error || t("twoFactor.errors.incorrect"));
       }
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -700,9 +629,6 @@ const TwoFactorSection = () => {
             <p className="text-sm text-gray-600 leading-relaxed">
               {enabled ? t("twoFactor.bodyEnabled") : t("twoFactor.bodyDisabled")}
             </p>
-
-            {successMsg && <Banner type="success" message={successMsg} />}
-            {codeError && <Banner type="error" message={codeError} />}
 
             <button
               type="button"
@@ -802,14 +728,11 @@ const TwoFactorSection = () => {
 // ─── Data Export section ──────────────────────────────────────────────────────
 const DataExportSection = () => {
   const { t } = useTranslation("parentDashboard");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [exportData, { isLoading: loading }] = useExportMyDataMutation();
 
   const handleExport = async () => {
-    setLoading(true);
-    setError("");
     try {
-      const data = await exportMyDataApi();
+      const data = await exportData().unwrap();
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json",
       });
@@ -820,9 +743,7 @@ const DataExportSection = () => {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError(t("dataExport.error"));
-    } finally {
-      setLoading(false);
+      toast.error(t("dataExport.error"));
     }
   };
 
@@ -832,11 +753,6 @@ const DataExportSection = () => {
         <p className="text-sm text-gray-600 leading-relaxed">
           {t("dataExport.body")}
         </p>
-        {error && (
-          <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-            {error}
-          </div>
-        )}
         <button
           onClick={handleExport}
           disabled={loading}
@@ -892,20 +808,10 @@ const ConsentRow = ({ label, children }) => (
 
 const LegalConsentsSection = () => {
   const { t, i18n } = useTranslation("parentDashboard");
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [marketingSaving, setMarketingSaving] = useState(false);
-  const [marketingBanner, setMarketingBanner] = useState(null);
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
 
-  useEffect(() => {
-    getLegalConsentsApi()
-      .then(setData)
-      .catch(() => setError(t("legalConsents.loadError")))
-      .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { data, isLoading: loading, isError: hasError } = useGetLegalConsentsQuery();
+  const [updateMarketing, { isLoading: marketingSaving }] = useUpdateMarketingConsentMutation();
 
   const handleMarketingChange = async (newValue) => {
     if (!newValue && !showWithdrawConfirm) {
@@ -913,23 +819,11 @@ const LegalConsentsSection = () => {
       return;
     }
     setShowWithdrawConfirm(false);
-    setMarketingSaving(true);
-    setMarketingBanner(null);
     try {
-      const updated = await updateMarketingConsentApi(newValue);
-      setData((prev) => ({
-        ...prev,
-        marketing_consent: updated.marketing_consent,
-        marketing_accepted_at: updated.marketing_accepted_at,
-      }));
-      setMarketingBanner({
-        type: "success",
-        message: newValue ? t("legalConsents.optInSuccess") : t("legalConsents.optOutSuccess"),
-      });
+      await updateMarketing(newValue).unwrap();
+      toast.success(newValue ? t("legalConsents.optInSuccess") : t("legalConsents.optOutSuccess"));
     } catch {
-      setMarketingBanner({ type: "error", message: t("legalConsents.updateError") });
-    } finally {
-      setMarketingSaving(false);
+      toast.error(t("legalConsents.updateError"));
     }
   };
 
@@ -951,8 +845,8 @@ const LegalConsentsSection = () => {
           <div className="flex items-center justify-center py-6">
             <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
-        ) : error ? (
-          <p className="text-sm text-red-500">{error}</p>
+        ) : hasError ? (
+          <p className="text-sm text-red-500">{t("legalConsents.loadError")}</p>
         ) : (
           <div className="divide-y divide-[#F0F2F0] space-y-0">
 
@@ -1070,18 +964,6 @@ const LegalConsentsSection = () => {
                 </button>
               </div>
 
-              {marketingBanner && (
-                <div
-                  className={`mt-3 px-4 py-3 rounded-lg border text-sm ${
-                    marketingBanner.type === "success"
-                      ? "bg-green-50 border-green-200 text-green-700"
-                      : "bg-red-50 border-red-200 text-red-600"
-                  }`}
-                >
-                  {marketingBanner.message}
-                </div>
-              )}
-
               {showWithdrawConfirm && (
                 <div className="mt-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
                   <p className="text-sm text-amber-800">
@@ -1122,27 +1004,28 @@ const DeleteAccountSection = ({ onLogout }) => {
   const { t } = useTranslation("parentDashboard");
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [deleteAccount, { isLoading: loading }] = useDeleteAccountMutation();
 
   const handleDelete = async () => {
     if (!password) {
       setError(t("deleteAccount.errors.passwordRequired"));
       return;
     }
-    setLoading(true);
     setError("");
     try {
-      await deleteAccountApi({ password });
+      await deleteAccount({ password }).unwrap();
       onLogout();
     } catch (err) {
-      const errData = err?.response?.data;
-      setError(errData?.error || t("deleteAccount.errors.failed"));
+      const errData = err?.data;
       if (errData?.has_upcoming_bookings || errData?.has_pending_transactions) {
+        toast.error(errData?.error || t("deleteAccount.errors.failed"));
         setShowConfirm(false);
         setPassword("");
+      } else {
+        setError(errData?.error || t("deleteAccount.errors.failed"));
       }
-      setLoading(false);
     }
   };
 
@@ -1155,11 +1038,6 @@ const DeleteAccountSection = ({ onLogout }) => {
         </p>
       </div>
       <div className="px-6 py-6">
-        {error && !showConfirm && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-            {error}
-          </div>
-        )}
         {!showConfirm ? (
           <div className="space-y-4">
             <div className="text-sm text-gray-600 leading-relaxed space-y-3">
@@ -1244,24 +1122,14 @@ const DeleteAccountSection = ({ onLogout }) => {
 const ParentProfilePage = () => {
   const { t } = useTranslation("parentDashboard");
   const { logout, updateUser } = useAuth();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  useEffect(() => {
-    getProfileApi()
-      .then(setProfile)
-      .catch(() => setError(t("profile.loadError")))
-      .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { data: profile, isLoading, isError } = useGetProfileQuery();
 
   const handleProfileUpdated = (updated) => {
-    setProfile((prev) => ({ ...prev, ...updated }));
     if (updateUser) updateUser(updated);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -1269,10 +1137,10 @@ const ParentProfilePage = () => {
     );
   }
 
-  if (error || !profile) {
+  if (isError || !profile) {
     return (
       <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-        {error || t("profile.loadErrorFallback")}
+        {t("profile.loadError")}
       </div>
     );
   }

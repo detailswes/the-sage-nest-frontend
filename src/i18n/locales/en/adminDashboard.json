@@ -919,6 +919,7 @@
       "publishBtn": "Publish",
       "publishing": "Publishing…",
       "formatHint": "Use numeric format e.g. 1.1 or 2.0.1",
+      "publishSuccess": "{{docLabel}} v{{version}} published successfully.",
       "publishError": "Failed to publish version.",
       "versionHistoryBtn": "Version history"
     },

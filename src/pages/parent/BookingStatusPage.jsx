@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getBookingById, verifyPayment } from '../../api/bookingApi';
+import { useGetBookingByIdQuery, useVerifyPaymentMutation } from '../../api/bookingApi';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS        = 40; // ~2 minutes total
@@ -167,49 +167,43 @@ const BookingStatusPage = () => {
   const { t }             = useTranslation('parentBookings');
   // Support both /booking/status/:id (paramId) and /booking-confirmed?bookingId=X (query param)
   const id = paramId || searchParams.get('bookingId');
-  const [booking,  setBooking]  = useState(null);
-  const [status,   setStatus]   = useState('PENDING_PAYMENT');
-  const [error,    setError]    = useState('');
-  const pollCount = useRef(0);
-  const timer     = useRef(null);
 
   // Check if Stripe redirected here after payment (adds ?redirect_status=succeeded etc.)
   const redirectStatus = searchParams.get('redirect_status');
 
-  const fetchStatus = async () => {
-    try {
-      const data = await getBookingById(id);
-      setBooking(data);
-      setStatus(data.status);
-      if (data.status !== 'PENDING_PAYMENT') {
-        clearInterval(timer.current);
-      }
-    } catch (err) {
-      setError(t('bookingStatus.loadError'));
-      clearInterval(timer.current);
-    }
-  };
+  const [shouldPoll,   setShouldPoll]   = useState(true);
+  const [finalStatus,  setFinalStatus]  = useState(null);
+  const pollCount = useRef(0);
 
+  const { data: booking, isError } = useGetBookingByIdQuery(id, {
+    pollingInterval: shouldPoll ? POLL_INTERVAL_MS : 0,
+    skip: !id,
+  });
+  const [verifyPayment] = useVerifyPaymentMutation();
+
+  // RTK polls every POLL_INTERVAL_MS; each new response triggers this effect.
+  // Stop polling when status resolves or max polls exhausted.
   useEffect(() => {
-    fetchStatus(); // immediate first check
+    if (!booking || !shouldPoll) return;
 
-    timer.current = setInterval(() => {
-      pollCount.current += 1;
-      if (pollCount.current >= MAX_POLLS) {
-        clearInterval(timer.current);
-        // Polling exhausted — ask the backend to verify directly with Stripe
-        // in case the webhook was delayed or missed.
-        verifyPayment(id)
-          .then((result) => setStatus(result.status))
-          .catch(() => {}); // non-fatal; UI already shows fallback link
-        return;
-      }
-      fetchStatus();
-    }, POLL_INTERVAL_MS);
+    if (booking.status !== 'PENDING_PAYMENT') {
+      setShouldPoll(false);
+      return;
+    }
 
-    return () => clearInterval(timer.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    pollCount.current += 1;
+    if (pollCount.current >= MAX_POLLS) {
+      setShouldPoll(false);
+      // Polling exhausted — ask the backend to verify directly with Stripe
+      // in case the webhook was delayed or missed.
+      verifyPayment(id).unwrap()
+        .then((result) => setFinalStatus(result.status))
+        .catch(() => {});
+    }
+  }, [booking]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const status = finalStatus ?? booking?.status ?? 'PENDING_PAYMENT';
+  const error  = isError ? t('bookingStatus.loadError') : '';
 
   return (
     <div className="min-h-screen bg-[#F5F7F5] flex flex-col items-center justify-center py-10 px-4">

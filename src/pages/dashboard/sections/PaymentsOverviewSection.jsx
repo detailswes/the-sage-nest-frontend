@@ -1,6 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { listTransactions, exportTransactionsCsv, getBookingDetail, getRefundLog } from "../../../api/adminApi";
+import {
+  useListTransactionsQuery,
+  useExportTransactionsCsvMutation,
+  useGetBookingDetailQuery,
+  useGetRefundLogQuery,
+} from "../../../api/adminApi";
 import { formatFormat, formatTransferStatus } from "../../../utils/formatBookingTime";
 import AdminActionsPanel from "../../../components/admin/AdminActionsPanel";
 
@@ -42,7 +47,6 @@ const specialistPayout = (transaction) => {
 // ─── Payment status helpers ───────────────────────────────────────────────────
 
 function getPaymentStatus(tx) {
-  // Payment was captured but the expert transfer failed — distinct from a payment failure
   if (["CONFIRMED", "COMPLETED"].includes(tx.status) && tx.transfer_status === "failed")
     return "transfer_failed";
   if (["CONFIRMED", "COMPLETED"].includes(tx.status) && tx.stripe_payment_intent_id)
@@ -50,13 +54,12 @@ function getPaymentStatus(tx) {
   if (tx.status === "REFUNDED") return "refunded";
   if (tx.status === "PENDING_PAYMENT") return "pending";
   if (tx.status === "CANCELLED") {
-    // Payment was captured before the cancellation — not a payment failure
     if (tx.stripe_payment_intent_id) {
       if (tx.refund_status === "pending")   return "refund_pending";
       if (tx.refund_status === "succeeded") return "refunded";
-      return "captured_cancelled"; // captured, no refund (0% policy or refund not yet initiated)
+      return "captured_cancelled";
     }
-    return "failed"; // booking cancelled before any payment was captured
+    return "failed";
   }
   return "failed";
 }
@@ -89,12 +92,12 @@ const PaymentStatusBadge = ({ transaction, verbose = false }) => {
 
 const FILTER_KEYS = ["ALL", "succeeded", "refunded", "pending", "failed", "transfer_failed"];
 
-// ─── Amount cell (shows refund info inline when a refund has occurred) ────────
+// ─── Amount cell ──────────────────────────────────────────────────────────────
 
 function AmountCell({ transaction: tx }) {
   const { t } = useTranslation("adminDashboard");
-  const refunded     = tx.refund_status === "succeeded" && tx.refund_amount != null;
-  const refundPending = tx.refund_status === "pending"  && tx.refund_amount != null;
+  const refunded      = tx.refund_status === "succeeded" && tx.refund_amount != null;
+  const refundPending = tx.refund_status === "pending"   && tx.refund_amount != null;
 
   if (refunded) {
     const isPartial = parseFloat(tx.refund_amount) < parseFloat(tx.amount);
@@ -127,19 +130,7 @@ function AmountCell({ transaction: tx }) {
 
 function TransactionDetailModal({ bookingId, onClose }) {
   const { t } = useTranslation("adminDashboard");
-  const [booking, setBooking]   = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    setLoading(true);
-    setError("");
-    getBookingDetail(bookingId)
-      .then(setBooking)
-      .catch(() => setError(t("paymentsMgmt.modal.loadError")))
-      .finally(() => setLoading(false));
-  }, [bookingId, reloadKey, t]);
+  const { data: booking, isLoading, isError } = useGetBookingDetailQuery(bookingId);
 
   return (
     <div
@@ -165,12 +156,12 @@ function TransactionDetailModal({ bookingId, onClose }) {
           </button>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
-        ) : error ? (
-          <div className="p-6 text-center text-sm text-red-500">{error}</div>
+        ) : isError ? (
+          <div className="p-6 text-center text-sm text-red-500">{t("paymentsMgmt.modal.loadError")}</div>
         ) : (
           <div className="divide-y divide-[#E4E7E4]">
 
@@ -317,10 +308,10 @@ function TransactionDetailModal({ bookingId, onClose }) {
               </div>
             )}
 
-            {/* Admin actions */}
+            {/* Admin actions — mutations in AdminActionsPanel invalidate the Booking tag, triggering auto-refetch */}
             <AdminActionsPanel
               booking={booking}
-              onActionComplete={() => setReloadKey((k) => k + 1)}
+              onActionComplete={() => {}}
             />
 
           </div>
@@ -332,23 +323,18 @@ function TransactionDetailModal({ bookingId, onClose }) {
 
 // ─── Refund log view ──────────────────────────────────────────────────────────
 
+const REFUND_LIMIT = 25;
+
 function RefundLogView() {
   const { t } = useTranslation("adminDashboard");
-  const [entries, setEntries]   = useState([]);
-  const [total, setTotal]       = useState(0);
-  const [page, setPage]         = useState(1);
-  const [loading, setLoading]   = useState(true);
-  const LIMIT = 25;
+  const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    setLoading(true);
-    getRefundLog({ page, limit: LIMIT })
-      .then((d) => { setEntries(d.data); setTotal(d.pagination.total); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [page]);
+  const { data, isLoading, isFetching } = useGetRefundLogQuery({ page, limit: REFUND_LIMIT });
 
-  const totalPages = Math.ceil(total / LIMIT);
+  const entries    = data?.data              ?? [];
+  const total      = data?.pagination?.total ?? 0;
+  const totalPages = Math.ceil(total / REFUND_LIMIT);
+  const loading    = isLoading || isFetching;
 
   return (
     <div>
@@ -411,20 +397,18 @@ function RefundLogView() {
         )}
       </div>
 
-      {/* Note row */}
       {entries.length > 0 && (
         <p className="text-xs text-gray-400 mt-2">
           {t("paymentsMgmt.refundLog.note", { count: total })}
         </p>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-xs text-gray-400">
             {t("paymentsMgmt.refundLog.showing")}{" "}
             <span className="font-medium text-[#1F2933]">
-              {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}
+              {(page - 1) * REFUND_LIMIT + 1}–{Math.min(page * REFUND_LIMIT, total)}
             </span>{" "}
             {t("paymentsMgmt.refundLog.of")}{" "}
             <span className="font-medium text-[#1F2933]">{total}</span>
@@ -447,101 +431,55 @@ function RefundLogView() {
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 
+const LIMIT = 25;
+
 const PaymentsOverviewSection = () => {
   const { t } = useTranslation("adminDashboard");
-  const [view, setView]                 = useState("transactions"); // "transactions" | "refund-log"
+  const [view, setView] = useState("transactions");
 
-  const [transactions, setTransactions] = useState([]);
-  const [total, setTotal]               = useState(0);
-  const [page, setPage]                 = useState(1);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [fetching, setFetching]         = useState(false);
-  const [exporting, setExporting]       = useState(false);
-
-  const [search, setSearch]             = useState("");
+  const [searchInput,  setSearchInput]  = useState("");
+  const [search,       setSearch]       = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
-  const [fromDate, setFromDate]         = useState("");
-  const [toDate, setToDate]             = useState("");
+  const [fromDate,     setFromDate]     = useState("");
+  const [toDate,       setToDate]       = useState("");
+  const [page,         setPage]         = useState(1);
+  const [selectedId,   setSelectedId]   = useState(null);
 
-  const [selectedId, setSelectedId]     = useState(null);
-  const debounceRef                     = useRef(null);
+  // Debounce search
+  useEffect(() => {
+    const id = setTimeout(() => setSearch(searchInput), 400);
+    return () => clearTimeout(id);
+  }, [searchInput]);
 
-  const LIMIT = 25;
-
-  const load = useCallback(async (opts = {}) => {
-    const isInitial = opts.initial;
-    if (isInitial) setInitialLoading(true); else setFetching(true);
-    try {
-      const resolvedSearch = opts.search         !== undefined ? opts.search  : search;
-      const resolvedFilter = opts.filter         !== undefined ? opts.filter  : activeFilter;
-      const resolvedPage   = opts.page           !== undefined ? opts.page    : page;
-      const resolvedFrom   = opts.from           !== undefined ? opts.from    : fromDate;
-      const resolvedTo     = opts.to             !== undefined ? opts.to      : toDate;
-
-      const params = {
-        page:           resolvedPage,
-        limit:          LIMIT,
-        search:         resolvedSearch,
-        payment_status: resolvedFilter,
-        ...(resolvedFrom ? { from: resolvedFrom } : {}),
-        ...(resolvedTo   ? { to:   resolvedTo   } : {}),
-      };
-      const data = await listTransactions(params);
-      setTransactions(data.transactions);
-      setTotal(data.total);
-    } catch {
-      // silently keep existing list on error
-    } finally {
-      if (isInitial) setInitialLoading(false); else setFetching(false);
-    }
-  }, [page, search, activeFilter, fromDate, toDate]);
-
-  useEffect(() => { load({ initial: true }); }, []); // eslint-disable-line
-
-  const handleSearchChange = (e) => {
-    const val = e.target.value;
-    setSearch(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setPage(1);
-      load({ search: val, page: 1, filter: activeFilter, from: fromDate, to: toDate });
-    }, 400);
+  const queryParams = {
+    page,
+    limit: LIMIT,
+    payment_status: activeFilter,
+    ...(search   ? { search }         : {}),
+    ...(fromDate ? { from: fromDate } : {}),
+    ...(toDate   ? { to: toDate }     : {}),
   };
 
-  const handleFromChange = (e) => {
-    const val = e.target.value;
-    setFromDate(val);
-    setPage(1);
-    load({ page: 1, search, filter: activeFilter, from: val, to: toDate });
-  };
+  const { data, isLoading, isFetching } = useListTransactionsQuery(queryParams);
+  const [exportTransactionsCsv, { isLoading: exporting }] = useExportTransactionsCsvMutation();
 
-  const handleToChange = (e) => {
-    const val = e.target.value;
-    setToDate(val);
-    setPage(1);
-    load({ page: 1, search, filter: activeFilter, from: fromDate, to: val });
-  };
+  const transactions = data?.transactions ?? [];
+  const total        = data?.total        ?? 0;
+  const totalPages   = Math.ceil(total / LIMIT);
 
-  const applyFilter = (key) => {
-    setActiveFilter(key);
-    setPage(1);
-    load({ filter: key, page: 1, search, from: fromDate, to: toDate, initial: !transactions.length });
-  };
-
-  const goToPage = (p) => {
-    setPage(p);
-    load({ page: p, search, filter: activeFilter, from: fromDate, to: toDate });
-  };
+  const handleSearchChange = (e) => { setSearchInput(e.target.value); setPage(1); };
+  const handleFromChange   = (e) => { setFromDate(e.target.value); setPage(1); };
+  const handleToChange     = (e) => { setToDate(e.target.value);   setPage(1); };
+  const applyFilter        = (key) => { setActiveFilter(key); setPage(1); };
 
   const handleExport = async () => {
-    setExporting(true);
     try {
       const blob = await exportTransactionsCsv({
-        search,
         payment_status: activeFilter,
+        ...(search   ? { search }         : {}),
         ...(fromDate ? { from: fromDate } : {}),
-        ...(toDate   ? { to:   toDate   } : {}),
-      });
+        ...(toDate   ? { to: toDate }     : {}),
+      }).unwrap();
       const url = URL.createObjectURL(blob);
       const a   = document.createElement("a");
       a.href    = url;
@@ -550,12 +488,8 @@ const PaymentsOverviewSection = () => {
       URL.revokeObjectURL(url);
     } catch {
       // silently ignore export errors
-    } finally {
-      setExporting(false);
     }
   };
-
-  const totalPages = Math.ceil(total / LIMIT);
 
   return (
     <div>
@@ -618,19 +552,14 @@ const PaymentsOverviewSection = () => {
           </svg>
           <input
             type="text"
-            value={search}
+            value={searchInput}
             onChange={handleSearchChange}
             placeholder={t("paymentsMgmt.searchPlaceholder")}
             className="flex-1 text-sm bg-transparent outline-none placeholder-gray-300 text-[#1F2933]"
           />
-          {search && (
+          {searchInput && (
             <button
-              onClick={() => {
-                setSearch("");
-                if (debounceRef.current) clearTimeout(debounceRef.current);
-                setPage(1);
-                load({ search: "", page: 1, filter: activeFilter, from: fromDate, to: toDate });
-              }}
+              onClick={() => { setSearchInput(""); setPage(1); }}
               className="text-gray-300 hover:text-gray-500"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -649,10 +578,7 @@ const PaymentsOverviewSection = () => {
             className="text-sm outline-none bg-transparent text-[#1F2933]" />
           {(fromDate || toDate) && (
             <button
-              onClick={() => {
-                setFromDate(""); setToDate(""); setPage(1);
-                load({ page: 1, search, filter: activeFilter, from: "", to: "" });
-              }}
+              onClick={() => { setFromDate(""); setToDate(""); setPage(1); }}
               className="text-xs text-gray-400 hover:text-gray-600"
             >
               {t("paymentsMgmt.clear")}
@@ -695,7 +621,7 @@ const PaymentsOverviewSection = () => {
           ))}
         </div>
 
-        {initialLoading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
@@ -704,7 +630,7 @@ const PaymentsOverviewSection = () => {
             <p className="text-sm text-gray-400">{t("paymentsMgmt.noTransactions")}</p>
           </div>
         ) : (
-          <div className={`divide-y divide-[#E4E7E4] ${fetching ? "opacity-60 pointer-events-none" : ""}`}>
+          <div className={`divide-y divide-[#E4E7E4] ${isFetching ? "opacity-60 pointer-events-none" : ""}`}>
             {transactions.map((tx) => (
               <button
                 key={tx.id}
@@ -739,8 +665,8 @@ const PaymentsOverviewSection = () => {
           </p>
           <div className="flex gap-1">
             <button
-              onClick={() => goToPage(page - 1)}
-              disabled={page === 1 || fetching}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || isFetching}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
               {t("paymentsMgmt.pagination.previous")}
@@ -751,8 +677,8 @@ const PaymentsOverviewSection = () => {
               return (
                 <button
                   key={p}
-                  onClick={() => goToPage(p)}
-                  disabled={fetching}
+                  onClick={() => setPage(p)}
+                  disabled={isFetching}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                     p === page
                       ? "bg-[#445446] text-white"
@@ -764,8 +690,8 @@ const PaymentsOverviewSection = () => {
               );
             })}
             <button
-              onClick={() => goToPage(page + 1)}
-              disabled={page === totalPages || fetching}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages || isFetching}
               className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
               {t("paymentsMgmt.pagination.next")}

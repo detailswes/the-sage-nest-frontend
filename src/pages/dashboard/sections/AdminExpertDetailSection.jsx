@@ -1,25 +1,26 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import {
-  getExpertDetail,
-  approveExpert,
-  rejectExpert,
-  suspendExpert,
-  reactivateExpert,
-  sendPasswordReset,
-  resendVerification,
-  manuallyVerify,
-  exportTaxDataCsv,
-  getExpertYearlySummary,
-  listExpertBookings,
-  requestChanges,
-  getAuditLog,
-  gdprDeleteExpert,
-  approveLanguage,
-  rejectLanguage,
-  approveProfileDraft,
-  rejectProfileDraft,
+  useGetExpertDetailQuery,
+  useGetExpertYearlySummaryQuery,
+  useListExpertBookingsQuery,
+  useGetAuditLogQuery,
+  useApproveExpertMutation,
+  useRejectExpertMutation,
+  useSuspendExpertMutation,
+  useReactivateExpertMutation,
+  useSendPasswordResetMutation,
+  useResendVerificationMutation,
+  useManuallyVerifyMutation,
+  useExportTaxDataCsvMutation,
+  useRequestChangesMutation,
+  useGdprDeleteExpertMutation,
+  useApproveLanguageMutation,
+  useRejectLanguageMutation,
+  useApproveProfileDraftMutation,
+  useRejectProfileDraftMutation,
 } from "../../../api/adminApi";
 import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
 import { formatBookingTime } from "../../../utils/formatBookingTime";
@@ -115,247 +116,203 @@ const AdminExpertDetailSection = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("adminDashboard");
 
-  const [expert, setExpert]         = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState("");
-  const [actionLoading, setActionLoading] = useState(null);
-  const [actionError, setActionError]     = useState("");
-  const [actionSuccess, setActionSuccess] = useState("");
-  const [langActionLoading, setLangActionLoading] = useState(null);
-  const [langConfirm, setLangConfirm] = useState(null); // { lang, action: 'approve' | 'reject' }
+  // ── Tabs ──────────────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState("profile");
 
-  // Tabs
-  const [activeTab, setActiveTab]   = useState("profile");
+  // ── Action UI state ───────────────────────────────────────────────────────────
+  const [confirmAction,  setConfirmAction]  = useState(null);
+  const [langConfirm,    setLangConfirm]    = useState(null);
 
-  // Bookings tab
-  const [bookings, setBookings]         = useState([]);
-  const [bookingsLoading, setBookingsLoading] = useState(false);
-  const [bookingsLoaded, setBookingsLoaded]   = useState(false);
+  // ── Audit refetch tracking (audit has no providesTags) ────────────────────────
+  const [auditNeedsRefetch, setAuditNeedsRefetch] = useState(false);
+
+  // ── Modal / form state ─────────────────────────────────────────────────────────
   const [selectedBookingId, setSelectedBookingId] = useState(null);
-
-  // Activity tab
-  const [auditLog, setAuditLog]       = useState([]);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditLoaded, setAuditLoaded]   = useState(false);
-
-  // Action modals
   const [showRequestChanges, setShowRequestChanges] = useState(false);
-  const [changesNote, setChangesNote]               = useState("");
-  const [changesLoading, setChangesLoading]         = useState(false);
-  const [changesError, setChangesError]             = useState("");
-
+  const [changesNote,   setChangesNote]   = useState("");
   const [showGdprDelete, setShowGdprDelete] = useState(false);
-  const [gdprEmail, setGdprEmail]           = useState("");
-  const [gdprLoading, setGdprLoading]       = useState(false);
-  const [gdprError, setGdprError]           = useState("");
+  const [gdprEmail,     setGdprEmail]     = useState("");
+  const [draftRejectNote, setDraftRejectNote] = useState("");
+  const [showDraftReject, setShowDraftReject] = useState(false);
+  const [exportYear,    setExportYear]    = useState(new Date().getFullYear());
+  const [summaryStatus, setSummaryStatus] = useState("ALL");
 
-  // Profile draft review
-  const [draftRejectNote, setDraftRejectNote]   = useState("");
-  const [showDraftReject, setShowDraftReject]   = useState(false);
-  const [draftActionLoading, setDraftActionLoading] = useState(null); // 'approve' | 'reject'
-  const [draftActionError, setDraftActionError]     = useState("");
+  // ── RTK queries ───────────────────────────────────────────────────────────────
+  const { data: expert, isLoading: expertLoading, isError: expertIsError, error: expertErrObj } =
+    useGetExpertDetailQuery(id);
 
-  // Tax export + yearly summary
-  const [exportYear, setExportYear]     = useState(new Date().getFullYear());
-  const [exporting, setExporting]       = useState(false);
-  const [exportError, setExportError]   = useState("");
-  const [summary, setSummary]               = useState(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryStatus, setSummaryStatus]   = useState("ALL");
+  const { data: summary, isLoading: summaryLoading } =
+    useGetExpertYearlySummaryQuery({ id, year: exportYear, status: summaryStatus });
 
-  const loadExpert = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await getExpertDetail(id);
-      setExpert(data);
-    } catch {
-      setError(t("expertDetail.loadError"));
-    } finally {
-      setLoading(false);
-    }
-  }, [id, t]);
+  const { data: bookings = [], isLoading: bookingsLoading } =
+    useListExpertBookingsQuery(id, { skip: activeTab !== "bookings" });
 
-  useEffect(() => { loadExpert(); }, [loadExpert]);
+  const { data: auditData, isLoading: auditLoading, refetch: refetchAudit } =
+    useGetAuditLogQuery(
+      { entityId: parseInt(id), entityType: 'EXPERT', page: 1 },
+      { skip: activeTab !== "activity" }
+    );
+  const auditLog = auditData?.data ?? [];
 
-  const loadSummary = useCallback(async (year, status) => {
-    setSummaryLoading(true);
-    try {
-      const data = await getExpertYearlySummary(id, year, status);
-      setSummary(data);
-    } catch {
-      setSummary(null);
-    } finally {
-      setSummaryLoading(false);
-    }
-  }, [id]);
+  // ── RTK mutations ─────────────────────────────────────────────────────────────
+  const [approveExpert,       { isLoading: approving }]          = useApproveExpertMutation();
+  const [rejectExpert,        { isLoading: rejecting }]           = useRejectExpertMutation();
+  const [suspendExpert,       { isLoading: suspending }]          = useSuspendExpertMutation();
+  const [reactivateExpert,    { isLoading: reactivating }]        = useReactivateExpertMutation();
+  const [sendPasswordReset,   { isLoading: resettingPassword }]   = useSendPasswordResetMutation();
+  const [resendVerification,  { isLoading: resendingVerif }]      = useResendVerificationMutation();
+  const [manuallyVerify,      { isLoading: manuallyVerifying }]   = useManuallyVerifyMutation();
+  const [exportTaxDataCsv,    { isLoading: exporting }]           = useExportTaxDataCsvMutation();
+  const [requestChanges,      { isLoading: changesLoading }]      = useRequestChangesMutation();
+  const [gdprDeleteExpert,    { isLoading: gdprLoading }]         = useGdprDeleteExpertMutation();
+  const [approveLanguage,     { isLoading: approvingLang }]       = useApproveLanguageMutation();
+  const [rejectLanguage,      { isLoading: rejectingLang }]       = useRejectLanguageMutation();
+  const [approveProfileDraft, { isLoading: draftApproving }]      = useApproveProfileDraftMutation();
+  const [rejectProfileDraft,  { isLoading: draftRejecting }]      = useRejectProfileDraftMutation();
 
-  useEffect(() => { loadSummary(exportYear, summaryStatus); }, [exportYear, summaryStatus, loadSummary]);
+  const actionLoadingKey =
+    approving ? 'approve' :
+    rejecting ? 'reject' :
+    suspending ? 'suspend' :
+    reactivating ? 'reactivate' :
+    resettingPassword ? 'passwordReset' :
+    resendingVerif ? 'resendVerification' :
+    manuallyVerifying ? 'manualVerify' :
+    null;
+  const langInFlight = approvingLang || rejectingLang;
 
-  const loadBookings = () => {
-    if (bookingsLoaded) return;
-    setBookingsLoading(true);
-    listExpertBookings(id)
-      .then((data) => { setBookings(data); setBookingsLoaded(true); })
-      .catch(() => setBookings([]))
-      .finally(() => setBookingsLoading(false));
-  };
-
-  const loadAuditLog = () => {
-    if (auditLoaded) return;
-    setAuditLoading(true);
-    getAuditLog(parseInt(id), "EXPERT")
-      .then((res) => { setAuditLog(res.data); setAuditLoaded(true); })
-      .catch(() => setAuditLog([]))
-      .finally(() => setAuditLoading(false));
-  };
-
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    if (tab === "bookings") loadBookings();
-    if (tab === "activity") loadAuditLog();
-  };
-
-  const clearFeedback = () => { setActionError(""); setActionSuccess(""); };
-
+  // ── Audit refetch when tab becomes active ─────────────────────────────────────
   useEffect(() => {
-    if (!actionSuccess) return;
-    const t = setTimeout(() => setActionSuccess(""), 5000);
-    return () => clearTimeout(t);
-  }, [actionSuccess]);
+    if (activeTab === "activity" && auditNeedsRefetch) {
+      refetchAudit();
+      setAuditNeedsRefetch(false);
+    }
+  }, [activeTab, auditNeedsRefetch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Status actions ────────────────────────────────────────────────────────────
+
+  const handleConfirmAction = async () => {
+    const type = confirmAction;
+    setConfirmAction(null);
+    try {
+      if      (type === "approve")    await approveExpert(id).unwrap();
+      else if (type === "reject")     await rejectExpert(id).unwrap();
+      else if (type === "suspend")    await suspendExpert(id).unwrap();
+      else if (type === "reactivate") await reactivateExpert(id).unwrap();
+      toast.success(t(`expertDetail.statusActions.${type}Success`));
+      setAuditNeedsRefetch(true);
+    } catch (e) {
+      toast.error(e?.data?.error || t("expertDetail.genericActionError"));
+    }
+  };
+
+  // ── Support tool actions ──────────────────────────────────────────────────────
+
+  const handlePasswordReset = async () => {
+    try {
+      await sendPasswordReset(id).unwrap();
+      toast.success(t("expertDetail.supportTools.passwordResetSuccess"));
+      setAuditNeedsRefetch(true);
+    } catch (e) {
+      toast.error(e?.data?.error || t("expertDetail.genericActionError"));
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      await resendVerification(id).unwrap();
+      toast.success(t("expertDetail.supportTools.resendVerificationSuccess"));
+      setAuditNeedsRefetch(true);
+    } catch (e) {
+      toast.error(e?.data?.error || t("expertDetail.genericActionError"));
+    }
+  };
+
+  const handleManualVerify = async () => {
+    try {
+      await manuallyVerify(id).unwrap();
+      toast.success(t("expertDetail.supportTools.manualVerifySuccess"));
+      setAuditNeedsRefetch(true);
+    } catch (e) {
+      toast.error(e?.data?.error || t("expertDetail.genericActionError"));
+    }
+  };
+
+  // ── Language actions ──────────────────────────────────────────────────────────
 
   const handleApproveLanguage = async (language) => {
     setLangConfirm(null);
-    setLangActionLoading(language);
     try {
-      const updated = await approveLanguage(expert.id, language);
-      setExpert((e) => ({ ...e, languages: updated.languages, pending_languages: updated.pending_languages }));
+      await approveLanguage({ id: expert.id, language }).unwrap();
     } catch (e) {
-      setActionError(e?.response?.data?.error || t("expertDetail.profile.langApproveError"));
-    } finally {
-      setLangActionLoading(null);
+      toast.error(e?.data?.error || t("expertDetail.profile.langApproveError"));
     }
   };
 
   const handleRejectLanguage = async (language) => {
     setLangConfirm(null);
-    setLangActionLoading(language);
     try {
-      const updated = await rejectLanguage(expert.id, language);
-      setExpert((e) => ({ ...e, languages: updated.languages, pending_languages: updated.pending_languages }));
+      await rejectLanguage({ id: expert.id, language }).unwrap();
     } catch (e) {
-      setActionError(e?.response?.data?.error || t("expertDetail.profile.langRejectError"));
-    } finally {
-      setLangActionLoading(null);
+      toast.error(e?.data?.error || t("expertDetail.profile.langRejectError"));
     }
   };
 
+  // ── Draft review actions ──────────────────────────────────────────────────────
+
   const handleApproveDraft = async () => {
-    setDraftActionLoading("approve");
-    setDraftActionError("");
     try {
-      await approveProfileDraft(id);
+      await approveProfileDraft(id).unwrap();
       setShowDraftReject(false);
       setDraftRejectNote("");
-      await loadExpert();
-      setAuditLoaded(false);
+      setAuditNeedsRefetch(true);
     } catch (e) {
-      setDraftActionError(e?.response?.data?.error || t("expertDetail.draft.approveError"));
-    } finally {
-      setDraftActionLoading(null);
+      toast.error(e?.data?.error || t("expertDetail.draft.approveError"));
     }
   };
 
   const handleRejectDraft = async () => {
-    setDraftActionLoading("reject");
-    setDraftActionError("");
     try {
-      await rejectProfileDraft(id, draftRejectNote.trim() || undefined);
+      await rejectProfileDraft({ id, note: draftRejectNote.trim() || undefined }).unwrap();
       setShowDraftReject(false);
       setDraftRejectNote("");
-      setExpert((e) => ({
-        ...e,
-        profile_draft: { ...e.profile_draft, status: "REJECTED", rejection_note: draftRejectNote.trim() || null },
-      }));
-      setAuditLoaded(false);
+      setAuditNeedsRefetch(true);
     } catch (e) {
-      setDraftActionError(e?.response?.data?.error || t("expertDetail.draft.rejectError"));
-    } finally {
-      setDraftActionLoading(null);
+      toast.error(e?.data?.error || t("expertDetail.draft.rejectError"));
     }
   };
 
-  const runAction = async (key, fn, successMsg) => {
-    clearFeedback();
-    setActionLoading(key);
-    try {
-      await fn();
-      setActionSuccess(successMsg);
-      await loadExpert();
-      setBookingsLoaded(false);
-      setAuditLoaded(false);
-    } catch (e) {
-      setActionError(e?.response?.data?.error || t("expertDetail.genericActionError"));
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const [confirmAction, setConfirmAction] = useState(null); // 'approve' | 'reject' | 'suspend' | 'reactivate'
-
-  const handleConfirmAction = async () => {
-    const type = confirmAction;
-    setConfirmAction(null);
-    if (type === "approve")         await runAction("approve",     () => approveExpert(id),    t("expertDetail.statusActions.approveSuccess"));
-    else if (type === "reject")     await runAction("reject",      () => rejectExpert(id),     t("expertDetail.statusActions.rejectSuccess"));
-    else if (type === "suspend")    await runAction("suspend",     () => suspendExpert(id),    t("expertDetail.statusActions.suspendSuccess"));
-    else if (type === "reactivate") await runAction("reactivate",  () => reactivateExpert(id), t("expertDetail.statusActions.reactivateSuccess"));
-  };
-  const handlePasswordReset      = () => runAction("passwordReset",      () => sendPasswordReset(id),   t("expertDetail.supportTools.passwordResetSuccess"));
-  const handleResendVerification = () => runAction("resendVerification", () => resendVerification(id),  t("expertDetail.supportTools.resendVerificationSuccess"));
-  const handleManualVerify       = () => runAction("manualVerify",       () => manuallyVerify(id),      t("expertDetail.supportTools.manualVerifySuccess"));
+  // ── Request changes ───────────────────────────────────────────────────────────
 
   const handleRequestChanges = async () => {
-    if (!changesNote.trim()) { setChangesError(t("expertDetail.requestChanges.errorRequired")); return; }
-    setChangesLoading(true);
-    setChangesError("");
+    if (!changesNote.trim()) { toast.error(t("expertDetail.requestChanges.errorRequired")); return; }
     try {
-      await requestChanges(id, changesNote.trim());
-      setExpert((prev) => ({
-        ...prev,
-        status: "CHANGES_REQUESTED",
-        change_request_note: changesNote.trim(),
-        change_requested_at: new Date().toISOString(),
-      }));
+      await requestChanges({ id, note: changesNote.trim() }).unwrap();
       setShowRequestChanges(false);
       setChangesNote("");
-      setActionSuccess(t("expertDetail.requestChanges.success"));
-      setAuditLoaded(false);
+      toast.success(t("expertDetail.requestChanges.success"));
+      setAuditNeedsRefetch(true);
     } catch (e) {
-      setChangesError(e?.response?.data?.error || t("expertDetail.genericActionError"));
-    } finally {
-      setChangesLoading(false);
+      toast.error(e?.data?.error || t("expertDetail.genericActionError"));
     }
   };
+
+  // ── GDPR delete ───────────────────────────────────────────────────────────────
 
   const handleGdprDelete = async () => {
-    setGdprLoading(true);
-    setGdprError("");
     try {
-      await gdprDeleteExpert(id, gdprEmail.trim());
+      await gdprDeleteExpert({ id, confirmEmail: gdprEmail.trim() }).unwrap();
       navigate("/dashboard/admin/experts");
     } catch (e) {
-      setGdprError(e?.response?.data?.error || t("expertDetail.gdpr.deletionFailed"));
-    } finally {
-      setGdprLoading(false);
+      toast.error(e?.data?.error || t("expertDetail.gdpr.deletionFailed"));
     }
   };
 
+  // ── Tax export ────────────────────────────────────────────────────────────────
+
   const handleExportCsv = async () => {
-    setExporting(true);
-    setExportError("");
     try {
-      const blob = await exportTaxDataCsv(id, exportYear);
+      const blob = await exportTaxDataCsv({ id, year: exportYear }).unwrap();
       const safeName = (expert?.user?.name || `expert-${id}`).replace(/[^a-z0-9]/gi, "_").toLowerCase();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -366,13 +323,13 @@ const AdminExpertDetailSection = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      setExportError(t("expertDetail.bizInfo.exportError"));
-    } finally {
-      setExporting(false);
+      toast.error(t("expertDetail.bizInfo.exportError"));
     }
   };
 
-  if (loading) {
+  // ── Render states ─────────────────────────────────────────────────────────────
+
+  if (expertLoading) {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -380,10 +337,12 @@ const AdminExpertDetailSection = () => {
     );
   }
 
-  if (error || !expert) {
+  if (expertIsError || !expert) {
     return (
       <div className="text-center py-24">
-        <p className="text-sm text-red-500 mb-4">{error || t("expertDetail.notFoundError")}</p>
+        <p className="text-sm text-red-500 mb-4">
+          {expertErrObj?.data?.error || t("expertDetail.notFoundError")}
+        </p>
         <button onClick={() => navigate("/dashboard/admin/experts")} className="text-sm text-[#445446] hover:underline">
           {t("expertDetail.backToList")}
         </button>
@@ -400,7 +359,7 @@ const AdminExpertDetailSection = () => {
 
   return (
     <div>
-      {/* Breadcrumb / back */}
+      {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => navigate("/dashboard/admin/experts")}
@@ -415,31 +374,9 @@ const AdminExpertDetailSection = () => {
         <span className="text-sm font-medium text-[#1F2933] truncate">{name}</span>
       </div>
 
-      {/* Feedback banner */}
-      {(actionError || actionSuccess) && (
-        <div className="mb-4">
-          {actionError && (
-            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-              <span className="flex-1">{actionError}</span>
-              <button type="button" onClick={() => setActionError("")} className="p-0.5 text-red-400 hover:text-red-600 transition-colors flex-shrink-0">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-          )}
-          {actionSuccess && (
-            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-              <span className="flex-1">{actionSuccess}</span>
-              <button type="button" onClick={() => setActionSuccess("")} className="p-0.5 text-green-400 hover:text-green-600 transition-colors flex-shrink-0">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
 
-        {/* ── Left column: profile content ── */}
+        {/* ── Left column ── */}
         <div className="space-y-0">
 
           {/* Identity card */}
@@ -504,7 +441,7 @@ const AdminExpertDetailSection = () => {
                 { key: "bookings", label: `${t("expertDetail.tabs.bookings")}${expert._count?.bookings ? ` (${expert._count.bookings})` : ""}` },
                 { key: "activity", label: t("expertDetail.tabs.activity") },
               ].map(({ key, label }) => (
-                <button key={key} onClick={() => handleTabChange(key)}
+                <button key={key} onClick={() => setActiveTab(key)}
                   className={`px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
                     activeTab === key ? "border-[#445446] text-[#445446]" : "border-transparent text-gray-400 hover:text-gray-600"
                   }`}>
@@ -518,7 +455,7 @@ const AdminExpertDetailSection = () => {
               {/* ── Profile tab ── */}
               {activeTab === "profile" && (
                 <>
-                  {/* ── Pending draft review card ── */}
+                  {/* Pending draft review card */}
                   {expert.profile_draft?.status === "PENDING_REVIEW" && (() => {
                     const fmtSessionFormat = (val) => {
                       if (!val) return null;
@@ -539,7 +476,6 @@ const AdminExpertDetailSection = () => {
                     ];
                     return (
                       <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden mb-2">
-                        {/* Card header */}
                         <div className="flex items-center justify-between gap-4 px-5 py-3.5 bg-amber-100 border-b border-amber-200">
                           <div className="flex items-center gap-2">
                             <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -551,7 +487,6 @@ const AdminExpertDetailSection = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            {draftActionError && <span className="text-xs text-red-600">{draftActionError}</span>}
                             {showDraftReject ? (
                               <div className="flex items-center gap-2">
                                 <input
@@ -563,13 +498,13 @@ const AdminExpertDetailSection = () => {
                                 />
                                 <button
                                   onClick={handleRejectDraft}
-                                  disabled={draftActionLoading === "reject"}
+                                  disabled={draftRejecting}
                                   className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 transition-colors"
                                 >
-                                  {draftActionLoading === "reject" ? t("expertDetail.draft.rejecting") : t("expertDetail.draft.confirmReject")}
+                                  {draftRejecting ? t("expertDetail.draft.rejecting") : t("expertDetail.draft.confirmReject")}
                                 </button>
                                 <button
-                                  onClick={() => { setShowDraftReject(false); setDraftRejectNote(""); setDraftActionError(""); }}
+                                  onClick={() => { setShowDraftReject(false); setDraftRejectNote(""); }}
                                   className="px-3 py-1.5 text-xs font-medium rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
                                 >
                                   {t("expertDetail.draft.cancel")}
@@ -579,14 +514,14 @@ const AdminExpertDetailSection = () => {
                               <>
                                 <button
                                   onClick={handleApproveDraft}
-                                  disabled={draftActionLoading !== null}
+                                  disabled={draftApproving || draftRejecting}
                                   className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white disabled:opacity-50 transition-colors"
                                 >
-                                  {draftActionLoading === "approve" ? t("expertDetail.draft.approving") : t("expertDetail.draft.approveBtn")}
+                                  {draftApproving ? t("expertDetail.draft.approving") : t("expertDetail.draft.approveBtn")}
                                 </button>
                                 <button
                                   onClick={() => setShowDraftReject(true)}
-                                  disabled={draftActionLoading !== null}
+                                  disabled={draftApproving || draftRejecting}
                                   className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
                                 >
                                   {t("expertDetail.draft.rejectBtn")}
@@ -598,7 +533,6 @@ const AdminExpertDetailSection = () => {
 
                         {/* Side-by-side diff */}
                         <div className="grid grid-cols-2 divide-x divide-amber-200">
-                          {/* Live column */}
                           <div className="px-5 py-4 space-y-4">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t("expertDetail.draft.liveCol")}</p>
                             {draftFields.map(({ key, live, proposed }) => {
@@ -613,8 +547,6 @@ const AdminExpertDetailSection = () => {
                               );
                             })}
                           </div>
-
-                          {/* Proposed column */}
                           <div className="px-5 py-4 space-y-4 bg-white">
                             <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-3">{t("expertDetail.draft.proposedCol")}</p>
                             {draftFields.map(({ key, live, proposed }) => {
@@ -679,7 +611,7 @@ const AdminExpertDetailSection = () => {
                       <div className="flex flex-wrap gap-3">
                         {expert.pending_languages.map((lang) => {
                           const isConfirming = langConfirm?.lang === lang;
-                          const isLoading    = langActionLoading === lang;
+                          const isLoading    = langInFlight;
                           return (
                             <div key={lang} className="flex items-center gap-2.5 pl-4 pr-2.5 py-2 rounded-full text-sm font-medium bg-amber-50 border border-amber-200 text-amber-700">
                               <span>
@@ -690,7 +622,6 @@ const AdminExpertDetailSection = () => {
                                   </span>
                                 )}
                               </span>
-
                               {isConfirming ? (
                                 <div className="flex items-center gap-1.5">
                                   <button
@@ -781,7 +712,6 @@ const AdminExpertDetailSection = () => {
                         <SectionLabel>{t("expertDetail.bizInfo.title")}</SectionLabel>
                         <p className="text-xs text-gray-400 italic -mt-1">{t("expertDetail.bizInfo.subtitle")}</p>
                       </div>
-                      {/* Year + status selectors */}
                       <div className="flex items-center gap-2 flex-shrink-0 ml-4">
                         <span className="text-xs text-gray-400">{t("expertDetail.bizInfo.yearLabel")}</span>
                         <select value={exportYear} onChange={(e) => setExportYear(Number(e.target.value))}
@@ -800,7 +730,6 @@ const AdminExpertDetailSection = () => {
                       </div>
                     </div>
 
-                    {/* DAC7 reporting threshold flag */}
                     {expert.dac7?.threshold_reached && (
                       <div className="flex items-start gap-2.5 px-4 py-3 mb-3 rounded-xl border border-amber-300 bg-amber-50">
                         <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -821,7 +750,6 @@ const AdminExpertDetailSection = () => {
                       </div>
                     )}
 
-                    {/* Financial summary cards */}
                     {summaryLoading ? (
                       <div className="flex justify-center py-4 mb-3">
                         <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -832,12 +760,12 @@ const AdminExpertDetailSection = () => {
                           const cur = expert.services?.find(s => s.currency)?.currency || 'EUR';
                           const fmt = (n) => new Intl.NumberFormat('en', { style: 'currency', currency: cur }).format(n);
                           return [
-                            { key: "gross",        value: fmt(summary.total_gross) },
-                            { key: "fees",         value: fmt(summary.total_fees) },
-                            { key: "net",          value: fmt(summary.total_net), highlight: true },
-                            { key: "sessions",     value: summary.completed_sessions },
-                            { key: "refundCount",  value: summary.refund_count },
-                            { key: "refundTotal",  value: fmt(summary.total_refunded) },
+                            { key: "gross",       value: fmt(summary.total_gross) },
+                            { key: "fees",        value: fmt(summary.total_fees) },
+                            { key: "net",         value: fmt(summary.total_net), highlight: true },
+                            { key: "sessions",    value: summary.completed_sessions },
+                            { key: "refundCount", value: summary.refund_count },
+                            { key: "refundTotal", value: fmt(summary.total_refunded) },
                           ];
                         })().map(({ key, value, highlight }) => (
                           <div key={key} className={`rounded-xl p-3 border ${highlight ? "bg-[#445446]/5 border-[#445446]/20" : "bg-[#F5F7F5] border-[#E4E7E4]"}`}>
@@ -848,7 +776,6 @@ const AdminExpertDetailSection = () => {
                       </div>
                     ) : null}
 
-                    {/* CSV export */}
                     <div className="flex items-center gap-2 mb-3">
                       <button onClick={handleExportCsv} disabled={exporting || !expert.business_info}
                         className="flex items-center gap-1.5 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 disabled:opacity-40 px-3 py-1.5 rounded-lg transition-colors">
@@ -863,7 +790,6 @@ const AdminExpertDetailSection = () => {
                         <span className="text-xs text-gray-400">{t("expertDetail.bizInfo.exportNoBiz")}</span>
                       )}
                     </div>
-                    {exportError && <p className="text-xs text-red-500 mb-2">{exportError}</p>}
                     {expert.business_info ? (() => {
                       const bi = expert.business_info;
                       const rows = [
@@ -1042,18 +968,12 @@ const AdminExpertDetailSection = () => {
                 ) : (
                   <ol className="relative border-l border-[#E4E7E4] ml-2 space-y-4">
                     {(() => {
-                      const latestChangeReqIdx = auditLog.findIndex(
-                        (e) => e.action === "REQUEST_CHANGES"
-                      );
+                      const latestChangeReqIdx = auditLog.findIndex((e) => e.action === "REQUEST_CHANGES");
                       return auditLog.map((entry, idx) => {
                         const isExpertAction = entry.action.startsWith("EXPERT_");
                         const isChangeReq    = entry.action === "REQUEST_CHANGES";
-                        const isPending =
-                          isChangeReq &&
-                          idx === latestChangeReqIdx &&
-                          expert.status === "CHANGES_REQUESTED";
-                        const isResolved = isChangeReq && !isPending;
-
+                        const isPending      = isChangeReq && idx === latestChangeReqIdx && expert.status === "CHANGES_REQUESTED";
+                        const isResolved     = isChangeReq && !isPending;
                         return (
                           <li key={entry.id} className="ml-4">
                             {isChangeReq ? (
@@ -1063,7 +983,6 @@ const AdminExpertDetailSection = () => {
                             ) : (
                               <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#445446]/20 border-2 border-[#445446]/40" />
                             )}
-
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-xs font-semibold text-[#1F2933]">
                                 {t(`expertDetail.actionLabels.${entry.action}`, { defaultValue: entry.action })}
@@ -1086,7 +1005,6 @@ const AdminExpertDetailSection = () => {
                                 </span>
                               )}
                             </div>
-
                             <p className="text-xs text-gray-400 mt-0.5">
                               {isExpertAction ? `${entry.admin_name} ${t("expertDetail.activityTab.expertSuffix")}` : entry.admin_name} · {new Date(entry.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                             </p>
@@ -1106,9 +1024,7 @@ const AdminExpertDetailSection = () => {
 
         {/* ── Right column: actions ── */}
         <div className="space-y-4">
-
           {expert.user?.account_deleted ? (
-            /* ── Account has been GDPR-erased — no actions available ── */
             <div className="bg-gray-50 rounded-2xl border border-[#E4E7E4] p-5 text-center">
               <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-3">
                 <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -1125,29 +1041,26 @@ const AdminExpertDetailSection = () => {
                 <SectionLabel>{t("expertDetail.statusActions.title")}</SectionLabel>
                 <div className="flex flex-col gap-2">
                   {expert.status === "SUSPENDED" ? (
-                    <button onClick={() => setConfirmAction("reactivate")} disabled={!!actionLoading}
+                    <button onClick={() => setConfirmAction("reactivate")} disabled={!!actionLoadingKey}
                       className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors">
-                      {actionLoading === "reactivate" ? t("expertDetail.statusActions.reactivating") : t("expertDetail.statusActions.reactivate")}
+                      {actionLoadingKey === "reactivate" ? t("expertDetail.statusActions.reactivating") : t("expertDetail.statusActions.reactivate")}
                     </button>
                   ) : expert.status === "APPROVED" ? (
                     <>
-                      <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
+                      <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoadingKey}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
-                        {actionLoading === "reject" ? t("expertDetail.statusActions.rejecting") : t("expertDetail.statusActions.reject")}
+                        {actionLoadingKey === "reject" ? t("expertDetail.statusActions.rejecting") : t("expertDetail.statusActions.reject")}
                       </button>
-                      <button onClick={() => setConfirmAction("suspend")} disabled={!!actionLoading}
+                      <button onClick={() => setConfirmAction("suspend")} disabled={!!actionLoadingKey}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 disabled:opacity-50 transition-colors">
-                        {actionLoading === "suspend" ? t("expertDetail.statusActions.suspending") : t("expertDetail.statusActions.suspend")}
+                        {actionLoadingKey === "suspend" ? t("expertDetail.statusActions.suspending") : t("expertDetail.statusActions.suspend")}
                       </button>
                     </>
                   ) : expert.status === "REJECTED" ? (
                     <>
-                      <button
-                        onClick={() => setConfirmAction("approve")}
-                        disabled={!!actionLoading || !expert.stripe_onboarding_complete}
-                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {actionLoading === "approve" ? t("expertDetail.statusActions.approving") : t("expertDetail.statusActions.approve")}
+                      <button onClick={() => setConfirmAction("approve")} disabled={!!actionLoadingKey || !expert.stripe_onboarding_complete}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        {actionLoadingKey === "approve" ? t("expertDetail.statusActions.approving") : t("expertDetail.statusActions.approve")}
                       </button>
                       {!expert.stripe_onboarding_complete && (
                         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
@@ -1157,21 +1070,18 @@ const AdminExpertDetailSection = () => {
                     </>
                   ) : (
                     <>
-                      <button
-                        onClick={() => setConfirmAction("approve")}
-                        disabled={!!actionLoading || !expert.stripe_onboarding_complete}
-                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {actionLoading === "approve" ? t("expertDetail.statusActions.approving") : t("expertDetail.statusActions.approve")}
+                      <button onClick={() => setConfirmAction("approve")} disabled={!!actionLoadingKey || !expert.stripe_onboarding_complete}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        {actionLoadingKey === "approve" ? t("expertDetail.statusActions.approving") : t("expertDetail.statusActions.approve")}
                       </button>
                       {!expert.stripe_onboarding_complete && (
                         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
                           {t("expertDetail.statusActions.cannotApprove")}
                         </p>
                       )}
-                      <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoading}
+                      <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoadingKey}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors">
-                        {actionLoading === "reject" ? t("expertDetail.statusActions.rejecting") : t("expertDetail.statusActions.reject")}
+                        {actionLoadingKey === "reject" ? t("expertDetail.statusActions.rejecting") : t("expertDetail.statusActions.reject")}
                       </button>
                     </>
                   )}
@@ -1188,19 +1098,19 @@ const AdminExpertDetailSection = () => {
               <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
                 <SectionLabel>{t("expertDetail.supportTools.title")}</SectionLabel>
                 <div className="flex flex-col gap-2">
-                  <button onClick={handlePasswordReset} disabled={!!actionLoading}
+                  <button onClick={handlePasswordReset} disabled={!!actionLoadingKey}
                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-                    {actionLoading === "passwordReset" ? t("expertDetail.supportTools.sending") : t("expertDetail.supportTools.passwordReset")}
+                    {actionLoadingKey === "passwordReset" ? t("expertDetail.supportTools.sending") : t("expertDetail.supportTools.passwordReset")}
                   </button>
                   {!expert.user?.is_verified && (
                     <>
-                      <button onClick={handleResendVerification} disabled={!!actionLoading}
+                      <button onClick={handleResendVerification} disabled={!!actionLoadingKey}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-                        {actionLoading === "resendVerification" ? t("expertDetail.supportTools.sending") : t("expertDetail.supportTools.resendVerification")}
+                        {actionLoadingKey === "resendVerification" ? t("expertDetail.supportTools.sending") : t("expertDetail.supportTools.resendVerification")}
                       </button>
-                      <button onClick={handleManualVerify} disabled={!!actionLoading}
+                      <button onClick={handleManualVerify} disabled={!!actionLoadingKey}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 transition-colors">
-                        {actionLoading === "manualVerify" ? t("expertDetail.supportTools.verifying") : t("expertDetail.supportTools.markVerified")}
+                        {actionLoadingKey === "manualVerify" ? t("expertDetail.supportTools.verifying") : t("expertDetail.supportTools.markVerified")}
                       </button>
                     </>
                   )}
@@ -1221,16 +1131,16 @@ const AdminExpertDetailSection = () => {
         </div>
       </div>
 
-      {/* ── Booking detail modal ── */}
+      {/* Booking detail modal */}
       {selectedBookingId && (
         <BookingDetailModal
           bookingId={selectedBookingId}
           onClose={() => setSelectedBookingId(null)}
-          onUpdated={() => { setBookingsLoaded(false); loadBookings(); }}
+          onUpdated={() => {}}
         />
       )}
 
-      {/* ── Request Changes modal ── */}
+      {/* Request Changes modal */}
       {showRequestChanges && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget && !changesLoading) setShowRequestChanges(false); }}>
@@ -1241,9 +1151,8 @@ const AdminExpertDetailSection = () => {
               placeholder={t("expertDetail.requestChanges.placeholder")} rows={5}
               className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 resize-none" />
             <p className="text-xs text-gray-400 text-right mb-3">{changesNote.length}/2000</p>
-            {changesError && <p className="text-xs text-red-600 mb-3">{changesError}</p>}
             <div className="flex gap-3">
-              <button onClick={() => { setShowRequestChanges(false); setChangesNote(""); setChangesError(""); }} disabled={changesLoading}
+              <button onClick={() => { setShowRequestChanges(false); setChangesNote(""); }} disabled={changesLoading}
                 className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
                 {t("expertDetail.requestChanges.cancel")}
               </button>
@@ -1256,35 +1165,31 @@ const AdminExpertDetailSection = () => {
         </div>
       )}
 
-      {/* ── Status action confirm modal ── */}
+      {/* Status action confirm modal */}
       {confirmAction && (() => {
         const cfg = {
           approve: {
             title: t("expertDetail.confirmModal.approve_title"),
             body:  t("expertDetail.confirmModal.approve_body", { name }),
-            iconBg: "bg-green-50",
-            btnCls: "bg-green-600 hover:bg-green-700",
+            iconBg: "bg-green-50", btnCls: "bg-green-600 hover:bg-green-700",
             icon: <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>,
           },
           reject: {
             title: t("expertDetail.confirmModal.reject_title"),
             body:  t("expertDetail.confirmModal.reject_body", { name }),
-            iconBg: "bg-red-50",
-            btnCls: "bg-red-500 hover:bg-red-600",
+            iconBg: "bg-red-50", btnCls: "bg-red-500 hover:bg-red-600",
             icon: <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>,
           },
           suspend: {
             title: t("expertDetail.confirmModal.suspend_title"),
             body:  t("expertDetail.confirmModal.suspend_body", { name }),
-            iconBg: "bg-orange-50",
-            btnCls: "bg-orange-500 hover:bg-orange-600",
+            iconBg: "bg-orange-50", btnCls: "bg-orange-500 hover:bg-orange-600",
             icon: <svg className="w-6 h-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>,
           },
           reactivate: {
             title: t("expertDetail.confirmModal.reactivate_title"),
             body:  t("expertDetail.confirmModal.reactivate_body", { name }),
-            iconBg: "bg-green-50",
-            btnCls: "bg-green-600 hover:bg-green-700",
+            iconBg: "bg-green-50", btnCls: "bg-green-600 hover:bg-green-700",
             icon: <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>,
           },
         }[confirmAction] || {};
@@ -1320,7 +1225,7 @@ const AdminExpertDetailSection = () => {
         );
       })()}
 
-      {/* ── GDPR Delete modal ── */}
+      {/* GDPR Delete modal */}
       {showGdprDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget && !gdprLoading) setShowGdprDelete(false); }}>
@@ -1330,12 +1235,9 @@ const AdminExpertDetailSection = () => {
               <>
                 <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-xs text-red-800 space-y-1">
                   <p className="font-semibold">{t("expertDetail.gdpr.pendingTitle")}</p>
-                  <p className="text-red-700 mt-1">
-                    {t("expertDetail.gdpr.pendingBody", { count: expert.pending_payout_count })}
-                  </p>
+                  <p className="text-red-700 mt-1">{t("expertDetail.gdpr.pendingBody", { count: expert.pending_payout_count })}</p>
                 </div>
-                <button
-                  onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
+                <button onClick={() => { setShowGdprDelete(false); setGdprEmail(""); }}
                   className="w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                 >
                   {t("expertDetail.gdpr.close")}
@@ -1369,9 +1271,8 @@ const AdminExpertDetailSection = () => {
                 <input type="email" value={gdprEmail} onChange={(e) => setGdprEmail(e.target.value)}
                   placeholder={t("expertDetail.gdpr.emailPlaceholder")}
                   className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 mb-3" />
-                {gdprError && <p className="text-xs text-red-600 mb-3">{gdprError}</p>}
                 <div className="flex gap-3">
-                  <button onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }} disabled={gdprLoading}
+                  <button onClick={() => { setShowGdprDelete(false); setGdprEmail(""); }} disabled={gdprLoading}
                     className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
                     {t("expertDetail.gdpr.cancel")}
                   </button>

@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
-import { getPastAppointments, saveExpertNote } from '../../../api/bookingApi';
+import { useGetPastAppointmentsQuery, useSaveExpertNoteMutation } from '../../../api/bookingApi';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(iso, lng = 'en') {
@@ -81,28 +81,30 @@ const Pagination = ({ page, pages, onChange }) => {
 const InlineNoteEditor = ({ bookingId, initialNote, onSaved }) => {
   const { t } = useTranslation('expertDashboard');
   const [note,      setNote]      = useState(initialNote || '');
-  const [saveState, setSaveState] = useState('idle');
+  const [showSaved, setShowSaved] = useState(false);
   const timerRef = useRef(null);
+  const [saveNote, { isLoading: isSaving, isError: isSaveError }] = useSaveExpertNoteMutation();
 
-  const persist = useCallback(async (value) => {
-    setSaveState('saving');
+  const saveState = isSaving ? 'saving' : isSaveError ? 'error' : showSaved ? 'saved' : 'idle';
+
+  const persist = async (value) => {
+    clearTimeout(timerRef.current);
+    setShowSaved(false);
     try {
-      const res = await saveExpertNote(bookingId, value);
-      setSaveState('saved');
+      const res = await saveNote({ id: bookingId, note: value }).unwrap();
+      setShowSaved(true);
       if (onSaved) onSaved(res.expert_note);
-      timerRef.current = setTimeout(() => setSaveState('idle'), 2000);
+      timerRef.current = setTimeout(() => setShowSaved(false), 2000);
     } catch {
-      setSaveState('error');
+      // isSaveError handles display
     }
-  }, [bookingId, onSaved]);
-
-  useEffect(() => () => clearTimeout(timerRef.current), []);
+  };
 
   return (
     <div className="mt-2">
       <textarea
         value={note}
-        onChange={(e) => { setNote(e.target.value); setSaveState('idle'); }}
+        onChange={(e) => { setNote(e.target.value); }}
         onBlur={() => persist(note)}
         placeholder={t('history.notes.placeholder')}
         rows={3}
@@ -221,26 +223,16 @@ const Row = ({ booking }) => {
 // ─── Main component ───────────────────────────────────────────────────────────
 const PastAppointmentsSection = () => {
   const { t } = useTranslation('expertDashboard');
-  const [data,    setData]    = useState({ bookings: [], total: 0, page: 1, pages: 1 });
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState('');
+  const [page, setPage] = useState(1);
 
-  const load = useCallback(async (page) => {
-    setLoading(true);
-    setError('');
-    try {
-      const result = await getPastAppointments(page);
-      setData(result);
-    } catch {
-      setError(t('history.loadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+  const {
+    data = { bookings: [], total: 0, page: 1, pages: 1 },
+    isLoading: loading,
+    isError,
+  } = useGetPastAppointmentsQuery(page);
 
-  useEffect(() => { load(1); }, [load]);
-
-  const { bookings, total, page, pages } = data;
+  const error = isError ? t('history.loadFailed') : '';
+  const { bookings, total, pages } = data;
 
   return (
     <div>
@@ -294,7 +286,7 @@ const PastAppointmentsSection = () => {
             </div>
           </div>
 
-          <Pagination page={page} pages={pages} onChange={load} />
+          <Pagination page={page} pages={pages} onChange={setPage} />
         </>
       )}
     </div>

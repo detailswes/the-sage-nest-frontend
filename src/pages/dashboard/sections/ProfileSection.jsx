@@ -2,9 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../context/AuthContext';
-import { getMyProfile, updateMyProfile, uploadProfileImage, exportMyData, getMyProfileDraft } from '../../../api/expertApi';
+import {
+  useGetMyProfileQuery,
+  useGetMyProfileDraftQuery,
+  useUpdateMyProfileMutation,
+  useUploadProfileImageMutation,
+  useLazyExportMyDataQuery,
+} from '../../../api/expertApi';
 import { getProfileImageUrl } from '../../../utils/imageUrl';
-import { createConnectLink, verifyStripeReturn } from '../../../api/stripeApi';
+import { useCreateConnectLinkMutation, useVerifyStripeReturnQuery } from '../../../api/stripeApi';
 import QualificationsCard from '../profile/QualificationsCard';
 import CertificationsCard from '../profile/CertificationsCard';
 import BusinessInfoCard from '../profile/BusinessInfoCard';
@@ -134,90 +140,74 @@ const ProfileSection = () => {
   const lng = i18n.language;
   const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef(null);
+  const formSeeded = useRef(false);
 
-  const [profile, setProfile]           = useState(null);
   const [form, setForm]                 = useState(EMPTY_FORM);
   const [imageUrl, setImageUrl]         = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-
-  const [initQuals, setInitQuals]               = useState(null);
-  const [initCerts, setInitCerts]               = useState(null);
-  const [initBusinessInfo, setInitBusinessInfo] = useState(undefined);
-  const [initInsurance, setInitInsurance]       = useState(undefined);
-
   const [customLangInput, setCustomLangInput] = useState('');
-
-  const [draft, setDraft]         = useState(undefined);
-
-  const [loading, setLoading]     = useState(true);
-  const [saving, setSaving]       = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [error, setError]         = useState('');
-  const [imageError, setImageError] = useState('');
-  const [success, setSuccess]     = useState(false);
+  const [error, setError]               = useState('');
+  const [imageError, setImageError]     = useState('');
+  const [success, setSuccess]           = useState(false);
   const [savedAsDraft, setSavedAsDraft] = useState(false);
+  const [stripeError, setStripeError]   = useState('');
+  const [stripeConnecting, setStripeConnecting] = useState(false);
+  const [stripeSuccess, setStripeSuccess] = useState(false);
+
+  const { data: profile, isLoading: loading } = useGetMyProfileQuery();
+  const { data: draft } = useGetMyProfileDraftQuery();
+  const [updateMyProfile, { isLoading: saving }] = useUpdateMyProfileMutation();
+  const [uploadProfileImage, { isLoading: uploading }] = useUploadProfileImageMutation();
+  const [triggerExport, { isFetching: exporting }] = useLazyExportMyDataQuery();
+  const [createConnectLink] = useCreateConnectLinkMutation();
+
+  const hasStripeAccount = !!profile?.stripe_account_id;
+  const { data: stripeVerify, isFetching: checkingStripe } = useVerifyStripeReturnQuery(
+    undefined,
+    { skip: !hasStripeAccount },
+  );
+
+  const stripeStatus = (() => {
+    if (stripeConnecting) return 'connecting';
+    if (!hasStripeAccount) return loading ? 'idle' : 'not_connected';
+    if (checkingStripe) return 'checking';
+    return stripeVerify?.onboarding_complete ? 'connected' : 'incomplete';
+  })();
+
+  // Seed form once when profile loads
+  useEffect(() => {
+    if (!profile || formSeeded.current) return;
+    formSeeded.current = true;
+    setForm({
+      bio:              profile.bio              || '',
+      expertise:        profile.expertise        || '',
+      summary:          profile.summary          || '',
+      position:         profile.position         || '',
+      session_format:   profile.session_format   || '',
+      timezone:         profile.timezone         || 'Europe/Rome',
+      address_street:   profile.address_street   || '',
+      address_city:     profile.address_city     || '',
+      address_postcode: profile.address_postcode || '',
+      languages:         Array.isArray(profile.languages)         ? profile.languages         : [],
+      pending_languages: Array.isArray(profile.pending_languages) ? profile.pending_languages : [],
+      instagram:        profile.instagram || '',
+      facebook:         profile.facebook  || '',
+      linkedin:         profile.linkedin  || '',
+    });
+    setImageUrl(getProfileImageUrl(profile.profile_image));
+  }, [profile]);
 
   useEffect(() => {
     if (!success) return;
-    const t = setTimeout(() => setSuccess(false), 5000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setSuccess(false), 5000);
+    return () => clearTimeout(timer);
   }, [success]);
 
   useEffect(() => {
     if (!savedAsDraft) return;
-    const t = setTimeout(() => setSavedAsDraft(false), 5000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setSavedAsDraft(false), 5000);
+    return () => clearTimeout(timer);
   }, [savedAsDraft]);
-
-  // Stripe
-  const [stripeStatus, setStripeStatus]     = useState('idle');
-  const [stripeError, setStripeError]       = useState('');
-  const [stripeSuccess, setStripeSuccess]   = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([getMyProfile(), getMyProfileDraft().catch(() => null)])
-      .then(([data, draftData]) => {
-        if (cancelled) return;
-        setProfile(data);
-        setDraft(draftData);
-        setForm({
-          bio:              data.bio              || '',
-          expertise:        data.expertise        || '',
-          summary:          data.summary          || '',
-          position:         data.position         || '',
-          session_format:   data.session_format   || '',
-          timezone:         data.timezone         || 'Europe/Rome',
-          address_street:   data.address_street   || '',
-          address_city:     data.address_city     || '',
-          address_postcode: data.address_postcode || '',
-          languages:         Array.isArray(data.languages)         ? data.languages         : [],
-          pending_languages: Array.isArray(data.pending_languages) ? data.pending_languages : [],
-          instagram:        data.instagram || '',
-          facebook:         data.facebook  || '',
-          linkedin:         data.linkedin  || '',
-        });
-        setImageUrl(getProfileImageUrl(data.profile_image));
-        setInitQuals(data.qualifications   || []);
-        setInitCerts(data.certifications   || []);
-        setInitBusinessInfo(data.business_info || null);
-        setInitInsurance(data.insurance    || null);
-
-        if (!data.stripe_account_id) {
-          setStripeStatus('not_connected');
-        } else {
-          setStripeStatus('checking');
-          verifyStripeReturn()
-            .then((r) => { if (!cancelled) setStripeStatus(r.onboarding_complete ? 'connected' : 'incomplete'); })
-            .catch(() => { if (!cancelled) setStripeStatus('incomplete'); });
-        }
-      })
-      .catch(() => setError(t('profile.loadError')))
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (searchParams.get('stripe') === 'success') {
@@ -275,16 +265,13 @@ const ProfileSection = () => {
     }
     const localUrl = URL.createObjectURL(file);
     setImagePreview(localUrl);
-    setUploading(true);
     try {
-      const result = await uploadProfileImage(file);
+      const result = await uploadProfileImage(file).unwrap();
       setImageUrl(getProfileImageUrl(result.profile_image));
-      setProfile((p) => ({ ...p, profile_image: result.profile_image }));
     } catch (err) {
-      setImageError(err?.response?.data?.error || t('profile.photo.uploadError'));
+      setImageError(err?.data?.error || t('profile.photo.uploadError'));
       setImagePreview(null);
     } finally {
-      setUploading(false);
       URL.revokeObjectURL(localUrl);
       setImagePreview(null);
     }
@@ -310,7 +297,6 @@ const ProfileSection = () => {
     if (!form.session_format) {
       setError('Please select how you deliver your sessions.'); return;
     }
-    setSaving(true);
     setError('');
     setSuccess(false);
     setSavedAsDraft(false);
@@ -330,26 +316,20 @@ const ProfileSection = () => {
         instagram:        form.instagram || null,
         facebook:         form.facebook  || null,
         linkedin:         form.linkedin  || null,
-      });
+      }).unwrap();
       if (result?.draft) {
-        setDraft(result.profile_draft);
         setSavedAsDraft(true);
       } else {
-        setProfile((p) => ({ ...p, ...result }));
-        setDraft(null);
         setSuccess(true);
       }
     } catch (err) {
-      setError(err?.response?.data?.error || t('profile.validation.saveFailed'));
-    } finally {
-      setSaving(false);
+      setError(err?.data?.error || t('profile.validation.saveFailed'));
     }
   };
 
   const handleExport = async () => {
-    setExporting(true);
     try {
-      const data = await exportMyData();
+      const data = await triggerExport().unwrap();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
@@ -361,20 +341,18 @@ const ProfileSection = () => {
       URL.revokeObjectURL(url);
     } catch {
       // silently fail — user can retry
-    } finally {
-      setExporting(false);
     }
   };
 
   const handleConnectStripe = async () => {
     setStripeError('');
-    setStripeStatus('connecting');
+    setStripeConnecting(true);
     try {
-      const data = await createConnectLink();
+      const data = await createConnectLink().unwrap();
       window.location.href = data.url;
     } catch (err) {
-      setStripeError(err?.response?.data?.error || 'Could not connect to Stripe. Please try again.');
-      setStripeStatus(profile?.stripe_account_id ? 'incomplete' : 'not_connected');
+      setStripeError(err?.data?.error || 'Could not connect to Stripe. Please try again.');
+      setStripeConnecting(false);
     }
   };
 
@@ -831,10 +809,10 @@ const ProfileSection = () => {
       </div>
 
       {/* Sub-cards — rendered only after profile is loaded */}
-      {initQuals        !== null      && <QualificationsCard initialData={initQuals} />}
-      {initCerts        !== null      && <CertificationsCard initialData={initCerts} />}
-      {initBusinessInfo !== undefined && <BusinessInfoCard   initialData={initBusinessInfo} />}
-      {initInsurance    !== undefined && <InsuranceCard      initialData={initInsurance} />}
+      {profile && <QualificationsCard initialData={profile.qualifications || []} />}
+      {profile && <CertificationsCard initialData={profile.certifications || []} />}
+      {profile && <BusinessInfoCard   initialData={profile.business_info || null} />}
+      {profile && <InsuranceCard      initialData={profile.insurance || null} />}
 
       {/* GDPR Data Export */}
       <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mt-5">

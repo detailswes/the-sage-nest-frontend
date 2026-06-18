@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
-import { getMyProfile, listAvailability } from "../../api/expertApi";
+import { useGetMyProfileQuery, useListAvailabilityQuery } from "../../api/expertApi";
 import { getProfileImageUrl } from "../../utils/imageUrl";
 import LanguageSelector from "../../components/LanguageSelector";
 
@@ -145,25 +145,16 @@ const ExpertDashboard = () => {
   const { t } = useTranslation('expertDashboard');
   const location = useLocation();
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
-  const [sidebarImage, setSidebarImage] = useState(null);
-  const [expertStatus, setExpertStatus] = useState(null);
-  const [changeRequestNote, setChangeRequestNote] = useState("");
-  const [isPublished, setIsPublished] = useState(true);
-  const [hasAvailability, setHasAvailability] = useState(null);
+  const [imgError, setImgError] = useState(false);
 
-  useEffect(() => {
-    getMyProfile()
-      .then((data) => {
-        setSidebarImage(getProfileImageUrl(data.profile_image));
-        setExpertStatus(data.status);
-        setChangeRequestNote(data.change_request_note || "");
-        setIsPublished(data.is_published ?? true);
-      })
-      .catch(() => {});
-    listAvailability()
-      .then((slots) => setHasAvailability(slots.length > 0))
-      .catch(() => setHasAvailability(true)); // on error, hide banner
-  }, []);
+  const { data: profile } = useGetMyProfileQuery();
+  const { data: availSlots, isError: availError } = useListAvailabilityQuery();
+
+  const sidebarImage = imgError ? null : getProfileImageUrl(profile?.profile_image);
+  const expertStatus = profile?.status ?? null;
+  const changeRequestNote = profile?.change_request_note || "";
+  const isPublished = profile?.is_published ?? true;
+  const hasAvailability = availError ? true : availSlots ? availSlots.length > 0 : null;
 
   // Derive active section from URL path
   const lastSegment = location.pathname.split("/").pop();
@@ -213,7 +204,7 @@ const ExpertDashboard = () => {
                 src={sidebarImage}
                 alt={user?.name}
                 className="w-9 h-9 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0"
-                onError={() => setSidebarImage(null)}
+                onError={() => setImgError(true)}
               />
             ) : (
               <div className="w-9 h-9 rounded-full bg-[#445446] text-white flex items-center justify-center text-xs font-bold flex-shrink-0 select-none">

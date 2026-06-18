@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminNotifications } from '../../api/adminApi';
+import { useGetAdminNotificationsQuery } from '../../api/adminApi';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,28 +59,15 @@ const DEFAULT_CONFIG = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const NotificationBell = () => {
-  const navigate  = useNavigate();
+  const navigate   = useNavigate();
   const wrapperRef = useRef(null);
 
-  const [notifications, setNotifications] = useState([]);
-  const [open,          setOpen]          = useState(false);
-  const [dismissed,     setDismissed]     = useState(loadDismissed);
+  const { data: notifications = [], refetch } = useGetAdminNotificationsQuery(undefined, {
+    pollingInterval: 60_000,
+  });
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const data = await getAdminNotifications();
-      setNotifications(data);
-    } catch {
-      // Non-fatal — bell stays empty
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-    const id = setInterval(fetchNotifications, 60_000);
-    return () => clearInterval(id);
-  }, [fetchNotifications]);
+  const [open,      setOpen]      = useState(false);
+  const [dismissed, setDismissed] = useState(loadDismissed);
 
   // ── Click-outside to close ─────────────────────────────────────────────────
   useEffect(() => {
@@ -98,10 +85,7 @@ const NotificationBell = () => {
   const isVisible = (notif) => {
     const at = dismissed[notif.id];
     if (!at) return true;
-    // For notifications without a timestamp (e.g. language approvals), the ID
-    // includes the language list — a new language changes the ID so it reappears.
     if (!notif.createdAt) return false;
-    // For timestamped notifications, show again if a newer submission arrived.
     return new Date(notif.createdAt) > new Date(at);
   };
 
@@ -208,7 +192,7 @@ const NotificationBell = () => {
           {/* Footer — refresh link */}
           <div className="px-4 py-2.5 border-t border-[#E4E7E4] bg-[#FAFBFA]">
             <button
-              onClick={fetchNotifications}
+              onClick={refetch}
               className="text-[11px] text-gray-400 hover:text-[#445446] transition-colors"
             >
               Refresh

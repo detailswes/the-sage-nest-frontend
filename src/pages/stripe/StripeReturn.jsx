@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { verifyStripeReturn } from '../../api/stripeApi';
+import { useLazyVerifyStripeReturnQuery } from '../../api/stripeApi';
 
 // ─── Status illustrations ─────────────────────────────────────────────────────
 const SuccessIcon = () => (
@@ -34,22 +34,22 @@ const StripeReturn = () => {
   const [status, setStatus] = useState('verifying');
   const [countdown, setCountdown] = useState(3);
   const [retrying, setRetrying] = useState(false);
+  const [triggerVerify] = useLazyVerifyStripeReturnQuery();
 
-  const verify = () => {
+  const verify = async () => {
     setStatus('verifying');
-    verifyStripeReturn()
-      .then((data) => {
-        if (data.onboarding_complete) {
-          setStatus('success');
-        } else if (data.details_submitted && !data.card_payments_active) {
-          // Details submitted but Stripe hasn't activated card_payments yet —
-          // this is a brief propagation delay, not a user error.
-          setStatus('pending');
-        } else {
-          setStatus('incomplete');
-        }
-      })
-      .catch(() => setStatus('error'));
+    try {
+      const data = await triggerVerify(undefined, false).unwrap();
+      if (data.onboarding_complete) {
+        setStatus('success');
+      } else if (data.details_submitted && !data.card_payments_active) {
+        setStatus('pending');
+      } else {
+        setStatus('incomplete');
+      }
+    } catch {
+      setStatus('error');
+    }
   };
 
   useEffect(() => { verify(); }, []); // eslint-disable-line react-hooks/exhaustive-deps

@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { getParentComplianceList } from "../../../api/adminApi";
+import { useGetParentComplianceListQuery } from "../../../api/adminApi";
 
 const formatDate = (iso) =>
   iso
@@ -35,39 +35,34 @@ const ComplianceBadge = ({ ok }) => {
 const AdminComplianceSection = () => {
   const { t } = useTranslation("adminDashboard");
 
-  const [data, setData]       = useState([]);
-  const [meta, setMeta]       = useState({ total: 0, page: 1, pages: 1, current_pp_version: null, current_tc_version: null });
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch]   = useState("");
-  const [filter, setFilter]   = useState("all"); // "all" | "non_compliant"
-  const [page, setPage]       = useState(1);
+  // UI state — drives query args
+  const [searchInput, setSearchInput] = useState("");
+  const [search,      setSearch]      = useState("");
+  const [filter,      setFilter]      = useState("all");
+  const [page,        setPage]        = useState(1);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await getParentComplianceList({ page, filter, search: search.trim() || undefined });
-      setData(result.data);
-      setMeta({
-        total: result.total,
-        page: result.page,
-        pages: result.pages,
-        current_pp_version: result.current_pp_version,
-        current_tc_version: result.current_tc_version,
-      });
-    } catch {
-      setData([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, filter, search]);
+  // Debounce search input
+  useEffect(() => {
+    const id = setTimeout(() => setSearch(searchInput), 400);
+    return () => clearTimeout(id);
+  }, [searchInput]);
 
-  useEffect(() => { load(); }, [load]);
+  const queryParams = { page, filter, ...(search.trim() ? { search: search.trim() } : {}) };
+  const { data: result, isLoading, isFetching } = useGetParentComplianceListQuery(queryParams);
 
-  // Reset to page 1 when filter/search changes
+  const rows = result?.data ?? [];
+  const total              = result?.total ?? 0;
+  const pages              = result?.pages ?? 1;
+  const currentPage        = result?.page  ?? page;
+  const currentPpVersion   = result?.current_pp_version  ?? null;
+  const currentTcVersion   = result?.current_tc_version  ?? null;
+
+  const loading = isLoading || isFetching;
+
   const handleFilter = (f) => { setFilter(f); setPage(1); };
-  const handleSearch = (e) => { setSearch(e.target.value); setPage(1); };
+  const handleSearch = (e) => { setSearchInput(e.target.value); setPage(1); };
 
-  const nonCompliantCount = data.filter((p) => !p.compliant).length;
+  const nonCompliantCount = rows.filter((p) => !p.compliant).length;
 
   return (
     <div>
@@ -78,14 +73,14 @@ const AdminComplianceSection = () => {
         </div>
         {/* Current versions pill */}
         <div className="flex items-center gap-3 text-xs text-gray-500">
-          {meta.current_pp_version && (
+          {currentPpVersion && (
             <span className="px-2.5 py-1 rounded-full bg-gray-100 font-medium">
-              Privacy Policy: <span className="text-[#1F2933]">{meta.current_pp_version}</span>
+              Privacy Policy: <span className="text-[#1F2933]">{currentPpVersion}</span>
             </span>
           )}
-          {meta.current_tc_version && (
+          {currentTcVersion && (
             <span className="px-2.5 py-1 rounded-full bg-gray-100 font-medium">
-              Terms & Conditions: <span className="text-[#1F2933]">{meta.current_tc_version}</span>
+              Terms & Conditions: <span className="text-[#1F2933]">{currentTcVersion}</span>
             </span>
           )}
         </div>
@@ -99,7 +94,7 @@ const AdminComplianceSection = () => {
           </svg>
           <input
             type="text"
-            value={search}
+            value={searchInput}
             onChange={handleSearch}
             placeholder={t("legalCompliance.searchPlaceholder")}
             className="w-full pl-9 pr-4 py-2 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
@@ -126,8 +121,8 @@ const AdminComplianceSection = () => {
       {!loading && filter === "all" && (
         <div className="mb-4 flex items-center gap-4 text-sm">
           <span className="text-gray-500">
-            <span className="font-semibold text-[#1F2933]">{meta.total}</span>{" "}
-            {t("legalCompliance.summary.parent", { count: meta.total })}
+            <span className="font-semibold text-[#1F2933]">{total}</span>{" "}
+            {t("legalCompliance.summary.parent", { count: total })}
           </span>
           {nonCompliantCount > 0 && (
             <span className="text-red-600">
@@ -144,7 +139,7 @@ const AdminComplianceSection = () => {
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
-        ) : data.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="py-20 text-center text-sm text-gray-400">
             {filter === "non_compliant"
               ? t("legalCompliance.allCompliant")
@@ -168,7 +163,7 @@ const AdminComplianceSection = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E4E7E4]">
-              {data.map((p) => (
+              {rows.map((p) => (
                 <tr key={p.id} className="hover:bg-[#F5F7F5] transition-colors">
                   {/* Parent */}
                   <td className="px-5 py-3.5">
@@ -186,9 +181,9 @@ const AdminComplianceSection = () => {
                         ? t("legalCompliance.accepted", { version: p.pp_version, date: formatDate(p.pp_accepted_at) })
                         : t("legalCompliance.neverAccepted")}
                     </p>
-                    {!p.pp_compliant && meta.current_pp_version && (
+                    {!p.pp_compliant && currentPpVersion && (
                       <p className="text-xs text-red-500 mt-0.5">
-                        {t("legalCompliance.current", { version: meta.current_pp_version })}
+                        {t("legalCompliance.current", { version: currentPpVersion })}
                       </p>
                     )}
                   </td>
@@ -200,9 +195,9 @@ const AdminComplianceSection = () => {
                         ? t("legalCompliance.accepted", { version: p.tc_version, date: formatDate(p.tc_accepted_at) })
                         : t("legalCompliance.neverAccepted")}
                     </p>
-                    {!p.tc_compliant && meta.current_tc_version && (
+                    {!p.tc_compliant && currentTcVersion && (
                       <p className="text-xs text-red-500 mt-0.5">
-                        {t("legalCompliance.current", { version: meta.current_tc_version })}
+                        {t("legalCompliance.current", { version: currentTcVersion })}
                       </p>
                     )}
                   </td>
@@ -227,23 +222,23 @@ const AdminComplianceSection = () => {
       </div>
 
       {/* Pagination */}
-      {meta.pages > 1 && (
+      {pages > 1 && (
         <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
           <span>
-            {t("legalCompliance.pagination.page", { page: meta.page, pages: meta.pages })}{" "}·{" "}
-            {meta.total} {t("legalCompliance.pagination.result", { count: meta.total })}
+            {t("legalCompliance.pagination.page", { page: currentPage, pages })}{" "}·{" "}
+            {total} {t("legalCompliance.pagination.result", { count: total })}
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={meta.page === 1}
+              disabled={currentPage === 1}
               className="px-3 py-1.5 rounded-lg border border-[#E4E7E4] text-xs font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {t("legalCompliance.pagination.previous")}
             </button>
             <button
-              onClick={() => setPage((p) => Math.min(meta.pages, p + 1))}
-              disabled={meta.page === meta.pages}
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              disabled={currentPage === pages}
               className="px-3 py-1.5 rounded-lg border border-[#E4E7E4] text-xs font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {t("legalCompliance.pagination.next")}

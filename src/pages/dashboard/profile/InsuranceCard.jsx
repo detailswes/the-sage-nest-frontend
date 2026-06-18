@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { saveInsurance, deleteInsurance } from '../../../api/expertApi';
+import { useSaveInsuranceMutation, useDeleteInsuranceMutation } from '../../../api/expertApi';
 import { getDocumentUrl } from '../../../utils/imageUrl';
 import ConfirmModal from '../../../components/ConfirmModal';
 
@@ -32,9 +32,10 @@ const InsuranceCard = ({ initialData = null }) => {
   const [docName, setDocName]       = useState('');
   const [formError, setFormError]   = useState('');
   const [dateWarning, setDateWarning] = useState('');
-  const [saving, setSaving]         = useState(false);
-  const [deleting, setDeleting]       = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [saveInsurance, { isLoading: saving }]   = useSaveInsuranceMutation();
+  const [deleteInsuranceMut, { isLoading: deleting }] = useDeleteInsuranceMutation();
   const fileRef = useRef(null);
 
   const inputClass = (err) =>
@@ -64,33 +65,28 @@ const InsuranceCard = ({ initialData = null }) => {
       setFormError(t('profile.insurance.errors.docRequired')); return;
     }
 
-    setSaving(true);
     try {
       const updated = await saveInsurance({
         policy_expires_at: form.policy_expires_at,
         document: form.document || undefined,
-      });
+      }).unwrap();
       setInsurance(updated);
       setForm({ policy_expires_at: '', document: null });
       setDocName('');
       setDateWarning('');
       setShowForm(false);
     } catch (err) {
-      setFormError(err?.response?.data?.error || t('profile.insurance.errors.saveFailed'));
-    } finally {
-      setSaving(false);
+      setFormError(err?.data?.error || t('profile.insurance.errors.saveFailed'));
     }
   };
 
   const handleDelete = async () => {
-    setDeleting(true);
     try {
-      await deleteInsurance();
+      await deleteInsuranceMut().unwrap();
       setInsurance(null);
       setShowForm(true);
       setShowDeleteModal(false);
     } catch { /* keep record */ }
-    finally { setDeleting(false); }
   };
 
   const expired = insurance && isExpired(insurance.policy_expires_at);
