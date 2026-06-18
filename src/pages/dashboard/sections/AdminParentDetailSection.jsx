@@ -8,6 +8,7 @@ import {
   useGetAuditLogQuery,
   useActivateParentMutation,
   useSuspendParentMutation,
+  useLazyGetParentSuspensionPreviewQuery,
   useGdprDeleteParentMutation,
   useSendParentPasswordResetMutation,
   useResendParentVerificationMutation,
@@ -67,6 +68,7 @@ const AdminParentDetailSection = () => {
   // ── RTK mutations ─────────────────────────────────────────────────────────────
   const [activateParent,          { isLoading: activating }]          = useActivateParentMutation();
   const [suspendParent,           { isLoading: suspending }]          = useSuspendParentMutation();
+  const [fetchSuspendPreview]                                         = useLazyGetParentSuspensionPreviewQuery();
   const [gdprDeleteParent,        { isLoading: gdprMutating }]        = useGdprDeleteParentMutation();
   const [sendParentPasswordReset, { isLoading: resettingPassword }]   = useSendParentPasswordResetMutation();
   const [resendParentVerification, { isLoading: resendingVerif }]     = useResendParentVerificationMutation();
@@ -80,18 +82,58 @@ const AdminParentDetailSection = () => {
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [showGdprDelete,    setShowGdprDelete]    = useState(false);
   const [gdprEmail,         setGdprEmail]         = useState("");
+  const [showSuspendModal,     setShowSuspendModal]     = useState(false);
+  const [suspendPreview,       setSuspendPreview]       = useState(null);
+  const [suspendReason,        setSuspendReason]        = useState("");
+  const [suspendError,         setSuspendError]         = useState("");
+  const [suspendPreviewLoading, setSuspendPreviewLoading] = useState(false);
+  const [suspendLoading,       setSuspendLoading]       = useState(false);
 
   // ── Status actions ────────────────────────────────────────────────────────────
 
+  // Activate — simple confirm modal path (unchanged)
   const handleStatusChange = async (type) => {
     setShowConfirm(null);
     try {
       if (type === "activate") await activateParent(id).unwrap();
-      if (type === "suspend")  await suspendParent(id).unwrap();
+      if (type === "suspend")  await suspendParent({ id }).unwrap();
       toast.success(t("parentDetail.statusActions.success"));
       refetchAudit();
     } catch (e) {
       toast.error(e?.data?.error || t("parentDetail.genericActionError"));
+    }
+  };
+
+  // Suspend — dedicated modal with preview + reason
+  const handleSuspendClick = async () => {
+    setShowSuspendModal(true);
+    setSuspendPreview(null);
+    setSuspendReason("");
+    setSuspendError("");
+    setSuspendPreviewLoading(true);
+    try {
+      const preview = await fetchSuspendPreview(id).unwrap();
+      setSuspendPreview(preview);
+    } catch {
+      setSuspendError(t("parentDetail.suspend.previewError"));
+    } finally {
+      setSuspendPreviewLoading(false);
+    }
+  };
+
+  const handleSuspendConfirm = async () => {
+    if (!suspendReason) { setSuspendError(t("parentDetail.suspend.reasonRequired")); return; }
+    setSuspendLoading(true);
+    setSuspendError("");
+    try {
+      await suspendParent({ id, reason: suspendReason }).unwrap();
+      setShowSuspendModal(false);
+      toast.success(t("parentDetail.statusActions.success"));
+      refetchAudit();
+    } catch (err) {
+      setSuspendError(err?.data?.error || t("parentDetail.genericActionError"));
+    } finally {
+      setSuspendLoading(false);
     }
   };
 
@@ -159,12 +201,6 @@ const AdminParentDetailSection = () => {
       body:   t("parentDetail.confirmModal.activate_body", { name: parentName }),
       btnCls: "bg-green-600 hover:bg-green-700",
       label:  t("parentDetail.confirmModal.activate_confirm"),
-    },
-    suspend: {
-      title:  t("parentDetail.confirmModal.suspend_title"),
-      body:   t("parentDetail.confirmModal.suspend_body", { name: parentName }),
-      btnCls: "bg-orange-600 hover:bg-orange-700",
-      label:  t("parentDetail.confirmModal.suspend_confirm"),
     },
   };
 
@@ -557,7 +593,7 @@ const AdminParentDetailSection = () => {
               )}
               {status !== "SUSPENDED" && (
                 <button
-                  onClick={() => setShowConfirm("suspend")}
+                  onClick={handleSuspendClick}
                   disabled={anyActionLoading}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100 transition-colors disabled:opacity-50"
                 >
@@ -672,6 +708,130 @@ const AdminParentDetailSection = () => {
           </div>
         );
       })()}
+
+      {/* ── Suspension modal ──────────────────────────────────────────────────── */}
+      {showSuspendModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget && !suspendLoading) { setShowSuspendModal(false); } }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 flex-shrink-0">
+                <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-[#1F2933]">{t("parentDetail.suspend.title")}</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{t("parentDetail.suspend.subtitle", { name: parentName })}</p>
+              </div>
+            </div>
+
+            {/* Preview */}
+            {suspendPreviewLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+              </div>
+            ) : suspendPreview && (
+              <div className="mb-5">
+                {suspendPreview.upcomingBookingCount === 0 ? (
+                  <div className="bg-gray-50 border border-[#E4E7E4] rounded-lg px-4 py-3 text-sm text-gray-500">
+                    {t("parentDetail.suspend.noBookings")}
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                      {t("parentDetail.suspend.affectedBookings", { count: suspendPreview.upcomingBookingCount })}
+                    </p>
+                    <div className="border border-[#E4E7E4] rounded-lg overflow-hidden mb-3">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-[#E4E7E4]">
+                            <th className="text-left font-semibold text-gray-400 px-3 py-2">{t("parentDetail.suspend.colSpecialist")}</th>
+                            <th className="text-left font-semibold text-gray-400 px-3 py-2">{t("parentDetail.suspend.colService")}</th>
+                            <th className="text-left font-semibold text-gray-400 px-3 py-2">{t("parentDetail.suspend.colRefund")}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#F0F2F0]">
+                          {suspendPreview.bookings.map((b) => (
+                            <tr key={b.id}>
+                              <td className="px-3 py-2 font-medium text-[#1F2933]">{b.expertName}</td>
+                              <td className="px-3 py-2 text-gray-500 max-w-[140px] truncate">{b.serviceTitle}</td>
+                              <td className="px-3 py-2">
+                                {b.refundAction === "auto_full" ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                    {t("parentDetail.suspend.refundAuto")}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                    {t("parentDetail.suspend.refundManual")}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {suspendPreview.bookings.some((b) => b.refundAction === "manual") && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+                        {t("parentDetail.suspend.manualWarning")}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Reason selector */}
+            {!suspendPreviewLoading && suspendPreview && (
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                  {t("parentDetail.suspend.reasonLabel")} <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={suspendReason}
+                  onChange={(e) => { setSuspendReason(e.target.value); setSuspendError(""); }}
+                  className="w-full px-3 py-2 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition"
+                >
+                  <option value="">{t("parentDetail.suspend.reasonPlaceholder")}</option>
+                  <option value="fraud">{t("parentDetail.suspend.reasonFraud")}</option>
+                  <option value="abuse">{t("parentDetail.suspend.reasonAbuse")}</option>
+                  <option value="admin_error">{t("parentDetail.suspend.reasonAdminError")}</option>
+                  <option value="closure_request">{t("parentDetail.suspend.reasonClosure")}</option>
+                </select>
+              </div>
+            )}
+
+            {/* Error */}
+            {suspendError && (
+              <p className="text-xs text-red-600 mb-3 px-1">{suspendError}</p>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => { if (!suspendLoading) setShowSuspendModal(false); }}
+                disabled={suspendLoading}
+                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {t("parentDetail.suspend.cancel")}
+              </button>
+              <button
+                onClick={handleSuspendConfirm}
+                disabled={suspendLoading || suspendPreviewLoading || !suspendPreview}
+                className="flex-1 py-2.5 px-4 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+              >
+                {suspendLoading ? t("parentDetail.suspend.suspending") : t("parentDetail.suspend.confirm")}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* ── GDPR delete modal ─────────────────────────────────────────────────── */}
       {showGdprDelete && (

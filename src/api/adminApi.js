@@ -301,8 +301,15 @@ export const adminApi = createApi({
         { type: "Parent", id },
       ],
     }),
+    getParentSuspensionPreview: builder.query({
+      query: (id) => ({ url: `/admin/parents/${id}/suspension-preview` }),
+    }),
     suspendParent: builder.mutation({
-      query: (id) => ({ url: `/admin/parents/${id}/suspend`, method: "POST" }),
+      query: ({ id, reason } = {}) => ({
+        url: `/admin/parents/${id}/suspend`,
+        method: "POST",
+        data: reason ? { reason } : undefined,
+      }),
       invalidatesTags: (result, error, id) => [
         "Parent",
         { type: "Parent", id },
@@ -355,6 +362,13 @@ export const adminApi = createApi({
       query: (params = {}) => ({
         url: "/admin/transactions/export",
         params,
+        responseType: "blob",
+      }),
+    }),
+    exportTransactionsXlsx: builder.mutation({
+      query: (params = {}) => ({
+        url: "/admin/transactions/export",
+        params: { ...params, format: "xlsx" },
         responseType: "blob",
       }),
     }),
@@ -422,6 +436,8 @@ export const {
   useGetParentDetailQuery,
   useListParentBookingsQuery,
   useActivateParentMutation,
+  useGetParentSuspensionPreviewQuery,
+  useLazyGetParentSuspensionPreviewQuery,
   useSuspendParentMutation,
   useSendParentPasswordResetMutation,
   useResendParentVerificationMutation,
@@ -430,6 +446,7 @@ export const {
   useGetParentComplianceListQuery,
   useListTransactionsQuery,
   useExportTransactionsCsvMutation,
+  useExportTransactionsXlsxMutation,
   useAdminRetryTransferMutation,
   useAdminMarkTransferResolvedMutation,
   useGetRefundLogQuery,

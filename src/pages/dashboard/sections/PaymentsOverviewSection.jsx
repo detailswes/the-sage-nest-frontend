@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useListTransactionsQuery,
-  useExportTransactionsCsvMutation,
+  useExportTransactionsXlsxMutation,
   useGetBookingDetailQuery,
   useGetRefundLogQuery,
 } from "../../../api/adminApi";
@@ -461,7 +461,7 @@ const PaymentsOverviewSection = () => {
   };
 
   const { data, isLoading, isFetching } = useListTransactionsQuery(queryParams);
-  const [exportTransactionsCsv, { isLoading: exporting }] = useExportTransactionsCsvMutation();
+  const [exportTransactionsXlsx, { isLoading: exportingXlsx }] = useExportTransactionsXlsxMutation();
 
   const transactions = data?.transactions ?? [];
   const total        = data?.total        ?? 0;
@@ -474,7 +474,8 @@ const PaymentsOverviewSection = () => {
 
   const handleExport = async () => {
     try {
-      const blob = await exportTransactionsCsv({
+      const blob = await exportTransactionsXlsx({
+        search,
         payment_status: activeFilter,
         ...(search   ? { search }         : {}),
         ...(fromDate ? { from: fromDate } : {}),
@@ -483,7 +484,7 @@ const PaymentsOverviewSection = () => {
       const url = URL.createObjectURL(blob);
       const a   = document.createElement("a");
       a.href    = url;
-      a.download = `transactions_${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `transactions_${new Date().toISOString().split("T")[0]}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -526,13 +527,13 @@ const PaymentsOverviewSection = () => {
           {view === "transactions" && (
             <button
               onClick={handleExport}
-              disabled={exporting}
+              disabled={exportingXlsx}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[#445446] text-white rounded-xl hover:bg-[#3a4a3b] disabled:opacity-50 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
-              {exporting ? t("paymentsMgmt.exporting") : t("paymentsMgmt.exportBtn")}
+              {exportingXlsx ? t("paymentsMgmt.exporting") : t("paymentsMgmt.exportBtn")}
             </button>
           )}
         </div>
