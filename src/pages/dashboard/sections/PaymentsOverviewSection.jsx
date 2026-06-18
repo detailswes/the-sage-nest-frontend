@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { listTransactions, exportTransactionsCsv, getBookingDetail, getRefundLog } from "../../../api/adminApi";
+import { listTransactions, exportTransactionsXlsx, getBookingDetail, getRefundLog } from "../../../api/adminApi";
 import { formatFormat, formatTransferStatus } from "../../../utils/formatBookingTime";
 import AdminActionsPanel from "../../../components/admin/AdminActionsPanel";
 
@@ -536,7 +536,7 @@ const PaymentsOverviewSection = () => {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const blob = await exportTransactionsCsv({
+      const blob = await exportTransactionsXlsx({
         search,
         payment_status: activeFilter,
         ...(fromDate ? { from: fromDate } : {}),
@@ -545,7 +545,7 @@ const PaymentsOverviewSection = () => {
       const url = URL.createObjectURL(blob);
       const a   = document.createElement("a");
       a.href    = url;
-      a.download = `transactions_${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `transactions_${new Date().toISOString().split("T")[0]}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
