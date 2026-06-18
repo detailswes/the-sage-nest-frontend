@@ -1,7 +1,21 @@
-import { api } from './authApi';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import axiosBaseQuery from '../store/baseQuery';
 
-export const createConnectLink = () =>
-  api.post('/stripe/connect').then((r) => r.data);
+export const stripeApi = createApi({
+  reducerPath: 'stripeApi',
+  baseQuery: axiosBaseQuery,
+  endpoints: (builder) => ({
+    createConnectLink: builder.mutation({
+      query: () => ({ url: '/stripe/connect', method: 'POST' }),
+    }),
+    verifyStripeReturn: builder.query({
+      query: () => ({ url: '/stripe/return' }),
+    }),
+  }),
+});
 
-export const verifyStripeReturn = () =>
-  api.get('/stripe/return').then((r) => r.data);
+export const {
+  useCreateConnectLinkMutation,
+  useVerifyStripeReturnQuery,
+  useLazyVerifyStripeReturnQuery,
+} = stripeApi;

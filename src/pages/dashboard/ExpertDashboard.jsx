@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
-import { getMyProfile, listAvailability } from "../../api/expertApi";
+import { useGetMyProfileQuery, useListAvailabilityQuery } from "../../api/expertApi";
 import { getProfileImageUrl } from "../../utils/imageUrl";
 import LanguageSelector from "../../components/LanguageSelector";
 
@@ -10,7 +10,7 @@ import LanguageSelector from "../../components/LanguageSelector";
 const UserIcon = ({ active }) => (
   <svg
     className={`w-5 h-5 flex-shrink-0 ${
-      active ? "text-[#445446]" : "text-current"
+      active ? "text-white" : "text-current"
     }`}
     fill="none"
     viewBox="0 0 24 24"
@@ -28,7 +28,7 @@ const UserIcon = ({ active }) => (
 const BriefcaseIcon = ({ active }) => (
   <svg
     className={`w-5 h-5 flex-shrink-0 ${
-      active ? "text-[#445446]" : "text-current"
+      active ? "text-white" : "text-current"
     }`}
     fill="none"
     viewBox="0 0 24 24"
@@ -46,7 +46,7 @@ const BriefcaseIcon = ({ active }) => (
 const CalendarIcon = ({ active }) => (
   <svg
     className={`w-5 h-5 flex-shrink-0 ${
-      active ? "text-[#445446]" : "text-current"
+      active ? "text-white" : "text-current"
     }`}
     fill="none"
     viewBox="0 0 24 24"
@@ -64,7 +64,7 @@ const CalendarIcon = ({ active }) => (
 const AppointmentsIcon = ({ active }) => (
   <svg
     className={`w-5 h-5 flex-shrink-0 ${
-      active ? "text-[#445446]" : "text-current"
+      active ? "text-white" : "text-current"
     }`}
     fill="none"
     viewBox="0 0 24 24"
@@ -82,7 +82,7 @@ const AppointmentsIcon = ({ active }) => (
 const SettingsIcon = ({ active }) => (
   <svg
     className={`w-5 h-5 flex-shrink-0 ${
-      active ? "text-[#445446]" : "text-current"
+      active ? "text-white" : "text-current"
     }`}
     fill="none"
     viewBox="0 0 24 24"
@@ -145,25 +145,16 @@ const ExpertDashboard = () => {
   const { t } = useTranslation('expertDashboard');
   const location = useLocation();
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
-  const [sidebarImage, setSidebarImage] = useState(null);
-  const [expertStatus, setExpertStatus] = useState(null);
-  const [changeRequestNote, setChangeRequestNote] = useState("");
-  const [isPublished, setIsPublished] = useState(true);
-  const [hasAvailability, setHasAvailability] = useState(null);
+  const [imgError, setImgError] = useState(false);
 
-  useEffect(() => {
-    getMyProfile()
-      .then((data) => {
-        setSidebarImage(getProfileImageUrl(data.profile_image));
-        setExpertStatus(data.status);
-        setChangeRequestNote(data.change_request_note || "");
-        setIsPublished(data.is_published ?? true);
-      })
-      .catch(() => {});
-    listAvailability()
-      .then((slots) => setHasAvailability(slots.length > 0))
-      .catch(() => setHasAvailability(true)); // on error, hide banner
-  }, []);
+  const { data: profile } = useGetMyProfileQuery();
+  const { data: availSlots, isError: availError } = useListAvailabilityQuery();
+
+  const sidebarImage = imgError ? null : getProfileImageUrl(profile?.profile_image);
+  const expertStatus = profile?.status ?? null;
+  const changeRequestNote = profile?.change_request_note || "";
+  const isPublished = profile?.is_published ?? true;
+  const hasAvailability = availError ? true : availSlots ? availSlots.length > 0 : null;
 
   // Derive active section from URL path
   const lastSegment = location.pathname.split("/").pop();
@@ -182,11 +173,11 @@ const ExpertDashboard = () => {
     : "?";
 
   return (
-    <div className="min-h-screen bg-[#F5F7F5] flex">
+    <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex">
       {/* ── Sidebar ── */}
-      <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-[#E4E7E4] flex flex-col z-10">
+      <aside className="fixed inset-y-0 left-0 w-64 bg-[#dfe2d7] border-r-2 border-[#c5ceba] flex flex-col z-10">
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-[#E4E7E4]">
+        <div className="h-16 flex items-center px-6 border-b border-[#c5ceba]">
           <Link
             to="/dashboard/expert/profile"
             className="flex items-center gap-2.5"
@@ -199,21 +190,21 @@ const ExpertDashboard = () => {
                 e.target.style.display = "none";
               }}
             />
-            <span className="text-[#1F2933] font-bold text-base tracking-tight">
+            <span className="text-[#445446] font-bold text-base tracking-tight">
               Sage Nest
             </span>
           </Link>
         </div>
 
         {/* User info */}
-        <div className="px-4 py-4 border-b border-[#E4E7E4]">
+        <div className="px-4 py-4 border-b border-[#c5ceba]">
           <div className="flex items-center gap-3">
             {sidebarImage ? (
               <img
                 src={sidebarImage}
                 alt={user?.name}
-                className="w-9 h-9 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0"
-                onError={() => setSidebarImage(null)}
+                className="w-9 h-9 rounded-full object-cover border border-[#c5ceba] flex-shrink-0"
+                onError={() => setImgError(true)}
               />
             ) : (
               <div className="w-9 h-9 rounded-full bg-[#445446] text-white flex items-center justify-center text-xs font-bold flex-shrink-0 select-none">
@@ -221,10 +212,10 @@ const ExpertDashboard = () => {
               </div>
             )}
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#1F2933] truncate">
+              <p className="text-sm font-semibold text-[#445446] truncate">
                 {user?.name}
               </p>
-              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              <p className="text-xs text-[#5e6d5b] truncate">{user?.email}</p>
             </div>
           </div>
         </div>
@@ -239,8 +230,8 @@ const ExpertDashboard = () => {
                 to={`/dashboard/expert/${key}`}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
-                    ? "bg-[#445446]/10 text-[#445446]"
-                    : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
+                    ? "bg-[#445446] text-white"
+                    : "text-[#5e6d5b] hover:bg-[#dfe2d7] hover:text-[#445446]"
                 }`}
               >
                 <Icon active={isActive} />
@@ -251,11 +242,11 @@ const ExpertDashboard = () => {
         </nav>
 
         {/* Sign out */}
-        <div className="p-3 border-t border-[#E4E7E4] space-y-1">
+        <div className="p-3 border-t border-[#c5ceba] space-y-1">
           <LanguageSelector />
           <button
             onClick={() => setShowSignOutConfirm(true)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-150"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-[#445446] text-white hover:bg-[#3a4a3b] active:scale-95 transition-all duration-150"
           >
             <LogoutIcon />
             {t('signOut')}

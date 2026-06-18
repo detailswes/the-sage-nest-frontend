@@ -1,10 +1,29 @@
-import { api } from './authApi';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import axiosBaseQuery from '../store/baseQuery';
 
-export const listBlockouts = (from, to) =>
-  api.get('/blockouts', { params: { from, to } }).then((r) => r.data);
+export const blockoutApi = createApi({
+  reducerPath: 'blockoutApi',
+  baseQuery: axiosBaseQuery,
+  tagTypes: ['Blockout'],
+  endpoints: (builder) => ({
+    // arg: { from, to }
+    listBlockouts: builder.query({
+      query: ({ from, to }) => ({ url: '/blockouts', params: { from, to } }),
+      providesTags: ['Blockout'],
+    }),
+    createBlockout: builder.mutation({
+      query: (data) => ({ url: '/blockouts', method: 'POST', data }),
+      invalidatesTags: ['Blockout'],
+    }),
+    deleteBlockout: builder.mutation({
+      query: (id) => ({ url: `/blockouts/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Blockout'],
+    }),
+  }),
+});
 
-export const createBlockout = (data) =>
-  api.post('/blockouts', data).then((r) => r.data);
-
-export const deleteBlockout = (id) =>
-  api.delete(`/blockouts/${id}`).then((r) => r.data);
+export const {
+  useListBlockoutsQuery,
+  useCreateBlockoutMutation,
+  useDeleteBlockoutMutation,
+} = blockoutApi;

@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import { getBookingDetail, updateBookingNote } from "../../api/adminApi";
+import { useGetBookingDetailQuery, useUpdateBookingNoteMutation } from "../../api/adminApi";
 import { formatBookingTime, formatFormat, formatTransferStatus } from "../../utils/formatBookingTime";
 import AdminActionsPanel from "./AdminActionsPanel";
 
@@ -62,54 +63,32 @@ export const DisputedBadge = () => {
 function BookingDetailModal({ bookingId, onClose, onUpdated }) {
   const { t } = useTranslation("adminDashboard");
 
-  const [booking, setBooking]       = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [loadError, setLoadError]   = useState("");
+  const { data: booking, isLoading, isError } = useGetBookingDetailQuery(bookingId);
+  const [updateBookingNote, { isLoading: noteSaving }] = useUpdateBookingNoteMutation();
 
-  const [noteSaving, setNoteSaving] = useState(false);
-  const [noteError, setNoteError]   = useState("");
-  const [noteSuccess, setNoteSuccess] = useState("");
-  const [note, setNote]             = useState("");
-  const [noteDirty, setNoteDirty]   = useState(false);
+  const [note,      setNote]      = useState("");
+  const [noteDirty, setNoteDirty] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getBookingDetail(bookingId);
-      setBooking(data);
-      setNote(data.internal_admin_note || "");
-    } catch {
-      setLoadError(t("bookingModal.loadError"));
-    } finally {
-      setLoading(false);
-    }
-  }, [bookingId, t]);
-
-  useEffect(() => { load(); }, [load]);
-
+  // Sync note from server value (only when it changes, preserves in-progress edits)
   useEffect(() => {
-    if (!noteSuccess) return;
-    const t = setTimeout(() => setNoteSuccess(""), 5000);
-    return () => clearTimeout(t);
-  }, [noteSuccess]);
+    if (!noteDirty) {
+      setNote(booking?.internal_admin_note || "");
+    }
+  }, [booking?.internal_admin_note]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSaveNote = async () => {
-    setNoteError(""); setNoteSuccess("");
-    setNoteSaving(true);
     try {
-      await updateBookingNote(bookingId, note);
-      setNoteSuccess(t("bookingModal.noteSaved"));
+      await updateBookingNote({ id: bookingId, note }).unwrap();
+      toast.success(t("bookingModal.noteSaved"));
       setNoteDirty(false);
       onUpdated();
     } catch (e) {
-      setNoteError(e?.response?.data?.error || t("bookingModal.noteSaveError"));
-    } finally {
-      setNoteSaving(false);
+      toast.error(e?.data?.error || t("bookingModal.noteSaveError"));
     }
   };
 
   const getPaymentStatusLabel = () => {
-    if (!booking.stripe_payment_intent_id) return t("bookingModal.paymentStatus.noPayment");
+    if (!booking?.stripe_payment_intent_id) return t("bookingModal.paymentStatus.noPayment");
     if (["CONFIRMED", "COMPLETED"].includes(booking.status)) {
       if (booking.transfer_status === "failed") return t("bookingModal.paymentStatus.capturedTransferFailed");
       return t("bookingModal.paymentStatus.captured");
@@ -147,12 +126,12 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
           </button>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
-        ) : !booking ? (
-          <div className="p-6 text-center text-sm text-red-500">{loadError || t("bookingModal.notFound")}</div>
+        ) : isError || !booking ? (
+          <div className="p-6 text-center text-sm text-red-500">{t("bookingModal.loadError")}</div>
         ) : (
           <div className="divide-y divide-[#E4E7E4]">
 
@@ -332,22 +311,9 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                 {t("bookingModal.sections.internalNote")}
                 <span className="ml-1.5 text-[10px] normal-case font-normal text-gray-400">{t("bookingModal.sections.internalNoteHint")}</span>
               </p>
-              {(noteError || noteSuccess) && (
-                <div className="mb-2">
-                  {noteError   && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{noteError}</p>}
-                  {noteSuccess && (
-                    <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
-                      <span className="flex-1">{noteSuccess}</span>
-                      <button type="button" onClick={() => setNoteSuccess("")} className="p-0.5 text-green-400 hover:text-green-600 transition-colors flex-shrink-0">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
               <textarea
                 value={note}
-                onChange={(e) => { setNote(e.target.value); setNoteDirty(true); setNoteSuccess(""); }}
+                onChange={(e) => { setNote(e.target.value); setNoteDirty(true); }}
                 rows={3}
                 placeholder={t("bookingModal.notePlaceholder")}
                 className="w-full text-sm border border-[#E4E7E4] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] placeholder-gray-300"
@@ -363,10 +329,10 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
               )}
             </div>
 
-            {/* Admin actions */}
+            {/* Admin actions — RTK mutations in AdminActionsPanel invalidate Booking tag, triggering auto-refetch */}
             <AdminActionsPanel
               booking={booking}
-              onActionComplete={() => { load(); onUpdated(); }}
+              onActionComplete={() => {}}
             />
 
           </div>

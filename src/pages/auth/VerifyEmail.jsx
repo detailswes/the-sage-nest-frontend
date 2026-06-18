@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { verifyEmail } from '../../api/authApi';
+import { useVerifyEmailMutation } from '../../api/userApi';
 import { useAuth } from '../../context/AuthContext';
 import AuthLayout from '../../components/auth/AuthLayout';
 import useResendVerification from '../../hooks/useResendVerification';
@@ -67,6 +67,7 @@ const VerifyEmail = () => {
   const [returnTo, setReturnTo] = useState(null);
   const { login } = useAuth();
   const navigate  = useNavigate();
+  const [verifyEmail] = useVerifyEmailMutation();
   // Prevents React StrictMode's double-invocation from consuming the verification
   // code twice (second call would fail with "already verified" and not return tokens).
   const hasRanRef = useRef(false);
@@ -85,6 +86,7 @@ const VerifyEmail = () => {
     }
 
     verifyEmail({ userId, verificationCode })
+      .unwrap()
       .then((data) => {
         // Auto-login only on first-time verification (tokens are only returned then).
         // The already_verified case intentionally omits tokens — issuing them without
@@ -98,9 +100,9 @@ const VerifyEmail = () => {
         setStatus(data.already_verified ? 'already_verified' : 'success');
       })
       .catch((err) => {
-        const data = err?.response?.data;
-        const code = err?.response?.status;
-        if (data?.expired) setStatus('expired');
+        const errData = err?.data;
+        const code    = err?.status;
+        if (errData?.expired) setStatus('expired');
         else if (code === 400 || code === 404) setStatus('invalid');
         else setStatus('error');
       });

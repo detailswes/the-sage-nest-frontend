@@ -1,129 +1,264 @@
-import axios from 'axios';
-import { api } from './authApi';
+import { createApi } from "@reduxjs/toolkit/query/react";
+import axiosBaseQuery from "../store/baseQuery";
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+export const expertApi = createApi({
+  reducerPath: "expertApi",
+  baseQuery: axiosBaseQuery,
+  tagTypes: [
+    "ExpertProfile",
+    "ExpertDraft",
+    "Qualification",
+    "Certification",
+    "Insurance",
+    "Service",
+    "Availability",
+    "NotificationPrefs",
+  ],
+  endpoints: (builder) => ({
+    // ─── Public ───────────────────────────────────────────────────────────────
+    listExperts: builder.query({
+      query: () => ({ url: "/experts" }),
+    }),
+    getExpertPublic: builder.query({
+      query: (id) => ({ url: `/experts/${id}` }),
+    }),
 
-// ─── Public (no auth required) ───────────────────────────────────────────────
+    // ─── Profile ──────────────────────────────────────────────────────────────
+    getMyProfile: builder.query({
+      query: () => ({ url: "/experts/me" }),
+      providesTags: ["ExpertProfile"],
+    }),
+    updateMyProfile: builder.mutation({
+      query: (data) => ({ url: "/experts/me", method: "PUT", data }),
+      invalidatesTags: ["ExpertProfile"],
+    }),
+    getMyProfileDraft: builder.query({
+      query: () => ({ url: "/experts/me/draft" }),
+      providesTags: ["ExpertDraft"],
+    }),
+    // arg: File (the image file — base query passes it as FormData)
+    uploadProfileImage: builder.mutation({
+      query: (file) => {
+        const fd = new FormData();
+        fd.append("profile_image", file);
+        return {
+          url: "/experts/me/profile-image",
+          method: "POST",
+          data: fd,
+          headers: { "Content-Type": "multipart/form-data" },
+        };
+      },
+      invalidatesTags: ["ExpertProfile"],
+    }),
 
-/** List all approved experts — used by parents browsing the platform */
-export const listExperts = () =>
-  axios.get(`${BASE_URL}/experts`).then((r) => r.data);
+    // ─── Qualifications ───────────────────────────────────────────────────────
+    // arg: { type, custom_name?, document? }
+    addQualification: builder.mutation({
+      query: ({ type, custom_name, document }) => {
+        const fd = new FormData();
+        fd.append("type", type);
+        if (custom_name) fd.append("custom_name", custom_name);
+        if (document) fd.append("document", document);
+        return {
+          url: "/experts/me/qualifications",
+          method: "POST",
+          data: fd,
+          headers: { "Content-Type": "multipart/form-data" },
+        };
+      },
+      invalidatesTags: ["ExpertProfile", "ExpertDraft"],
+    }),
+    // arg: { id, custom_name?, document? }
+    updateQualification: builder.mutation({
+      query: ({ id, custom_name, document }) => {
+        const fd = new FormData();
+        if (custom_name !== undefined) fd.append("custom_name", custom_name);
+        if (document) fd.append("document", document);
+        return {
+          url: `/experts/me/qualifications/${id}`,
+          method: "PUT",
+          data: fd,
+          headers: { "Content-Type": "multipart/form-data" },
+        };
+      },
+      invalidatesTags: ["ExpertProfile", "ExpertDraft"],
+    }),
+    deleteQualification: builder.mutation({
+      query: (id) => ({
+        url: `/experts/me/qualifications/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ExpertProfile", "ExpertDraft"],
+    }),
 
-/** Get a single expert's public profile */
-export const getExpertPublic = (id) =>
-  axios.get(`${BASE_URL}/experts/${id}`).then((r) => r.data);
+    // ─── Certifications ───────────────────────────────────────────────────────
+    // arg: { name, document? }
+    addCertification: builder.mutation({
+      query: ({ name, document }) => {
+        const fd = new FormData();
+        fd.append("name", name);
+        if (document) fd.append("document", document);
+        return {
+          url: "/experts/me/certifications",
+          method: "POST",
+          data: fd,
+          headers: { "Content-Type": "multipart/form-data" },
+        };
+      },
+      invalidatesTags: ["ExpertProfile", "ExpertDraft"],
+    }),
+    // arg: { id, name?, document? }
+    updateCertification: builder.mutation({
+      query: ({ id, name, document }) => {
+        const fd = new FormData();
+        if (name) fd.append("name", name);
+        if (document) fd.append("document", document);
+        return {
+          url: `/experts/me/certifications/${id}`,
+          method: "PUT",
+          data: fd,
+          headers: { "Content-Type": "multipart/form-data" },
+        };
+      },
+      invalidatesTags: ["ExpertProfile", "ExpertDraft"],
+    }),
+    deleteCertification: builder.mutation({
+      query: (id) => ({
+        url: `/experts/me/certifications/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ExpertProfile", "ExpertDraft"],
+    }),
 
-// ─── Profile ──────────────────────────────────────────────────────────────────
-export const getMyProfile = () => api.get('/experts/me').then((r) => r.data);
+    // ─── Insurance ────────────────────────────────────────────────────────────
+    // arg: { policy_expires_at, document? }
+    saveInsurance: builder.mutation({
+      query: ({ policy_expires_at, document }) => {
+        const fd = new FormData();
+        fd.append("policy_expires_at", policy_expires_at);
+        if (document) fd.append("document", document);
+        return {
+          url: "/experts/me/insurance",
+          method: "PUT",
+          data: fd,
+          headers: { "Content-Type": "multipart/form-data" },
+        };
+      },
+      invalidatesTags: ["ExpertProfile", "ExpertDraft"],
+    }),
+    deleteInsurance: builder.mutation({
+      query: () => ({ url: "/experts/me/insurance", method: "DELETE" }),
+      invalidatesTags: ["ExpertProfile", "ExpertDraft"],
+    }),
 
-export const updateMyProfile = (data) =>
-  api.put('/experts/me', data).then((r) => r.data);
+    // ─── Business Information ──────────────────────────────────────────────────
+    saveBusinessInfo: builder.mutation({
+      query: (data) => ({
+        url: "/experts/me/business-info",
+        method: "PUT",
+        data,
+      }),
+      invalidatesTags: ["ExpertProfile", "ExpertDraft"],
+    }),
 
-export const getMyProfileDraft = () =>
-  api.get('/experts/me/draft').then((r) => r.data);
+    // ─── Notification Preferences ──────────────────────────────────────────────
+    getNotificationPreferences: builder.query({
+      query: () => ({ url: "/experts/me/notification-preferences" }),
+      providesTags: ["NotificationPrefs"],
+    }),
+    updateNotificationPreferences: builder.mutation({
+      query: (prefs) => ({
+        url: "/experts/me/notification-preferences",
+        method: "PUT",
+        data: prefs,
+      }),
+      invalidatesTags: ["NotificationPrefs"],
+    }),
 
-export const uploadProfileImage = (file) => {
-  const fd = new FormData();
-  fd.append('profile_image', file);
-  return api
-    .post('/experts/me/profile-image', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then((r) => r.data);
-};
+    // ─── GDPR ─────────────────────────────────────────────────────────────────
+    exportMyData: builder.query({
+      query: () => ({ url: "/auth/data-export" }),
+    }),
 
-// ─── Qualifications ───────────────────────────────────────────────────────────
-export const addQualification = ({ type, custom_name, document }) => {
-  const fd = new FormData();
-  fd.append('type', type);
-  if (custom_name) fd.append('custom_name', custom_name);
-  if (document) fd.append('document', document);
-  return api
-    .post('/experts/me/qualifications', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then((r) => r.data);
-};
+    // ─── Services ─────────────────────────────────────────────────────────────
+    listServices: builder.query({
+      query: () => ({ url: "/services" }),
+      providesTags: ["Service"],
+    }),
+    createService: builder.mutation({
+      query: (data) => ({ url: "/services", method: "POST", data }),
+      invalidatesTags: ["Service"],
+    }),
+    // arg: { id, ...data }
+    updateService: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/services/${id}`,
+        method: "PUT",
+        data,
+      }),
+      invalidatesTags: ["Service"],
+    }),
+    deleteService: builder.mutation({
+      query: (id) => ({ url: `/services/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Service"],
+    }),
+    // arg: ids (array)
+    reorderServices: builder.mutation({
+      query: (ids) => ({
+        url: "/services/reorder",
+        method: "PUT",
+        data: { ids },
+      }),
+      invalidatesTags: ["Service"],
+    }),
 
-export const updateQualification = (id, { custom_name, document }) => {
-  const fd = new FormData();
-  if (custom_name !== undefined) fd.append('custom_name', custom_name);
-  if (document) fd.append('document', document);
-  return api
-    .put(`/experts/me/qualifications/${id}`, fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then((r) => r.data);
-};
+    // ─── Availability ──────────────────────────────────────────────────────────
+    listAvailability: builder.query({
+      query: () => ({ url: "/availability" }),
+      providesTags: ["Availability"],
+    }),
+    addAvailabilitySlot: builder.mutation({
+      query: (data) => ({ url: "/availability", method: "POST", data }),
+      invalidatesTags: ["Availability"],
+    }),
+    removeAvailabilitySlot: builder.mutation({
+      query: (id) => ({ url: `/availability/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Availability"],
+    }),
+    checkAvailabilityConflicts: builder.query({
+      query: (id) => ({ url: `/availability/${id}/conflicts` }),
+    }),
+  }),
+});
 
-export const deleteQualification = (id) =>
-  api.delete(`/experts/me/qualifications/${id}`).then((r) => r.data);
-
-// ─── Certifications ───────────────────────────────────────────────────────────
-export const addCertification = ({ name, document }) => {
-  const fd = new FormData();
-  fd.append('name', name);
-  if (document) fd.append('document', document);
-  return api
-    .post('/experts/me/certifications', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then((r) => r.data);
-};
-
-export const updateCertification = (id, { name, document }) => {
-  const fd = new FormData();
-  if (name) fd.append('name', name);
-  if (document) fd.append('document', document);
-  return api
-    .put(`/experts/me/certifications/${id}`, fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then((r) => r.data);
-};
-
-export const deleteCertification = (id) =>
-  api.delete(`/experts/me/certifications/${id}`).then((r) => r.data);
-
-// ─── Insurance ────────────────────────────────────────────────────────────────
-export const saveInsurance = ({ policy_expires_at, document }) => {
-  const fd = new FormData();
-  fd.append('policy_expires_at', policy_expires_at);
-  if (document) fd.append('document', document);
-  return api
-    .put('/experts/me/insurance', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then((r) => r.data);
-};
-
-export const deleteInsurance = () =>
-  api.delete('/experts/me/insurance').then((r) => r.data);
-
-// ─── Business Information ──────────────────────────────────────────────────────
-export const saveBusinessInfo = (data) =>
-  api.put('/experts/me/business-info', data).then((r) => r.data);
-
-// ─── Notification Preferences ─────────────────────────────────────────────────
-export const getNotificationPreferences = () =>
-  api.get('/experts/me/notification-preferences').then((r) => r.data);
-
-export const updateNotificationPreferences = (prefs) =>
-  api.put('/experts/me/notification-preferences', prefs).then((r) => r.data);
-
-// ─── GDPR Data Export ─────────────────────────────────────────────────────────
-export const exportMyData = () =>
-  api.get('/auth/data-export').then((r) => r.data);
-
-// ─── Services ─────────────────────────────────────────────────────────────────
-export const listServices = () => api.get('/services').then((r) => r.data);
-export const createService = (data) => api.post('/services', data).then((r) => r.data);
-export const updateService = (id, data) => api.put(`/services/${id}`, data).then((r) => r.data);
-export const deleteService = (id) => api.delete(`/services/${id}`).then((r) => r.data);
-export const reorderServices = (ids) => api.put('/services/reorder', { ids }).then((r) => r.data);
-
-// ─── Availability ─────────────────────────────────────────────────────────────
-export const listAvailability = () => api.get('/availability').then((r) => r.data);
-export const addAvailabilitySlot = (data) => api.post('/availability', data).then((r) => r.data);
-export const removeAvailabilitySlot = (id) => api.delete(`/availability/${id}`).then((r) => r.data);
-export const checkAvailabilityConflicts = (id) => api.get(`/availability/${id}/conflicts`).then((r) => r.data);
+export const {
+  useListExpertsQuery,
+  useGetExpertPublicQuery,
+  useGetMyProfileQuery,
+  useUpdateMyProfileMutation,
+  useGetMyProfileDraftQuery,
+  useUploadProfileImageMutation,
+  useAddQualificationMutation,
+  useUpdateQualificationMutation,
+  useDeleteQualificationMutation,
+  useAddCertificationMutation,
+  useUpdateCertificationMutation,
+  useDeleteCertificationMutation,
+  useSaveInsuranceMutation,
+  useDeleteInsuranceMutation,
+  useSaveBusinessInfoMutation,
+  useGetNotificationPreferencesQuery,
+  useUpdateNotificationPreferencesMutation,
+  useExportMyDataQuery,
+  useListServicesQuery,
+  useCreateServiceMutation,
+  useUpdateServiceMutation,
+  useDeleteServiceMutation,
+  useReorderServicesMutation,
+  useListAvailabilityQuery,
+  useAddAvailabilitySlotMutation,
+  useRemoveAvailabilitySlotMutation,
+  useCheckAvailabilityConflictsQuery,
+  useLazyCheckAvailabilityConflictsQuery,
+  useLazyExportMyDataQuery,
+} = expertApi;

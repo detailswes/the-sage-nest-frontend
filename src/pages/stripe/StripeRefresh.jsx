@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createConnectLink } from '../../api/stripeApi';
+import { useCreateConnectLinkMutation } from '../../api/stripeApi';
 
 /**
  * Stripe redirects here when the onboarding link expires.
@@ -9,18 +9,20 @@ import { createConnectLink } from '../../api/stripeApi';
 const StripeRefresh = () => {
   const navigate = useNavigate();
   const [error, setError] = useState(false);
+  const [createConnectLink] = useCreateConnectLinkMutation();
 
   useEffect(() => {
     createConnectLink()
+      .unwrap()
       .then((data) => {
         window.location.href = data.url;
       })
       .catch(() => setError(true));
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F5F7F5] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg border border-[#E4E7E4] w-full max-w-md px-8 py-10 text-center">
           <div className="flex items-center justify-center gap-2 mb-8">
             <img
@@ -52,7 +54,7 @@ const StripeRefresh = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7F5] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg border border-[#E4E7E4] w-full max-w-md px-8 py-10 text-center">
         <div className="flex items-center justify-center gap-2 mb-8">
           <img

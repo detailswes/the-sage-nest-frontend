@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { getLegalVersionsApi } from '../../api/authApi';
+import { useGetLegalVersionsQuery } from '../../api/userApi';
 
 const Section = ({ title, children }) => (
   <div className="mb-8">
@@ -12,16 +11,11 @@ const formatDate = (iso) =>
   new Date(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 
 const PrivacyPolicyPage = () => {
-  const [doc, setDoc] = useState(null);
-
-  useEffect(() => {
-    getLegalVersionsApi()
-      .then((data) => setDoc(data.privacy_policy))
-      .catch(() => {});
-  }, []);
+  const { data } = useGetLegalVersionsQuery();
+  const doc = data?.privacy_policy ?? null;
 
   return (
-  <div className="min-h-screen bg-[#F5F7F5] py-10 px-4">
+  <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x py-10 px-4">
     <div className="max-w-2xl mx-auto">
 
       <div className="mb-8 text-center">

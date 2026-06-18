@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { isValidIBAN, electronicFormatIBAN } from "ibantools";
-import { saveBusinessInfo } from "../../../api/expertApi";
+import { useSaveBusinessInfoMutation } from "../../../api/expertApi";
 
 const Spinner = () => (
   <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin flex-shrink-0" />
@@ -52,8 +52,9 @@ const BusinessInfoCard = ({ initialData = null }) => {
   const lng = i18n.language;
   const [data, setData] = useState(initialData);
   const [showForm, setShowForm] = useState(!initialData);
-  const [saving, setSaving]       = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
+
+  const [saveBusinessInfo, { isLoading: saving }] = useSaveBusinessInfoMutation();
   const [serverError, setServerError] = useState("");
   const [saved, setSaved]         = useState(false);
 
@@ -130,7 +131,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
       return;
     }
 
-    setSaving(true);
     try {
       const payload = {
         entity_type: form.entity_type,
@@ -149,7 +149,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
         municipality: form.municipality.trim() || null,
         business_address: form.business_address.trim() || null,
       };
-      const updated = await saveBusinessInfo(payload);
+      const updated = await saveBusinessInfo(payload).unwrap();
       setData(updated);
       setShowForm(false);
       setSaved(true);
@@ -157,10 +157,8 @@ const BusinessInfoCard = ({ initialData = null }) => {
       setTimeout(() => setSaved(false), 5000);
     } catch (err) {
       setServerError(
-        err?.response?.data?.error || t("profile.business.errors.saveFailed")
+        err?.data?.error || t("profile.business.errors.saveFailed")
       );
-    } finally {
-      setSaving(false);
     }
   };
 

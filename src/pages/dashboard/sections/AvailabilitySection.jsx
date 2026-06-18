@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
 import ConfirmModal from '../../../components/ConfirmModal';
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
@@ -18,19 +18,19 @@ import { it as itLocale } from "date-fns/locale/it";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 import {
-  listAvailability,
-  addAvailabilitySlot,
-  removeAvailabilitySlot,
-  checkAvailabilityConflicts,
-  getMyProfile,
-  updateMyProfile,
+  useListAvailabilityQuery,
+  useAddAvailabilitySlotMutation,
+  useRemoveAvailabilitySlotMutation,
+  useLazyCheckAvailabilityConflictsQuery,
+  useGetMyProfileQuery,
+  useUpdateMyProfileMutation,
 } from "../../../api/expertApi";
 import {
-  listBlockouts,
-  createBlockout,
-  deleteBlockout,
+  useListBlockoutsQuery,
+  useCreateBlockoutMutation,
+  useDeleteBlockoutMutation,
 } from "../../../api/blockoutApi";
-import { getCalendarBookings } from "../../../api/bookingApi";
+import { useGetCalendarBookingsQuery } from "../../../api/bookingApi";
 
 // ─── date-fns localizer ───────────────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
@@ -217,7 +217,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
         </button>
         <button
           onClick={() => onNavigate("TODAY")}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#E4E7E4] hover:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#c5ceba] hover:bg-gray-50 transition-colors"
         >
           {t('availability.toolbar.today')}
         </button>
@@ -232,7 +232,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
         </button>
         <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
       </div>
-      <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
+      <div className="flex rounded-lg border border-[#c5ceba] overflow-hidden">
         {["day", "week", "month"].map((v) => (
           <button
             key={v}
@@ -395,11 +395,12 @@ const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formE
   const [form, setForm] = useState(EMPTY_SLOT_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [pendingRemove, setPendingRemove] = useState(null);
+  const [checkConflicts] = useLazyCheckAvailabilityConflictsQuery();
 
   const handleStartRemove = async (slot) => {
     setPendingRemove({ id: slot.id, checking: true, conflicts: null });
     try {
-      const data = await checkAvailabilityConflicts(slot.id);
+      const data = await checkConflicts(slot.id).unwrap();
       setPendingRemove({ id: slot.id, checking: false, conflicts: data.bookings });
     } catch {
       setPendingRemove({ id: slot.id, checking: false, conflicts: [] });
@@ -453,7 +454,7 @@ const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formE
   })).filter(({ slots: ds }) => ds.length > 0);
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5">
       <h3 className="text-sm font-semibold text-[#1F2933] mb-4">
         {t('availability.weekly.title')}
       </h3>
@@ -474,7 +475,7 @@ const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formE
               <select
                 value={form.day_of_week}
                 onChange={(e) => setForm((f) => ({ ...f, day_of_week: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] appearance-none pr-7"
+                className="w-full px-3 py-2 rounded-lg border border-[#c5ceba] text-sm text-[#1F2933] bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] appearance-none pr-7"
               >
                 {Array.from({ length: 7 }, (_, i) => (
                   <option key={i} value={i}>{t('availability.days.' + i)}</option>
@@ -711,7 +712,7 @@ const BlockoutPanel = ({
   const sortedBlockouts = [...blockouts].sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5">
       <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
         {t('availability.blockout.title')}
       </h3>
@@ -786,7 +787,7 @@ const BlockoutPanel = ({
           <label className="block text-xs font-medium text-gray-600 mb-1">
             {t('availability.blockout.blockTypeLabel')}
           </label>
-          <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
+          <div className="flex rounded-lg border border-[#c5ceba] overflow-hidden">
             {[
               { value: "full_day",  label: t('availability.blockout.fullDayBtn') },
               { value: "time_slot", label: t('availability.blockout.timeSlotBtn') },
@@ -913,37 +914,39 @@ const AvailabilitySection = () => {
   const [date, setDate] = useState(new Date());
   const [range, setRange] = useState(() => getRangeForView("week", new Date()));
 
-  const [slots,       setSlots]       = useState([]);
-  const [blockouts,   setBlockouts]   = useState([]);
-  const [calBookings, setCalBookings] = useState([]);
-
-  const [loadingInit, setLoadingInit] = useState(true);
-  const [initError,   setInitError]   = useState('');
-  const [expertTz,    setExpertTz]    = useState("");
-
-  const [bufferMinutes, setBufferMinutes] = useState(0);
-  const [savingBuffer,  setSavingBuffer]  = useState(false);
-  const [bufferSaved,   setBufferSaved]   = useState(false);
-  const [bufferError,   setBufferError]   = useState("");
-
-  const [advanceDays,   setAdvanceDays]   = useState(60);
-  const [savingAdvance, setSavingAdvance] = useState(false);
-  const [advanceSaved,  setAdvanceSaved]  = useState(false);
-  const [advanceError,  setAdvanceError]  = useState("");
-
-  const [noticeHours,  setNoticeHours]  = useState(24);
-  const [savingNotice, setSavingNotice] = useState(false);
-  const [noticeSaved,  setNoticeSaved]  = useState(false);
-  const [noticeError,  setNoticeError]  = useState("");
-
-  const [addingSlot,  setAddingSlot]  = useState(false);
   const [removingId,  setRemovingId]  = useState(null);
   const [slotError,   setSlotError]   = useState("");
-
-  const [creatingBlock, setCreatingBlock] = useState(false);
   const [deletingBlock, setDeletingBlock] = useState(null);
   const [blockError,    setBlockError]    = useState("");
   const [blockInfo,     setBlockInfo]     = useState("");
+  const [bufferSaved,  setBufferSaved]  = useState(false);
+  const [bufferError,  setBufferError]  = useState("");
+  const [advanceSaved, setAdvanceSaved] = useState(false);
+  const [advanceError, setAdvanceError] = useState("");
+  const [noticeSaved,  setNoticeSaved]  = useState(false);
+  const [noticeError,  setNoticeError]  = useState("");
+
+  // RTK queries — range drives blockout + calendar auto-refetch
+  const rangeFrom = range.start.toISOString();
+  const rangeTo   = range.end.toISOString();
+
+  const { data: slots = [], isLoading: loadingSlots, isError: slotsError } = useListAvailabilityQuery();
+  const { data: profile } = useGetMyProfileQuery();
+  const { data: blockouts = [] }   = useListBlockoutsQuery({ from: rangeFrom, to: rangeTo });
+  const { data: calBookings = [] } = useGetCalendarBookingsQuery({ from: rangeFrom, to: rangeTo });
+
+  const expertTz      = profile?.timezone || "";
+  const bufferMinutes = profile?.buffer_minutes ?? 0;
+  const advanceDays   = profile?.advance_booking_days ?? 60;
+  const noticeHours   = profile?.min_notice_hours ?? 24;
+
+  const [addAvailabilitySlot, { isLoading: addingSlot }] = useAddAvailabilitySlotMutation();
+  const [removeAvailabilitySlot]                         = useRemoveAvailabilitySlotMutation();
+  const [createBlockoutMut, { isLoading: creatingBlock }] = useCreateBlockoutMutation();
+  const [deleteBlockoutMut]                               = useDeleteBlockoutMutation();
+  const [updateBuffer,  { isLoading: savingBuffer }]  = useUpdateMyProfileMutation();
+  const [updateAdvance, { isLoading: savingAdvance }] = useUpdateMyProfileMutation();
+  const [updateNotice,  { isLoading: savingNotice }]  = useUpdateMyProfileMutation();
 
   // ── Suppress overflow indicators on off-range (prior/next month) cells ───────
   const viewedDateRef = useRef(date);
@@ -964,43 +967,7 @@ const AvailabilitySection = () => {
     };
   }, []);
 
-  // ── Initial load ─────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const initialRange = getRangeForView("week", new Date());
-    Promise.all([
-      listAvailability(),
-      listBlockouts(initialRange.start.toISOString(), initialRange.end.toISOString()),
-      getCalendarBookings(initialRange.start.toISOString(), initialRange.end.toISOString()),
-      getMyProfile(),
-    ])
-      .then(([s, b, bk, profile]) => {
-        setSlots(s);
-        setBlockouts(b);
-        setCalBookings(bk);
-        setExpertTz(profile?.timezone || "");
-        setBufferMinutes(profile?.buffer_minutes ?? 0);
-        setAdvanceDays(profile?.advance_booking_days ?? 60);
-        setNoticeHours(profile?.min_notice_hours ?? 24);
-      })
-      .catch(() => setInitError('availability.loadFailed'))
-      .finally(() => setLoadingInit(false));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Refresh blockouts + bookings when range changes ───────────────────────────
-  const refreshRangeData = useCallback(async (newRange) => {
-    try {
-      const [b, bk] = await Promise.all([
-        listBlockouts(newRange.start.toISOString(), newRange.end.toISOString()),
-        getCalendarBookings(newRange.start.toISOString(), newRange.end.toISOString()),
-      ]);
-      setBlockouts(b);
-      setCalBookings(bk);
-    } catch {
-      /* non-critical */
-    }
-  }, []);
-
-  // ── Navigation ───────────────────────────────────────────────────────────────
+  // ── Navigation — just update state; RTK auto-refetches when rangeFrom/rangeTo change ─
   const handleNavigate = useCallback(
     (action) => {
       let newDate;
@@ -1018,39 +985,30 @@ const AvailabilitySection = () => {
         newDate = action;
       }
       setDate(newDate);
-      const newRange = getRangeForView(view, newDate);
-      setRange(newRange);
-      refreshRangeData(newRange);
+      setRange(getRangeForView(view, newDate));
     },
-    [view, date, refreshRangeData]
+    [view, date]
   );
 
   const handleViewChange = useCallback(
     (newView) => {
       setView(newView);
-      const newRange = getRangeForView(newView, date);
-      setRange(newRange);
-      refreshRangeData(newRange);
+      setRange(getRangeForView(newView, date));
     },
-    [date, refreshRangeData]
+    [date]
   );
 
-  const handleRangeChange = useCallback(
-    (newRange) => {
-      let start, end;
-      if (Array.isArray(newRange)) {
-        start = newRange[0];
-        end = addDays(newRange[newRange.length - 1], 1);
-      } else {
-        start = newRange.start;
-        end = newRange.end;
-      }
-      const r = { start, end };
-      setRange(r);
-      refreshRangeData(r);
-    },
-    [refreshRangeData]
-  );
+  const handleRangeChange = useCallback((newRange) => {
+    let start, end;
+    if (Array.isArray(newRange)) {
+      start = newRange[0];
+      end = addDays(newRange[newRange.length - 1], 1);
+    } else {
+      start = newRange.start;
+      end = newRange.end;
+    }
+    setRange({ start, end });
+  }, []);
 
   // ── Initial scroll position ───────────────────────────────────────────────────
   const scrollToTime = useMemo(() => {
@@ -1075,27 +1033,18 @@ const AvailabilitySection = () => {
 
   // ── Slot handlers ─────────────────────────────────────────────────────────────
   const handleAddSlot = async (data) => {
-    setAddingSlot(true);
     setSlotError("");
     try {
-      const created = await addAvailabilitySlot(data);
-      setSlots((prev) =>
-        [...prev, created].sort(
-          (a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time)
-        )
-      );
+      await addAvailabilitySlot(data).unwrap();
     } catch (err) {
-      setSlotError(err?.response?.data?.error || t('availability.weekly.addFailed'));
-    } finally {
-      setAddingSlot(false);
+      setSlotError(err?.data?.error || t('availability.weekly.addFailed'));
     }
   };
 
   const handleRemoveSlot = async (id) => {
     setRemovingId(id);
     try {
-      await removeAvailabilitySlot(id);
-      setSlots((prev) => prev.filter((s) => s.id !== id));
+      await removeAvailabilitySlot(id).unwrap();
     } catch {
       setSlotError(t('availability.weekly.removeFailed'));
     } finally {
@@ -1105,12 +1054,10 @@ const AvailabilitySection = () => {
 
   // ── Blockout handlers ─────────────────────────────────────────────────────────
   const handleCreateBlockout = async (data) => {
-    setCreatingBlock(true);
     setBlockError("");
     setBlockInfo("");
     try {
-      const { blockouts: newBlockouts, removedCount, skipped } = await createBlockout(data);
-
+      const { blockouts: newBlockouts, removedCount, skipped } = await createBlockoutMut(data).unwrap();
       if (newBlockouts.length === 0) {
         setBlockError(
           skipped > 0
@@ -1118,36 +1065,20 @@ const AvailabilitySection = () => {
             : t('availability.blockout.info.noneCreated')
         );
       } else {
-        setBlockouts((prev) => {
-          if (removedCount > 0) {
-            const newDates = new Set(newBlockouts.map((b) => new Date(b.date).toDateString()));
-            return [
-              ...prev.filter((b) => !(b.start_time && newDates.has(new Date(b.date).toDateString()))),
-              ...newBlockouts,
-            ];
-          }
-          return [...prev, ...newBlockouts];
-        });
-
         const parts = [];
-        if (removedCount > 0)
-          parts.push(t('availability.blockout.info.removedBlocks', { count: removedCount }));
-        if (skipped > 0)
-          parts.push(t('availability.blockout.info.skippedDays', { count: skipped }));
+        if (removedCount > 0) parts.push(t('availability.blockout.info.removedBlocks', { count: removedCount }));
+        if (skipped > 0) parts.push(t('availability.blockout.info.skippedDays', { count: skipped }));
         if (parts.length) setBlockInfo(parts.join(" · ") + ".");
       }
     } catch (err) {
-      setBlockError(err?.response?.data?.error || t('availability.blockout.errors.createFailed'));
-    } finally {
-      setCreatingBlock(false);
+      setBlockError(err?.data?.error || t('availability.blockout.errors.createFailed'));
     }
   };
 
   const handleDeleteBlockout = async (id) => {
     setDeletingBlock(id);
     try {
-      await deleteBlockout(id);
-      setBlockouts((prev) => prev.filter((b) => b.id !== id));
+      await deleteBlockoutMut(id).unwrap();
     } catch {
       setBlockError(t('availability.blockout.errors.restoreFailed'));
     } finally {
@@ -1155,59 +1086,45 @@ const AvailabilitySection = () => {
     }
   };
 
-  // ── Buffer save handler ───────────────────────────────────────────────────────
+  // ── Settings save handlers ────────────────────────────────────────────────────
   const handleSaveBuffer = async (value) => {
-    setSavingBuffer(true);
     setBufferError("");
     setBufferSaved(false);
     try {
-      await updateMyProfile({ buffer_minutes: value });
-      setBufferMinutes(value);
+      await updateBuffer({ buffer_minutes: value }).unwrap();
       setBufferSaved(true);
       setTimeout(() => setBufferSaved(false), 3000);
     } catch {
       setBufferError(t('availability.buffer.saveFailed'));
-    } finally {
-      setSavingBuffer(false);
     }
   };
 
-  // ── Advance booking limit save handler ────────────────────────────────────────
   const handleSaveAdvance = async (value) => {
-    setSavingAdvance(true);
     setAdvanceError("");
     setAdvanceSaved(false);
     try {
-      await updateMyProfile({ advance_booking_days: value });
-      setAdvanceDays(value);
+      await updateAdvance({ advance_booking_days: value }).unwrap();
       setAdvanceSaved(true);
       setTimeout(() => setAdvanceSaved(false), 3000);
     } catch {
       setAdvanceError(t('availability.advance.saveFailed'));
-    } finally {
-      setSavingAdvance(false);
     }
   };
 
-  // ── Minimum notice period save handler ────────────────────────────────────────
   const handleSaveNotice = async (value) => {
-    setSavingNotice(true);
     setNoticeError("");
     setNoticeSaved(false);
     try {
-      await updateMyProfile({ min_notice_hours: value });
-      setNoticeHours(value);
+      await updateNotice({ min_notice_hours: value }).unwrap();
       setNoticeSaved(true);
       setTimeout(() => setNoticeSaved(false), 3000);
     } catch {
       setNoticeError(t('availability.notice.saveFailed'));
-    } finally {
-      setSavingNotice(false);
     }
   };
 
   // ── Loading ───────────────────────────────────────────────────────────────────
-  if (loadingInit) {
+  if (loadingSlots) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -1225,18 +1142,18 @@ const AvailabilitySection = () => {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">{t('availability.heading')}</h2>
-        <p className="text-sm text-gray-500 mt-1">{t('availability.subheading')}</p>
+        <h2 className="text-xl font-semibold text-[#445446]">{t('availability.heading')}</h2>
+        <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('availability.subheading')}</p>
       </div>
 
-      {initError && (
+      {slotsError && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {t(initError)}
+          {t('availability.loadFailed')}
         </div>
       )}
 
       {/* Calendar */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5 mb-5">
         <Legend />
         <CustomToolbar
           label={calendarLabel}
@@ -1277,7 +1194,7 @@ const AvailabilitySection = () => {
 
       {/* Timezone notice */}
       {expertTz ? (
-        <div className="mb-4 px-4 py-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-sm text-gray-600">
+        <div className="mb-4 px-4 py-3 bg-[#dfe2d7]/30 border border-[#c5ceba] rounded-lg text-sm text-gray-600">
           {t('availability.timezone.setPre')}{" "}
           <span className="font-semibold text-[#1F2933]">{expertTz}</span>
         </div>
@@ -1293,7 +1210,7 @@ const AvailabilitySection = () => {
       )}
 
       {/* Buffer Between Sessions */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5 mb-5">
         <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
           {t('availability.buffer.title')}
         </h3>
@@ -1336,7 +1253,7 @@ const AvailabilitySection = () => {
       </div>
 
       {/* Advance Booking Limit */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5 mb-5">
         <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
           {t('availability.advance.title')}
         </h3>
@@ -1379,7 +1296,7 @@ const AvailabilitySection = () => {
       </div>
 
       {/* Minimum Notice Period */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5 mb-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5 mb-5">
         <h3 className="text-sm font-semibold text-[#1F2933] mb-1">
           {t('availability.notice.title')}
         </h3>

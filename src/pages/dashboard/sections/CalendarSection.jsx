@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import {
@@ -8,9 +8,9 @@ import {
 import { enGB } from 'date-fns/locale/en-GB';
 import { it as itLocale } from 'date-fns/locale/it';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { getCalendarBookings } from '../../../api/bookingApi';
-import { listAvailability } from '../../../api/expertApi';
-import { listBlockouts } from '../../../api/blockoutApi';
+import { useGetCalendarBookingsQuery } from '../../../api/bookingApi';
+import { useListAvailabilityQuery } from '../../../api/expertApi';
+import { useListBlockoutsQuery } from '../../../api/blockoutApi';
 
 // ─── react-big-calendar localizer — Monday week start, EN + IT locales ────────
 const locales = { 'en-GB': enGB, 'it': itLocale };
@@ -150,7 +150,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
         </button>
         <button
           onClick={() => onNavigate('TODAY')}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#E4E7E4] hover:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#c5ceba] hover:bg-[#dfe2d7]/50 transition-colors"
         >
           {t('calendar.toolbar.today')}
         </button>
@@ -165,7 +165,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
         </button>
         <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
       </div>
-      <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
+      <div className="flex rounded-lg border border-[#c5ceba] overflow-hidden">
         {VIEWS.map((v) => (
           <button
             key={v}
@@ -173,7 +173,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
             className={`px-4 py-1.5 text-xs font-medium transition-colors ${
               view === v
                 ? 'bg-[#445446] text-white'
-                : 'text-gray-500 hover:bg-gray-50 bg-white'
+                : 'text-gray-500 hover:bg-[#dfe2d7]/50 bg-white'
             }`}
           >
             {t('calendar.views.' + v)}
@@ -332,7 +332,7 @@ const AppointmentModal = ({ event, onClose }) => {
 
         <button
           onClick={onClose}
-          className="mt-5 w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          className="mt-5 w-full py-2.5 px-4 rounded-lg border border-[#c5ceba] text-sm font-medium text-gray-600 hover:bg-[#dfe2d7]/50 transition-colors"
         >
           {t('calendar.modal.closeBtn')}
         </button>
@@ -368,39 +368,25 @@ const CalendarSection = () => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view,        setView]        = useState('month');
-  const [bookings,    setBookings]    = useState([]);
-  const [slots,       setSlots]       = useState([]);
-  const [blockouts,   setBlockouts]   = useState([]);
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState('');
   const [selected,    setSelected]    = useState(null);
 
-  useEffect(() => {
-    listAvailability().then(setSlots).catch(() => {});
-  }, []);
+  const calFrom = useMemo(
+    () => new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1).toISOString(),
+    [currentDate],
+  );
+  const calTo = useMemo(
+    () => new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0, 23, 59, 59).toISOString(),
+    [currentDate],
+  );
 
-  const fetchRangeData = useCallback(async (date) => {
-    setLoading(true);
-    setError('');
-    try {
-      const from = new Date(date.getFullYear(), date.getMonth() - 1, 1);
-      const to   = new Date(date.getFullYear(), date.getMonth() + 2, 0, 23, 59, 59);
-      const [bkData, blData] = await Promise.all([
-        getCalendarBookings(from.toISOString(), to.toISOString()),
-        listBlockouts(from.toISOString(), to.toISOString()),
-      ]);
-      setBookings(bkData);
-      setBlockouts(blData);
-    } catch {
-      setError(t('calendar.loadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+  const { data: slots = [] }    = useListAvailabilityQuery();
+  const { data: bookings = [], isFetching: loadingBk, isError: bkError } =
+    useGetCalendarBookingsQuery({ from: calFrom, to: calTo });
+  const { data: blockouts = [], isFetching: loadingBl } =
+    useListBlockoutsQuery({ from: calFrom, to: calTo });
 
-  useEffect(() => {
-    fetchRangeData(currentDate);
-  }, [currentDate, fetchRangeData]);
+  const loading = loadingBk || loadingBl;
+  const error   = bkError ? t('calendar.loadFailed') : '';
 
   const availLabel = t('calendar.available');
 
@@ -432,7 +418,7 @@ const CalendarSection = () => {
   }, [slots]);
 
   const handleNavigate = useCallback((date) => setCurrentDate(date), []);
-  const handleView     = useCallback((v) => setView(v), []);
+  const handleView     = useCallback((v) => { setView(v); }, []);
   const handleSelect   = useCallback((event) => {
     if (event.type === 'booking') setSelected(event);
   }, []);
@@ -442,8 +428,8 @@ const CalendarSection = () => {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">{t('calendar.heading')}</h2>
-        <p className="text-sm text-gray-500 mt-1">{t('calendar.subheading')}</p>
+        <h2 className="text-xl font-semibold text-[#445446]">{t('calendar.heading')}</h2>
+        <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('calendar.subheading')}</p>
       </div>
 
       <Legend />
@@ -459,7 +445,7 @@ const CalendarSection = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-[#E4E7E4] overflow-hidden" style={{ height: 640 }}>
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden" style={{ height: 640 }}>
         <Calendar
           localizer={localizer}
           culture={culture}

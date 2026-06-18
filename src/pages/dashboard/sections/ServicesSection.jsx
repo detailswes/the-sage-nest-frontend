@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { listServices, createService, updateService, deleteService, reorderServices, getMyProfile } from '../../../api/expertApi';
+import {
+  useListServicesQuery,
+  useCreateServiceMutation,
+  useUpdateServiceMutation,
+  useDeleteServiceMutation,
+  useReorderServicesMutation,
+  useGetMyProfileQuery,
+} from '../../../api/expertApi';
 import ConfirmModal from '../../../components/ConfirmModal';
 
 const FORMAT_OPTIONS  = [
@@ -93,38 +100,34 @@ const ServicesSection = () => {
   const { t, i18n } = useTranslation('expertDashboard');
   const lng = i18n.language;
 
-  const [sessionFormat, setSessionFormat] = useState(null); // expert's profile-level format
+  const { data: serverServices = [], isLoading: loading, isError: servicesIsError } = useListServicesQuery();
+  const { data: profile } = useGetMyProfileQuery();
+  const [createService, { isLoading: creating }]    = useCreateServiceMutation();
+  const [updateService, { isLoading: updating }]    = useUpdateServiceMutation();
+  const [deleteService]    = useDeleteServiceMutation();
+  const [reorderServices, { isLoading: reordering }] = useReorderServicesMutation();
 
-  const [services, setServices]       = useState([]);
-  const [loading, setLoading]         = useState(true);
+  const [localOrder, setLocalOrder] = useState(null); // optimistic reorder override
+  const services = localOrder ?? serverServices;
+
+  const sessionFormat = profile?.session_format || null;
+
   const [listError, setListError]     = useState('');
 
   const [showForm, setShowForm]       = useState(false);
   const [editingId, setEditingId]     = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
   const [formErrors, setFormErrors]   = useState({});
-  const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError]     = useState('');
 
   const [isDuplicating, setIsDuplicating] = useState(false);
-  const [isReordering, setIsReordering]   = useState(false);
 
   const [deletingId, setDeletingId]     = useState(null);
   const [togglingId, setTogglingId]     = useState(null);
   const [deleteModal, setDeleteModal]   = useState({ open: false, id: null });
 
-  useEffect(() => {
-    Promise.all([
-      listServices(),
-      getMyProfile(),
-    ])
-      .then(([svcs, profile]) => {
-        setServices(svcs);
-        setSessionFormat(profile.session_format || null);
-      })
-      .catch(() => setListError(t('services.errors.loadFailed')))
-      .finally(() => setLoading(false));
-  }, [t]);
+  const formLoading = editingId ? updating : creating;
+  const isReordering = reordering;
 
   // Derives the locked format value when the expert has a single-mode session_format.
   const lockedFormat = sessionFormat === 'ONLINE' ? 'ONLINE'
@@ -217,7 +220,6 @@ const ServicesSection = () => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setFormErrors(errs); return; }
-    setFormLoading(true);
     setFormError('');
     try {
       const payload = {
@@ -230,25 +232,20 @@ const ServicesSection = () => {
         cluster:          form.cluster || null,
       };
       if (editingId) {
-        const updated = await updateService(editingId, payload);
-        setServices((s) => s.map((sv) => (sv.id === editingId ? updated : sv)));
+        await updateService({ id: editingId, ...payload }).unwrap();
       } else {
-        const created = await createService(payload);
-        setServices((s) => [...s, created]);
+        await createService(payload).unwrap();
       }
       cancelForm();
     } catch (err) {
-      setFormError(err?.response?.data?.error || t('services.errors.saveFailed'));
-    } finally {
-      setFormLoading(false);
+      setFormError(err?.data?.error || t('services.errors.saveFailed'));
     }
   };
 
   const handleDelete = async (id) => {
     setDeletingId(id);
     try {
-      await deleteService(id);
-      setServices((s) => s.filter((sv) => sv.id !== id));
+      await deleteService(id).unwrap();
     } catch {
       setListError(t('services.errors.deleteFailed'));
     } finally {
@@ -261,23 +258,20 @@ const ServicesSection = () => {
     if (swapIndex < 0 || swapIndex >= services.length) return;
     const reordered = [...services];
     [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
-    setServices(reordered);
-    setIsReordering(true);
+    setLocalOrder(reordered);
     try {
-      await reorderServices(reordered.map((s) => s.id));
+      await reorderServices(reordered.map((s) => s.id)).unwrap();
+      setLocalOrder(null);
     } catch {
       setListError(t('services.errors.reorderFailed'));
-      setServices(services); // revert
-    } finally {
-      setIsReordering(false);
+      setLocalOrder(null); // revert to server order
     }
   };
 
   const handleToggle = async (svc) => {
     setTogglingId(svc.id);
     try {
-      const updated = await updateService(svc.id, { is_active: !svc.is_active });
-      setServices((s) => s.map((sv) => (sv.id === svc.id ? updated : sv)));
+      await updateService({ id: svc.id, is_active: !svc.is_active }).unwrap();
     } catch {
       setListError(t('services.errors.updateFailed'));
     } finally {
@@ -303,8 +297,8 @@ const ServicesSection = () => {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-[#1F2933]">{t('services.heading')}</h2>
-          <p className="text-sm text-gray-500 mt-1">{t('services.subheading')}</p>
+          <h2 className="text-xl font-semibold text-[#445446]">{t('services.heading')}</h2>
+          <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('services.subheading')}</p>
         </div>
         {!showForm && (
           <button
@@ -319,13 +313,15 @@ const ServicesSection = () => {
         )}
       </div>
 
-      {listError && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{listError}</div>
+      {(listError || servicesIsError) && (
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+          {listError || t('services.errors.loadFailed')}
+        </div>
       )}
 
       {/* Add / Edit form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mb-5">
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6 mb-5">
           <h3 className="text-base font-semibold text-[#1F2933] mb-5">
             {editingId ? t('services.form.editTitle') : isDuplicating ? t('services.form.duplicateTitle') : t('services.form.addTitle')}
           </h3>
@@ -460,7 +456,7 @@ const ServicesSection = () => {
 
       {/* Service list */}
       {services.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-[#E4E7E4] p-14 text-center">
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-14 text-center">
           <svg className="w-12 h-12 mx-auto text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
           </svg>
@@ -470,7 +466,7 @@ const ServicesSection = () => {
       ) : (
         <div className="space-y-3">
           {services.map((svc) => (
-            <div key={svc.id} className="bg-white rounded-xl border border-[#E4E7E4] px-5 py-4 hover:border-[#445446]/30 transition-colors">
+            <div key={svc.id} className="bg-white rounded-2xl border-2 border-[#c5ceba] px-5 py-4 hover:border-[#445446]/30 transition-colors">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   {/* Badges row */}
