@@ -49,7 +49,7 @@ const StripeButton = ({ status, onConnect }) => {
   const { t } = useTranslation('expertDashboard');
   if (status === 'checking') {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#E4E7E4] text-sm text-gray-400 bg-white">
+      <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#c5ceba] text-sm text-gray-400 bg-white">
         <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" />
         {t('profile.stripe.checking')}
       </div>
@@ -398,7 +398,7 @@ const ProfileSection = () => {
     : null;
   const displayImage = imagePreview || imageUrl;
   const showAddress  = true;
-  const inputClass   = 'w-full px-4 py-3 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]';
+  const inputClass   = 'w-full px-4 py-3 rounded-lg border border-[#c5ceba] text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]';
 
   const PublicBadge = () => (
     <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-medium leading-none bg-green-50 text-green-700 border border-green-200 align-middle">
@@ -411,8 +411,8 @@ const ProfileSection = () => {
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-[#1F2933]">{t('profile.heading')}</h2>
-          <p className="text-sm text-gray-500 mt-1">{t('profile.subheading')}</p>
+          <h2 className="text-xl font-semibold text-[#445446]">{t('profile.heading')}</h2>
+          <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('profile.subheading')}</p>
         </div>
         {stripeStatus !== 'idle' && (
           <div className="flex-shrink-0 mt-0.5 flex flex-col items-end gap-1">
@@ -480,7 +480,7 @@ const ProfileSection = () => {
       )}
 
       {/* Identity card */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mb-5 flex items-center gap-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6 mb-5 flex items-center gap-5">
         <div className="flex-shrink-0">
           <button
             type="button"
@@ -558,7 +558,7 @@ const ProfileSection = () => {
       </div>
 
       {/* Profile details form */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6">
         <h3 className="text-base font-semibold text-[#1F2933] mb-5">{t('profile.details.title')}</h3>
 
         <form onSubmit={handleSave} className="space-y-5">
@@ -640,7 +640,7 @@ const ProfileSection = () => {
 
           {/* Address */}
           {showAddress && (
-            <div className="space-y-3 p-4 bg-[#F5F7F5] rounded-xl border border-[#E4E7E4]">
+            <div className="space-y-3 p-4 bg-[#dfe2d7]/30 rounded-2xl border-2 border-[#c5ceba]">
               <p className="text-xs font-medium text-[#1F2933] flex items-center gap-1.5">{t('profile.details.addressLabel')} <PublicBadge /></p>
               <input
                 type="text"
@@ -739,7 +739,7 @@ const ProfileSection = () => {
                 onChange={(e) => setCustomLangInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomLanguage(); } }}
                 placeholder={t('profile.details.languagePlaceholder')}
-                className="flex-1 px-3 py-2 rounded-lg border border-[#E4E7E4] text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+                className="flex-1 px-3 py-2 rounded-lg border border-[#c5ceba] text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
               />
               <button
                 type="button"
@@ -837,7 +837,7 @@ const ProfileSection = () => {
       {initInsurance    !== undefined && <InsuranceCard      initialData={initInsurance} />}
 
       {/* GDPR Data Export */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mt-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6 mt-5">
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#445446]/8 flex items-center justify-center">
             <svg className="w-5 h-5 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

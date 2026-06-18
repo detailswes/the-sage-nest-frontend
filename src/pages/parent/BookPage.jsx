@@ -735,8 +735,8 @@ const BookPage = () => {
         <ExpertHeader expert={detail} />
 
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-[#1F2933]">{t('serviceStep.title', { name: selectedExpert?.user?.name })}</h2>
-          <p className="text-sm text-gray-500 mt-1">{t('serviceStep.subtitle')}</p>
+          <h2 className="text-xl font-semibold text-[#445446]">{t('serviceStep.title', { name: selectedExpert?.user?.name })}</h2>
+          <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('serviceStep.subtitle')}</p>
         </div>
 
         {services.length === 0 ? (
@@ -836,10 +836,10 @@ const BookPage = () => {
         <StepIndicator step={STEPS.SLOT} />
 
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-[#1F2933]">{t('slotStep.title')}</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-xl font-semibold text-[#445446]">{t('slotStep.title')}</h2>
+          <p className="text-sm text-[#5e6d5b] font-medium mt-1">
             {selectedService?.title} · {formatDuration(selectedService?.duration_minutes)} ·{' '}
-            <span className="font-medium text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
+            <span className="font-semibold text-[#445446]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
           </p>
         </div>
 
@@ -961,8 +961,8 @@ const BookPage = () => {
 
       <StepIndicator step={STEPS.CONFIRM} />
 
-      <h2 className="text-xl font-semibold text-[#1F2933] mb-1">Confirm your booking</h2>
-      <p className="text-sm text-gray-500 mb-6">Review your details below before proceeding to payment.</p>
+      <h2 className="text-xl font-semibold text-[#445446] mb-1">Confirm your booking</h2>
+      <p className="text-sm text-[#5e6d5b] font-medium mb-6">Review your details below before proceeding to payment.</p>
 
       {/* Single card: booking summary + auth/proceed + footer text */}
       <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden">

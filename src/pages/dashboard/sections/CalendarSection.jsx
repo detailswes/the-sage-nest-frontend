@@ -150,7 +150,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
         </button>
         <button
           onClick={() => onNavigate('TODAY')}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#E4E7E4] hover:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-[#c5ceba] hover:bg-[#dfe2d7]/50 transition-colors"
         >
           {t('calendar.toolbar.today')}
         </button>
@@ -165,7 +165,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
         </button>
         <span className="ml-2 text-sm font-semibold text-[#1F2933]">{label}</span>
       </div>
-      <div className="flex rounded-lg border border-[#E4E7E4] overflow-hidden">
+      <div className="flex rounded-lg border border-[#c5ceba] overflow-hidden">
         {VIEWS.map((v) => (
           <button
             key={v}
@@ -173,7 +173,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }) => {
             className={`px-4 py-1.5 text-xs font-medium transition-colors ${
               view === v
                 ? 'bg-[#445446] text-white'
-                : 'text-gray-500 hover:bg-gray-50 bg-white'
+                : 'text-gray-500 hover:bg-[#dfe2d7]/50 bg-white'
             }`}
           >
             {t('calendar.views.' + v)}
@@ -332,7 +332,7 @@ const AppointmentModal = ({ event, onClose }) => {
 
         <button
           onClick={onClose}
-          className="mt-5 w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          className="mt-5 w-full py-2.5 px-4 rounded-lg border border-[#c5ceba] text-sm font-medium text-gray-600 hover:bg-[#dfe2d7]/50 transition-colors"
         >
           {t('calendar.modal.closeBtn')}
         </button>
@@ -442,8 +442,8 @@ const CalendarSection = () => {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">{t('calendar.heading')}</h2>
-        <p className="text-sm text-gray-500 mt-1">{t('calendar.subheading')}</p>
+        <h2 className="text-xl font-semibold text-[#445446]">{t('calendar.heading')}</h2>
+        <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('calendar.subheading')}</p>
       </div>
 
       <Legend />
@@ -459,7 +459,7 @@ const CalendarSection = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-[#E4E7E4] overflow-hidden" style={{ height: 640 }}>
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden" style={{ height: 640 }}>
         <Calendar
           localizer={localizer}
           culture={culture}

@@ -73,65 +73,68 @@ const AdminComplianceSection = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-[#1F2933]">{t("legalCompliance.pageTitle")}</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{t("legalCompliance.pageSubtitle")}</p>
+          <h2 className="text-xl font-semibold text-[#445446]">{t("legalCompliance.pageTitle")}</h2>
+          <p className="text-sm text-[#5e6d5b] font-medium mt-0.5">{t("legalCompliance.pageSubtitle")}</p>
         </div>
-        {/* Current versions pill */}
-        <div className="flex items-center gap-3 text-xs text-gray-500">
+        {/* Current versions */}
+        <div className="flex items-center gap-2 text-xs">
           {meta.current_pp_version && (
-            <span className="px-2.5 py-1 rounded-full bg-gray-100 font-medium">
-              Privacy Policy: <span className="text-[#1F2933]">{meta.current_pp_version}</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#dfe2d7]/40 border border-[#c5ceba] text-[#5e6d5b] font-medium">
+              Privacy Policy:
+              <span className="text-[#445446] font-semibold">{meta.current_pp_version}</span>
             </span>
           )}
           {meta.current_tc_version && (
-            <span className="px-2.5 py-1 rounded-full bg-gray-100 font-medium">
-              Terms & Conditions: <span className="text-[#1F2933]">{meta.current_tc_version}</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#dfe2d7]/40 border border-[#c5ceba] text-[#5e6d5b] font-medium">
+              Terms & Conditions:
+              <span className="text-[#445446] font-semibold">{meta.current_tc_version}</span>
             </span>
           )}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 relative">
-          <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={handleSearch}
-            placeholder={t("legalCompliance.searchPlaceholder")}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
-          />
-        </div>
-        <div className="flex items-center gap-1 bg-white border border-[#E4E7E4] rounded-lg p-1">
-          {FILTER_KEYS.map(({ key, tKey }) => (
-            <button
-              key={key}
-              onClick={() => handleFilter(key)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                filter === key
-                  ? "bg-[#445446] text-white"
-                  : "text-gray-500 hover:text-[#1F2933]"
-              }`}
-            >
-              {t(tKey)}
-            </button>
-          ))}
+      {/* Filters — unified box */}
+      <div className="mb-5 bg-white rounded-2xl border-2 border-[#c5ceba] p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 relative">
+            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={handleSearch}
+              placeholder={t("legalCompliance.searchPlaceholder")}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-[#c5ceba] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+            />
+          </div>
+          <div className="inline-flex items-center border border-[#c5ceba] rounded-xl p-1 gap-0.5">
+            {FILTER_KEYS.map(({ key, tKey }) => (
+              <button
+                key={key}
+                onClick={() => handleFilter(key)}
+                className={`px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
+                  filter === key
+                    ? "bg-[#445446] text-white shadow-sm"
+                    : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
+                }`}
+              >
+                {t(tKey)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Summary stat */}
       {!loading && filter === "all" && (
         <div className="mb-4 flex items-center gap-4 text-sm">
-          <span className="text-gray-500">
-            <span className="font-semibold text-[#1F2933]">{meta.total}</span>{" "}
+          <span className="text-[#5e6d5b]">
+            <span className="font-semibold text-[#445446]">{meta.total}</span>{" "}
             {t("legalCompliance.summary.parent", { count: meta.total })}
           </span>
           {nonCompliantCount > 0 && (
-            <span className="text-red-600">
-              <span className="font-semibold">{nonCompliantCount}</span>{" "}
+            <span className="font-medium text-red-600">
               {t("legalCompliance.summary.nonCompliant", { count: nonCompliantCount })}
             </span>
           )}
@@ -139,21 +142,26 @@ const AdminComplianceSection = () => {
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
         ) : data.length === 0 ? (
-          <div className="py-20 text-center text-sm text-gray-400">
-            {filter === "non_compliant"
-              ? t("legalCompliance.allCompliant")
-              : t("legalCompliance.noParents")}
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
+              <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-[#445446]">
+              {filter === "non_compliant" ? t("legalCompliance.allCompliant") : t("legalCompliance.noParents")}
+            </p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50/60 border-b border-[#E4E7E4]">
+              <tr className="bg-[#445446] border-b border-[#3a4a3b]">
                 {[
                   t("legalCompliance.col.parent"),
                   t("legalCompliance.col.privacyPolicy"),
@@ -161,15 +169,15 @@ const AdminComplianceSection = () => {
                   t("legalCompliance.col.overall"),
                   "",
                 ].map((h, i) => (
-                  <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">
+                  <th key={i} className="text-left text-xs font-semibold text-white uppercase tracking-wider px-5 py-3">
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E4E7E4]">
+            <tbody className="divide-y divide-[#dfe2d7]">
               {data.map((p) => (
-                <tr key={p.id} className="hover:bg-[#F5F7F5] transition-colors">
+                <tr key={p.id} className="hover:bg-[#dfe2d7]/50 transition-colors">
                   {/* Parent */}
                   <td className="px-5 py-3.5">
                     <p className="font-medium text-[#1F2933]">{p.name || "—"}</p>
@@ -237,14 +245,14 @@ const AdminComplianceSection = () => {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={meta.page === 1}
-              className="px-3 py-1.5 rounded-lg border border-[#E4E7E4] text-xs font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium hover:bg-[#dfe2d7]/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {t("legalCompliance.pagination.previous")}
             </button>
             <button
               onClick={() => setPage((p) => Math.min(meta.pages, p + 1))}
               disabled={meta.page === meta.pages}
-              className="px-3 py-1.5 rounded-lg border border-[#E4E7E4] text-xs font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium hover:bg-[#dfe2d7]/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {t("legalCompliance.pagination.next")}
             </button>

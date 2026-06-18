@@ -16,7 +16,7 @@ const VersionHistory = ({ docs }) => {
   if (history.length === 0) return null;
 
   return (
-    <div className="mt-4 border-t border-[#E4E7E4] pt-4">
+    <div className="mt-4 border-t border-[#c5ceba] pt-4">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
         {t("legalDocs.versionHistory.title")}
       </p>
@@ -132,7 +132,7 @@ const DocCard = ({ type, docs, onBumped }) => {
             <div className="flex gap-3">
               <button
                 onClick={() => { setConfirmPending(false); setVersion(""); }}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex-1 py-2.5 px-4 rounded-lg border-2 border-[#c5ceba] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
                 {t("legalDocs.confirmModal.cancel")}
               </button>
@@ -147,7 +147,7 @@ const DocCard = ({ type, docs, onBumped }) => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-[#E4E7E4] p-6">
+      <div className="bg-white rounded-xl border-2 border-[#c5ceba] p-6">
         {/* Header row */}
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
@@ -216,7 +216,7 @@ const DocCard = ({ type, docs, onBumped }) => {
 
         {/* Version history — collapsible */}
         {historyCount > 0 && (
-          <div className="mt-4 border-t border-[#E4E7E4] pt-4">
+          <div className="mt-4 border-t border-[#c5ceba] pt-4">
             <button
               onClick={() => setHistoryOpen((o) => !o)}
               className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-[#1F2933] transition-colors"
@@ -263,8 +263,8 @@ const LegalDocumentsSection = () => {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#1F2933]">{t("legalDocs.pageTitle")}</h2>
-        <p className="text-sm text-gray-500 mt-1">{t("legalDocs.pageSubtitle")}</p>
+        <h2 className="text-xl font-semibold text-[#445446]">{t("legalDocs.pageTitle")}</h2>
+        <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t("legalDocs.pageSubtitle")}</p>
       </div>
 
       {error && (

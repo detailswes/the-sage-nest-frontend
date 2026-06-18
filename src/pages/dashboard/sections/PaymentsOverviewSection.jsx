@@ -352,9 +352,9 @@ function RefundLogView() {
 
   return (
     <div>
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
         {/* Table header */}
-        <div className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
+        <div className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3 bg-[#445446] border-b border-[#3a4a3b]">
           {[
             t("paymentsMgmt.refundLog.col.timestamp"),
             t("paymentsMgmt.refundLog.col.admin"),
@@ -364,7 +364,7 @@ function RefundLogView() {
             t("paymentsMgmt.refundLog.col.refunded"),
             t("paymentsMgmt.refundLog.col.stripeRefundId"),
           ].map((h) => (
-            <span key={h} className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</span>
+            <span key={h} className="text-xs font-semibold text-white uppercase tracking-wider">{h}</span>
           ))}
         </div>
 
@@ -373,8 +373,13 @@ function RefundLogView() {
             <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
         ) : entries.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-sm text-gray-400">{t("paymentsMgmt.refundLog.noRefunds")}</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
+              <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-[#445446]">{t("paymentsMgmt.refundLog.noRefunds")}</p>
           </div>
         ) : (
           <div className="divide-y divide-[#E4E7E4]">
@@ -431,11 +436,11 @@ function RefundLogView() {
           </p>
           <div className="flex gap-1">
             <button onClick={() => setPage((p) => p - 1)} disabled={page === 1 || loading}
-              className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+              className="px-3 py-1.5 text-xs font-medium border border-[#c5ceba] rounded-lg text-[#5e6d5b] hover:bg-[#dfe2d7]/50 disabled:opacity-40 transition-colors">
               {t("paymentsMgmt.refundLog.previous")}
             </button>
             <button onClick={() => setPage((p) => p + 1)} disabled={page === totalPages || loading}
-              className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+              className="px-3 py-1.5 text-xs font-medium border border-[#c5ceba] rounded-lg text-[#5e6d5b] hover:bg-[#dfe2d7]/50 disabled:opacity-40 transition-colors">
               {t("paymentsMgmt.refundLog.next")}
             </button>
           </div>
@@ -562,8 +567,8 @@ const PaymentsOverviewSection = () => {
       {/* Page header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#1F2933]">{t("paymentsMgmt.pageTitle")}</h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <h2 className="text-xl font-semibold text-[#445446]">{t("paymentsMgmt.pageTitle")}</h2>
+          <p className="text-sm text-[#5e6d5b] font-medium mt-1">
             {view === "transactions"
               ? t("paymentsMgmt.subtitleTransactions")
               : t("paymentsMgmt.subtitleRefundLog")}
@@ -571,19 +576,19 @@ const PaymentsOverviewSection = () => {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* View toggle */}
-          <div className="flex rounded-xl border border-[#E4E7E4] overflow-hidden bg-white">
+          <div className="flex rounded-xl border border-[#c5ceba] overflow-hidden bg-white">
             <button
               onClick={() => setView("transactions")}
               className={`px-3 py-2 text-xs font-medium transition-colors ${
-                view === "transactions" ? "bg-[#445446] text-white" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
+                view === "transactions" ? "bg-[#445446] text-white" : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
               }`}
             >
               {t("paymentsMgmt.viewTransactions")}
             </button>
             <button
               onClick={() => setView("refund-log")}
-              className={`px-3 py-2 text-xs font-medium border-l border-[#E4E7E4] transition-colors ${
-                view === "refund-log" ? "bg-[#445446] text-white" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
+              className={`px-3 py-2 text-xs font-medium border-l border-[#c5ceba] transition-colors ${
+                view === "refund-log" ? "bg-[#445446] text-white" : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
               }`}
             >
               {t("paymentsMgmt.viewRefundLog")}
@@ -610,10 +615,11 @@ const PaymentsOverviewSection = () => {
       {/* Transactions view */}
       {view === "transactions" && <>
 
-      {/* Search + date range */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="flex flex-1 min-w-[260px] items-center gap-2 bg-white border border-[#E4E7E4] rounded-xl px-3 py-2 shadow-sm">
-          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      {/* Filter tabs + search — unified box */}
+      <div className="mb-5 bg-white rounded-2xl border-2 border-[#c5ceba] p-4 space-y-3">
+        {/* Search */}
+        <div className="relative">
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
           </svg>
           <input
@@ -621,7 +627,7 @@ const PaymentsOverviewSection = () => {
             value={search}
             onChange={handleSearchChange}
             placeholder={t("paymentsMgmt.searchPlaceholder")}
-            className="flex-1 text-sm bg-transparent outline-none placeholder-gray-300 text-[#1F2933]"
+            className="w-full pl-10 pr-10 py-2.5 text-sm border border-[#c5ceba] rounded-xl bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
           />
           {search && (
             <button
@@ -631,56 +637,58 @@ const PaymentsOverviewSection = () => {
                 setPage(1);
                 load({ search: "", page: 1, filter: activeFilter, from: fromDate, to: toDate });
               }}
-              className="text-gray-300 hover:text-gray-500"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2 bg-white border border-[#E4E7E4] rounded-xl px-3 py-2 shadow-sm">
-          <span className="text-xs text-gray-400">{t("paymentsMgmt.from")}</span>
-          <input type="date" value={fromDate} onChange={handleFromChange}
-            className="text-sm outline-none bg-transparent text-[#1F2933]" />
-          <span className="text-xs text-gray-400">{t("paymentsMgmt.to")}</span>
-          <input type="date" value={toDate} onChange={handleToChange}
-            className="text-sm outline-none bg-transparent text-[#1F2933]" />
-          {(fromDate || toDate) && (
-            <button
-              onClick={() => {
-                setFromDate(""); setToDate(""); setPage(1);
-                load({ page: 1, search, filter: activeFilter, from: "", to: "" });
-              }}
-              className="text-xs text-gray-400 hover:text-gray-600"
-            >
-              {t("paymentsMgmt.clear")}
-            </button>
-          )}
+        {/* Status pill tabs + date range */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex items-center border border-[#c5ceba] rounded-xl p-1 gap-0.5">
+            {FILTER_KEYS.map((key) => (
+              <button
+                key={key}
+                onClick={() => applyFilter(key)}
+                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  activeFilter === key
+                    ? "bg-[#445446] text-white shadow-sm"
+                    : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
+                }`}
+              >
+                {t(`paymentsMgmt.filter.${key}`)}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 border border-[#c5ceba] rounded-xl px-3 py-2">
+            <span className="text-xs text-[#5e6d5b]">{t("paymentsMgmt.from")}</span>
+            <input type="date" value={fromDate} onChange={handleFromChange}
+              className="text-sm outline-none bg-transparent text-[#1F2933]" />
+            <span className="text-xs text-[#5e6d5b]">{t("paymentsMgmt.to")}</span>
+            <input type="date" value={toDate} onChange={handleToChange}
+              className="text-sm outline-none bg-transparent text-[#1F2933]" />
+            {(fromDate || toDate) && (
+              <button
+                onClick={() => {
+                  setFromDate(""); setToDate(""); setPage(1);
+                  load({ page: 1, search, filter: activeFilter, from: "", to: "" });
+                }}
+                className="text-xs text-[#5e6d5b] hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors"
+              >
+                {t("paymentsMgmt.clear")}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-1 flex-wrap mb-4">
-        {FILTER_KEYS.map((key) => (
-          <button
-            key={key}
-            onClick={() => applyFilter(key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              activeFilter === key
-                ? "bg-[#445446] text-white"
-                : "bg-white border border-[#E4E7E4] text-gray-500 hover:text-[#1F2933] hover:bg-gray-50"
-            }`}
-          >
-            {t(`paymentsMgmt.filter.${key}`)}
-          </button>
-        ))}
-      </div>
-
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-sm overflow-hidden">
-        <div className="grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_140px] gap-3 px-4 py-3 bg-[#F5F7F5] border-b border-[#E4E7E4]">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+        <div className="grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_140px] gap-3 px-4 py-3 bg-[#445446] border-b border-[#3a4a3b]">
           {[
             t("paymentsMgmt.col.id"),
             t("paymentsMgmt.col.parent"),
@@ -691,7 +699,7 @@ const PaymentsOverviewSection = () => {
             t("paymentsMgmt.col.date"),
             t("paymentsMgmt.col.paymentStatus"),
           ].map((h) => (
-            <span key={h} className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</span>
+            <span key={h} className="text-xs font-semibold text-white uppercase tracking-wider">{h}</span>
           ))}
         </div>
 
@@ -700,16 +708,21 @@ const PaymentsOverviewSection = () => {
             <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           </div>
         ) : transactions.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-sm text-gray-400">{t("paymentsMgmt.noTransactions")}</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
+              <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-[#445446]">{t("paymentsMgmt.noTransactions")}</p>
           </div>
         ) : (
-          <div className={`divide-y divide-[#E4E7E4] ${fetching ? "opacity-60 pointer-events-none" : ""}`}>
+          <div className={`divide-y divide-[#dfe2d7] ${fetching ? "opacity-60 pointer-events-none" : ""}`}>
             {transactions.map((tx) => (
               <button
                 key={tx.id}
                 onClick={() => setSelectedId(tx.id)}
-                className="w-full grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_140px] gap-3 px-4 py-3 text-left hover:bg-[#F5F7F5] transition-colors items-center"
+                className="w-full grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_140px] gap-3 px-4 py-3 text-left hover:bg-[#dfe2d7]/50 transition-colors items-center"
               >
                 <span className="text-sm font-mono text-gray-400">#{tx.id}</span>
                 <span className="text-sm text-[#1F2933] truncate">{tx.parent?.name || "—"}</span>
@@ -741,7 +754,7 @@ const PaymentsOverviewSection = () => {
             <button
               onClick={() => goToPage(page - 1)}
               disabled={page === 1 || fetching}
-              className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              className="px-3 py-1.5 text-xs font-medium border border-[#c5ceba] rounded-lg text-[#5e6d5b] hover:bg-[#dfe2d7]/50 disabled:opacity-40 transition-colors"
             >
               {t("paymentsMgmt.pagination.previous")}
             </button>
@@ -756,7 +769,7 @@ const PaymentsOverviewSection = () => {
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                     p === page
                       ? "bg-[#445446] text-white"
-                      : "border border-[#E4E7E4] text-gray-500 hover:bg-gray-50"
+                      : "border border-[#c5ceba] text-[#5e6d5b] hover:bg-[#dfe2d7]/50"
                   }`}
                 >
                   {p}
@@ -766,7 +779,7 @@ const PaymentsOverviewSection = () => {
             <button
               onClick={() => goToPage(page + 1)}
               disabled={page === totalPages || fetching}
-              className="px-3 py-1.5 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              className="px-3 py-1.5 text-xs font-medium border border-[#c5ceba] rounded-lg text-[#5e6d5b] hover:bg-[#dfe2d7]/50 disabled:opacity-40 transition-colors"
             >
               {t("paymentsMgmt.pagination.next")}
             </button>

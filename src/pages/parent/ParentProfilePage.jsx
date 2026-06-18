@@ -1280,8 +1280,8 @@ const ParentProfilePage = () => {
   return (
     <div>
       <div className="mb-7">
-        <h2 className="text-xl font-semibold text-[#1F2933]">{t("profile.title")}</h2>
-        <p className="text-sm text-gray-500 mt-1">{t("profile.subtitle")}</p>
+        <h2 className="text-xl font-semibold text-[#445446]">{t("profile.title")}</h2>
+        <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t("profile.subtitle")}</p>
       </div>
 
       <div className="space-y-6">

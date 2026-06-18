@@ -404,15 +404,15 @@ const AdminExpertDetailSection = () => {
       <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => navigate("/dashboard/admin/experts")}
-          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#445446] transition-colors"
+          className="flex items-center gap-1.5 text-sm text-[#5e6d5b] font-medium hover:text-[#445446] transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
           </svg>
           {t("expertDetail.breadcrumb")}
         </button>
-        <span className="text-gray-300">/</span>
-        <span className="text-sm font-medium text-[#1F2933] truncate">{name}</span>
+        <span className="text-[#c5ceba]">/</span>
+        <span className="text-sm font-semibold text-[#445446] truncate">{name}</span>
       </div>
 
       {/* Feedback banner */}
@@ -443,7 +443,7 @@ const AdminExpertDetailSection = () => {
         <div className="space-y-0">
 
           {/* Identity card */}
-          <div className="bg-white rounded-2xl border border-[#E4E7E4] p-6 mb-6">
+          <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6 mb-6">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
                 {photoUrl ? (
@@ -497,8 +497,8 @@ const AdminExpertDetailSection = () => {
           </div>
 
           {/* Tabs */}
-          <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden">
-            <div className="flex border-b border-[#E4E7E4]">
+          <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+            <div className="flex border-b border-[#c5ceba]">
               {[
                 { key: "profile",  label: t("expertDetail.tabs.profile") },
                 { key: "bookings", label: `${t("expertDetail.tabs.bookings")}${expert._count?.bookings ? ` (${expert._count.bookings})` : ""}` },
@@ -750,7 +750,7 @@ const AdminExpertDetailSection = () => {
                     {expert.qualifications?.length > 0 ? (
                       <ul className="space-y-2">
                         {expert.qualifications.map((q) => (
-                          <li key={q.id} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-[#F5F7F5] rounded-xl border border-[#E4E7E4]">
+                          <li key={q.id} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-[#dfe2d7]/30 rounded-xl border border-[#c5ceba]">
                             <p className="text-sm font-medium text-[#1F2933]">
                               {q.type === "OTHER" ? q.custom_name : t(`expertMgmt.qual.${q.type}`, { defaultValue: q.type })}
                             </p>
@@ -766,7 +766,7 @@ const AdminExpertDetailSection = () => {
                     {expert.certifications?.length > 0 ? (
                       <ul className="space-y-2">
                         {expert.certifications.map((c) => (
-                          <li key={c.id} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-[#F5F7F5] rounded-xl border border-[#E4E7E4]">
+                          <li key={c.id} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-[#dfe2d7]/30 rounded-xl border border-[#c5ceba]">
                             <p className="text-sm font-medium text-[#1F2933]">{c.name}</p>
                             <DocLink url={c.document_url} />
                           </li>
@@ -785,14 +785,14 @@ const AdminExpertDetailSection = () => {
                       <div className="flex items-center gap-2 flex-shrink-0 ml-4">
                         <span className="text-xs text-gray-400">{t("expertDetail.bizInfo.yearLabel")}</span>
                         <select value={exportYear} onChange={(e) => setExportYear(Number(e.target.value))}
-                          className="text-xs border border-[#E4E7E4] rounded-lg px-2 py-1.5 bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30">
+                          className="text-xs border border-[#c5ceba] rounded-lg px-2 py-1.5 bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30">
                           {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
                             <option key={y} value={y}>{y}</option>
                           ))}
                         </select>
                         <span className="text-xs text-gray-400">{t("expertDetail.bizInfo.statusLabel")}</span>
                         <select value={summaryStatus} onChange={(e) => setSummaryStatus(e.target.value)}
-                          className="text-xs border border-[#E4E7E4] rounded-lg px-2 py-1.5 bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30">
+                          className="text-xs border border-[#c5ceba] rounded-lg px-2 py-1.5 bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30">
                           <option value="ALL">{t("expertDetail.bizInfo.statusAll")}</option>
                           <option value="CONFIRMED">{t("expertDetail.bizInfo.statusConfirmed")}</option>
                           <option value="COMPLETED">{t("expertDetail.bizInfo.statusCompleted")}</option>
@@ -840,7 +840,7 @@ const AdminExpertDetailSection = () => {
                             { key: "refundTotal",  value: fmt(summary.total_refunded) },
                           ];
                         })().map(({ key, value, highlight }) => (
-                          <div key={key} className={`rounded-xl p-3 border ${highlight ? "bg-[#445446]/5 border-[#445446]/20" : "bg-[#F5F7F5] border-[#E4E7E4]"}`}>
+                          <div key={key} className={`rounded-xl p-3 border ${highlight ? "bg-[#445446]/5 border-[#445446]/20" : "bg-[#dfe2d7]/30 border-[#c5ceba]"}`}>
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{t(`expertDetail.bizInfo.cards.${key}`)}</p>
                             <p className={`text-sm font-bold ${highlight ? "text-[#445446]" : "text-[#1F2933]"}`}>{value}</p>
                           </div>
@@ -883,7 +883,7 @@ const AdminExpertDetailSection = () => {
                         ...(bi.business_address ? [[t("expertDetail.bizInfo.rows.bizAddress"), bi.business_address]] : []),
                       ];
                       return (
-                        <div className="rounded-xl border border-[#E4E7E4] divide-y divide-[#F0F2F0] overflow-hidden">
+                        <div className="rounded-xl border border-[#c5ceba] divide-y divide-[#dfe2d7] overflow-hidden">
                           {rows.map(([label, value]) => (
                             <div key={label} className="flex gap-3 px-4 py-2.5">
                               <span className="text-xs font-medium text-gray-400 w-40 flex-shrink-0">{label}</span>
@@ -928,7 +928,7 @@ const AdminExpertDetailSection = () => {
                     {expert.services?.length > 0 ? (
                       <div className="space-y-2">
                         {expert.services.map((svc) => (
-                          <div key={svc.id} className="px-4 py-3 bg-[#F5F7F5] rounded-xl border border-[#E4E7E4]">
+                          <div key={svc.id} className="px-4 py-3 bg-[#dfe2d7]/30 rounded-xl border border-[#c5ceba]">
                             <div className="flex items-start justify-between gap-2 mb-1">
                               <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
                               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1008,7 +1008,7 @@ const AdminExpertDetailSection = () => {
                       <button
                         key={b.id}
                         onClick={() => setSelectedBookingId(b.id)}
-                        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-[#E4E7E4] bg-[#FAFAFA] hover:bg-[#F0F2F0] transition-colors text-left"
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-[#c5ceba] bg-white hover:bg-[#dfe2d7]/50 transition-colors text-left"
                       >
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-[#1F2933] truncate">#{b.id} · {b.service?.title || t("expertDetail.bookingsTab.sessionFallback")}</p>
@@ -1091,7 +1091,7 @@ const AdminExpertDetailSection = () => {
                               {isExpertAction ? `${entry.admin_name} ${t("expertDetail.activityTab.expertSuffix")}` : entry.admin_name} · {new Date(entry.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                             </p>
                             {entry.note && (
-                              <p className="text-xs text-gray-500 mt-1 bg-gray-50 rounded-lg px-3 py-2 border border-[#E4E7E4] whitespace-pre-wrap">{entry.note}</p>
+                              <p className="text-xs text-gray-500 mt-1 bg-gray-50 rounded-lg px-3 py-2 border border-[#c5ceba] whitespace-pre-wrap">{entry.note}</p>
                             )}
                           </li>
                         );
@@ -1109,7 +1109,7 @@ const AdminExpertDetailSection = () => {
 
           {expert.user?.account_deleted ? (
             /* ── Account has been GDPR-erased — no actions available ── */
-            <div className="bg-gray-50 rounded-2xl border border-[#E4E7E4] p-5 text-center">
+            <div className="bg-gray-50 rounded-2xl border-2 border-[#c5ceba] p-5 text-center">
               <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-3">
                 <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 3.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" />
@@ -1121,7 +1121,7 @@ const AdminExpertDetailSection = () => {
           ) : (
             <>
               {/* Status actions */}
-              <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
+              <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5">
                 <SectionLabel>{t("expertDetail.statusActions.title")}</SectionLabel>
                 <div className="flex flex-col gap-2">
                   {expert.status === "SUSPENDED" ? (
@@ -1185,17 +1185,17 @@ const AdminExpertDetailSection = () => {
               </div>
 
               {/* Support tools */}
-              <div className="bg-white rounded-2xl border border-[#E4E7E4] p-5">
+              <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-5">
                 <SectionLabel>{t("expertDetail.supportTools.title")}</SectionLabel>
                 <div className="flex flex-col gap-2">
                   <button onClick={handlePasswordReset} disabled={!!actionLoading}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#c5ceba] text-gray-600 hover:bg-[#dfe2d7]/50 disabled:opacity-50 transition-colors">
                     {actionLoading === "passwordReset" ? t("expertDetail.supportTools.sending") : t("expertDetail.supportTools.passwordReset")}
                   </button>
                   {!expert.user?.is_verified && (
                     <>
                       <button onClick={handleResendVerification} disabled={!!actionLoading}
-                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E4E7E4] text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#c5ceba] text-gray-600 hover:bg-[#dfe2d7]/50 disabled:opacity-50 transition-colors">
                         {actionLoading === "resendVerification" ? t("expertDetail.supportTools.sending") : t("expertDetail.supportTools.resendVerification")}
                       </button>
                       <button onClick={handleManualVerify} disabled={!!actionLoading}
@@ -1239,12 +1239,12 @@ const AdminExpertDetailSection = () => {
             <p className="text-sm text-gray-500 text-center mb-4">{t("expertDetail.requestChanges.subtitle")}</p>
             <textarea value={changesNote} onChange={(e) => { if (e.target.value.length <= 2000) setChangesNote(e.target.value); }}
               placeholder={t("expertDetail.requestChanges.placeholder")} rows={5}
-              className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 resize-none" />
+              className="w-full px-3 py-2.5 text-sm border border-[#c5ceba] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 resize-none" />
             <p className="text-xs text-gray-400 text-right mb-3">{changesNote.length}/2000</p>
             {changesError && <p className="text-xs text-red-600 mb-3">{changesError}</p>}
             <div className="flex gap-3">
               <button onClick={() => { setShowRequestChanges(false); setChangesNote(""); setChangesError(""); }} disabled={changesLoading}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+                className="flex-1 py-2.5 px-4 rounded-lg border border-[#c5ceba] text-sm font-medium text-gray-600 hover:bg-[#dfe2d7]/50 disabled:opacity-50">
                 {t("expertDetail.requestChanges.cancel")}
               </button>
               <button onClick={handleRequestChanges} disabled={changesLoading || !changesNote.trim()}
@@ -1307,7 +1307,7 @@ const AdminExpertDetailSection = () => {
               )}
               <div className="flex gap-3">
                 <button onClick={() => setConfirmAction(null)}
-                  className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                  className="flex-1 py-2.5 px-4 rounded-lg border border-[#c5ceba] text-sm font-medium text-gray-600 hover:bg-[#dfe2d7]/50 transition-colors">
                   {t("expertDetail.confirmModal.cancel")}
                 </button>
                 <button onClick={handleConfirmAction}
@@ -1336,7 +1336,7 @@ const AdminExpertDetailSection = () => {
                 </div>
                 <button
                   onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }}
-                  className="w-full py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="w-full py-2.5 px-4 rounded-lg border border-[#c5ceba] text-sm font-medium text-gray-600 hover:bg-[#dfe2d7]/50 transition-colors"
                 >
                   {t("expertDetail.gdpr.close")}
                 </button>
@@ -1368,11 +1368,11 @@ const AdminExpertDetailSection = () => {
                 </p>
                 <input type="email" value={gdprEmail} onChange={(e) => setGdprEmail(e.target.value)}
                   placeholder={t("expertDetail.gdpr.emailPlaceholder")}
-                  className="w-full px-3 py-2.5 text-sm border border-[#E4E7E4] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 mb-3" />
+                  className="w-full px-3 py-2.5 text-sm border border-[#c5ceba] rounded-lg text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 mb-3" />
                 {gdprError && <p className="text-xs text-red-600 mb-3">{gdprError}</p>}
                 <div className="flex gap-3">
                   <button onClick={() => { setShowGdprDelete(false); setGdprEmail(""); setGdprError(""); }} disabled={gdprLoading}
-                    className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+                    className="flex-1 py-2.5 px-4 rounded-lg border border-[#c5ceba] text-sm font-medium text-gray-600 hover:bg-[#dfe2d7]/50 disabled:opacity-50">
                     {t("expertDetail.gdpr.cancel")}
                   </button>
                   <button onClick={handleGdprDelete}
