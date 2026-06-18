@@ -182,7 +182,7 @@ const ExpertDashboard = () => {
     : "?";
 
   return (
-    <div className="min-h-screen bg-[#F5F7F5] flex">
+    <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex">
       {/* ── Sidebar ── */}
       <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-[#E4E7E4] flex flex-col z-10">
         {/* Logo */}

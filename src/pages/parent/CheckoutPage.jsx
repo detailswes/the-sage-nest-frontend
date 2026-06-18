@@ -146,7 +146,7 @@ const CheckoutPage = () => {
   if (!bookingId || !clientSecret) return null;
 
   return (
-    <div className="min-h-screen bg-[#F5F7F5] flex flex-col items-center justify-start py-10 px-4">
+    <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex flex-col items-center justify-start py-10 px-4">
       {/* Header */}
       <div className="w-full max-w-lg mb-6 flex items-center gap-3">
         <button

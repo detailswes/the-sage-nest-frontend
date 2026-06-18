@@ -2,7 +2,7 @@ import LanguageSelector from '../LanguageSelector';
 
 const AuthLayout = ({ children }) => {
   return (
-    <div className="min-h-screen bg-[#F5F7F5] flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex items-center justify-center px-4 py-12">
       {/* Language toggle — fixed top-right, outside the card */}
       <div className="fixed top-4 right-4 z-50">
         <LanguageSelector />
