@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import {
-  adminCancelBooking,
-  adminManualRefund,
-  markBookingDisputed,
-  adminRetryTransfer,
-  adminMarkTransferResolved,
+  useAdminCancelBookingMutation,
+  useAdminManualRefundMutation,
+  useMarkBookingDisputedMutation,
+  useAdminRetryTransferMutation,
+  useAdminMarkTransferResolvedMutation,
 } from "../../api/adminApi";
 
 function computeRefundPolicy(bk) {
@@ -22,74 +23,63 @@ function computeRefundPolicy(bk) {
   };
 }
 
-// Shared admin actions panel used by both BookingDetailModal and TransactionDetailModal.
-// Props: booking (fetched object), onActionComplete (called after any successful action).
+// Shared admin actions panel used by BookingDetailModal and TransactionDetailModal.
 export default function AdminActionsPanel({ booking, onActionComplete }) {
   const { t } = useTranslation("adminDashboard");
 
+  const [adminCancelBooking,       { isLoading: cancelling }]      = useAdminCancelBookingMutation();
+  const [adminManualRefund,        { isLoading: refunding }]       = useAdminManualRefundMutation();
+  const [markBookingDisputed,      { isLoading: disputing }]       = useMarkBookingDisputedMutation();
+  const [adminRetryTransfer,       { isLoading: retrying }]        = useAdminRetryTransferMutation();
+  const [adminMarkTransferResolved, { isLoading: resolving }]      = useAdminMarkTransferResolvedMutation();
+
+  const loading = cancelling || refunding || disputing || retrying || resolving;
+
   const [activeForm, setActiveForm] = useState(null);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState("");
-  const [success, setSuccess]       = useState("");
 
-  const [cancelReason, setCancelReason]   = useState("");
-  const [refundReason, setRefundReason]   = useState("");
-  const [refundAmount, setRefundAmount]   = useState("");
-  const [refundAmountError, setRefundAmountError] = useState("");
-  const [overrideReason, setOverrideReason]       = useState("");
-  const [overrideReasonError, setOverrideReasonError] = useState("");
-  const [showRefundConfirm, setShowRefundConfirm]     = useState(false);
-  const [pendingRefundAmount, setPendingRefundAmount]   = useState(undefined);
+  const [cancelReason,          setCancelReason]          = useState("");
+  const [refundReason,          setRefundReason]          = useState("");
+  const [refundAmount,          setRefundAmount]          = useState("");
+  const [refundAmountError,     setRefundAmountError]     = useState("");
+  const [overrideReason,        setOverrideReason]        = useState("");
+  const [overrideReasonError,   setOverrideReasonError]   = useState("");
+  const [showRefundConfirm,     setShowRefundConfirm]     = useState(false);
+  const [pendingRefundAmount,   setPendingRefundAmount]   = useState(undefined);
   const [pendingOverrideReason, setPendingOverrideReason] = useState("");
-  const [disputeReason, setDisputeReason] = useState("");
-  const [resolveNote, setResolveNote]     = useState("");
+  const [disputeReason,         setDisputeReason]         = useState("");
+  const [resolveNote,           setResolveNote]           = useState("");
 
-  const canCancel      = ["CONFIRMED", "PENDING_PAYMENT"].includes(booking.status);
-  const canRefund      = booking.stripe_payment_intent_id &&
+  const canCancel       = ["CONFIRMED", "PENDING_PAYMENT"].includes(booking.status);
+  const canRefund       = booking.stripe_payment_intent_id &&
     booking.refund_status !== "succeeded" &&
     ["CONFIRMED", "COMPLETED", "CANCELLED"].includes(booking.status);
-  const canDispute     = !booking.is_disputed && ["CONFIRMED", "COMPLETED"].includes(booking.status);
-  const canResDisp     = booking.is_disputed;
-  const canRetry       = booking.transfer_status === "failed" && ["CONFIRMED", "COMPLETED"].includes(booking.status);
+  const canDispute      = !booking.is_disputed && ["CONFIRMED", "COMPLETED"].includes(booking.status);
+  const canResDisp      = booking.is_disputed;
+  const canRetry        = booking.transfer_status === "failed" && ["CONFIRMED", "COMPLETED"].includes(booking.status);
   const canMarkResolved = booking.transfer_status === "failed" && ["CONFIRMED", "COMPLETED"].includes(booking.status);
-
-  useEffect(() => {
-    if (!success) return;
-    const t = setTimeout(() => setSuccess(""), 5000);
-    return () => clearTimeout(t);
-  }, [success]);
 
   if (!canCancel && !canRefund && !canDispute && !canResDisp && !canRetry && !canMarkResolved) return null;
 
-  const openForm = (form) => { setActiveForm(form); setError(""); setSuccess(""); };
+  const openForm    = (form) => { setActiveForm(form); };
   const dismissForm = () => {
     setActiveForm(null);
     setCancelReason("");
     setRefundReason(""); setRefundAmount(""); setRefundAmountError("");
     setOverrideReason(""); setOverrideReasonError("");
     setDisputeReason(""); setResolveNote("");
-    setError("");
   };
 
-  const run = async (fn) => {
-    setLoading(true);
-    setError("");
+  const handleCancel = async () => {
+    if (!cancelReason.trim()) return;
     try {
-      await fn();
+      await adminCancelBooking({ id: booking.id, reason: cancelReason.trim() }).unwrap();
+      toast.success(t("adminActions.cancel.success"));
+      dismissForm();
+      onActionComplete();
     } catch (e) {
-      setError(e?.response?.data?.error || t("adminActions.genericError"));
-    } finally {
-      setLoading(false);
+      toast.error(e?.data?.error || t("adminActions.genericError"));
     }
   };
-
-  const handleCancel = () => run(async () => {
-    if (!cancelReason.trim()) return;
-    await adminCancelBooking(booking.id, cancelReason.trim());
-    setSuccess(t("adminActions.cancel.success"));
-    dismissForm();
-    onActionComplete();
-  });
 
   const handleRefundSubmit = () => {
     setRefundAmountError(""); setOverrideReasonError("");
@@ -118,46 +108,69 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
     setShowRefundConfirm(true);
   };
 
-  const handleRefundConfirm = () => {
+  const handleRefundConfirm = async () => {
     setShowRefundConfirm(false);
-    run(async () => {
+    try {
       const total = parseFloat(booking.amount);
-      await adminManualRefund(booking.id, refundReason.trim() || undefined, pendingRefundAmount, pendingOverrideReason || undefined);
+      await adminManualRefund({
+        bookingId:      booking.id,
+        reason:         refundReason.trim() || undefined,
+        amount:         pendingRefundAmount,
+        overrideReason: pendingOverrideReason || undefined,
+      }).unwrap();
       const isPartial = pendingRefundAmount != null && pendingRefundAmount < total;
-      setSuccess(isPartial
+      toast.success(isPartial
         ? t("adminActions.refund.successPartial", { amount: pendingRefundAmount.toFixed(2) })
         : t("adminActions.refund.successFull"));
       dismissForm();
       onActionComplete();
-    });
+    } catch (e) {
+      toast.error(e?.data?.error || t("adminActions.genericError"));
+    }
   };
 
-  const handleDispute = () => run(async () => {
-    await markBookingDisputed(booking.id, true, disputeReason.trim() || undefined);
-    setSuccess(t("adminActions.dispute.success"));
-    dismissForm();
-    onActionComplete();
-  });
+  const handleDispute = async () => {
+    try {
+      await markBookingDisputed({ id: booking.id, disputed: true, reason: disputeReason.trim() || undefined }).unwrap();
+      toast.success(t("adminActions.dispute.success"));
+      dismissForm();
+      onActionComplete();
+    } catch (e) {
+      toast.error(e?.data?.error || t("adminActions.genericError"));
+    }
+  };
 
-  const handleResolveDispute = () => run(async () => {
-    await markBookingDisputed(booking.id, false);
-    setSuccess(t("adminActions.dispute.resolveSuccess"));
-    onActionComplete();
-  });
+  const handleResolveDispute = async () => {
+    try {
+      await markBookingDisputed({ id: booking.id, disputed: false }).unwrap();
+      toast.success(t("adminActions.dispute.resolveSuccess"));
+      onActionComplete();
+    } catch (e) {
+      toast.error(e?.data?.error || t("adminActions.genericError"));
+    }
+  };
 
-  const handleRetry = () => run(async () => {
-    await adminRetryTransfer(booking.id);
-    setSuccess(t("adminActions.retry.success"));
-    dismissForm();
-    onActionComplete();
-  });
+  const handleRetry = async () => {
+    try {
+      await adminRetryTransfer(booking.id).unwrap();
+      toast.success(t("adminActions.retry.success"));
+      dismissForm();
+      onActionComplete();
+    } catch (e) {
+      toast.error(e?.data?.error || t("adminActions.genericError"));
+    }
+  };
 
-  const handleMarkResolved = () => run(async () => {
-    await adminMarkTransferResolved(booking.id, resolveNote || undefined);
-    setSuccess(t("adminActions.resolve.success"));
-    dismissForm();
-    onActionComplete();
-  });
+  const handleMarkResolved = async () => {
+    try {
+      await adminMarkTransferResolved({ id: booking.id, note: resolveNote || undefined }).unwrap();
+      toast.success(t("adminActions.resolve.success"));
+      dismissForm();
+      onActionComplete();
+    } catch (e) {
+      toast.error(e?.data?.error || t("adminActions.genericError"));
+    }
+  };
 
   const btn  = "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50";
   const btnX = `${btn} border border-gray-300 text-gray-600 hover:bg-gray-50`;
@@ -165,20 +178,6 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
   return (
     <div className="px-6 py-4">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{t("adminActions.title")}</p>
-
-      {(error || success) && (
-        <div className="mb-3">
-          {error   && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
-          {success && (
-            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
-              <span className="flex-1">{success}</span>
-              <button type="button" onClick={() => setSuccess("")} className="p-0.5 text-green-400 hover:text-green-600 transition-colors flex-shrink-0">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {activeForm === null && (
         <div className="flex flex-wrap gap-2">
@@ -203,7 +202,7 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
           {canResDisp && (
             <button onClick={handleResolveDispute} disabled={loading}
               className={`${btn} border border-green-300 text-green-700 hover:bg-green-50`}>
-              {loading ? t("adminActions.resolving") : t("adminActions.resolveDispute")}
+              {disputing ? t("adminActions.resolving") : t("adminActions.resolveDispute")}
             </button>
           )}
           {canRetry && (
@@ -236,7 +235,7 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
           <div className="flex gap-2 mt-2">
             <button onClick={handleCancel} disabled={!cancelReason.trim() || loading}
               className={`${btn} bg-red-600 text-white hover:bg-red-700`}>
-              {loading ? t("adminActions.cancel.cancelling") : t("adminActions.cancel.confirmBtn")}
+              {cancelling ? t("adminActions.cancel.cancelling") : t("adminActions.cancel.confirmBtn")}
             </button>
             <button onClick={dismissForm} className={btnX}>{t("adminActions.cancel.dismiss")}</button>
           </div>
@@ -290,7 +289,7 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
             <div className="flex gap-2">
               <button onClick={handleRefundSubmit} disabled={loading}
                 className={`${btn} bg-gray-700 text-white hover:bg-gray-800`}>
-                {loading ? t("adminActions.refund.refunding") : t("adminActions.refund.reviewBtn")}
+                {refunding ? t("adminActions.refund.refunding") : t("adminActions.refund.reviewBtn")}
               </button>
               <button onClick={dismissForm} className={btnX}>{t("adminActions.refund.dismiss")}</button>
             </div>
@@ -310,7 +309,7 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
           <div className="flex gap-2 mt-2">
             <button onClick={handleDispute} disabled={loading}
               className={`${btn} bg-orange-600 text-white hover:bg-orange-700`}>
-              {loading ? t("adminActions.dispute.flagging") : t("adminActions.dispute.confirmBtn")}
+              {disputing ? t("adminActions.dispute.flagging") : t("adminActions.dispute.confirmBtn")}
             </button>
             <button onClick={dismissForm} className={btnX}>{t("adminActions.dispute.dismiss")}</button>
           </div>
@@ -323,7 +322,7 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
           <div className="flex gap-2">
             <button onClick={handleRetry} disabled={loading}
               className={`${btn} bg-[#445446] text-white hover:bg-[#3a4a3b]`}>
-              {loading ? t("adminActions.retry.processing") : t("adminActions.retry.confirmBtn")}
+              {retrying ? t("adminActions.retry.processing") : t("adminActions.retry.confirmBtn")}
             </button>
             <button onClick={dismissForm} className={btnX}>{t("adminActions.retry.cancel")}</button>
           </div>
@@ -343,7 +342,7 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
           <div className="flex gap-2">
             <button onClick={handleMarkResolved} disabled={loading}
               className={`${btn} bg-green-600 text-white hover:bg-green-700`}>
-              {loading ? t("adminActions.resolve.processing") : t("adminActions.resolve.confirmBtn")}
+              {resolving ? t("adminActions.resolve.processing") : t("adminActions.resolve.confirmBtn")}
             </button>
             <button onClick={dismissForm} className={btnX}>{t("adminActions.resolve.cancel")}</button>
           </div>

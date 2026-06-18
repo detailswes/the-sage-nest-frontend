@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation, Trans } from "react-i18next";
-import {
-  changePasswordApi,
-  get2FAStatusApi,
-  sendSetupOtpApi,
-  enable2FAApi,
-  disable2FAApi,
-  deleteAccountApi,
-} from "../../../api/authApi";
 import { useAuth } from "../../../context/AuthContext";
 import {
-  getNotificationPreferences,
-  updateNotificationPreferences,
+  useGetNotificationPreferencesQuery,
+  useUpdateNotificationPreferencesMutation,
 } from "../../../api/expertApi";
+import {
+  useChangePasswordMutation,
+  useGet2FAStatusQuery,
+  useSendSetupOtpMutation,
+  useEnable2FAMutation,
+  useDisable2FAMutation,
+  useDeleteAccountMutation,
+} from "../../../api/userApi";
 import { checkPasswordStrength } from "../../../utils/validation";
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -162,13 +162,14 @@ const ChangePasswordCard = () => {
     next: false,
     confirm: false,
   });
-  const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({
     current: "",
     next: "",
     confirm: "",
   });
   const [success, setSuccess] = useState(false);
+
+  const [changePassword, { isLoading: saving }] = useChangePasswordMutation();
 
   useEffect(() => {
     if (!success) return;
@@ -225,19 +226,18 @@ const ChangePasswordCard = () => {
       return;
     }
 
-    setSaving(true);
     setFieldErrors({ current: "", next: "", confirm: "" });
     setSuccess(false);
     try {
-      await changePasswordApi({
+      await changePassword({
         currentPassword: form.current,
         newPassword: form.next,
-      });
+      }).unwrap();
       setForm({ current: "", next: "", confirm: "" });
       setSuccess(true);
     } catch (err) {
       const msg =
-        err?.response?.data?.error ||
+        err?.data?.error ||
         t("settings.password.errors.saveFailed");
       if (
         msg.toLowerCase().includes("current") ||
@@ -247,8 +247,6 @@ const ChangePasswordCard = () => {
       } else {
         setFieldErrors((fe) => ({ ...fe, confirm: msg }));
       }
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -384,22 +382,17 @@ const ChangePasswordCard = () => {
 };
 
 // ─── Notification Preferences card ───────────────────────────────────────────
+const defaultNotifPrefs = { notify_new_booking: true, notify_cancellation: true };
+
 const NotificationPreferencesCard = () => {
   const { t } = useTranslation("expertDashboard");
-  const [prefs, setPrefs] = useState({
-    notify_new_booking: true,
-    notify_cancellation: true,
-  });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [localPrefs, setLocalPrefs] = useState(null);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    getNotificationPreferences()
-      .then((data) => setPrefs(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: fetchedPrefs, isLoading: loading } = useGetNotificationPreferencesQuery();
+  const [updatePrefs, { isLoading: saving }]       = useUpdateNotificationPreferencesMutation();
+
+  const prefs = localPrefs ?? fetchedPrefs ?? defaultNotifPrefs;
 
   const showToast = (type, message) => {
     setToast({ type, message });
@@ -407,18 +400,15 @@ const NotificationPreferencesCard = () => {
   };
 
   const handleToggle = async (field, value) => {
-    const prev = prefs;
-    setPrefs((p) => ({ ...p, [field]: value }));
-    setSaving(true);
+    const base = localPrefs ?? fetchedPrefs ?? defaultNotifPrefs;
+    setLocalPrefs({ ...base, [field]: value });
     try {
-      const saved = await updateNotificationPreferences({ [field]: value });
-      setPrefs((p) => ({ ...p, ...saved }));
+      await updatePrefs({ [field]: value }).unwrap();
+      setLocalPrefs(null);
       showToast("success", t("settings.notifications.toastSuccess"));
     } catch {
-      setPrefs(prev);
+      setLocalPrefs(null);
       showToast("error", t("settings.notifications.toastError"));
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -523,21 +513,21 @@ const DeleteAccountCard = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [deleteAccount, { isLoading: loading }] = useDeleteAccountMutation();
 
   const handleDelete = async () => {
     if (!password) {
       setError(t("settings.deleteAccount.confirm.passwordRequired"));
       return;
     }
-    setLoading(true);
     setError("");
     try {
-      await deleteAccountApi({ password });
+      await deleteAccount({ password }).unwrap();
       logout();
     } catch (err) {
-      const errData = err?.response?.data;
+      const errData = err?.data;
       setError(errData?.error || t("settings.deleteAccount.confirm.saveFailed"));
       if (
         errData?.has_pending_payout ||
@@ -547,7 +537,6 @@ const DeleteAccountCard = () => {
         setShowConfirm(false);
         setPassword("");
       }
-      setLoading(false);
     }
   };
 
@@ -678,23 +667,21 @@ const DeleteAccountCard = () => {
 // ─── Two-Factor Authentication card ──────────────────────────────────────────
 const TwoFactorCard = () => {
   const { t } = useTranslation("expertDashboard");
-  const [enabled, setEnabled] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState(true);
   const [step, setStep] = useState("idle"); // 'idle' | 'entering_code'
   const [intent, setIntent] = useState(null); // 'enable' | 'disable'
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
-  const [saving, setSaving] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const codeInputRef = useRef(null);
 
-  useEffect(() => {
-    get2FAStatusApi()
-      .then((data) => setEnabled(data.enabled))
-      .catch(() => {})
-      .finally(() => setLoadingStatus(false));
-  }, []);
+  const { data: status2fa, isLoading: loadingStatus } = useGet2FAStatusQuery();
+  const [sendOtp, { isLoading: sendingOtp }]      = useSendSetupOtpMutation();
+  const [enable2FA, { isLoading: enablingFA }]    = useEnable2FAMutation();
+  const [disable2FA, { isLoading: disablingFA }]  = useDisable2FAMutation();
+
+  const enabled = status2fa?.enabled ?? false;
+  const saving  = sendingOtp || enablingFA || disablingFA;
 
   // Resend cooldown ticker
   useEffect(() => {
@@ -704,63 +691,55 @@ const TwoFactorCard = () => {
   }, [resendCooldown]);
 
   const handleSendCode = async (intentType) => {
-    setSaving(true);
     setCodeError("");
     try {
-      await sendSetupOtpApi({
+      await sendOtp({
         purpose: intentType === "enable" ? "enable_2fa" : "disable_2fa",
-      });
+      }).unwrap();
       setIntent(intentType);
       setStep("entering_code");
       setCode("");
       setResendCooldown(60);
       setTimeout(() => codeInputRef.current?.focus(), 50);
     } catch (err) {
-      setCodeError(err?.response?.data?.error || t("settings.twoFactor.errors.sendFailed"));
-    } finally {
-      setSaving(false);
+      setCodeError(err?.data?.error || t("settings.twoFactor.errors.sendFailed"));
     }
   };
 
   const handleResend = async () => {
     setCodeError("");
     try {
-      await sendSetupOtpApi({
+      await sendOtp({
         purpose: intent === "enable" ? "enable_2fa" : "disable_2fa",
-      });
+      }).unwrap();
       setCode("");
       setResendCooldown(60);
     } catch (err) {
-      setCodeError(err?.response?.data?.error || t("settings.twoFactor.errors.resendFailed"));
+      setCodeError(err?.data?.error || t("settings.twoFactor.errors.resendFailed"));
     }
   };
 
   const doVerify = async (codeVal) => {
     if (saving || codeVal.length !== 6) return;
-    setSaving(true);
     setCodeError("");
     try {
       if (intent === "enable") {
-        await enable2FAApi({ code: codeVal });
-        setEnabled(true);
+        await enable2FA({ code: codeVal }).unwrap();
         setSuccessMsg(t("settings.twoFactor.successEnabled"));
       } else {
-        await disable2FAApi({ code: codeVal });
-        setEnabled(false);
+        await disable2FA({ code: codeVal }).unwrap();
         setSuccessMsg(t("settings.twoFactor.successDisabled"));
       }
       setStep("idle");
       setCode("");
       setTimeout(() => setSuccessMsg(""), 4000);
     } catch (err) {
-      const errData = err?.response?.data;
+      const errData = err?.data;
       if (errData?.expired) {
         setCodeError(t("settings.twoFactor.errors.expired"));
       } else {
         setCodeError(errData?.error || t("settings.twoFactor.errors.incorrect"));
       }
-    } finally {
-      setSaving(false);
     }
   };
 

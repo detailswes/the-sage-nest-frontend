@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
-  getNotificationPreferences,
-  updateNotificationPreferences,
+  useGetNotificationPreferencesQuery,
+  useUpdateNotificationPreferencesMutation,
 } from '../../../api/expertApi';
 
 // ─── Toggle row ───────────────────────────────────────────────────────────────
@@ -44,37 +44,27 @@ const ToggleRow = ({ label, description, checked, onChange, disabled = false }) 
 );
 
 // ─── Component ────────────────────────────────────────────────────────────────
-const NotificationsSection = () => {
-  const [prefs, setPrefs] = useState({
-    notify_new_booking:  true,
-    notify_cancellation: true,
-  });
-  const [loading, setLoading]   = useState(true);
-  const [saving, setSaving]     = useState(false);
-  const [toast, setToast]       = useState(null); // { type: 'success'|'error', message: string }
+const defaultPrefs = { notify_new_booking: true, notify_cancellation: true };
 
-  useEffect(() => {
-    getNotificationPreferences()
-      .then((data) => setPrefs(data))
-      .catch(() => {}) // fall back to defaults
-      .finally(() => setLoading(false));
-  }, []);
+const NotificationsSection = () => {
+  const [localPrefs, setLocalPrefs] = useState(null);
+  const [toast, setToast]           = useState(null);
+
+  const { data: fetchedPrefs, isLoading: loading } = useGetNotificationPreferencesQuery();
+  const [updatePrefs, { isLoading: saving }]       = useUpdateNotificationPreferencesMutation();
+
+  const prefs = localPrefs ?? fetchedPrefs ?? defaultPrefs;
 
   const handleToggle = async (field, value) => {
-    const prev = prefs;
-    const next = { ...prefs, [field]: value };
-    setPrefs(next); // optimistic update
-
-    setSaving(true);
+    const base = localPrefs ?? fetchedPrefs ?? defaultPrefs;
+    setLocalPrefs({ ...base, [field]: value }); // optimistic
     try {
-      const saved = await updateNotificationPreferences({ [field]: value });
-      setPrefs((p) => ({ ...p, ...saved }));
+      await updatePrefs({ [field]: value }).unwrap();
+      setLocalPrefs(null);
       showToast('success', 'Preferences saved');
     } catch {
-      setPrefs(prev); // revert on failure
+      setLocalPrefs(null); // revert to server state
       showToast('error', 'Failed to save — please try again');
-    } finally {
-      setSaving(false);
     }
   };
 

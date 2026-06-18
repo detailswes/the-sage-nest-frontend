@@ -1,90 +1,133 @@
-import axios from 'axios';
-import { api } from './authApi';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import axiosBaseQuery from '../store/baseQuery';
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+export const bookingApi = createApi({
+  reducerPath: 'bookingApi',
+  baseQuery: axiosBaseQuery,
+  tagTypes: ['Booking', 'UpcomingAppointment', 'PastAppointment', 'CalendarBooking', 'SlotLock'],
+  endpoints: (builder) => ({
 
-// ─── Parent booking flow ──────────────────────────────────────────────────────
+    // ─── Parent booking flow ───────────────────────────────────────────────────
+    createBooking: builder.mutation({
+      query: (data) => ({ url: '/bookings', method: 'POST', data }),
+      invalidatesTags: ['Booking', 'UpcomingAppointment'],
+    }),
+    getBookingById: builder.query({
+      query: (id) => ({ url: `/bookings/${id}` }),
+      providesTags: (result, error, id) => [{ type: 'Booking', id }],
+    }),
+    getMyBookings: builder.query({
+      query: () => ({ url: '/bookings/my' }),
+      providesTags: ['Booking'],
+    }),
+    // arg: { id, reason? }
+    cancelBooking: builder.mutation({
+      query: ({ id, reason }) => ({ url: `/bookings/${id}`, method: 'DELETE', data: { reason } }),
+      invalidatesTags: (result, error, { id }) => ['Booking', { type: 'Booking', id }],
+    }),
+    // arg: { id, newScheduledAt }
+    rescheduleBooking: builder.mutation({
+      query: ({ id, newScheduledAt }) => ({ url: `/bookings/${id}/reschedule`, method: 'PATCH', data: { newScheduledAt } }),
+      invalidatesTags: (result, error, { id }) => ['Booking', { type: 'Booking', id }, 'UpcomingAppointment', 'CalendarBooking'],
+    }),
 
-/** Create a booking and get back the Stripe client_secret */
-export const createBooking = (data) =>
-  api.post('/bookings', data).then((r) => r.data);
+    // ─── Public slot availability ──────────────────────────────────────────────
+    // arg: { expertId, date, serviceId }
+    getAvailableSlots: builder.query({
+      query: ({ expertId, date, serviceId }) => ({ url: '/availability/slots', params: { expertId, date, serviceId } }),
+    }),
+    // arg: { expertId, year, month, serviceId }
+    // Returns array of date strings; consumer converts to Set if needed.
+    getAvailableDatesInMonth: builder.query({
+      query: ({ expertId, year, month, serviceId }) => ({
+        url: '/availability/available-dates',
+        params: { expertId, year, month, serviceId },
+      }),
+      transformResponse: (response) => response.available_dates,
+    }),
 
-/** Get a single booking by ID (parent or expert) */
-export const getBookingById = (id) =>
-  api.get(`/bookings/${id}`).then((r) => r.data);
+    // ─── Expert dashboard ──────────────────────────────────────────────────────
+    getUpcomingAppointments: builder.query({
+      query: () => ({ url: '/bookings/upcoming' }),
+      providesTags: ['UpcomingAppointment'],
+    }),
+    // arg: page? (number, default 1)
+    getPastAppointments: builder.query({
+      query: (page = 1) => ({ url: '/bookings/past', params: { page } }),
+      providesTags: ['PastAppointment'],
+    }),
+    // arg: { from, to }
+    getCalendarBookings: builder.query({
+      query: ({ from, to }) => ({ url: '/bookings/calendar', params: { from, to } }),
+      providesTags: ['CalendarBooking'],
+    }),
+    markSessionLinkSent: builder.mutation({
+      query: (id) => ({ url: `/bookings/${id}/link-sent`, method: 'PATCH' }),
+      invalidatesTags: (result, error, id) => [{ type: 'Booking', id }, 'UpcomingAppointment'],
+    }),
+    // arg: { id, note? }
+    markBookingComplete: builder.mutation({
+      query: ({ id, note }) => ({ url: `/bookings/${id}/complete`, method: 'PATCH', data: { note } }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Booking', id }, 'UpcomingAppointment', 'PastAppointment'],
+    }),
+    // arg: { id, note }
+    saveExpertNote: builder.mutation({
+      query: ({ id, note }) => ({ url: `/bookings/${id}/expert-note`, method: 'PATCH', data: { note } }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Booking', id }],
+    }),
+    expertCancelBooking: builder.mutation({
+      query: (id) => ({ url: `/bookings/${id}/expert-cancel`, method: 'POST' }),
+      invalidatesTags: (result, error, id) => ['Booking', { type: 'Booking', id }, 'UpcomingAppointment', 'CalendarBooking'],
+    }),
+    verifyPayment: builder.mutation({
+      query: (id) => ({ url: `/bookings/${id}/verify-payment`, method: 'POST' }),
+      invalidatesTags: (result, error, id) => [{ type: 'Booking', id }],
+    }),
+    abandonBooking: builder.mutation({
+      query: (id) => ({ url: `/bookings/${id}/abandon`, method: 'POST' }),
+      invalidatesTags: (result, error, id) => ['Booking', { type: 'Booking', id }],
+    }),
 
-/** Get all bookings belonging to the logged-in parent */
-export const getMyBookings = () =>
-  api.get('/bookings/my').then((r) => r.data);
+    // ─── T&C version ──────────────────────────────────────────────────────────
+    getCurrentTcVersion: builder.query({
+      query: () => ({ url: '/bookings/tc-version' }),
+    }),
+    acceptTc: builder.mutation({
+      query: () => ({ url: '/bookings/accept-tc', method: 'POST' }),
+    }),
 
-/** Cancel a booking; optionally provide { reason } in body */
-export const cancelBooking = (id, reason) =>
-  api.delete(`/bookings/${id}`, { data: { reason } }).then((r) => r.data);
+    // ─── Slot locking ──────────────────────────────────────────────────────────
+    // arg: { expertId, slotStart }
+    lockSlot: builder.mutation({
+      query: ({ expertId, slotStart }) => ({ url: '/availability/lock-slot', method: 'POST', data: { expertId, slotStart } }),
+      providesTags: ['SlotLock'],
+    }),
+    releaseLock: builder.mutation({
+      query: (lockId) => ({ url: `/availability/lock-slot/${lockId}`, method: 'DELETE' }),
+      invalidatesTags: ['SlotLock'],
+    }),
+  }),
+});
 
-/** Reschedule a confirmed booking to a new slot (no payment change) */
-export const rescheduleBooking = (id, newScheduledAt) =>
-  api.patch(`/bookings/${id}/reschedule`, { newScheduledAt }).then((r) => r.data);
-
-// ─── Public slot availability ─────────────────────────────────────────────────
-
-/** Returns available time slots for an expert on a given date */
-export const getAvailableSlots = (expertId, date, serviceId) =>
-  axios
-    .get(`${BASE_URL}/availability/slots`, { params: { expertId, date, serviceId } })
-    .then((r) => r.data);
-
-/** Returns the set of dates in a given month that have ≥1 available slot */
-export const getAvailableDatesInMonth = (expertId, year, month, serviceId) =>
-  axios
-    .get(`${BASE_URL}/availability/available-dates`, { params: { expertId, year, month, serviceId } })
-    .then((r) => new Set(r.data.available_dates));
-
-// ─── Expert dashboard ─────────────────────────────────────────────────────────
-
-export const getUpcomingAppointments = () =>
-  api.get('/bookings/upcoming').then((r) => r.data);
-
-export const getPastAppointments = (page = 1) =>
-  api.get('/bookings/past', { params: { page } }).then((r) => r.data);
-
-export const getCalendarBookings = (from, to) =>
-  api.get('/bookings/calendar', { params: { from, to } }).then((r) => r.data);
-
-export const markSessionLinkSent = (id) =>
-  api.patch(`/bookings/${id}/link-sent`).then((r) => r.data);
-
-export const markBookingComplete = (id, note) =>
-  api.patch(`/bookings/${id}/complete`, { note }).then((r) => r.data);
-
-export const saveExpertNote = (id, note) =>
-  api.patch(`/bookings/${id}/expert-note`, { note }).then((r) => r.data);
-
-/** Expert cancels a confirmed booking — always triggers a full refund to the parent */
-export const expertCancelBooking = (id) =>
-  api.post(`/bookings/${id}/expert-cancel`).then((r) => r.data);
-
-/** Reconcile a stuck PENDING_PAYMENT booking by checking Stripe directly */
-export const verifyPayment = (id) =>
-  api.post(`/bookings/${id}/verify-payment`).then((r) => r.data);
-
-/** Abandon a PENDING_PAYMENT booking — cancels the PaymentIntent and frees the slot */
-export const abandonBooking = (id) =>
-  api.post(`/bookings/${id}/abandon`).then((r) => r.data);
-
-/** Get the current T&C version and whether it has changed since the user last accepted */
-export const getCurrentTcVersion = () =>
-  api.get('/bookings/tc-version').then((r) => r.data);
-
-/** Record acceptance of the current T&C version — idempotent */
-export const acceptTcApi = () =>
-  api.post('/bookings/accept-tc').then((r) => r.data);
-
-// ─── Slot locking ─────────────────────────────────────────────────────────────
-
-/** Reserve a slot for SLOT_LOCK_MINUTES; returns { lockId, expiresAt } */
-export const lockSlotApi = (expertId, slotStart) =>
-  api.post('/availability/lock-slot', { expertId, slotStart }).then((r) => r.data);
-
-/** Release a previously acquired slot lock */
-export const releaseLockApi = (lockId) =>
-  api.delete(`/availability/lock-slot/${lockId}`).then((r) => r.data);
+export const {
+  useCreateBookingMutation,
+  useGetBookingByIdQuery,
+  useGetMyBookingsQuery,
+  useCancelBookingMutation,
+  useRescheduleBookingMutation,
+  useGetAvailableSlotsQuery,
+  useGetAvailableDatesInMonthQuery,
+  useGetUpcomingAppointmentsQuery,
+  useGetPastAppointmentsQuery,
+  useGetCalendarBookingsQuery,
+  useMarkSessionLinkSentMutation,
+  useMarkBookingCompleteMutation,
+  useSaveExpertNoteMutation,
+  useExpertCancelBookingMutation,
+  useVerifyPaymentMutation,
+  useAbandonBookingMutation,
+  useGetCurrentTcVersionQuery,
+  useAcceptTcMutation,
+  useLockSlotMutation,
+  useReleaseLockMutation,
+} = bookingApi;

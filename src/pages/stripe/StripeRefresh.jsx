@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createConnectLink } from '../../api/stripeApi';
+import { useCreateConnectLinkMutation } from '../../api/stripeApi';
 
 /**
  * Stripe redirects here when the onboarding link expires.
@@ -9,14 +9,16 @@ import { createConnectLink } from '../../api/stripeApi';
 const StripeRefresh = () => {
   const navigate = useNavigate();
   const [error, setError] = useState(false);
+  const [createConnectLink] = useCreateConnectLinkMutation();
 
   useEffect(() => {
     createConnectLink()
+      .unwrap()
       .then((data) => {
         window.location.href = data.url;
       })
       .catch(() => setError(true));
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) {
     return (

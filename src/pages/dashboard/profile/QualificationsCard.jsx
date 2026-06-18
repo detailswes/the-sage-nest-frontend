@@ -1,9 +1,9 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  addQualification,
-  updateQualification,
-  deleteQualification,
+  useAddQualificationMutation,
+  useUpdateQualificationMutation,
+  useDeleteQualificationMutation,
 } from "../../../api/expertApi";
 import { getDocumentUrl } from "../../../utils/imageUrl";
 import ConfirmModal from "../../../components/ConfirmModal";
@@ -86,8 +86,11 @@ const QualificationsCard = ({ initialData = [] }) => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [docName, setDocName] = useState("");
   const [formError, setFormError] = useState("");
-  const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+
+  const [addQualification, { isLoading: saving }]      = useAddQualificationMutation();
+  const [updateQualification, { isLoading: editSaving }] = useUpdateQualificationMutation();
+  const [deleteQualification]                          = useDeleteQualificationMutation();
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
 
   // Edit state
@@ -95,7 +98,6 @@ const QualificationsCard = ({ initialData = [] }) => {
   const [editForm, setEditForm] = useState({ custom_name: "", document: null });
   const [editDocName, setEditDocName] = useState("");
   const [editError, setEditError] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
 
   const fileRef = useRef(null);
   const editFileRef = useRef(null);
@@ -135,24 +137,21 @@ const QualificationsCard = ({ initialData = [] }) => {
       setFormError(t("profile.quals.errors.docRequired"));
       return;
     }
-    setSaving(true);
     try {
       const created = await addQualification({
         type: form.type,
         custom_name:
           form.type === "OTHER" ? form.custom_name.trim() : undefined,
         document: form.document || undefined,
-      });
+      }).unwrap();
       setItems((prev) => [...prev, created]);
       setForm(EMPTY_FORM);
       setDocName("");
       setShowForm(false);
     } catch (err) {
       setFormError(
-        err?.response?.data?.error || t("profile.quals.errors.addFailed")
+        err?.data?.error || t("profile.quals.errors.addFailed")
       );
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -200,23 +199,21 @@ const QualificationsCard = ({ initialData = [] }) => {
       setEditError(t("profile.quals.errors.nameEditRequired"));
       return;
     }
-    setEditSaving(true);
     try {
-      const updated = await updateQualification(q.id, {
+      const updated = await updateQualification({
+        id: q.id,
         custom_name:
           q.type === "OTHER" ? editForm.custom_name.trim() : undefined,
         document: editForm.document || undefined,
-      });
+      }).unwrap();
       setItems((prev) =>
         prev.map((item) => (item.id === q.id ? updated : item))
       );
       cancelEdit();
     } catch (err) {
       setEditError(
-        err?.response?.data?.error || t("profile.quals.errors.updateFailed")
+        err?.data?.error || t("profile.quals.errors.updateFailed")
       );
-    } finally {
-      setEditSaving(false);
     }
   };
 
@@ -225,7 +222,7 @@ const QualificationsCard = ({ initialData = [] }) => {
   const handleDelete = async (id) => {
     setDeletingId(id);
     try {
-      await deleteQualification(id);
+      await deleteQualification(id).unwrap();
       setItems((prev) => prev.filter((q) => q.id !== id));
       setDeleteModal({ open: false, id: null });
     } catch {

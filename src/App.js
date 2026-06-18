@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
 import GuestRoute from "./components/GuestRoute";
@@ -41,6 +42,28 @@ import LanguageSelector from "./components/LanguageSelector";
 function App() {
   return (
     <AuthProvider>
+      <Toaster
+        position="top-right"
+        gutter={10}
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#ffffff",
+            color: "#1F2933",
+            fontSize: "0.95rem",
+            fontWeight: "500",
+            lineHeight: "1.4",
+            borderRadius: "12px",
+            padding: "12px 16px",
+            maxWidth: "360px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)",
+            border: "1px solid #E4E7E4",
+          },
+          error: {
+            iconTheme: { primary: "#ef4444", secondary: "#ffffff" },
+          },
+        }}
+      />
       <BrowserRouter>
         <Routes>
           {/* Guest-only */}

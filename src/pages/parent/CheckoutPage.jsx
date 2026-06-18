@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { abandonBooking } from '../../api/bookingApi';
+import { useAbandonBookingMutation } from '../../api/bookingApi';
 
 function formatPrice(price, currency = 'EUR', lng = 'en') {
   return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', { style: 'currency', currency }).format(Number(price));
@@ -30,8 +30,9 @@ const CheckoutPage = () => {
   const [stripeReady,  setStripeReady]  = useState(false);
   const [paying,       setPaying]       = useState(false);
   const [payError,     setPayError]     = useState('');
-  const [abandoning,   setAbandoning]   = useState(false);
   const [secsLeft,     setSecsLeft]     = useState(null);
+
+  const [abandonBooking, { isLoading: abandoning }] = useAbandonBookingMutation();
   const [expired,      setExpired]      = useState(false);
   const stripeRef         = useRef(null);
   const elementsRef       = useRef(null);
@@ -108,9 +109,8 @@ const CheckoutPage = () => {
   }, [clientSecret]);
 
   const handleEditBooking = async () => {
-    setAbandoning(true);
     try {
-      await abandonBooking(bookingId);
+      await abandonBooking(bookingId).unwrap();
     } catch {
       // If abandon fails the PI will expire naturally — don't block the user
     }

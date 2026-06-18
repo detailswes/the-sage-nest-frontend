@@ -1,7 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useTranslation, Trans } from 'react-i18next';
-import { getMyBookings, cancelBooking, rescheduleBooking, verifyPayment, getAvailableSlots, getAvailableDatesInMonth } from '../../api/bookingApi';
+import {
+  useGetMyBookingsQuery,
+  useCancelBookingMutation,
+  useRescheduleBookingMutation,
+  useVerifyPaymentMutation,
+  useGetAvailableSlotsQuery,
+  useGetAvailableDatesInMonthQuery,
+} from '../../api/bookingApi';
 import { useAuth } from '../../context/AuthContext';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
@@ -283,27 +291,42 @@ const ExpertAvatar = ({ name, profileImage, size = 'md' }) => {
 };
 
 // ─── Booking Card (upcoming) ──────────────────────────────────────────────────
-const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
+const BookingCard = ({ booking, onViewDetails }) => {
   const { t, i18n } = useTranslation('parentBookings');
   const lng = i18n.language;
 
   const [showCancel,  setShowCancel]  = useState(false);
   const [reason,      setReason]      = useState('');
-  const [cancelling,  setCancelling]  = useState(false);
   const [cancelErr,   setCancelErr]   = useState('');
 
-  const [showReschedule,    setShowReschedule]    = useState(false);
-  const [rescheduleDate,    setRescheduleDate]    = useState(
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState(
     () => new Date(booking.scheduled_at).toISOString().slice(0, 10)
   );
-  const [rescheduleSlots,   setRescheduleSlots]   = useState([]);
-  const [slotsLoading,      setSlotsLoading]      = useState(false);
-  const [rescheduleSlot,    setRescheduleSlot]    = useState(null);
-  const [rescheduling,      setRescheduling]      = useState(false);
-  const [rescheduleErr,     setRescheduleErr]     = useState('');
-  const [rescheduleSuccess, setRescheduleSuccess] = useState(false);
-  const [availableDates,    setAvailableDates]    = useState(undefined);
-  const [loadingDates,      setLoadingDates]      = useState(false);
+  const [rescheduleSlot, setRescheduleSlot] = useState(null);
+  const [monthArgs,      setMonthArgs]      = useState(null);
+
+  const [cancelBooking,    { isLoading: cancelling   }] = useCancelBookingMutation();
+  const [rescheduleBooking, { isLoading: rescheduling }] = useRescheduleBookingMutation();
+
+  const { data: rescheduleSlots = [], isFetching: slotsLoading } = useGetAvailableSlotsQuery(
+    { expertId: booking.expert_id, date: rescheduleDate, serviceId: booking.service_id },
+    { skip: !showReschedule }
+  );
+
+  const { data: availableDates, isFetching: loadingDates } = useGetAvailableDatesInMonthQuery(
+    monthArgs,
+    { skip: !monthArgs }
+  );
+
+  // Reset selected slot when date changes
+  useEffect(() => {
+    setRescheduleSlot(null);
+  }, [rescheduleDate]);
+
+  const fetchAvailableDates = useCallback((year, month) => {
+    setMonthArgs({ expertId: booking.expert_id, year, month, serviceId: booking.service_id });
+  }, [booking.expert_id, booking.service_id]);
 
   const hrs             = hoursUntil(booking.scheduled_at);
   const isFuture        = hrs > 0;
@@ -321,35 +344,13 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
   const duration        = formatDuration(booking.service?.duration_minutes);
   const canReschedule   = booking.status === 'CONFIRMED' && isFuture && hrs >= 12;
 
-  useEffect(() => {
-    if (!showReschedule) return;
-    setSlotsLoading(true);
-    setRescheduleSlot(null);
-    getAvailableSlots(booking.expert_id, rescheduleDate, booking.service_id)
-      .then(setRescheduleSlots)
-      .catch(() => setRescheduleSlots([]))
-      .finally(() => setSlotsLoading(false));
-  }, [showReschedule, rescheduleDate, booking.expert_id, booking.service_id]);
-
-  const fetchAvailableDates = useCallback(async (year, month) => {
-    setLoadingDates(true);
-    try {
-      const dates = await getAvailableDatesInMonth(
-        booking.expert_id, year, month, booking.service_id,
-      );
-      setAvailableDates(dates);
-    } catch {
-      setAvailableDates(undefined);
-    } finally {
-      setLoadingDates(false);
-    }
-  }, [booking.expert_id, booking.service_id]);
-
   const openReschedule = () => {
     setShowCancel(false);
-    setAvailableDates(undefined);
+    setMonthArgs(null);
+    setRescheduleSlot(null);
     setShowReschedule(true);
   };
+
   const openCancel = () => { setShowReschedule(false); setShowCancel(true); };
 
   const handleConfirmCancel = async () => {
@@ -357,30 +358,24 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
       setCancelErr(t('card.reasonRequired'));
       return;
     }
-    setCancelling(true);
     setCancelErr('');
     try {
-      await onCancel(booking.id, reason.trim());
+      await cancelBooking({ id: booking.id, reason: reason.trim() }).unwrap();
       setShowCancel(false);
     } catch (err) {
-      setCancelErr(err.response?.data?.error || t('card.cancelError'));
-      setCancelling(false);
+      setCancelErr(err?.data?.error || t('card.cancelError'));
     }
   };
 
   const handleConfirmReschedule = async () => {
     if (!rescheduleSlot) return;
-    setRescheduling(true);
-    setRescheduleErr('');
     try {
-      await onReschedule(booking.id, rescheduleSlot.start);
+      await rescheduleBooking({ id: booking.id, newScheduledAt: rescheduleSlot.start }).unwrap();
       setShowReschedule(false);
       setRescheduleSlot(null);
-      setRescheduling(false);
-      setRescheduleSuccess(true);
+      toast.success(t('card.rescheduledTitle'));
     } catch (err) {
-      setRescheduleErr(err.response?.data?.error || t('card.rescheduleError'));
-      setRescheduling(false);
+      toast.error(err?.data?.error || t('card.rescheduleError'));
     }
   };
 
@@ -466,41 +461,8 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
         </div>
       </div>
 
-      {/* Reschedule success banner */}
-      {rescheduleSuccess && (
-        <div className="px-5 pb-5 pt-0">
-          <div className="border-t border-[#E4E7E4] pt-4">
-            <div className="flex items-start gap-3 px-3 py-3 bg-green-50 border border-green-200 rounded-xl">
-              <svg className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-green-800">{t('card.rescheduledTitle')}</p>
-                <p className="text-xs text-green-700 mt-0.5">
-                  <Trans
-                    i18nKey="card.rescheduledMessage"
-                    ns="parentBookings"
-                    values={{ datetime: formatLocaleStr(booking.scheduled_at, lng) }}
-                    components={[<span />, <span className="font-medium" />]}
-                  />
-                </p>
-              </div>
-              <button
-                onClick={() => setRescheduleSuccess(false)}
-                className="flex-shrink-0 text-green-500 hover:text-green-700 transition-colors"
-                aria-label="Dismiss"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Actions footer */}
-      {!rescheduleSuccess && (canCancel || canReschedule || inLockoutWindow) && (
+      {(canCancel || canReschedule || inLockoutWindow) && (
         <div className="px-5 pb-5 pt-0">
           <div className="border-t border-[#E4E7E4] pt-4 space-y-3">
 
@@ -595,11 +557,9 @@ const BookingCard = ({ booking, onCancel, onReschedule, onViewDetails }) => {
                   </div>
                 )}
 
-                {rescheduleErr && <p className="text-xs text-red-600">{rescheduleErr}</p>}
-
                 <div className="flex gap-2">
                   <button
-                    onClick={() => { setShowReschedule(false); setRescheduleSlot(null); setRescheduleErr(''); }}
+                    onClick={() => { setShowReschedule(false); setRescheduleSlot(null); }}
                     className="flex-1 py-2 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                   >
                     {t('card.keepCurrentTime')}
@@ -861,52 +821,25 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
   const { t } = useTranslation('parentBookings');
   const { triggerPpCheck } = useAuth();
 
-  // Fire any deferred Privacy Policy update modal — PP is only shown on the dashboard, never during booking.
+  // Fire any deferred Privacy Policy update modal
   useEffect(() => { triggerPpCheck(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const [bookings,        setBookings]        = useState([]);
-  const [loading,         setLoading]         = useState(true);
-  const [error,           setError]           = useState('');
+
+  const { data: bookings = [], isLoading, isError } = useGetMyBookingsQuery();
+  const [verifyPayment] = useVerifyPaymentMutation();
   const [selectedBooking, setSelectedBooking] = useState(null);
 
+  // Verify stale pending-payment bookings; tag invalidation auto-refreshes the list
   useEffect(() => {
-    getMyBookings()
-      .then((data) => {
-        setBookings(data);
-        const stale = data.filter(
-          (b) =>
-            b.status === 'PENDING_PAYMENT' &&
-            Date.now() - new Date(b.created_at).getTime() > 2 * 60 * 1000
-        );
-        stale.forEach((b) => {
-          verifyPayment(b.id)
-            .then((result) => {
-              if (result.status === 'CONFIRMED') {
-                setBookings((prev) =>
-                  prev.map((x) => (x.id === b.id ? { ...x, status: 'CONFIRMED' } : x))
-                );
-              }
-            })
-            .catch(() => {});
-        });
-      })
-      .catch(() => setError(t('page.loadError')))
-      .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleCancel = useCallback(async (id, reason) => {
-    await cancelBooking(id, reason);
-    setBookings((prev) =>
-      prev.map((b) => b.id === id ? { ...b, status: 'CANCELLED' } : b)
+    if (!bookings.length) return;
+    const stale = bookings.filter(
+      (b) =>
+        b.status === 'PENDING_PAYMENT' &&
+        Date.now() - new Date(b.created_at).getTime() > 2 * 60 * 1000
     );
-  }, []);
-
-  const handleReschedule = useCallback(async (id, newScheduledAt) => {
-    await rescheduleBooking(id, newScheduledAt);
-    setBookings((prev) =>
-      prev.map((b) => b.id === id ? { ...b, scheduled_at: newScheduledAt } : b)
-    );
-  }, []);
+    stale.forEach((b) => {
+      verifyPayment(b.id).unwrap().catch(() => {});
+    });
+  }, [bookings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const now = new Date();
   const sessionEndTime = (b) =>
@@ -920,7 +853,7 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
     (b.status !== 'CONFIRMED' || sessionEndTime(b) <= now.getTime())
   );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -942,9 +875,9 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
         </p>
       </div>
 
-      {error && (
+      {isError && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {error}
+          {t('page.loadError')}
         </div>
       )}
 
@@ -960,7 +893,7 @@ const MyBookingsPage = ({ view = 'upcoming' }) => {
       ) : (
         <div className="space-y-4">
           {isUpcoming
-            ? displayed.map((b) => <BookingCard key={b.id} booking={b} onCancel={handleCancel} onReschedule={handleReschedule} onViewDetails={setSelectedBooking} />)
+            ? displayed.map((b) => <BookingCard key={b.id} booking={b} onViewDetails={setSelectedBooking} />)
             : displayed.map((b) => <PastBookingCard key={b.id} booking={b} onViewDetails={setSelectedBooking} />)
           }
         </div>

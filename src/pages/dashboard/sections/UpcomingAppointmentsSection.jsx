@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  getUpcomingAppointments,
-  markSessionLinkSent,
-  expertCancelBooking,
-  markBookingComplete,
-  saveExpertNote,
+  useGetUpcomingAppointmentsQuery,
+  useMarkSessionLinkSentMutation,
+  useExpertCancelBookingMutation,
+  useMarkBookingCompleteMutation,
+  useSaveExpertNoteMutation,
 } from '../../../api/bookingApi';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -108,26 +108,28 @@ const CancelModal = ({ booking, onConfirm, onDismiss, cancelling }) => {
   );
 };
 
-// ─── Note editor — shared by card and past-row ────────────────────────────────
+// ─── Note editor ──────────────────────────────────────────────────────────────
 const NoteEditor = ({ bookingId, initialNote, onSaved }) => {
   const { t } = useTranslation('expertDashboard');
-  const [note,      setNote]      = useState(initialNote || '');
-  const [saveState, setSaveState] = useState('idle'); // idle | saving | saved | error
+  const [note, setNote] = useState(initialNote || '');
+  const [showSaved, setShowSaved] = useState(false);
   const timerRef = useRef(null);
+  const [saveNote, { isLoading: saving, isError: saveError }] = useSaveExpertNoteMutation();
 
   const persist = useCallback(async (value) => {
-    setSaveState('saving');
     try {
-      const res = await saveExpertNote(bookingId, value);
-      setSaveState('saved');
+      const res = await saveNote({ id: bookingId, note: value }).unwrap();
       if (onSaved) onSaved(res.expert_note);
-      timerRef.current = setTimeout(() => setSaveState('idle'), 2000);
+      setShowSaved(true);
+      timerRef.current = setTimeout(() => setShowSaved(false), 2000);
     } catch {
-      setSaveState('error');
+      // isError handles display
     }
-  }, [bookingId, onSaved]);
+  }, [bookingId, onSaved, saveNote]);
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  const saveState = saving ? 'saving' : saveError ? 'error' : showSaved ? 'saved' : 'idle';
 
   return (
     <div className="px-4 pb-4">
@@ -139,7 +141,7 @@ const NoteEditor = ({ bookingId, initialNote, onSaved }) => {
       </p>
       <textarea
         value={note}
-        onChange={(e) => { setNote(e.target.value); setSaveState('idle'); }}
+        onChange={(e) => { setNote(e.target.value); }}
         onBlur={() => persist(note)}
         placeholder={t('upcomingAppointments.noteEditor.placeholder')}
         rows={3}
@@ -157,29 +159,30 @@ const NoteEditor = ({ bookingId, initialNote, onSaved }) => {
 };
 
 // ─── Appointment card ─────────────────────────────────────────────────────────
-const AppointmentCard = ({ booking, onMarkSent, onCancelRequest, onComplete }) => {
+const AppointmentCard = ({ booking, onCancelRequest }) => {
   const { t, i18n } = useTranslation('expertDashboard');
   const lng = i18n.language;
-  const [marking,    setMarking]    = useState(false);
-  const [completing, setCompleting] = useState(false);
-  const [note,       setNote]       = useState(booking.expert_note || '');
+  const [note, setNote] = useState(booking.expert_note || '');
+  const [markSent,        { isLoading: marking }]    = useMarkSessionLinkSentMutation();
+  const [completeBooking, { isLoading: completing }] = useMarkBookingCompleteMutation();
+
   const isOnline  = booking.format === 'ONLINE';
   const isPast    = new Date(booking.scheduled_at) < new Date();
   const needsLinkReminder = isOnline && !booking.session_link_sent;
 
   const handleMark = async () => {
-    setMarking(true);
-    await onMarkSent(booking.id);
-    setMarking(false);
+    try {
+      await markSent(booking.id).unwrap();
+    } catch {
+      // non-critical — UI stays in reminder state
+    }
   };
 
   const handleComplete = async () => {
-    setCompleting(true);
     try {
-      await markBookingComplete(booking.id, note);
-      onComplete(booking.id);
+      await completeBooking({ id: booking.id, note }).unwrap();
     } catch {
-      setCompleting(false);
+      // stay visible on failure
     }
   };
 
@@ -294,47 +297,20 @@ const AppointmentCard = ({ booking, onMarkSent, onCancelRequest, onComplete }) =
 // ─── Main component ───────────────────────────────────────────────────────────
 const UpcomingAppointmentsSection = () => {
   const { t } = useTranslation('expertDashboard');
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data: appointments = [], isLoading: loading, isError: loadError } =
+    useGetUpcomingAppointmentsQuery();
+  const [cancelBooking, { isLoading: cancelling, isError: cancelError }] =
+    useExpertCancelBookingMutation();
   const [cancelTarget, setCancelTarget] = useState(null);
-  const [cancelling, setCancelling] = useState(false);
-
-  useEffect(() => {
-    getUpcomingAppointments()
-      .then(setAppointments)
-      .catch(() => setError(t('upcomingAppointments.loadError')))
-      .finally(() => setLoading(false));
-  }, [t]);
-
-  const handleMarkSent = useCallback(async (id) => {
-    try {
-      await markSessionLinkSent(id);
-      setAppointments((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, session_link_sent: true } : a))
-      );
-    } catch {
-      // non-critical — UI will just stay in reminder state
-    }
-  }, []);
-
-  const handleComplete = useCallback((id) => {
-    setAppointments((prev) => prev.filter((a) => a.id !== id));
-  }, []);
 
   const handleCancelConfirm = async () => {
     if (!cancelTarget) return;
-    setCancelling(true);
     try {
-      await expertCancelBooking(cancelTarget.id);
-      setAppointments((prev) => prev.filter((a) => a.id !== cancelTarget.id));
-      setCancelTarget(null);
+      await cancelBooking(cancelTarget.id).unwrap();
     } catch {
-      setError(t('upcomingAppointments.cancelError'));
-      setCancelTarget(null);
-    } finally {
-      setCancelling(false);
+      // cancelError drives the banner
     }
+    setCancelTarget(null);
   };
 
   if (loading) {
@@ -344,6 +320,12 @@ const UpcomingAppointmentsSection = () => {
       </div>
     );
   }
+
+  const errorMsg = loadError
+    ? t('upcomingAppointments.loadError')
+    : cancelError
+      ? t('upcomingAppointments.cancelError')
+      : null;
 
   return (
     <div>
@@ -364,9 +346,9 @@ const UpcomingAppointmentsSection = () => {
         </p>
       </div>
 
-      {error && (
+      {errorMsg && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {error}
+          {errorMsg}
         </div>
       )}
 
@@ -384,9 +366,7 @@ const UpcomingAppointmentsSection = () => {
             <AppointmentCard
               key={booking.id}
               booking={booking}
-              onMarkSent={handleMarkSent}
               onCancelRequest={setCancelTarget}
-              onComplete={handleComplete}
             />
           ))}
         </div>

@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { listServices, createService, updateService, deleteService, reorderServices, getMyProfile } from '../../../api/expertApi';
+import {
+  useListServicesQuery,
+  useCreateServiceMutation,
+  useUpdateServiceMutation,
+  useDeleteServiceMutation,
+  useReorderServicesMutation,
+  useGetMyProfileQuery,
+} from '../../../api/expertApi';
 import ConfirmModal from '../../../components/ConfirmModal';
 
 const FORMAT_OPTIONS  = [
@@ -93,38 +100,34 @@ const ServicesSection = () => {
   const { t, i18n } = useTranslation('expertDashboard');
   const lng = i18n.language;
 
-  const [sessionFormat, setSessionFormat] = useState(null); // expert's profile-level format
+  const { data: serverServices = [], isLoading: loading, isError: servicesIsError } = useListServicesQuery();
+  const { data: profile } = useGetMyProfileQuery();
+  const [createService, { isLoading: creating }]    = useCreateServiceMutation();
+  const [updateService, { isLoading: updating }]    = useUpdateServiceMutation();
+  const [deleteService]    = useDeleteServiceMutation();
+  const [reorderServices, { isLoading: reordering }] = useReorderServicesMutation();
 
-  const [services, setServices]       = useState([]);
-  const [loading, setLoading]         = useState(true);
+  const [localOrder, setLocalOrder] = useState(null); // optimistic reorder override
+  const services = localOrder ?? serverServices;
+
+  const sessionFormat = profile?.session_format || null;
+
   const [listError, setListError]     = useState('');
 
   const [showForm, setShowForm]       = useState(false);
   const [editingId, setEditingId]     = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
   const [formErrors, setFormErrors]   = useState({});
-  const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError]     = useState('');
 
   const [isDuplicating, setIsDuplicating] = useState(false);
-  const [isReordering, setIsReordering]   = useState(false);
 
   const [deletingId, setDeletingId]     = useState(null);
   const [togglingId, setTogglingId]     = useState(null);
   const [deleteModal, setDeleteModal]   = useState({ open: false, id: null });
 
-  useEffect(() => {
-    Promise.all([
-      listServices(),
-      getMyProfile(),
-    ])
-      .then(([svcs, profile]) => {
-        setServices(svcs);
-        setSessionFormat(profile.session_format || null);
-      })
-      .catch(() => setListError(t('services.errors.loadFailed')))
-      .finally(() => setLoading(false));
-  }, [t]);
+  const formLoading = editingId ? updating : creating;
+  const isReordering = reordering;
 
   // Derives the locked format value when the expert has a single-mode session_format.
   const lockedFormat = sessionFormat === 'ONLINE' ? 'ONLINE'
@@ -217,7 +220,6 @@ const ServicesSection = () => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setFormErrors(errs); return; }
-    setFormLoading(true);
     setFormError('');
     try {
       const payload = {
@@ -230,25 +232,20 @@ const ServicesSection = () => {
         cluster:          form.cluster || null,
       };
       if (editingId) {
-        const updated = await updateService(editingId, payload);
-        setServices((s) => s.map((sv) => (sv.id === editingId ? updated : sv)));
+        await updateService({ id: editingId, ...payload }).unwrap();
       } else {
-        const created = await createService(payload);
-        setServices((s) => [...s, created]);
+        await createService(payload).unwrap();
       }
       cancelForm();
     } catch (err) {
-      setFormError(err?.response?.data?.error || t('services.errors.saveFailed'));
-    } finally {
-      setFormLoading(false);
+      setFormError(err?.data?.error || t('services.errors.saveFailed'));
     }
   };
 
   const handleDelete = async (id) => {
     setDeletingId(id);
     try {
-      await deleteService(id);
-      setServices((s) => s.filter((sv) => sv.id !== id));
+      await deleteService(id).unwrap();
     } catch {
       setListError(t('services.errors.deleteFailed'));
     } finally {
@@ -261,23 +258,20 @@ const ServicesSection = () => {
     if (swapIndex < 0 || swapIndex >= services.length) return;
     const reordered = [...services];
     [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
-    setServices(reordered);
-    setIsReordering(true);
+    setLocalOrder(reordered);
     try {
-      await reorderServices(reordered.map((s) => s.id));
+      await reorderServices(reordered.map((s) => s.id)).unwrap();
+      setLocalOrder(null);
     } catch {
       setListError(t('services.errors.reorderFailed'));
-      setServices(services); // revert
-    } finally {
-      setIsReordering(false);
+      setLocalOrder(null); // revert to server order
     }
   };
 
   const handleToggle = async (svc) => {
     setTogglingId(svc.id);
     try {
-      const updated = await updateService(svc.id, { is_active: !svc.is_active });
-      setServices((s) => s.map((sv) => (sv.id === svc.id ? updated : sv)));
+      await updateService({ id: svc.id, is_active: !svc.is_active }).unwrap();
     } catch {
       setListError(t('services.errors.updateFailed'));
     } finally {
@@ -319,8 +313,10 @@ const ServicesSection = () => {
         )}
       </div>
 
-      {listError && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{listError}</div>
+      {(listError || servicesIsError) && (
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+          {listError || t('services.errors.loadFailed')}
+        </div>
       )}
 
       {/* Add / Edit form */}

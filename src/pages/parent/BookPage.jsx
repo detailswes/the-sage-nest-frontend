@@ -1,10 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useTranslation, Trans } from 'react-i18next';
 import { STORAGE_KEY } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
-import { getExpertPublic } from '../../api/expertApi';
-import { getAvailableSlots, getAvailableDatesInMonth, createBooking, getCurrentTcVersion, acceptTcApi, lockSlotApi, releaseLockApi } from '../../api/bookingApi';
+import { useGetExpertPublicQuery } from '../../api/expertApi';
+import {
+  useGetAvailableSlotsQuery,
+  useGetAvailableDatesInMonthQuery,
+  useCreateBookingMutation,
+  useGetCurrentTcVersionQuery,
+  useAcceptTcMutation,
+  useLockSlotMutation,
+  useReleaseLockMutation,
+} from '../../api/bookingApi';
 import { loginUser, registerUser, verifyOtpApi } from '../../api/authApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import { validateLoginForm, validateRegisterForm } from '../../utils/validation';
@@ -399,7 +408,6 @@ const BookPage = () => {
   const langParam      = searchParams.get('lang');
 
   // Apply ?lang= URL param on first render so Webflow can pre-set the language
-  // by linking to /book?expertId=...&lang=it from Italian-language pages.
   useEffect(() => {
     if (langParam && ['en', 'it'].includes(langParam) && i18n.language !== langParam) {
       i18n.changeLanguage(langParam);
@@ -411,135 +419,148 @@ const BookPage = () => {
   const fromPastBookings = !!locationState?.restore?.fromPastBookings;
 
   const [step,            setStep]           = useState(STEPS.SERVICE);
-  const [loading,         setLoading]        = useState(true);
   const [error,           setError]          = useState('');
 
-  const [selectedExpert,  setSelectedExpert]  = useState(null);
-  const [expertDetail,    setExpertDetail]    = useState(null);
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedExpert,  setSelectedExpert]  = useState(() => locationState?.restore?.expert || null);
+  const [expertDetail,    setExpertDetail]    = useState(() => locationState?.restore?.expert || null);
+  const [selectedService, setSelectedService] = useState(() => locationState?.restore?.service || null);
   const [selectedDate,    setSelectedDate]    = useState(todayISO());
-  const [slots,           setSlots]           = useState([]);
-  const [slotsLoading,    setSlotsLoading]    = useState(false);
   const [selectedSlot,    setSelectedSlot]    = useState(null);
-  const [selectedFormat,  setSelectedFormat]  = useState('ONLINE');
-  const [availableDates,  setAvailableDates]  = useState(undefined);
-  const [loadingDates,    setLoadingDates]    = useState(false);
+  const [selectedFormat,  setSelectedFormat]  = useState(() => locationState?.restore?.format || 'ONLINE');
+  const [monthArgs,       setMonthArgs]       = useState(null);
   const [expandedDesc,    setExpandedDesc]    = useState({});
 
   // Confirm + payment state
-  const [authTab,              setAuthTab]              = useState('register'); // 'login' | 'register'
-  const [proceeding,           setProceeding]           = useState(false);
-  const [proceedErr,           setProceedErr]           = useState('');
+  const [authTab,              setAuthTab]              = useState('register');
   const [tcAcceptanceRequired, setTcAcceptanceRequired] = useState(false);
   const [tcIsFirstBooking,     setTcIsFirstBooking]     = useState(false);
   const [tcModalOpen,          setTcModalOpen]          = useState(false);
-  // Set to the registrant's email after a successful register call —
-  // shows the "check your inbox" panel. Cleared when they switch to sign-in.
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState(null);
 
-  // Slot lock (held during CONFIRM after auth)
+  // Slot lock
   const [lockId,        setLockId]        = useState(null);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
-  const [locking,       setLocking]       = useState(false);
-  const [lockErr,       setLockErr]       = useState('');
   const lockIdRef    = useRef(null);
   const continueRef  = useRef(null);
+  // Tracks first-time data population from expert query
+  const expertInitialized = useRef(false);
 
-  // Return URL embedded in the verification email — includes slot+format so the
-  // parent lands directly back on the CONFIRM step after verifying their email.
-  // Use selectedService.id from state as fallback: users arriving from Webflow hit
-  // /book?expertId=X with no serviceId in the URL, so we must read it from state.
-  // NOTE: Do NOT pre-encode values here. The backend's sendVerificationEmail wraps
-  // the entire returnTo with encodeURIComponent, so pre-encoding causes double-encoding
-  // (%3A → %253A) which some email clients mangle, stripping the returnTo param.
-  const effectiveServiceId = serviceIdParam || selectedService?.id;
-  const bookReturnUrl =
-    `/book?expertId=${expertIdParam || ''}` +
-    (effectiveServiceId ? `&serviceId=${effectiveServiceId}` : '') +
-    (selectedSlot?.start ? `&slotStart=${selectedSlot.start}` : '') +
-    (selectedFormat ? `&format=${selectedFormat}` : '');
+  // ── RTK mutations ─────────────────────────────────────────────────────────
+  const [lockSlotFn, { isLoading: locking }] = useLockSlotMutation();
+  const [releaseLock]                        = useReleaseLockMutation();
+  const [createBooking, { isLoading: creating }] = useCreateBookingMutation();
+  const [acceptTcFn]                         = useAcceptTcMutation();
 
-  // ── Init: load expert from URL params ─────────────────────────────────────
+  // ── RTK queries ───────────────────────────────────────────────────────────
+  // Expert public profile — skip when restore path or no expertId
+  const {
+    data: fetchedExpert,
+    isLoading: expertLoading,
+    isError: expertIsError,
+  } = useGetExpertPublicQuery(
+    Number(expertIdParam),
+    { skip: !expertIdParam || !!locationState?.restore }
+  );
+
+  // Available slots — only fetch when on SLOT step
+  const {
+    data: slots = [],
+    isFetching: slotsLoading,
+    refetch: refetchSlots,
+  } = useGetAvailableSlotsQuery(
+    { expertId: selectedExpert?.id, date: selectedDate, serviceId: selectedService?.id },
+    { skip: step !== STEPS.SLOT || !selectedExpert || !selectedService }
+  );
+
+  // Available dates for calendar month navigation
+  const { data: availableDates, isFetching: loadingDates } = useGetAvailableDatesInMonthQuery(
+    monthArgs,
+    { skip: !monthArgs }
+  );
+
+  // T&C version — skip until user is authenticated; refetch after inline auth
+  const { data: tcData, refetch: refetchTc } = useGetCurrentTcVersionQuery(undefined, {
+    skip: !user,
+  });
+
+  // ── Derive loading/error from query state ─────────────────────────────────
+  const loading = !locationState?.restore && !!expertIdParam && expertLoading;
+
+  // ── Init effects ──────────────────────────────────────────────────────────
+
+  // Handle restore path and missing expertId on mount
   useEffect(() => {
     sessionStorage.removeItem('sage_booking_ctx');
-
-    // Restore from checkout "Edit booking" navigation
     if (locationState?.restore) {
       const { expert, service, format: fmt } = locationState.restore;
-      if (expert) { setSelectedExpert(expert); setExpertDetail(expert); }
-      if (service) setSelectedService(service);
-      if (fmt) setSelectedFormat(fmt);
       if (expert && service) setStep(STEPS.SLOT);
-      setLoading(false);
+      if (fmt) setSelectedFormat(fmt);
       return;
     }
-
     if (!expertIdParam) {
       setError('No expert specified. Please start from the expert directory.');
-      setLoading(false);
-      return;
     }
-
-    getExpertPublic(Number(expertIdParam))
-      .then((expert) => {
-        setSelectedExpert(expert);
-        setExpertDetail(expert);
-        if (!returnUrlParam && expert.webflow_slug) {
-          setEffectiveReturnUrl(`${WEBFLOW_EXPERT_BASE_URL}/${expert.webflow_slug}`);
-        }
-        // Pre-select service + restore slot inline so all state updates batch into
-        // one render — avoids a flash of the SERVICE step before the effect fires.
-        // URL params are stable values, no stale-closure risk here.
-        if (serviceIdParam) {
-          const svc = (expert.services || []).find(
-            (s) => String(s.id) === String(serviceIdParam),
-          );
-          if (svc) {
-            setSelectedService(svc);
-            const fmt = formatParam || svc.format;
-            if (fmt) setSelectedFormat(fmt);
-            // Returning from email verification with a pre-chosen slot → land on CONFIRM.
-            // Slot availability is re-checked when the parent clicks "Proceed to payment".
-            if (slotStartParam) {
-              setSelectedSlot({ start: slotStartParam });
-              setStep(STEPS.CONFIRM);
-            }
-          }
-        }
-      })
-      .catch(() => setError('Could not load expert. Please try again.'))
-      .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Pre-select service from URL param (reactive fallback) ────────────────────
-  // Handles the rare case where expertDetail is set outside the init effect
-  // (e.g. "Edit booking" restore path). The inline pre-selection above already
-  // covers the normal load path; selectedService guard skips double-application.
+  // Populate state from fetched expert (runs once on first successful fetch)
   useEffect(() => {
-    if (!serviceIdParam || !expertDetail || selectedService) return;
-    const svc = (expertDetail.services || []).find(
-      (s) => String(s.id) === String(serviceIdParam),
-    );
-    if (svc) {
-      setSelectedService(svc);
-      const fmt = formatParam || svc.format;
-      if (fmt) setSelectedFormat(fmt);
-      if (slotStartParam) {
-        setSelectedSlot({ start: slotStartParam });
-        setStep(STEPS.CONFIRM);
+    if (!fetchedExpert || expertInitialized.current) return;
+    expertInitialized.current = true;
+
+    setSelectedExpert(fetchedExpert);
+    setExpertDetail(fetchedExpert);
+
+    if (!returnUrlParam && fetchedExpert.webflow_slug) {
+      setEffectiveReturnUrl(`${WEBFLOW_EXPERT_BASE_URL}/${fetchedExpert.webflow_slug}`);
+    }
+    if (serviceIdParam) {
+      const svc = (fetchedExpert.services || []).find(
+        (s) => String(s.id) === String(serviceIdParam),
+      );
+      if (svc) {
+        setSelectedService(svc);
+        const fmt = formatParam || svc.format;
+        if (fmt) setSelectedFormat(fmt);
+        if (slotStartParam) {
+          setSelectedSlot({ start: slotStartParam });
+          setStep(STEPS.CONFIRM);
+        }
       }
     }
-  }, [expertDetail]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchedExpert]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync error from expert query failure
+  useEffect(() => {
+    if (expertIsError) setError('Could not load expert. Please try again.');
+  }, [expertIsError]);
+
+  // Sync T&C state from query (re-runs when user logs in and query fetches)
+  useEffect(() => {
+    if (!tcData) return;
+    setTcAcceptanceRequired(!!tcData.version_updated);
+    setTcIsFirstBooking(!!tcData.is_first_booking);
+  }, [tcData]);
 
   // Release lock on unmount
   useEffect(() => {
     return () => {
       if (lockIdRef.current) {
-        releaseLockApi(lockIdRef.current).catch(() => {});
+        releaseLock(lockIdRef.current).catch(() => {});
         lockIdRef.current = null;
       }
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Release any held lock and reset selected slot when date/service changes on SLOT step
+  useEffect(() => {
+    if (step !== STEPS.SLOT) return;
+    setSelectedSlot(null);
+    if (lockIdRef.current) {
+      releaseLock(lockIdRef.current).catch(() => {});
+      lockIdRef.current = null;
+      setLockId(null); setLockExpiresAt(null);
+    }
+  }, [step, selectedDate, selectedService?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Lock countdown
   useEffect(() => {
@@ -548,20 +569,20 @@ const BookPage = () => {
       const secs = Math.max(0, Math.round((lockExpiresAt.getTime() - Date.now()) / 1000));
       if (secs === 0) {
         lockIdRef.current = null;
-        setLockId(null); setLockExpiresAt(null); setLockErr(t('slotStep.lockExpired'));
+        setLockId(null); setLockExpiresAt(null); toast.error(t('slotStep.lockExpired'));
       }
     };
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [lockExpiresAt]);
+  }, [lockExpiresAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to top on every step change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [step]);
 
-  // Unauthenticated: scroll to Continue as soon as a slot is selected (no lock to wait for)
+  // Unauthenticated: scroll to Continue as soon as a slot is selected
   useEffect(() => {
     if (selectedSlot && !user && continueRef.current) {
       continueRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -575,78 +596,46 @@ const BookPage = () => {
     }
   }, [lockId, step]);
 
-  // T&C status
-  useEffect(() => {
-    getCurrentTcVersion()
-      .then(({ version_updated, is_first_booking }) => {
-        setTcAcceptanceRequired(!!version_updated);
-        setTcIsFirstBooking(!!is_first_booking);
-      })
-      .catch(() => {});
-  }, [user]); // re-check after auth
+  // ── Callbacks ─────────────────────────────────────────────────────────────
 
-  // Load slots
-  const loadSlots = useCallback(async () => {
-    if (!selectedExpert || !selectedService || !selectedDate) return;
-    if (lockIdRef.current) {
-      releaseLockApi(lockIdRef.current).catch(() => {});
-      lockIdRef.current = null;
-      setLockId(null); setLockExpiresAt(null); setLockErr('');
-    }
-    setSlotsLoading(true); setSelectedSlot(null);
-    try {
-      setSlots(await getAvailableSlots(selectedExpert.id, selectedDate, selectedService.id));
-    } catch { setSlots([]); }
-    finally { setSlotsLoading(false); }
-  }, [selectedExpert, selectedService, selectedDate]);
-
-  useEffect(() => {
-    if (step === STEPS.SLOT) loadSlots();
-  }, [step, loadSlots]);
-
-  const fetchAvailableDates = useCallback(async (year, month) => {
+  const fetchAvailableDates = useCallback((year, month) => {
     if (!selectedExpert) return;
-    setLoadingDates(true);
-    try {
-      setAvailableDates(await getAvailableDatesInMonth(selectedExpert.id, year, month, selectedService?.id));
-    } catch { setAvailableDates(undefined); }
-    finally { setLoadingDates(false); }
-  }, [selectedExpert, selectedService]);
+    setMonthArgs({ expertId: selectedExpert.id, year, month, serviceId: selectedService?.id });
+  }, [selectedExpert, selectedService?.id]);
 
   // ── Slot lock ─────────────────────────────────────────────────────────────
-  // slotArg: pass the slot object directly when calling from a click handler to
-  // avoid reading stale state (setSelectedSlot is async). Falls back to selectedSlot.
+  // slotArg: pass slot directly from click handler to avoid reading stale state.
   const lockSlot = async (slotArg = null) => {
     const slot = slotArg || selectedSlot;
     if (!slot) return null;
-    setLocking(true); setLockErr('');
     try {
-      const { lockId: id, expiresAt } = await lockSlotApi(selectedExpert.id, slot.start);
+      const { lockId: id, expiresAt } = await lockSlotFn({
+        expertId: selectedExpert.id, slotStart: slot.start,
+      }).unwrap();
       lockIdRef.current = id;
       setLockId(id); setLockExpiresAt(new Date(expiresAt));
       return id;
     } catch (err) {
-      if (err.response?.status === 409) {
-        setLockErr(t('slotStep.slotUnavailable'));
+      if (err?.status === 409) {
+        toast.error(t('slotStep.slotUnavailable'));
         setSelectedSlot(null);
       } else {
-        setLockErr(t('slotStep.lockError'));
+        toast.error(t('slotStep.lockError'));
       }
       return null;
-    } finally { setLocking(false); }
+    }
   };
 
-  // ── Proceed to payment (lock → createBooking → checkout) ────────────────
+  // ── Proceed to payment (lock → createBooking → checkout) ─────────────────
   const doCheckout = async (existingLockId) => {
-    setProceeding(true); setProceedErr('');
     try {
       const lid = existingLockId || (await lockSlot());
-      if (!lid) { setProceeding(false); return; }
+      if (!lid) return;
 
       const result = await createBooking({
         expertId: selectedExpert.id, serviceId: selectedService.id,
         scheduledAt: selectedSlot.start, format: selectedFormat, lockId: lid,
-      });
+      }).unwrap();
       lockIdRef.current = null;
       setLockId(null); setLockExpiresAt(null);
 
@@ -666,8 +655,7 @@ const BookPage = () => {
         },
       });
     } catch (err) {
-      setProceedErr(err.response?.data?.error || t('slotStep.bookError'));
-      setProceeding(false);
+      toast.error(err?.data?.error || t('slotStep.bookError'));
     }
   };
 
@@ -678,20 +666,17 @@ const BookPage = () => {
 
   const handleTcAccept = async () => {
     setTcModalOpen(false);
-    try { await acceptTcApi(); } catch { /* non-fatal */ }
+    try { await acceptTcFn().unwrap(); } catch { /* non-fatal */ }
     setTcAcceptanceRequired(false);
   };
 
-  // Called after inline auth succeeds.
-  // Re-fetches T&C status with the newly-issued auth token.
-  // If T&C is outdated, show the modal so the user accepts before proceeding.
-  // Either way, the user must click "Proceed to payment" manually.
+  // Called after inline auth succeeds — re-check T&C with the fresh auth token.
   const handleAuthSuccess = async () => {
     try {
-      const { version_updated, is_first_booking } = await getCurrentTcVersion();
-      if (version_updated) {
+      const result = await refetchTc().unwrap();
+      if (result?.version_updated) {
         setTcAcceptanceRequired(true);
-        setTcIsFirstBooking(!!is_first_booking);
+        setTcIsFirstBooking(!!result.is_first_booking);
         setTcModalOpen(true);
       }
     } catch {
@@ -801,7 +786,7 @@ const BookPage = () => {
                       e.stopPropagation();
                       setSelectedService(service);
                       if (service.format) setSelectedFormat(service.format);
-                      setAvailableDates(undefined);
+                      setMonthArgs(null);
                       setStep(STEPS.SLOT);
                     }}
                     className={`mt-3 w-full py-2 px-4 text-xs font-semibold rounded-lg transition-colors ${
@@ -890,7 +875,7 @@ const BookPage = () => {
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
               {slots.map((slot) => (
                 <button key={slot.start} onClick={() => {
-                    setSelectedSlot(slot); setLockErr(''); setProceedErr('');
+                    setSelectedSlot(slot);
                     if (user) lockSlot(slot); // start 10-min lock immediately if authenticated
                   }}
                   className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all duration-150 ${
@@ -905,12 +890,6 @@ const BookPage = () => {
           </>
         )}
 
-        {lockErr && (
-          <div className="mt-4 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">
-            {lockErr}
-          </div>
-        )}
-
         <div className="mt-4">
           <CancellationPolicy small />
         </div>
@@ -918,19 +897,18 @@ const BookPage = () => {
         {/* Continue button — only when slot selected */}
         {selectedSlot && !locking && (
           <button ref={continueRef} onClick={async () => {
-              // Authenticated: lock is already active — no re-fetch needed, the lock is our reservation
+              // Authenticated: lock is already active — no re-fetch needed
               if (lockId) {
                 setStep(STEPS.CONFIRM);
                 return;
               }
               // Not authenticated: do a quick freshness check before proceeding
-              const fresh = await getAvailableSlots(selectedExpert.id, selectedDate, selectedService.id).catch(() => null);
+              const fresh = await refetchSlots().unwrap().catch(() => null);
               if (fresh !== null) {
-                const stillAvailable = fresh.some((s) => s.start === selectedSlot.start);
+                const stillAvailable = (fresh || []).some((s) => s.start === selectedSlot.start);
                 if (!stillAvailable) {
-                  setSlots(fresh);
                   setSelectedSlot(null);
-                  setLockErr(t('slotStep.lockConflict'));
+                  toast.error(t('slotStep.lockConflict'));
                   return;
                 }
               }
@@ -951,7 +929,7 @@ const BookPage = () => {
         <TcModal isFirstBooking={tcIsFirstBooking} onAccept={handleTcAccept} onDecline={() => setTcModalOpen(false)} />
       )}
 
-      <button onClick={() => { setLockErr(''); setProceedErr(''); setSelectedSlot(null); setStep(STEPS.SLOT); }}
+      <button onClick={() => { setSelectedSlot(null); setStep(STEPS.SLOT); }}
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
@@ -1013,9 +991,6 @@ const BookPage = () => {
             </div>
           </div>
 
-          {lockErr && (
-            <div className="mt-4 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">{lockErr}</div>
-          )}
         </div>
 
         {/* Health disclaimer — must appear before the payment button */}
@@ -1029,16 +1004,20 @@ const BookPage = () => {
         <div className="p-5 pt-0">
           {user ? (
             <>
-              {proceedErr && <p className="mb-3 text-sm text-red-600">{proceedErr}</p>}
-              <button onClick={handleProceed} disabled={proceeding || locking}
+              <button onClick={handleProceed} disabled={creating || locking}
                 className="w-full py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                {proceeding || locking ? 'Preparing payment…' : 'Proceed to payment →'}
+                {creating || locking ? 'Preparing payment…' : 'Proceed to payment →'}
               </button>
             </>
           ) : pendingVerificationEmail ? (
             <VerificationPendingPanel
               email={pendingVerificationEmail}
-              returnTo={bookReturnUrl}
+              returnTo={
+                `/book?expertId=${expertIdParam || ''}` +
+                ((serviceIdParam || selectedService?.id) ? `&serviceId=${serviceIdParam || selectedService?.id}` : '') +
+                (selectedSlot?.start ? `&slotStart=${selectedSlot.start}` : '') +
+                (selectedFormat ? `&format=${selectedFormat}` : '')
+              }
               onSwitchToLogin={() => { setPendingVerificationEmail(null); setAuthTab('login'); }}
             />
           ) : (
@@ -1068,11 +1047,15 @@ const BookPage = () => {
                   </p>
                   <InlineRegister
                     onVerificationSent={setPendingVerificationEmail}
-                    returnTo={bookReturnUrl}
+                    returnTo={
+                      `/book?expertId=${expertIdParam || ''}` +
+                      ((serviceIdParam || selectedService?.id) ? `&serviceId=${serviceIdParam || selectedService?.id}` : '') +
+                      (selectedSlot?.start ? `&slotStart=${selectedSlot.start}` : '') +
+                      (selectedFormat ? `&format=${selectedFormat}` : '')
+                    }
                   />
                 </>
               )}
-              {proceedErr && <p className="mt-3 text-sm text-red-600">{proceedErr}</p>}
             </>
           )}
         </div>
