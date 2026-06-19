@@ -424,7 +424,9 @@ const ParentManagementSection = () => {
                 <th className="text-right text-xs font-semibold text-white uppercase tracking-wider px-4 py-3">
                   {t("parentMgmt.col.bookings")}
                 </th>
-                <th className="px-4 py-3" />
+                <th className="text-right text-xs font-semibold text-white uppercase tracking-wider px-4 py-3">
+                  {t("parentMgmt.col.actions")}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#dfe2d7]">
@@ -497,13 +499,13 @@ const ParentManagementSection = () => {
                       <td className="px-4 py-3.5 text-right font-medium text-gray-600">
                         {p._count?.bookings_as_parent ?? "—"}
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-3.5 text-right">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/dashboard/admin/parents/${p.id}`);
                           }}
-                          className="text-xs font-medium text-[#445446] hover:underline whitespace-nowrap"
+                          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[#c5ceba] text-[#5e6d5b] hover:border-[#445446] hover:text-[#445446] hover:bg-[#dfe2d7]/50 transition-all duration-150 whitespace-nowrap"
                         >
                           {t("parentMgmt.viewBtn")}
                         </button>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import toast from "react-hot-toast";
 import { useTranslation, Trans } from "react-i18next";
 import { useAuth } from "../../../context/AuthContext";
 import {
@@ -167,21 +168,13 @@ const ChangePasswordCard = () => {
     next: "",
     confirm: "",
   });
-  const [success, setSuccess] = useState(false);
 
   const [changePassword, { isLoading: saving }] = useChangePasswordMutation();
-
-  useEffect(() => {
-    if (!success) return;
-    const t = setTimeout(() => setSuccess(false), 5000);
-    return () => clearTimeout(t);
-  }, [success]);
 
   const handleChange = (e) => {
     const { name } = e.target;
     setForm((f) => ({ ...f, [name]: e.target.value }));
     if (fieldErrors[name]) setFieldErrors((fe) => ({ ...fe, [name]: "" }));
-    if (success) setSuccess(false);
   };
 
   const getPasswordError = (password) => {
@@ -222,19 +215,17 @@ const ChangePasswordCard = () => {
 
     if (hasError) {
       setFieldErrors(errors);
-      setSuccess(false);
       return;
     }
 
     setFieldErrors({ current: "", next: "", confirm: "" });
-    setSuccess(false);
     try {
       await changePassword({
         currentPassword: form.current,
         newPassword: form.next,
       }).unwrap();
       setForm({ current: "", next: "", confirm: "" });
-      setSuccess(true);
+      toast.success(t("settings.password.success"));
     } catch (err) {
       const msg =
         err?.data?.error ||
@@ -344,26 +335,6 @@ const ChangePasswordCard = () => {
           error={fieldErrors.confirm}
         />
 
-        {success && (
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-            <svg
-              className="w-4 h-4 flex-shrink-0"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="flex-1">{t("settings.password.success")}</span>
-            <button type="button" onClick={() => setSuccess(false)} className="p-0.5 text-green-400 hover:text-green-600 transition-colors flex-shrink-0">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-            </button>
-          </div>
-        )}
-
         <div className="flex justify-end pt-1">
           <button
             type="submit"
@@ -387,17 +358,11 @@ const defaultNotifPrefs = { notify_new_booking: true, notify_cancellation: true 
 const NotificationPreferencesCard = () => {
   const { t } = useTranslation("expertDashboard");
   const [localPrefs, setLocalPrefs] = useState(null);
-  const [toast, setToast] = useState(null);
 
   const { data: fetchedPrefs, isLoading: loading } = useGetNotificationPreferencesQuery();
   const [updatePrefs, { isLoading: saving }]       = useUpdateNotificationPreferencesMutation();
 
   const prefs = localPrefs ?? fetchedPrefs ?? defaultNotifPrefs;
-
-  const showToast = (type, message) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const handleToggle = async (field, value) => {
     const base = localPrefs ?? fetchedPrefs ?? defaultNotifPrefs;
@@ -405,10 +370,10 @@ const NotificationPreferencesCard = () => {
     try {
       await updatePrefs({ [field]: value }).unwrap();
       setLocalPrefs(null);
-      showToast("success", t("settings.notifications.toastSuccess"));
+      toast.success(t("settings.notifications.toastSuccess"));
     } catch {
       setLocalPrefs(null);
-      showToast("error", t("settings.notifications.toastError"));
+      toast.error(t("settings.notifications.toastError"));
     }
   };
 
@@ -463,44 +428,6 @@ const NotificationPreferencesCard = () => {
         </div>
       )}
 
-      {toast && (
-        <div
-          className={`fixed bottom-6 right-6 flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white z-50 ${
-            toast.type === "success" ? "bg-[#445446]" : "bg-red-500"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m4.5 12.75 6 6 9-13.5"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18 18 6M6 6l12 12"
-              />
-            </svg>
-          )}
-          {toast.message}
-        </div>
-      )}
     </div>
   );
 };
@@ -528,14 +455,16 @@ const DeleteAccountCard = () => {
       logout();
     } catch (err) {
       const errData = err?.data;
-      setError(errData?.error || t("settings.deleteAccount.confirm.saveFailed"));
       if (
         errData?.has_pending_payout ||
         errData?.has_upcoming_bookings ||
         errData?.has_pending_transactions
       ) {
+        toast.error(errData?.error || t("settings.deleteAccount.confirm.saveFailed"));
         setShowConfirm(false);
         setPassword("");
+      } else {
+        setError(errData?.error || t("settings.deleteAccount.confirm.saveFailed"));
       }
     }
   };
@@ -548,12 +477,6 @@ const DeleteAccountCard = () => {
         </svg>
         <h2 className="text-sm font-semibold text-red-600">{t("settings.deleteAccount.title")}</h2>
       </div>
-
-      {error && !showConfirm && (
-        <div className="mt-3 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">
-          {error}
-        </div>
-      )}
 
       {!showConfirm ? (
         <div className="mt-3 space-y-3">
@@ -672,7 +595,6 @@ const TwoFactorCard = () => {
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [successMsg, setSuccessMsg] = useState("");
   const codeInputRef = useRef(null);
 
   const { data: status2fa, isLoading: loadingStatus } = useGet2FAStatusQuery();
@@ -702,7 +624,7 @@ const TwoFactorCard = () => {
       setResendCooldown(60);
       setTimeout(() => codeInputRef.current?.focus(), 50);
     } catch (err) {
-      setCodeError(err?.data?.error || t("settings.twoFactor.errors.sendFailed"));
+      toast.error(err?.data?.error || t("settings.twoFactor.errors.sendFailed"));
     }
   };
 
@@ -715,7 +637,7 @@ const TwoFactorCard = () => {
       setCode("");
       setResendCooldown(60);
     } catch (err) {
-      setCodeError(err?.data?.error || t("settings.twoFactor.errors.resendFailed"));
+      toast.error(err?.data?.error || t("settings.twoFactor.errors.resendFailed"));
     }
   };
 
@@ -725,14 +647,13 @@ const TwoFactorCard = () => {
     try {
       if (intent === "enable") {
         await enable2FA({ code: codeVal }).unwrap();
-        setSuccessMsg(t("settings.twoFactor.successEnabled"));
+        toast.success(t("settings.twoFactor.successEnabled"));
       } else {
         await disable2FA({ code: codeVal }).unwrap();
-        setSuccessMsg(t("settings.twoFactor.successDisabled"));
+        toast.success(t("settings.twoFactor.successDisabled"));
       }
       setStep("idle");
       setCode("");
-      setTimeout(() => setSuccessMsg(""), 4000);
     } catch (err) {
       const errData = err?.data;
       if (errData?.expired) {
@@ -799,23 +720,6 @@ const TwoFactorCard = () => {
               ? t("settings.twoFactor.descEnabled")
               : t("settings.twoFactor.descDisabled")}
           </p>
-
-          {successMsg && (
-            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-              <svg
-                className="w-4 h-4 flex-shrink-0"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {successMsg}
-            </div>
-          )}
 
           {codeError && (
             <p className="mb-3 text-xs text-red-500">{codeError}</p>

@@ -112,42 +112,39 @@ const BookingsManagementSection = () => {
           )}
         </div>
 
-        {/* Status pill tabs + date range */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center border border-[#c5ceba] rounded-xl p-1 gap-0.5">
-            {FILTER_KEYS.map((key) => (
-              <button
-                key={key}
-                onClick={() => applyFilter(key)}
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  activeFilter === key
-                    ? "bg-[#445446] text-white shadow-sm"
-                    : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
-                }`}
-              >
-                {t(`bookingsMgmt.filter.${key}`)}
-              </button>
-            ))}
-          </div>
+        {/* Status pill tabs */}
+        <div className="flex items-center flex-wrap gap-1 border border-[#c5ceba] rounded-xl p-1">
+          {FILTER_KEYS.map((key) => (
+            <button
+              key={key}
+              onClick={() => applyFilter(key)}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                activeFilter === key
+                  ? "bg-[#445446] text-white shadow-sm"
+                  : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
+              }`}
+            >
+              {t(`bookingsMgmt.filter.${key}`)}
+            </button>
+          ))}
+        </div>
 
-          <div className="flex items-center gap-2 border border-[#c5ceba] rounded-xl px-3 py-2">
-            <span className="text-xs text-[#5e6d5b]">{t("bookingsMgmt.from")}</span>
-            <input type="date" value={fromDate} onChange={handleFromChange}
-              className="text-sm outline-none bg-transparent text-[#1F2933]" />
-            <span className="text-xs text-[#5e6d5b]">{t("bookingsMgmt.to")}</span>
-            <input type="date" value={toDate} onChange={handleToChange}
-              className="text-sm outline-none bg-transparent text-[#1F2933]" />
-            {(fromDate || toDate) && (
-              <button
-                onClick={() => {
-                  setFromDate(""); setToDate(""); setPage(1);
-                }}
-                className="text-xs text-[#5e6d5b] hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors"
-              >
-                {t("bookingsMgmt.clear")}
-              </button>
-            )}
-          </div>
+        {/* Date range — always one line */}
+        <div className="flex items-center gap-2 border border-[#c5ceba] rounded-xl px-3 py-2">
+          <span className="text-xs text-[#5e6d5b]">{t("bookingsMgmt.from")}</span>
+          <input type="date" value={fromDate} onChange={handleFromChange}
+            className="text-sm outline-none bg-transparent text-[#1F2933]" />
+          <span className="text-xs text-[#5e6d5b]">{t("bookingsMgmt.to")}</span>
+          <input type="date" value={toDate} onChange={handleToChange}
+            className="text-sm outline-none bg-transparent text-[#1F2933]" />
+          {(fromDate || toDate) && (
+            <button
+              onClick={() => { setFromDate(""); setToDate(""); setPage(1); }}
+              className="text-xs text-[#5e6d5b] hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors"
+            >
+              {t("bookingsMgmt.clear")}
+            </button>
+          )}
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import {
   useListServicesQuery,
   useCreateServiceMutation,
@@ -112,13 +113,10 @@ const ServicesSection = () => {
 
   const sessionFormat = profile?.session_format || null;
 
-  const [listError, setListError]     = useState('');
-
   const [showForm, setShowForm]       = useState(false);
   const [editingId, setEditingId]     = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
   const [formErrors, setFormErrors]   = useState({});
-  const [formError, setFormError]     = useState('');
 
   const [isDuplicating, setIsDuplicating] = useState(false);
 
@@ -139,7 +137,6 @@ const ServicesSection = () => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
     setFormErrors((fe) => ({ ...fe, [name]: '' }));
-    if (formError) setFormError('');
   };
 
   const validate = () => {
@@ -170,7 +167,6 @@ const ServicesSection = () => {
     setIsDuplicating(false);
     setForm({ ...EMPTY_FORM, format: lockedFormat || '' });
     setFormErrors({});
-    setFormError('');
     setShowForm(true);
   };
 
@@ -187,7 +183,6 @@ const ServicesSection = () => {
       cluster:          svc.cluster      || '',
     });
     setFormErrors({});
-    setFormError('');
     setShowForm(true);
   };
 
@@ -203,7 +198,6 @@ const ServicesSection = () => {
       cluster:          svc.cluster      || '',
     });
     setFormErrors({});
-    setFormError('');
     setShowForm(true);
   };
 
@@ -213,14 +207,12 @@ const ServicesSection = () => {
     setIsDuplicating(false);
     setForm(EMPTY_FORM);
     setFormErrors({});
-    setFormError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setFormErrors(errs); return; }
-    setFormError('');
     try {
       const payload = {
         title:            form.title.trim(),
@@ -238,7 +230,7 @@ const ServicesSection = () => {
       }
       cancelForm();
     } catch (err) {
-      setFormError(err?.data?.error || t('services.errors.saveFailed'));
+      toast.error(err?.data?.error || t('services.errors.saveFailed'));
     }
   };
 
@@ -247,7 +239,7 @@ const ServicesSection = () => {
     try {
       await deleteService(id).unwrap();
     } catch {
-      setListError(t('services.errors.deleteFailed'));
+      toast.error(t('services.errors.deleteFailed'));
     } finally {
       setDeletingId(null);
     }
@@ -263,7 +255,7 @@ const ServicesSection = () => {
       await reorderServices(reordered.map((s) => s.id)).unwrap();
       setLocalOrder(null);
     } catch {
-      setListError(t('services.errors.reorderFailed'));
+      toast.error(t('services.errors.reorderFailed'));
       setLocalOrder(null); // revert to server order
     }
   };
@@ -273,7 +265,7 @@ const ServicesSection = () => {
     try {
       await updateService({ id: svc.id, is_active: !svc.is_active }).unwrap();
     } catch {
-      setListError(t('services.errors.updateFailed'));
+      toast.error(t('services.errors.updateFailed'));
     } finally {
       setTogglingId(null);
     }
@@ -313,9 +305,9 @@ const ServicesSection = () => {
         )}
       </div>
 
-      {(listError || servicesIsError) && (
+      {servicesIsError && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {listError || t('services.errors.loadFailed')}
+          {t('services.errors.loadFailed')}
         </div>
       )}
 
@@ -325,9 +317,6 @@ const ServicesSection = () => {
           <h3 className="text-base font-semibold text-[#1F2933] mb-5">
             {editingId ? t('services.form.editTitle') : isDuplicating ? t('services.form.duplicateTitle') : t('services.form.addTitle')}
           </h3>
-          {formError && (
-            <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{formError}</div>
-          )}
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* Title */}
             <div>

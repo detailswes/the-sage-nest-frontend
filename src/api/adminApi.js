@@ -310,7 +310,7 @@ export const adminApi = createApi({
         method: "POST",
         data: reason ? { reason } : undefined,
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (result, error, { id } = {}) => [
         "Parent",
         { type: "Parent", id },
       ],
@@ -446,9 +446,9 @@ export const {
   useGetParentComplianceListQuery,
   useListTransactionsQuery,
   useExportTransactionsCsvMutation,
-  useExportTransactionsXlsxMutation,
   useAdminRetryTransferMutation,
   useAdminMarkTransferResolvedMutation,
   useGetRefundLogQuery,
   useGetAdminNotificationsQuery,
+  useExportTransactionsXlsxMutation
 } = adminApi;

@@ -322,7 +322,7 @@ const ExpertManagementSection = () => {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-[#1F2933]">{t("expertMgmt.pageTitle")}</h2>
+          <h2 className="text-xl font-semibold text-[#445446]">{t("expertMgmt.pageTitle")}</h2>
           <p className="text-sm text-[#5e6d5b] font-medium mt-1">
             {t("expertMgmt.pageSubtitle")}
           </p>
@@ -426,12 +426,10 @@ const ExpertManagementSection = () => {
         </select>
 
         {/* Registration date range */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-nowrap">
           <label className="text-xs text-gray-500 whitespace-nowrap">{t("expertMgmt.registeredFrom")}</label>
           <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(1); }} className={filterInputCls} />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500">{t("expertMgmt.to")}</label>
+          <label className="text-xs text-gray-500 whitespace-nowrap">{t("expertMgmt.to")}</label>
           <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} className={filterInputCls} />
         </div>
 
