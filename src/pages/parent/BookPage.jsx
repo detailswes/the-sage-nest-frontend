@@ -709,24 +709,25 @@ const BookPage = () => {
     return (
       <div>
         <a href={effectiveReturnUrl}
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
+          className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
           {t('serviceStep.back')}
         </a>
 
-        <StepIndicator step={STEPS.SERVICE} />
-        <ExpertHeader expert={detail} />
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6">
+          <StepIndicator step={STEPS.SERVICE} />
+          <ExpertHeader expert={detail} />
 
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-[#445446]">{t('serviceStep.title', { name: selectedExpert?.user?.name })}</h2>
-          <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('serviceStep.subtitle')}</p>
-        </div>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-[#445446]">{t('serviceStep.title', { name: selectedExpert?.user?.name })}</h2>
+            <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('serviceStep.subtitle')}</p>
+          </div>
 
-        {services.length === 0 ? (
-          <p className="text-sm text-gray-500">This expert has no active services yet.</p>
-        ) : (
+          {services.length === 0 ? (
+            <p className="text-sm text-gray-500">This expert has no active services yet.</p>
+          ) : (
           <div className="space-y-3">
             {services.map((service) => {
               const isSelected = selectedService?.id === service.id;
@@ -736,10 +737,10 @@ const BookPage = () => {
                     setSelectedService(service);
                     if (service.format) setSelectedFormat(service.format);
                   }}
-                  className={`bg-white rounded-xl border p-4 cursor-pointer transition-all duration-150 ${
+                  className={`rounded-xl border p-4 cursor-pointer transition-all duration-150 ${
                     isSelected
-                      ? 'border-[#1F2933] ring-1 ring-[#1F2933]/20 shadow-sm'
-                      : 'border-[#E4E7E4] hover:border-gray-400 hover:shadow-sm'
+                      ? 'bg-[#dfe2d7]/20 border-[#445446] ring-1 ring-[#445446]/20 shadow-sm'
+                      : 'bg-[#dfe2d7]/10 border-[#c5ceba] hover:border-[#445446]/50 hover:shadow-sm'
                   }`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -792,7 +793,7 @@ const BookPage = () => {
                     className={`mt-3 w-full py-2 px-4 text-xs font-semibold rounded-lg transition-colors ${
                       isSelected
                         ? 'bg-[#445446] hover:bg-[#3a4a3b] text-white'
-                        : 'bg-[#F5F7F5] hover:bg-[#E4E7E4] text-[#445446] border border-[#E4E7E4]'
+                        : 'bg-white hover:bg-[#dfe2d7]/50 text-[#445446] border border-[#c5ceba]'
                     }`}>
                     Check Availability →
                   </button>
@@ -800,7 +801,8 @@ const BookPage = () => {
               );
             })}
           </div>
-        )}
+          )}
+        </div>
       </div>
     );
   }
@@ -811,13 +813,14 @@ const BookPage = () => {
       <div>
         <button
           onClick={() => fromPastBookings ? navigate('/dashboard/parent/past') : setStep(STEPS.SERVICE)}
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
+          className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
           {fromPastBookings ? t('slotStep.backToBookings') : t('slotStep.backToServices')}
         </button>
 
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6">
         <StepIndicator step={STEPS.SLOT} />
 
         <div className="mb-6">
@@ -834,7 +837,7 @@ const BookPage = () => {
             {['ONLINE', 'IN_PERSON'].map((f) => (
               <button key={f} onClick={() => setSelectedFormat(f)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  selectedFormat === f ? 'bg-[#445446] text-white border-[#445446]' : 'bg-white text-gray-600 border-[#E4E7E4] hover:border-[#445446]'
+                  selectedFormat === f ? 'bg-[#445446] text-white border-[#445446]' : 'bg-[#dfe2d7]/20 text-[#5e6d5b] border-[#c5ceba] hover:border-[#445446] hover:text-[#445446]'
                 }`}>
                 {f === 'ONLINE' ? t('slotStep.formatOnline') : t('slotStep.formatInPerson')}
               </button>
@@ -865,7 +868,7 @@ const BookPage = () => {
             <span className="text-sm text-gray-500">{t('slotStep.loadingSlots')}</span>
           </div>
         ) : slots.length === 0 ? (
-          <div className="py-6 text-center bg-white rounded-xl border border-[#E4E7E4]">
+          <div className="py-6 text-center bg-[#dfe2d7]/20 rounded-xl border border-[#c5ceba]">
             <p className="text-sm font-medium text-gray-500">{t('slotStep.noSlots')}</p>
             <p className="text-xs text-gray-400 mt-1">{t('slotStep.noSlotsHint')}</p>
           </div>
@@ -881,7 +884,7 @@ const BookPage = () => {
                   className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all duration-150 ${
                     selectedSlot?.start === slot.start
                       ? 'bg-[#445446] text-white border-[#445446]'
-                      : 'bg-white text-[#1F2933] border-[#E4E7E4] hover:border-[#445446]'
+                      : 'bg-white text-[#5e6d5b] border-[#c5ceba] hover:border-[#445446] hover:text-[#445446]'
                   }`}>
                   {formatSlotTime(slot.start, lng)}
                 </button>
@@ -918,6 +921,7 @@ const BookPage = () => {
             {t('slotStep.continueBtn')} →
           </button>
         )}
+        </div>
       </div>
     );
   }
@@ -930,31 +934,31 @@ const BookPage = () => {
       )}
 
       <button onClick={() => { setSelectedSlot(null); setStep(STEPS.SLOT); }}
-        className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1F2933] mb-5 transition-colors">
+        className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
         </svg>
         {t('confirmStep.back')}
       </button>
 
-      <StepIndicator step={STEPS.CONFIRM} />
-
-      <h2 className="text-xl font-semibold text-[#445446] mb-1">Confirm your booking</h2>
-      <p className="text-sm text-[#5e6d5b] font-medium mb-6">Review your details below before proceeding to payment.</p>
-
-      {/* Single card: booking summary + auth/proceed + footer text */}
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] overflow-hidden">
+      {/* Single card: step indicator + summary + auth/proceed + footer text */}
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+        <div className="px-6 pt-6 pb-4 border-b border-[#c5ceba]">
+          <StepIndicator step={STEPS.CONFIRM} />
+          <h2 className="text-xl font-semibold text-[#445446] mb-1">Confirm your booking</h2>
+          <p className="text-sm text-[#5e6d5b] font-medium">Review your details below before proceeding to payment.</p>
+        </div>
 
         {/* Booking summary */}
-        <div className="p-5 border-b border-[#E4E7E4]">
-          <div className="flex items-center gap-3 pb-4 mb-4 border-b border-[#E4E7E4]">
+        <div className="p-5 border-b border-[#c5ceba]">
+          <div className="flex items-center gap-3 pb-4 mb-4 border-b border-[#c5ceba]">
             {(() => {
               const imgSrc = getProfileImageUrl(detail?.profile_image);
               const initials = detail?.user?.name
                 ? detail.user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
                 : '?';
               return imgSrc ? (
-                <img src={imgSrc} alt={detail?.user?.name} className="w-10 h-10 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0" />
+                <img src={imgSrc} alt={detail?.user?.name} className="w-10 h-10 rounded-full object-cover border border-[#c5ceba] flex-shrink-0" />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-[#445446] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">{initials}</div>
               );
@@ -985,7 +989,7 @@ const BookPage = () => {
                 </div>
               ) : null;
             })()}
-            <div className="flex justify-between gap-4 pt-3 border-t border-[#E4E7E4] mt-3">
+            <div className="flex justify-between gap-4 pt-3 border-t border-[#c5ceba] mt-3">
               <span className="font-semibold text-[#1F2933]">Total</span>
               <span className="font-bold text-lg text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
             </div>
@@ -1063,7 +1067,7 @@ const BookPage = () => {
         {/* Footer text */}
         <div className="px-5 pb-5 space-y-3">
           <p className="text-xs text-gray-400 text-center">{t('slotStep.summary.noChargeYet')}</p>
-          <div className="p-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg text-xs text-gray-500 leading-relaxed">
+          <div className="p-3 bg-[#dfe2d7]/30 border border-[#c5ceba] rounded-lg text-xs text-[#5e6d5b] leading-relaxed">
             {t('slotStep.summary.currencyNotice', { currency: selectedService?.currency || 'EUR' })}
           </div>
         </div>

@@ -370,7 +370,7 @@ const AdminExpertDetailSection = () => {
           </svg>
           {t("expertDetail.breadcrumb")}
         </button>
-        <span className="text-[#c5ceba]">/</span>
+        <span className="text-[#5e6d5b]">/</span>
         <span className="text-sm font-semibold text-[#445446] truncate">{name}</span>
       </div>
 
