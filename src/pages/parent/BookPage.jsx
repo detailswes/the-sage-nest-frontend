@@ -541,7 +541,8 @@ const BookPage = () => {
   // Sync T&C state from query (re-runs when user logs in and query fetches)
   useEffect(() => {
     if (!tcData) return;
-    setTcAcceptanceRequired(!!tcData.version_updated);
+    // Both first-time users AND users whose TC version changed must accept
+    setTcAcceptanceRequired(!!(tcData.version_updated || tcData.is_first_booking));
     setTcIsFirstBooking(!!tcData.is_first_booking);
   }, [tcData]);
 
@@ -659,7 +660,14 @@ const BookPage = () => {
         },
       });
     } catch (err) {
-      toast.error(err?.data?.error || t('slotStep.bookError'));
+      const errMsg = err?.data?.error || '';
+      if (errMsg.toLowerCase().includes('terms') || errMsg.toLowerCase().includes('conditions')) {
+        setTcAcceptanceRequired(true);
+        setTcIsFirstBooking(!!(err?.data?.is_first_booking ?? tcIsFirstBooking));
+        setTcModalOpen(true);
+        return;
+      }
+      toast.error(errMsg || t('slotStep.bookError'));
     }
   };
 

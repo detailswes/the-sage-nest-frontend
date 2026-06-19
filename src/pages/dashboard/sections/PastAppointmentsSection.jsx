@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { useGetPastAppointmentsQuery, useSaveExpertNoteMutation } from '../../../api/bookingApi';
+import { HistoryIcon } from '../../../assets/icons';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(iso, lng = 'en') {
@@ -34,13 +35,6 @@ const STATUS_STYLES = {
   CANCELLED: 'bg-gray-100 text-gray-500 border border-gray-200',
   REFUNDED:  'bg-amber-50 text-amber-700 border border-amber-200',
 };
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
-const HistoryIcon = () => (
-  <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-  </svg>
-);
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
 const Pagination = ({ page, pages, onChange }) => {

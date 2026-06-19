@@ -3,83 +3,16 @@ import { Link, useLocation, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import LanguageSelector from "../../components/LanguageSelector";
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
-const UpcomingIcon = ({ active }) => (
-  <svg
-    className={`w-5 h-5 flex-shrink-0 ${
-      active ? "text-white" : "text-current"
-    }`}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={1.8}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
-    />
-  </svg>
-);
-
-const PastIcon = ({ active }) => (
-  <svg
-    className={`w-5 h-5 flex-shrink-0 ${
-      active ? "text-white" : "text-current"
-    }`}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={1.8}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-    />
-  </svg>
-);
-
-const ProfileIcon = ({ active }) => (
-  <svg
-    className={`w-5 h-5 flex-shrink-0 ${
-      active ? "text-white" : "text-current"
-    }`}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={1.8}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-    />
-  </svg>
-);
-
-const LogoutIcon = () => (
-  <svg
-    className="w-5 h-5 flex-shrink-0 text-current"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={1.8}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"
-    />
-  </svg>
-);
+import {
+  NavUpcomingIcon, NavPastIcon, NavProfileIcon, NavLogoutIcon,
+} from "../../assets/icons";
+import { LOGO_SVG } from "../../assets/images";
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: "upcoming", tKey: "nav.upcomingBookings", Icon: UpcomingIcon },
-  { key: "past", tKey: "nav.pastBookings", Icon: PastIcon },
-  { key: "profile", tKey: "nav.myProfile", Icon: ProfileIcon },
+  { key: "upcoming", tKey: "nav.upcomingBookings", Icon: NavUpcomingIcon },
+  { key: "past", tKey: "nav.pastBookings", Icon: NavPastIcon },
+  { key: "profile", tKey: "nav.myProfile", Icon: NavProfileIcon },
 ];
 
 const VALID_SECTIONS = ["upcoming", "past", "profile"];
@@ -114,7 +47,7 @@ const ParentDashboard = () => {
         <div className="h-16 flex items-center px-6 border-b border-[#c5ceba]">
           <a href="https://the-sage-nest.webflow.io/" className="flex items-center gap-2.5">
             <img
-              src="/assets/images/Sage-Nest_Final.svg"
+              src={LOGO_SVG}
               alt="Sage Nest"
               className="h-8"
               onError={(e) => {
@@ -170,7 +103,7 @@ const ParentDashboard = () => {
             onClick={() => setShowSignOutConfirm(true)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-[#445446] text-white hover:bg-[#3a4a3b] active:scale-95 transition-all duration-150"
           >
-            <LogoutIcon />
+            <NavLogoutIcon />
             {t("nav.signOut")}
           </button>
         </div>
