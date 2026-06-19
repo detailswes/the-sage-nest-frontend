@@ -120,9 +120,12 @@
     "cancelBtn":    "Cancel and go back"
   },
   "serviceStep": {
-    "back":     "Back to expert profile",
-    "title":    "Book with {{name}}",
-    "subtitle": "Select a service to continue."
+    "back":            "Back to expert profile",
+    "title":           "Book with {{name}}",
+    "subtitle":        "Select a service to continue.",
+    "checkAvailability": "Check Availability →",
+    "readMore":        "Read more",
+    "showLess":        "Show less"
   },
   "steps": {
     "service": "Service",
@@ -130,7 +133,24 @@
     "confirm": "Confirm"
   },
   "confirmStep": {
-    "back": "Back to time selection"
+    "back":            "Back to time selection",
+    "title":           "Confirm your booking",
+    "subtitle":        "Review your details below before proceeding to payment.",
+    "labelFormat":     "Format",
+    "labelWhen":       "When",
+    "labelDuration":   "Duration",
+    "labelLocation":   "Location",
+    "labelTotal":      "Total",
+    "formatOnline":    "Online (video call)",
+    "formatInPerson":  "In-person",
+    "proceedBtn":      "Proceed to payment →",
+    "preparingBtn":    "Preparing payment…",
+    "signInTitle":     "Sign in to continue",
+    "noAccount":       "Don't have an account?",
+    "createOne":       "Create one",
+    "yourDetails":     "Your Details",
+    "haveAccount":     "Already have an account?",
+    "signIn":          "Sign in"
   },
   "slotStep": {
     "backToServices":  "Back to services",

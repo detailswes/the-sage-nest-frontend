@@ -120,9 +120,12 @@
     "cancelBtn":    "Annulla e torna indietro"
   },
   "serviceStep": {
-    "back":     "Torna al profilo dell'esperto",
-    "title":    "Prenota con {{name}}",
-    "subtitle": "Seleziona un servizio per continuare."
+    "back":            "Torna al profilo dell'esperto",
+    "title":           "Prenota con {{name}}",
+    "subtitle":        "Seleziona un servizio per continuare.",
+    "checkAvailability": "Verifica disponibilità →",
+    "readMore":        "Leggi di più",
+    "showLess":        "Mostra meno"
   },
   "steps": {
     "service": "Servizio",
@@ -130,7 +133,24 @@
     "confirm": "Conferma"
   },
   "confirmStep": {
-    "back": "Torna alla selezione dell'orario"
+    "back":            "Torna alla selezione dell'orario",
+    "title":           "Conferma la tua prenotazione",
+    "subtitle":        "Rivedi i dettagli prima di procedere al pagamento.",
+    "labelFormat":     "Formato",
+    "labelWhen":       "Quando",
+    "labelDuration":   "Durata",
+    "labelLocation":   "Luogo",
+    "labelTotal":      "Totale",
+    "formatOnline":    "Online (videochiamata)",
+    "formatInPerson":  "Di persona",
+    "proceedBtn":      "Procedi al pagamento →",
+    "preparingBtn":    "Preparazione pagamento…",
+    "signInTitle":     "Accedi per continuare",
+    "noAccount":       "Non hai un account?",
+    "createOne":       "Creane uno",
+    "yourDetails":     "I tuoi dati",
+    "haveAccount":     "Hai già un account?",
+    "signIn":          "Accedi"
   },
   "slotStep": {
     "backToServices":  "Torna ai servizi",

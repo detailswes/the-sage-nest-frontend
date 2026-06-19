@@ -10,7 +10,7 @@ const LANGUAGES = [
 const DROPDOWN_H = 96;  // approx height of 2-item dropdown
 const DROPDOWN_W = 144; // w-36 = 144px
 
-const LanguageSelector = () => {
+const LanguageSelector = ({ variant = 'default' }) => {
   const { i18n } = useTranslation();
   const current = LANGUAGES.find((l) => l.code === i18n.language) || LANGUAGES[0];
   const [open, setOpen]       = useState(false);
@@ -51,7 +51,11 @@ const LanguageSelector = () => {
     <div className="relative" ref={containerRef}>
       <button
         onClick={handleToggle}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50 transition-all duration-150"
+        className={
+          variant === 'pill'
+            ? "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#c5ceba] bg-[#dfe2d7]/60 text-[#445446] hover:bg-[#dfe2d7] transition-all duration-150 shadow-sm"
+            : "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50 transition-all duration-150"
+        }
       >
         <span>{current.flag}</span>
         <span>{current.label}</span>
