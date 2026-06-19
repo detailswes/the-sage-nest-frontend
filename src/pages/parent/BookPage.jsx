@@ -756,7 +756,7 @@ const BookPage = () => {
                                 onClick={(e) => { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}
                                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}}
                                 className="ml-1 text-[#445446] font-medium cursor-pointer hover:underline">
-                                {isExpanded ? 'Show less' : 'Read more'}
+                                {isExpanded ? t('serviceStep.showLess') : t('serviceStep.readMore')}
                               </span>
                             )}
                           </p>
@@ -795,7 +795,7 @@ const BookPage = () => {
                         ? 'bg-[#445446] hover:bg-[#3a4a3b] text-white'
                         : 'bg-white hover:bg-[#dfe2d7]/50 text-[#445446] border border-[#c5ceba]'
                     }`}>
-                    Check Availability →
+                    {t('serviceStep.checkAvailability')}
                   </button>
                 </div>
               );
@@ -945,8 +945,8 @@ const BookPage = () => {
       <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
         <div className="px-6 pt-6 pb-4 border-b border-[#c5ceba]">
           <StepIndicator step={STEPS.CONFIRM} />
-          <h2 className="text-xl font-semibold text-[#445446] mb-1">Confirm your booking</h2>
-          <p className="text-sm text-[#5e6d5b] font-medium">Review your details below before proceeding to payment.</p>
+          <h2 className="text-xl font-semibold text-[#445446] mb-1">{t('confirmStep.title')}</h2>
+          <p className="text-sm text-[#5e6d5b] font-medium">{t('confirmStep.subtitle')}</p>
         </div>
 
         {/* Booking summary */}
@@ -971,9 +971,9 @@ const BookPage = () => {
 
           <div className="space-y-2 text-sm">
             {[
-              { label: 'Format',   value: selectedFormat === 'ONLINE' ? 'Online (video call)' : 'In-person' },
-              { label: 'When',     value: `${formatSlotDate(selectedSlot?.start, lng)}, ${formatSlotTime(selectedSlot?.start, lng)}` },
-              { label: 'Duration', value: formatDuration(selectedService?.duration_minutes, t) },
+              { label: t('confirmStep.labelFormat'),   value: selectedFormat === 'ONLINE' ? t('confirmStep.formatOnline') : t('confirmStep.formatInPerson') },
+              { label: t('confirmStep.labelWhen'),     value: `${formatSlotDate(selectedSlot?.start, lng)}, ${formatSlotTime(selectedSlot?.start, lng)}` },
+              { label: t('confirmStep.labelDuration'), value: formatDuration(selectedService?.duration_minutes, t) },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between gap-4">
                 <span className="text-gray-500">{label}</span>
@@ -984,13 +984,13 @@ const BookPage = () => {
               const loc = [detail?.address_street, detail?.address_city, detail?.address_postcode].filter(Boolean).join(', ');
               return loc ? (
                 <div className="flex justify-between gap-4">
-                  <span className="text-gray-500">Location</span>
+                  <span className="text-gray-500">{t('confirmStep.labelLocation')}</span>
                   <span className="text-[#1F2933] font-medium text-right">{loc}</span>
                 </div>
               ) : null;
             })()}
             <div className="flex justify-between gap-4 pt-3 border-t border-[#c5ceba] mt-3">
-              <span className="font-semibold text-[#1F2933]">Total</span>
+              <span className="font-semibold text-[#1F2933]">{t('confirmStep.labelTotal')}</span>
               <span className="font-bold text-lg text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
             </div>
           </div>
@@ -1010,7 +1010,7 @@ const BookPage = () => {
             <>
               <button onClick={handleProceed} disabled={creating || locking}
                 className="w-full py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                {creating || locking ? 'Preparing payment…' : 'Proceed to payment →'}
+                {creating || locking ? t('confirmStep.preparingBtn') : t('confirmStep.proceedBtn')}
               </button>
             </>
           ) : pendingVerificationEmail ? (
@@ -1028,25 +1028,25 @@ const BookPage = () => {
             <>
               {authTab === 'login' ? (
                 <>
-                  <p className="text-base font-semibold text-[#1F2933] mb-4">Sign in to continue</p>
+                  <p className="text-base font-semibold text-[#1F2933] mb-4">{t('confirmStep.signInTitle')}</p>
                   <InlineLogin
                     onSuccess={handleAuthSuccess}
                     onVerificationNeeded={setPendingVerificationEmail}
                   />
                   <p className="text-sm text-gray-500 text-center mt-4">
-                    Don't have an account?{' '}
+                    {t('confirmStep.noAccount')}{' '}
                     <button onClick={() => setAuthTab('register')} className="text-[#445446] font-medium hover:underline">
-                      Create one
+                      {t('confirmStep.createOne')}
                     </button>
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-base font-semibold text-[#1F2933] mb-1">Your Details</p>
+                  <p className="text-base font-semibold text-[#1F2933] mb-1">{t('confirmStep.yourDetails')}</p>
                   <p className="text-sm text-gray-500 mb-4">
-                    Already have an account?{' '}
+                    {t('confirmStep.haveAccount')}{' '}
                     <button onClick={() => setAuthTab('login')} className="text-[#445446] font-medium hover:underline">
-                      Sign in
+                      {t('confirmStep.signIn')}
                     </button>
                   </p>
                   <InlineRegister

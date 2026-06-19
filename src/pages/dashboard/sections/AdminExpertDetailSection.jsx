@@ -363,14 +363,13 @@ const AdminExpertDetailSection = () => {
       <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => navigate("/dashboard/admin/experts")}
-          className="flex items-center gap-1.5 text-sm text-[#5e6d5b] font-medium hover:text-[#445446] transition-colors"
+          className="text-sm text-[#5e6d5b] font-medium hover:text-[#445446] transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
           {t("expertDetail.breadcrumb")}
         </button>
-        <span className="text-[#5e6d5b]">/</span>
+        <svg className="w-4 h-4 text-[#5e6d5b] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+        </svg>
         <span className="text-sm font-semibold text-[#445446] truncate">{name}</span>
       </div>
 

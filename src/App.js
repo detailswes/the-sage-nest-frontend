@@ -135,10 +135,10 @@ function App() {
             path="/book"
             element={
               <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x">
-                <div className="max-w-xl mx-auto px-4 pt-4 flex justify-end">
-                  <LanguageSelector />
+                <div className="fixed top-4 right-4 z-50">
+                  <LanguageSelector variant="pill" />
                 </div>
-                <div className="max-w-xl mx-auto px-4 pb-10">
+                <div className="max-w-xl mx-auto px-4 py-10">
                   <BookPage />
                 </div>
               </div>
