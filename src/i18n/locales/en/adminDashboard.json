@@ -31,7 +31,8 @@
       "parent": "Parent",
       "joined": "Joined",
       "status": "Status",
-      "bookings": "Bookings"
+      "bookings": "Bookings",
+      "actions": "Actions"
     },
     "filter": {
       "all": "All",
@@ -899,13 +900,14 @@
       "parent": "Parent",
       "privacyPolicy": "Privacy Policy",
       "terms": "Terms & Conditions",
-      "overall": "Overall"
+      "overall": "Overall",
+      "actions": "Actions"
     },
     "joined": "Joined {{date}}",
     "accepted": "Accepted {{version}} · {{date}}",
     "neverAccepted": "Never accepted",
     "current": "Current: {{version}}",
-    "viewProfile": "View profile →",
+    "viewProfile": "View profile",
     "allCompliant": "All parents have accepted the current document versions.",
     "noParents": "No parents found.",
     "pagination": {

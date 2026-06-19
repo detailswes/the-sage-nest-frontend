@@ -218,7 +218,7 @@ const AdminParentDetailSection = () => {
         <Link to="/dashboard/admin/parents" className="hover:text-[#445446] transition-colors font-medium">
           {t("parentDetail.breadcrumb")}
         </Link>
-        <svg className="w-4 h-4 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-4 h-4 text-[#5e6d5b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
         </svg>
         <span className="text-[#445446] font-semibold truncate">{parent.name || "Parent"}</span>
