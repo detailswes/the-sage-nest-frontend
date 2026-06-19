@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation, Trans } from 'react-i18next';
@@ -314,9 +314,13 @@ const BookingCard = ({ booking, onViewDetails }) => {
     { skip: !showReschedule }
   );
 
-  const { data: availableDates, isFetching: loadingDates } = useGetAvailableDatesInMonthQuery(
+  const { data: availableDatesRaw, isFetching: loadingDates } = useGetAvailableDatesInMonthQuery(
     monthArgs,
     { skip: !monthArgs }
+  );
+  const availableDates = useMemo(
+    () => (availableDatesRaw ? new Set(availableDatesRaw) : undefined),
+    [availableDatesRaw]
   );
 
   // Reset selected slot when date changes

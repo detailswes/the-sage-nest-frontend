@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation, Trans } from 'react-i18next';
@@ -473,9 +473,13 @@ const BookPage = () => {
   );
 
   // Available dates for calendar month navigation
-  const { data: availableDates, isFetching: loadingDates } = useGetAvailableDatesInMonthQuery(
+  const { data: availableDatesRaw, isFetching: loadingDates } = useGetAvailableDatesInMonthQuery(
     monthArgs,
     { skip: !monthArgs }
+  );
+  const availableDates = useMemo(
+    () => (availableDatesRaw ? new Set(availableDatesRaw) : undefined),
+    [availableDatesRaw]
   );
 
   // T&C version — skip until user is authenticated; refetch after inline auth
