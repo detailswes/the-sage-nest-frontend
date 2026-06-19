@@ -103,7 +103,7 @@ const PaymentStatusBadge = ({ transaction, verbose = false }) => {
     : t(`paymentsMgmt.paymentStatus.${ps}`, { defaultValue: ps });
   return (
     <span
-      className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${cls}`}
+      className={`inline-flex items-center justify-self-start px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${cls}`}
     >
       {label}
     </span>
@@ -522,7 +522,7 @@ function RefundLogView() {
               return (
                 <div
                   key={e.id}
-                  className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3 items-center"
+                  className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3.5 items-center"
                 >
                   <span className="text-xs text-gray-500">
                     {new Date(e.created_at).toLocaleString("en-GB", {
@@ -895,7 +895,7 @@ const PaymentsOverviewSection = () => {
                   <button
                     key={tx.id}
                     onClick={() => setSelectedId(tx.id)}
-                    className="w-full grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_140px] gap-3 px-4 py-3 text-left hover:bg-[#dfe2d7]/50 transition-colors items-center"
+                    className="w-full grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_140px] gap-3 px-4 py-3.5 text-left hover:bg-[#dfe2d7]/50 transition-colors items-center"
                   >
                     <span className="text-sm font-mono text-gray-400">
                       #{tx.id}
