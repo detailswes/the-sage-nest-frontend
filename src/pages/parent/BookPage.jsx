@@ -16,7 +16,7 @@ import {
 } from '../../api/bookingApi';
 import { loginUser, registerUser, verifyOtpApi } from '../../api/authApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
-import { validateLoginForm, validateRegisterForm } from '../../utils/validation';
+import { validateLoginForm, validateRegisterForm, checkPasswordStrength } from '../../utils/validation';
 import PasswordInput from '../../components/auth/PasswordInput';
 import useResendVerification from '../../hooks/useResendVerification';
 import BookingCalendar from '../../components/booking/BookingCalendar';
@@ -303,6 +303,7 @@ const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
 // ─── Inline Register form ─────────────────────────────────────────────────────
 const InlineRegister = ({ onVerificationSent, returnTo }) => {
   const { t } = useTranslation('parentBookings');
+  const { t: tAuth } = useTranslation('auth');
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
@@ -357,6 +358,24 @@ const InlineRegister = ({ onVerificationSent, returnTo }) => {
         <PasswordInput name="password" value={form.password}
           onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} placeholder="Create a password" hasError={!!errors.password} />
         {errors.password && <p className="text-xs text-red-500 mt-0.5">{errors.password}</p>}
+        {form.password && (
+          <ul className="mt-2 space-y-1">
+            {checkPasswordStrength(form.password).map(({ key, ok }) => (
+              <li key={key} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
+                {ok ? (
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-.75-4.75a.75.75 0 0 0 1.5 0V8.75a.75.75 0 0 0-1.5 0v4.5Zm.75-7a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {tAuth(key)}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">Confirm password</label>
