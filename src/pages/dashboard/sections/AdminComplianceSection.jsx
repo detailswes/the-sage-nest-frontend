@@ -162,9 +162,9 @@ const AdminComplianceSection = () => {
                   t("legalCompliance.col.privacyPolicy"),
                   t("legalCompliance.col.terms"),
                   t("legalCompliance.col.overall"),
-                  "",
+                  t("legalCompliance.col.actions"),
                 ].map((h, i) => (
-                  <th key={i} className="text-left text-xs font-semibold text-white uppercase tracking-wider px-5 py-3">
+                  <th key={i} className={`text-xs font-semibold text-white uppercase tracking-wider px-5 py-3 ${i === 4 ? "text-right" : "text-left"}`}>
                     {h}
                   </th>
                 ))}
@@ -217,7 +217,7 @@ const AdminComplianceSection = () => {
                   <td className="px-5 py-3.5 text-right">
                     <Link
                       to={`/dashboard/admin/parents/${p.id}`}
-                      className="text-xs font-medium text-[#445446] hover:underline"
+                      className="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-[#c5ceba] text-[#5e6d5b] hover:border-[#445446] hover:text-[#445446] hover:bg-[#dfe2d7]/50 transition-all duration-150 whitespace-nowrap"
                     >
                       {t("legalCompliance.viewProfile")}
                     </Link>

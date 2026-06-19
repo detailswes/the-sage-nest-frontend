@@ -31,7 +31,8 @@
       "parent": "Genitore",
       "joined": "Iscritto",
       "status": "Stato",
-      "bookings": "Prenotazioni"
+      "bookings": "Prenotazioni",
+      "actions": "Azioni"
     },
     "filter": {
       "all": "Tutti",
@@ -899,13 +900,14 @@
       "parent": "Genitore",
       "privacyPolicy": "Informativa sulla Privacy",
       "terms": "Termini e Condizioni",
-      "overall": "Complessivo"
+      "overall": "Complessivo",
+      "actions": "Azioni"
     },
     "joined": "Iscritto {{date}}",
     "accepted": "Accettato {{version}} · {{date}}",
     "neverAccepted": "Mai accettato",
     "current": "Versione attuale: {{version}}",
-    "viewProfile": "Visualizza profilo →",
+    "viewProfile": "Visualizza profilo",
     "allCompliant": "Tutti i genitori hanno accettato le versioni attuali dei documenti.",
     "noParents": "Nessun genitore trovato.",
     "pagination": {
