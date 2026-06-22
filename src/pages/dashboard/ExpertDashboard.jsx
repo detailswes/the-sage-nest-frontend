@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { useGetMyProfileQuery, useListAvailabilityQuery } from "../../api/expertApi";
 import { getProfileImageUrl } from "../../utils/imageUrl";
-import LanguageSelector from "../../components/LanguageSelector";
 import {
   NavUserIcon, NavBriefcaseIcon, NavCalendarIcon,
   NavAppointmentsIcon, NavSettingsIcon, NavLogoutIcon,
@@ -135,8 +134,7 @@ const ExpertDashboard = () => {
         </nav>
 
         {/* Sign out */}
-        <div className="p-3 border-t border-[#c5ceba] space-y-1">
-          <LanguageSelector />
+        <div className="p-3 border-t border-[#c5ceba]">
           <button
             onClick={() => setShowSignOutConfirm(true)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-[#445446] text-white hover:bg-[#3a4a3b] active:scale-95 transition-all duration-150"

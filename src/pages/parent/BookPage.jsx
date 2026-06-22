@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation, Trans } from 'react-i18next';
-import { STORAGE_KEY } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import { useGetExpertPublicQuery } from '../../api/expertApi';
 import {
@@ -424,15 +423,6 @@ const BookPage = () => {
   const returnUrlParam = searchParams.get('return_url');
   const slotStartParam = searchParams.get('slotStart');
   const formatParam    = searchParams.get('format');
-  const langParam      = searchParams.get('lang');
-
-  // Apply ?lang= URL param on first render so Webflow can pre-set the language
-  useEffect(() => {
-    if (langParam && ['en', 'it'].includes(langParam) && i18n.language !== langParam) {
-      i18n.changeLanguage(langParam);
-      localStorage.setItem(STORAGE_KEY, langParam);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(returnUrlParam || WEBFLOW_DIRECTORY_URL);
   const fromPastBookings = !!locationState?.restore?.fromPastBookings;
