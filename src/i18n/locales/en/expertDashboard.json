@@ -644,8 +644,45 @@
 
   "settings": {
     "heading":    "Settings",
-    "subheading": "Manage your account security and notification preferences.",
+    "subheading": "Manage your account, security, and notification preferences.",
     "comingSoon": "Coming soon",
+
+    "displayName": {
+      "title":       "Display Name",
+      "description": "This is the name shown to parents on your public profile and in booking communications.",
+      "placeholder": "Your display name",
+      "legalNote":   "This is your display name only. Your legal name for DAC7 tax reporting is managed separately in your profile and cannot be changed here.",
+      "success":     "Display name updated.",
+      "saveBtn":     "Save name",
+      "savingBtn":   "Saving…",
+      "errors": {
+        "required":   "Display name is required.",
+        "saveFailed": "Failed to update name. Please try again."
+      }
+    },
+
+    "emailChange": {
+      "title":              "Email Address",
+      "verified":           "Verified",
+      "changeLink":         "Change email address",
+      "warning":            "A verification link will be sent to your new address. Your current email remains active until you confirm the change.",
+      "newEmailLabel":      "New email address",
+      "newEmailPlaceholder":"Enter new email address",
+      "passwordLabel":      "Confirm with current password",
+      "passwordPlaceholder":"Enter your current password",
+      "sendBtn":            "Send verification",
+      "sendingBtn":         "Sending…",
+      "cancelBtn":          "Cancel",
+      "sentTitle":          "Verification email sent",
+      "sentBody":           "We've sent a link to {{email}}. Click it to confirm your new address. Your current email stays active until then.",
+      "signOutLink":        "Sign out",
+      "pendingNotice":      "A verification link was sent to {{email}}. Check your inbox to confirm the change.",
+      "errors": {
+        "emailRequired":    "New email address is required.",
+        "passwordRequired": "Current password is required.",
+        "failed":           "Failed to send verification. Please try again."
+      }
+    },
 
     "password": {
       "title":               "Change Password",

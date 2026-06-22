@@ -7,6 +7,9 @@ import {
   useUpdateNotificationPreferencesMutation,
 } from "../../../api/expertApi";
 import {
+  useGetProfileQuery,
+  useUpdateProfileMutation,
+  useUpdateEmailMutation,
   useChangePasswordMutation,
   useGet2FAStatusQuery,
   useSendSetupOtpMutation,
@@ -816,6 +819,217 @@ const TwoFactorCard = () => {
   );
 };
 
+// ─── Display Name card ────────────────────────────────────────────────────────
+const DisplayNameCard = () => {
+  const { t } = useTranslation("expertDashboard");
+  const { updateUser } = useAuth();
+
+  const { data: profile, isLoading: loadingProfile } = useGetProfileQuery();
+  const [updateProfile, { isLoading: saving }] = useUpdateProfileMutation();
+
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+
+  // Populate once profile loads
+  useEffect(() => {
+    if (profile?.name) setName(profile.name);
+  }, [profile?.name]);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError(t("settings.displayName.errors.required"));
+      return;
+    }
+    setError("");
+    try {
+      const updated = await updateProfile({ name: name.trim() }).unwrap();
+      if (updateUser) updateUser(updated);
+      toast.success(t("settings.displayName.success"));
+    } catch (err) {
+      toast.error(err?.data?.error || t("settings.displayName.errors.saveFailed"));
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
+      <div className="flex items-center gap-2.5 mb-1">
+        <svg className="w-4 h-4 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+        </svg>
+        <h2 className="text-sm font-semibold text-[#1F2933]">{t("settings.displayName.title")}</h2>
+      </div>
+      <p className="text-xs text-gray-500 mb-4 leading-relaxed">{t("settings.displayName.description")}</p>
+
+      {loadingProfile ? (
+        <div className="flex items-center justify-center py-4">
+          <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+        </div>
+      ) : (
+        <form onSubmit={handleSave} className="space-y-3">
+          <div>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => { setName(e.target.value); if (error) setError(""); }}
+              placeholder={t("settings.displayName.placeholder")}
+              className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${error ? "border-red-400" : "border-[#c5ceba]"}`}
+            />
+            {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
+            <p className="mt-1.5 text-xs text-amber-600 leading-relaxed">{t("settings.displayName.legalNote")}</p>
+          </div>
+          <div className="flex justify-end pt-1">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex items-center gap-2 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors duration-200"
+            >
+              {saving && <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />}
+              {saving ? t("settings.displayName.savingBtn") : t("settings.displayName.saveBtn")}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
+// ─── Email Change card ────────────────────────────────────────────────────────
+const EmailChangeCard = () => {
+  const { t } = useTranslation("expertDashboard");
+  const { logout } = useAuth();
+
+  const { data: profile, isLoading: loadingProfile } = useGetProfileQuery();
+  const [updateEmail, { isLoading: sending }] = useUpdateEmailMutation();
+
+  const [showForm, setShowForm]   = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [newEmail, setNewEmail]   = useState("");
+  const [password, setPassword]   = useState("");
+  const [errors, setErrors]       = useState({});
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (!newEmail.trim()) errs.email = t("settings.emailChange.errors.emailRequired");
+    if (!password)        errs.password = t("settings.emailChange.errors.passwordRequired");
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
+    try {
+      await updateEmail({ email: newEmail.trim(), password }).unwrap();
+      setEmailSent(true);
+    } catch (err) {
+      const msg = err?.data?.error || t("settings.emailChange.errors.failed");
+      if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("incorrect")) {
+        setErrors({ password: msg });
+      } else if (msg.toLowerCase().includes("email") || msg.toLowerCase().includes("use")) {
+        setErrors({ email: msg });
+      } else {
+        toast.error(msg);
+      }
+    }
+  };
+
+  if (loadingProfile) return null;
+
+  if (emailSent) {
+    return (
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
+        <div className="flex items-center gap-2.5 mb-4">
+          <svg className="w-4 h-4 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+          </svg>
+          <h2 className="text-sm font-semibold text-[#1F2933]">{t("settings.emailChange.title")}</h2>
+        </div>
+        <div className="text-center py-2">
+          <p className="text-sm text-[#1F2933] font-medium mb-1">{t("settings.emailChange.sentTitle")}</p>
+          <p className="text-xs text-gray-500 mb-4">{t("settings.emailChange.sentBody", { email: newEmail })}</p>
+          <button onClick={logout} className="text-sm text-[#445446] font-medium hover:underline">
+            {t("settings.emailChange.signOutLink")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
+      <div className="flex items-center gap-2.5 mb-1">
+        <svg className="w-4 h-4 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+        </svg>
+        <h2 className="text-sm font-semibold text-[#1F2933]">{t("settings.emailChange.title")}</h2>
+      </div>
+
+      {/* Current email + pending badge */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-[#f5f7f5] rounded-lg border border-[#c5ceba] mb-4 mt-3">
+        <span className="text-sm text-[#1F2933] font-medium flex-1">{profile?.email}</span>
+        <span className="text-xs text-green-600 font-medium">{t("settings.emailChange.verified")}</span>
+      </div>
+
+      {profile?.pending_email && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 mb-4">
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+          {t("settings.emailChange.pendingNotice", { email: profile.pending_email })}
+        </div>
+      )}
+
+      {!showForm ? (
+        <button onClick={() => setShowForm(true)} className="text-sm text-[#445446] font-medium hover:underline">
+          {t("settings.emailChange.changeLink")}
+        </button>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+            {t("settings.emailChange.warning")}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t("settings.emailChange.newEmailLabel")}</label>
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(e) => { setNewEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
+              placeholder={t("settings.emailChange.newEmailPlaceholder")}
+              className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${errors.email ? "border-red-400" : "border-[#c5ceba]"}`}
+            />
+            {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t("settings.emailChange.passwordLabel")}</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
+              placeholder={t("settings.emailChange.passwordPlaceholder")}
+              className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${errors.password ? "border-red-400" : "border-[#c5ceba]"}`}
+            />
+            {errors.password && <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>}
+          </div>
+          <div className="flex gap-3 justify-end pt-1">
+            <button
+              type="button"
+              onClick={() => { setShowForm(false); setNewEmail(""); setPassword(""); setErrors({}); }}
+              className="px-4 py-2.5 text-sm font-medium border border-[#c5ceba] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              {t("settings.emailChange.cancelBtn")}
+            </button>
+            <button
+              type="submit"
+              disabled={sending}
+              className="flex items-center gap-2 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors duration-200"
+            >
+              {sending && <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />}
+              {sending ? t("settings.emailChange.sendingBtn") : t("settings.emailChange.sendBtn")}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
 // ─── Main section ─────────────────────────────────────────────────────────────
 const SettingsSection = () => {
   const { t } = useTranslation("expertDashboard");
@@ -827,6 +1041,10 @@ const SettingsSection = () => {
           {t("settings.subheading")}
         </p>
       </div>
+
+      <DisplayNameCard />
+
+      <EmailChangeCard />
 
       <ChangePasswordCard />
 
