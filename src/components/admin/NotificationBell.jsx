@@ -58,7 +58,7 @@ const DEFAULT_CONFIG = {
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
-const NotificationBell = () => {
+const NotificationBell = ({ placement = "sidebar" }) => {
   const navigate   = useNavigate();
   const wrapperRef = useRef(null);
 
@@ -126,9 +126,15 @@ const NotificationBell = () => {
         )}
       </button>
 
-      {/* ── Panel — opens to the right of the sidebar ── */}
+      {/* ── Panel ── */}
       {open && (
-        <div className="absolute top-0 left-full ml-3 w-80 bg-white rounded-xl border border-[#E4E7E4] shadow-xl z-50 overflow-hidden">
+        <div
+          className={
+            placement === "topbar"
+              ? "fixed top-14 left-0 right-0 sm:left-auto sm:right-2 sm:w-80 bg-white rounded-b-xl sm:rounded-xl border border-[#E4E7E4] shadow-xl z-50 overflow-hidden"
+              : "absolute top-0 left-full ml-3 w-80 bg-white rounded-xl border border-[#E4E7E4] shadow-xl z-50 overflow-hidden"
+          }
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7E4]">
             <p className="text-sm font-semibold text-[#1F2933]">Notifications</p>

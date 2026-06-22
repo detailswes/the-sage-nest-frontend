@@ -706,12 +706,12 @@ const AdminExpertDetailSection = () => {
                   </div>
 
                   <div>
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                       <div>
                         <SectionLabel>{t("expertDetail.bizInfo.title")}</SectionLabel>
                         <p className="text-xs text-gray-400 italic -mt-1">{t("expertDetail.bizInfo.subtitle")}</p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-xs text-gray-400">{t("expertDetail.bizInfo.yearLabel")}</span>
                         <select value={exportYear} onChange={(e) => setExportYear(Number(e.target.value))}
                           className="text-xs border border-[#c5ceba] rounded-lg px-2 py-1.5 bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30">
@@ -754,7 +754,7 @@ const AdminExpertDetailSection = () => {
                         <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
                       </div>
                     ) : summary ? (
-                      <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
                         {(() => {
                           const cur = expert.services?.find(s => s.currency)?.currency || 'EUR';
                           const fmt = (n) => new Intl.NumberFormat('en', { style: 'currency', currency: cur }).format(n);
