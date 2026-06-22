@@ -14,6 +14,7 @@ import {
   useManuallyVerifyMutation,
 } from "../../../api/adminApi";
 import { getProfileImageUrl } from "../../../utils/imageUrl";
+import CenteredDateInput from "../../../components/CenteredDateInput";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAGE_LIMIT = 10;
@@ -47,13 +48,7 @@ const formatDate = (iso) =>
 
 const getInitials = (name) =>
   name
-    ? name
-        .trim()
-        .split(/\s+/)
-        .map((n) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
+    ? name.trim().split(/\s+/).map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -114,6 +109,91 @@ const StatusBadge = ({ status, deleted }) => {
   );
 };
 
+// ─── Action buttons (shared between table row and card) ───────────────────────
+const ExpertActionButtons = ({ expert, isActioning, onAction, t, compact = false }) => {
+  const isDeleted = !!expert.user?.account_deleted;
+
+  if (isDeleted) return <span className="text-xs text-gray-300 italic">—</span>;
+  if (isActioning) return (
+    <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin mx-auto" />
+  );
+
+  const btnBase = compact
+    ? "flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
+    : "flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 flex-1 justify-center";
+
+  if (expert.status === "SUSPENDED") return (
+    <button
+      onClick={() => onAction("reactivate", expert)}
+      className={`${btnBase} border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400`}
+    >
+      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+      </svg>
+      {t("expertMgmt.action.reactivate")}
+    </button>
+  );
+
+  if (expert.status === "APPROVED") return (
+    <>
+      <button
+        onClick={() => onAction("reject", expert)}
+        className={`${btnBase} border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-400`}
+      >
+        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+        {t("expertMgmt.action.reject")}
+      </button>
+      <button
+        onClick={() => onAction("suspend", expert)}
+        className={`${btnBase} border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300`}
+      >
+        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+        {t("expertMgmt.action.suspend")}
+      </button>
+    </>
+  );
+
+  if (expert.status === "REJECTED") return (
+    <button
+      onClick={() => onAction("approve", expert)}
+      className={`${btnBase} border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400`}
+    >
+      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+      </svg>
+      {t("expertMgmt.action.approve")}
+    </button>
+  );
+
+  // PENDING or CHANGES_REQUESTED
+  return (
+    <>
+      <button
+        onClick={() => onAction("approve", expert)}
+        className={`${btnBase} border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400`}
+      >
+        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+        </svg>
+        {t("expertMgmt.action.approve")}
+      </button>
+      <button
+        onClick={() => onAction("reject", expert)}
+        className={`${btnBase} border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-400`}
+      >
+        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+        {t("expertMgmt.action.reject")}
+      </button>
+    </>
+  );
+};
+
 // ─── Pagination ───────────────────────────────────────────────────────────────
 const PaginationBar = ({ page, totalPages, total, limit, onPageChange, t }) => {
   if (totalPages <= 1) return null;
@@ -129,50 +209,152 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange, t }) => {
     return pages;
   };
   const btnBase = "inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium transition-all duration-150 select-none";
+  const navBtnCls = (disabled) =>
+    `${btnBase} gap-1 px-2.5 w-auto ${disabled ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-100"}`;
+
   return (
-    <div className="flex items-center justify-between mt-4 px-1">
-      <p className="text-sm text-gray-500">
+    <div className="flex items-center justify-between mt-4 px-1 gap-2">
+      <p className="text-sm text-gray-500 shrink-0">
         {t("expertMgmt.pagination.showing")}{" "}
         <span className="font-medium text-[#1F2933]">{from}–{to}</span>{" "}
         {t("expertMgmt.pagination.of")}{" "}
         <span className="font-medium text-[#1F2933]">{total}</span>{" "}
-        {t("expertMgmt.pagination.expert", { count: total })}
+        <span className="hidden sm:inline">{t("expertMgmt.pagination.expert", { count: total })}</span>
       </p>
       <div className="flex items-center gap-1">
-        <button
-          onClick={() => onPageChange(page - 1)}
-          disabled={page === 1}
-          className={`${btnBase} gap-1 px-2.5 w-auto ${page === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-100"}`}
-        >
+        <button onClick={() => onPageChange(page - 1)} disabled={page === 1} className={navBtnCls(page === 1)}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
           {t("expertMgmt.pagination.prev")}
         </button>
-        {buildPages().map((p, i) =>
-          p === "…" ? (
-            <span key={`e-${i}`} className="w-8 h-8 inline-flex items-center justify-center text-sm text-gray-400">…</span>
-          ) : (
-            <button
-              key={p}
-              onClick={() => onPageChange(p)}
-              className={`${btnBase} ${p === page ? "bg-[#445446] text-white shadow-sm" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-100"}`}
-            >
-              {p}
-            </button>
-          )
-        )}
-        <button
-          onClick={() => onPageChange(page + 1)}
-          disabled={page === totalPages}
-          className={`${btnBase} gap-1 px-2.5 w-auto ${page === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-100"}`}
-        >
+
+        {/* Page numbers — hidden on mobile */}
+        <div className="hidden sm:flex items-center gap-1">
+          {buildPages().map((p, i) =>
+            p === "…" ? (
+              <span key={`e-${i}`} className="w-8 h-8 inline-flex items-center justify-center text-sm text-gray-400">…</span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => onPageChange(p)}
+                className={`${btnBase} ${p === page ? "bg-[#445446] text-white shadow-sm" : "text-gray-500 hover:text-[#1F2933] hover:bg-gray-100"}`}
+              >
+                {p}
+              </button>
+            )
+          )}
+        </div>
+
+        {/* Page indicator on mobile */}
+        <span className="sm:hidden text-sm text-gray-500 px-2">{page} / {totalPages}</span>
+
+        <button onClick={() => onPageChange(page + 1)} disabled={page === totalPages} className={navBtnCls(page === totalPages)}>
           {t("expertMgmt.pagination.next")}
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
         </button>
       </div>
+    </div>
+  );
+};
+
+// ─── Expert card (mobile / tablet view) ──────────────────────────────────────
+const ExpertCard = ({ expert, isActioning, onAction, onNavigate, t }) => {
+  const isDeleted = !!expert.user?.account_deleted;
+  const name = isDeleted ? t("expertMgmt.badge.deleted") : (expert.user?.name || "—");
+  const email = isDeleted ? null : (expert.user?.email || "—");
+  const bookingCount = expert._count?.bookings ?? 0;
+  const hasActions = !isDeleted;
+
+  return (
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+      {/* Tap target → detail page */}
+      <button
+        onClick={() => onNavigate(`/dashboard/admin/experts/${expert.id}`)}
+        className="w-full flex items-start gap-3 p-4 text-left hover:bg-[#dfe2d7]/30 active:bg-[#dfe2d7]/50 transition-colors"
+      >
+        {/* Avatar */}
+        <div className="flex-shrink-0 mt-0.5">
+          {getProfileImageUrl(expert.profile_image) ? (
+            <img
+              src={getProfileImageUrl(expert.profile_image)}
+              alt={name}
+              className="w-10 h-10 rounded-full object-cover border border-[#E4E7E4]"
+              onError={(e) => {
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "flex";
+              }}
+            />
+          ) : null}
+          <div
+            className="w-10 h-10 rounded-full bg-[#445446]/10 text-[#445446] flex items-center justify-center text-sm font-bold select-none"
+            style={{ display: getProfileImageUrl(expert.profile_image) ? "none" : "flex" }}
+          >
+            {getInitials(isDeleted ? "D" : expert.user?.name)}
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 flex-wrap">
+            <p className="text-sm font-semibold text-[#1F2933] truncate">{name}</p>
+            <StatusBadge status={expert.status} deleted={isDeleted} />
+          </div>
+          {email && (
+            <p className="text-xs text-gray-500 truncate mt-0.5">{email}</p>
+          )}
+          {expert.position && (
+            <p className="text-xs text-[#5e6d5b] truncate mt-0.5">{expert.position}</p>
+          )}
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2">
+            <span className="text-xs text-gray-400">
+              {t("expertMgmt.col.joined")}: {formatDate(expert.user?.created_at)}
+            </span>
+            {bookingCount > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate(`/dashboard/admin/bookings?search=${encodeURIComponent(expert.user?.name || "")}`);
+                }}
+                className="text-xs font-medium text-[#445446] hover:underline"
+              >
+                {bookingCount} {t("expertMgmt.col.bookings").toLowerCase()}
+              </button>
+            )}
+            {expert.dac7?.threshold_reached && (
+              <span
+                title={`DAC7 threshold reached (${expert.dac7.year}): ${expert.dac7.transaction_count} transactions · £${expert.dac7.gross_earnings.toFixed(2)} gross`}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300"
+              >
+                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+                DAC7
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Chevron */}
+        <svg className="w-4 h-4 text-gray-300 flex-shrink-0 mt-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+        </svg>
+      </button>
+
+      {/* Action strip */}
+      {hasActions && (
+        <div className={`flex items-center gap-2 px-4 py-3 border-t border-[#dfe2d7] bg-[#f9faf8] ${isActioning ? "justify-center" : ""}`}>
+          <ExpertActionButtons
+            expert={expert}
+            isActioning={isActioning}
+            onAction={onAction}
+            t={t}
+            compact={false}
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -193,8 +375,8 @@ const ExpertManagementSection = () => {
   const [toDate,       setToDate]       = useState("");
 
   // ── Action UI state ──────────────────────────────────────────────────────────
-  const [actionLoading,  setActionLoading]  = useState(null); // expert.id being actioned (for per-row spinner)
-  const [confirmAction,  setConfirmAction]  = useState(null);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   // ── Debounced search ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -220,14 +402,14 @@ const ExpertManagementSection = () => {
   const counts     = data?.counts     ?? { all: 0, PENDING: 0, APPROVED: 0, REJECTED: 0, SUSPENDED: 0, CHANGES_REQUESTED: 0, DELETED: 0 };
 
   // ── RTK mutations ─────────────────────────────────────────────────────────────
-  const [exportExpertsXlsx,   { isLoading: exporting }]    = useExportExpertsXlsxMutation();
-  const [approveExpert]                                      = useApproveExpertMutation();
-  const [rejectExpert]                                       = useRejectExpertMutation();
-  const [suspendExpert]                                      = useSuspendExpertMutation();
-  const [reactivateExpert]                                   = useReactivateExpertMutation();
-  const [sendPasswordReset]                                  = useSendPasswordResetMutation();
-  const [resendVerification]                                 = useResendVerificationMutation();
-  const [manuallyVerify]                                     = useManuallyVerifyMutation();
+  const [exportExpertsXlsx, { isLoading: exporting }] = useExportExpertsXlsxMutation();
+  const [approveExpert]    = useApproveExpertMutation();
+  const [rejectExpert]     = useRejectExpertMutation();
+  const [suspendExpert]    = useSuspendExpertMutation();
+  const [reactivateExpert] = useReactivateExpertMutation();
+  const [sendPasswordReset]    = useSendPasswordResetMutation();
+  const [resendVerification]   = useResendVerificationMutation();
+  const [manuallyVerify]       = useManuallyVerifyMutation();
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
   const hasActiveFilters = search || cityFilter || qualFilter || fromDate || toDate;
@@ -283,11 +465,11 @@ const ExpertManagementSection = () => {
     setConfirmAction(null);
     setActionLoading(expert.id);
     try {
-      if      (type === "approve")             await approveExpert(expert.id).unwrap();
-      else if (type === "reject")              await rejectExpert(expert.id).unwrap();
-      else if (type === "suspend")             await suspendExpert(expert.id).unwrap();
-      else if (type === "reactivate")          await reactivateExpert(expert.id).unwrap();
-      else if (type === "manual-verify")       await manuallyVerify(expert.id).unwrap();
+      if      (type === "approve")              await approveExpert(expert.id).unwrap();
+      else if (type === "reject")               await rejectExpert(expert.id).unwrap();
+      else if (type === "suspend")              await suspendExpert(expert.id).unwrap();
+      else if (type === "reactivate")           await reactivateExpert(expert.id).unwrap();
+      else if (type === "manual-verify")        await manuallyVerify(expert.id).unwrap();
       else if (type === "password-reset") {
         await sendPasswordReset(expert.id).unwrap();
         toast.success(t("expertMgmt.success.passwordReset"));
@@ -295,7 +477,6 @@ const ExpertManagementSection = () => {
         await resendVerification(expert.id).unwrap();
         toast.success(t("expertMgmt.success.resendVerification"));
       }
-      // Status mutations auto-invalidate 'Expert' tag → list auto-refetches
     } catch (e) {
       toast.error(e?.data?.error || `Failed to ${type.replace(/-/g, " ")} expert.`);
     } finally {
@@ -315,22 +496,20 @@ const ExpertManagementSection = () => {
   const tabCount = (key) => key === "all" ? counts.all : counts[key.toUpperCase()] ?? 0;
 
   const filterInputCls =
-    "px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition";
+    "w-full px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition";
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
         <div>
           <h2 className="text-xl font-semibold text-[#445446]">{t("expertMgmt.pageTitle")}</h2>
-          <p className="text-sm text-[#5e6d5b] font-medium mt-1">
-            {t("expertMgmt.pageSubtitle")}
-          </p>
+          <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t("expertMgmt.pageSubtitle")}</p>
         </div>
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="flex items-center gap-2 text-sm font-medium bg-[#445446] text-white hover:bg-[#3a4a3b] active:scale-95 disabled:opacity-50 px-4 py-2.5 rounded-lg transition-all duration-150 flex-shrink-0 ml-4 shadow-sm"
+          className="flex items-center justify-center gap-2 text-sm font-medium bg-[#445446] text-white hover:bg-[#3a4a3b] active:scale-95 disabled:opacity-50 px-4 py-2.5 rounded-lg transition-all duration-150 sm:flex-shrink-0 sm:ml-4 shadow-sm w-full sm:w-auto"
         >
           {exporting ? (
             <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
@@ -343,47 +522,50 @@ const ExpertManagementSection = () => {
         </button>
       </div>
 
-     
-      {/* ── Search + Filters unified box (Webflow pattern) ── */}
+      {/* ── Search + Filters box ── */}
       <div className="mb-5 bg-white rounded-2xl border-2 border-[#c5ceba] p-4 space-y-3">
 
-      {/* Search */}
-      <div className="relative">
-        <svg
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-          />
-        </svg>
-        <input
-          type="text"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder={t("expertMgmt.searchPlaceholder")}
-          className="w-full pl-10 pr-10 py-2.5 text-sm border border-[#c5ceba] rounded-xl bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
-        />
-        {searchInput && (
-          <button
-            onClick={() => { setSearchInput(""); setSearch(""); setPage(1); }}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+        {/* Search */}
+        <div className="relative">
+          <svg
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
-      </div>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t("expertMgmt.searchPlaceholder")}
+            className="w-full pl-10 pr-10 py-2.5 text-sm border border-[#c5ceba] rounded-xl bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+          />
+          {searchInput && (
+            <button
+              onClick={() => { setSearchInput(""); setSearch(""); setPage(1); }}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
 
-      {/* Status tabs + filter controls */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex items-center bg-white border border-[#c5ceba] rounded-xl p-1 gap-0.5">
+        {/* Status filter — native select on mobile, tab bar on lg+ */}
+        <select
+          value={activeFilter}
+          onChange={(e) => handleFilterChange(e.target.value)}
+          className="lg:hidden w-full px-3 py-2.5 text-sm border border-[#c5ceba] rounded-xl bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+        >
+          {STATUS_FILTER_KEYS.map((key) => (
+            <option key={key} value={key}>
+              {t(`expertMgmt.filter.${key}`)} ({tabCount(key)})
+            </option>
+          ))}
+        </select>
+
+        <div className="hidden lg:inline-flex items-center bg-white border border-[#c5ceba] rounded-xl p-1 gap-0.5">
           {STATUS_FILTER_KEYS.map((key) => {
             const isActive = activeFilter === key;
             return (
@@ -403,56 +585,73 @@ const ExpertManagementSection = () => {
           })}
         </div>
 
-        {/* City */}
-        <input
-          type="text"
-          value={cityFilter}
-          placeholder={t("expertMgmt.cityPlaceholder")}
-          onChange={(e) => { setCityFilter(e.target.value); setPage(1); }}
-          className={`${filterInputCls} w-36`}
-        />
+        {/* Secondary filters: city, qualification, date range */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* City */}
+          <input
+            type="text"
+            value={cityFilter}
+            placeholder={t("expertMgmt.cityPlaceholder")}
+            onChange={(e) => { setCityFilter(e.target.value); setPage(1); }}
+            className={filterInputCls}
+          />
 
-        {/* Qualification */}
-        <select
-          value={qualFilter}
-          onChange={(e) => { setQualFilter(e.target.value); setPage(1); }}
-          className={`${filterInputCls} max-w-[200px]`}
-        >
-          {QUAL_OPTION_VALUES.map((value) => (
-            <option key={value} value={value}>
-              {value === "" ? t("expertMgmt.qual.all") : t(`expertMgmt.qual.${value}`)}
-            </option>
-          ))}
-        </select>
+          {/* Qualification */}
+          <select
+            value={qualFilter}
+            onChange={(e) => { setQualFilter(e.target.value); setPage(1); }}
+            className={filterInputCls}
+          >
+            {QUAL_OPTION_VALUES.map((value) => (
+              <option key={value} value={value}>
+                {value === "" ? t("expertMgmt.qual.all") : t(`expertMgmt.qual.${value}`)}
+              </option>
+            ))}
+          </select>
 
-        {/* Registration date range */}
-        <div className="flex items-center gap-2 flex-nowrap">
-          <label className="text-xs text-gray-500 whitespace-nowrap">{t("expertMgmt.registeredFrom")}</label>
-          <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(1); }} className={filterInputCls} />
-          <label className="text-xs text-gray-500 whitespace-nowrap">{t("expertMgmt.to")}</label>
-          <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} className={filterInputCls} />
+          {/* Date range — stacked vertically */}
+          <div className="col-span-2 space-y-2">
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">{t("expertMgmt.registeredFrom")}</p>
+              <CenteredDateInput
+                value={fromDate}
+                onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
+                className={filterInputCls}
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">{t("expertMgmt.to")}</p>
+              <CenteredDateInput
+                value={toDate}
+                onChange={(e) => { setToDate(e.target.value); setPage(1); }}
+                className={filterInputCls}
+              />
+            </div>
+          </div>
         </div>
 
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-            {t("expertMgmt.clear")}
-          </button>
-        )}
-
-        {isFetching && (
-          <div className="w-4 h-4 rounded-full border-2 border-[#445446] border-t-transparent animate-spin ml-auto" />
+        {/* Clear + fetching indicator */}
+        {(hasActiveFilters || isFetching) && (
+          <div className="flex items-center gap-3">
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+                {t("expertMgmt.clear")}
+              </button>
+            )}
+            {isFetching && (
+              <div className="w-4 h-4 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+            )}
+          </div>
         )}
       </div>
 
-      </div>{/* end search+filters box */}
-
-      {/* Table */}
+      {/* ── Empty state ── */}
       {experts.length === 0 && !isFetching ? (
         <div className="bg-white rounded-2xl border-2 border-[#c5ceba] flex flex-col items-center justify-center py-16 text-center">
           <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
@@ -466,191 +665,148 @@ const ExpertManagementSection = () => {
           </p>
         </div>
       ) : (
-        <div
-          className={`bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden transition-opacity duration-150 ${
-            isFetching ? "opacity-60 pointer-events-none" : ""
-          }`}
-        >
-          {/* Header row */}
-          <div className="grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-3 bg-[#445446] border-b border-[#3a4a3b]">
-            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.name")}</p>
-            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.email")}</p>
-            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.position")}</p>
-            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.status")}</p>
-            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.joined")}</p>
-            <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.bookings")}</p>
-            <p className="text-xs font-semibold text-white uppercase tracking-wider" title="EU Directive 2021/514 — DAC7 reporting threshold">{t("expertMgmt.col.dac7")}</p>
-            <p className="text-xs font-semibold text-white uppercase tracking-wider text-right">{t("expertMgmt.col.actions")}</p>
+        <>
+          {/* ── Desktop table (lg and above) ── */}
+          <div
+            className={`hidden lg:block bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden transition-opacity duration-150 ${
+              isFetching ? "opacity-60 pointer-events-none" : ""
+            }`}
+          >
+            {/* Header row */}
+            <div className="grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-3 bg-[#445446] border-b border-[#3a4a3b]">
+              <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.name")}</p>
+              <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.email")}</p>
+              <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.position")}</p>
+              <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.status")}</p>
+              <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.joined")}</p>
+              <p className="text-xs font-semibold text-white uppercase tracking-wider">{t("expertMgmt.col.bookings")}</p>
+              <p className="text-xs font-semibold text-white uppercase tracking-wider" title="EU Directive 2021/514 — DAC7 reporting threshold">{t("expertMgmt.col.dac7")}</p>
+              <p className="text-xs font-semibold text-white uppercase tracking-wider text-right">{t("expertMgmt.col.actions")}</p>
+            </div>
+
+            {experts.map((expert, idx) => {
+              const isDeleted   = !!expert.user?.account_deleted;
+              const name        = isDeleted ? t("expertMgmt.badge.deleted") : (expert.user?.name  || "—");
+              const email       = isDeleted ? null : (expert.user?.email || "—");
+              const isActioning = actionLoading === expert.id;
+
+              return (
+                <div
+                  key={expert.id}
+                  className={`grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-3 items-center hover:bg-[#dfe2d7]/50 transition-colors bg-white ${idx > 0 ? "border-t border-[#dfe2d7]" : ""}`}
+                >
+                  {/* Name */}
+                  <button
+                    onClick={() => navigate(`/dashboard/admin/experts/${expert.id}`)}
+                    className="flex items-center gap-2.5 text-left group"
+                  >
+                    {getProfileImageUrl(expert.profile_image) ? (
+                      <img
+                        src={getProfileImageUrl(expert.profile_image)}
+                        alt={name}
+                        className="w-8 h-8 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="w-8 h-8 rounded-full bg-[#445446]/10 text-[#445446] flex items-center justify-center text-xs font-bold flex-shrink-0 select-none group-hover:bg-[#445446] group-hover:text-white transition-colors"
+                      style={{ display: getProfileImageUrl(expert.profile_image) ? "none" : "flex" }}
+                    >
+                      {getInitials(isDeleted ? "D" : expert.user?.name)}
+                    </div>
+                    <span className="text-sm font-medium text-[#1F2933] group-hover:text-[#445446] group-hover:underline underline-offset-2 truncate transition-colors">
+                      {name}
+                    </span>
+                  </button>
+
+                  {/* Email */}
+                  {email ? (
+                    <a href={`mailto:${email}`} className="text-sm text-gray-500 truncate hover:text-[#445446] hover:underline">
+                      {email}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-gray-300 italic">—</span>
+                  )}
+
+                  {/* Position */}
+                  <p className="text-sm text-gray-500 truncate">
+                    {expert.position || <span className="italic text-gray-300">—</span>}
+                  </p>
+
+                  {/* Status */}
+                  <div><StatusBadge status={expert.status} deleted={isDeleted} /></div>
+
+                  {/* Joined */}
+                  <p className="text-xs text-gray-500">{formatDate(expert.user?.created_at)}</p>
+
+                  {/* Bookings count */}
+                  {(() => {
+                    const count = expert._count?.bookings ?? 0;
+                    return count > 0 ? (
+                      <button
+                        onClick={() => navigate(`/dashboard/admin/bookings?search=${encodeURIComponent(expert.user?.name || "")}`)}
+                        className="text-sm font-medium text-[#445446] hover:underline text-left"
+                      >
+                        {count}
+                      </button>
+                    ) : (
+                      <span className="text-sm text-gray-300">0</span>
+                    );
+                  })()}
+
+                  {/* DAC7 flag */}
+                  <div>
+                    {expert.dac7?.threshold_reached ? (
+                      <span
+                        title={`DAC7 threshold reached (${expert.dac7.year}): ${expert.dac7.transaction_count} transactions · £${expert.dac7.gross_earnings.toFixed(2)} gross`}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300 cursor-default"
+                      >
+                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                        </svg>
+                        {t("expertMgmt.col.dac7")}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-300">—</span>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-end gap-1.5">
+                    <ExpertActionButtons
+                      expert={expert}
+                      isActioning={isActioning}
+                      onAction={requestAction}
+                      t={t}
+                      compact={true}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {experts.map((expert, idx) => {
-            const isDeleted   = !!expert.user?.account_deleted;
-            const name        = isDeleted ? t("expertMgmt.badge.deleted") : (expert.user?.name  || "—");
-            const email       = isDeleted ? null : (expert.user?.email || "—");
-            const isActioning = actionLoading === expert.id;
-
-            return (
-              <div
+          {/* ── Mobile / tablet card list (below lg) ── */}
+          <div
+            className={`lg:hidden space-y-3 transition-opacity duration-150 ${
+              isFetching ? "opacity-60 pointer-events-none" : ""
+            }`}
+          >
+            {experts.map((expert) => (
+              <ExpertCard
                 key={expert.id}
-                className={`grid grid-cols-[1.1fr_1.2fr_1fr_110px_105px_80px_60px_200px] gap-3 px-5 py-3 items-center hover:bg-[#dfe2d7]/50 transition-colors ${
-                  "bg-white"
-                } ${idx > 0 ? "border-t border-[#dfe2d7]" : ""}`}
-              >
-                {/* Name — opens detail page */}
-                <button
-                  onClick={() => navigate(`/dashboard/admin/experts/${expert.id}`)}
-                  className="flex items-center gap-2.5 text-left group"
-                  title={t("expertMgmt.col.name")}
-                >
-                  {getProfileImageUrl(expert.profile_image) ? (
-                    <img
-                      src={getProfileImageUrl(expert.profile_image)}
-                      alt={name}
-                      className="w-8 h-8 rounded-full object-cover border border-[#E4E7E4] flex-shrink-0"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                        e.target.nextSibling.style.display = "flex";
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className="w-8 h-8 rounded-full bg-[#445446]/10 text-[#445446] flex items-center justify-center text-xs font-bold flex-shrink-0 select-none group-hover:bg-[#445446] group-hover:text-white transition-colors"
-                    style={{ display: getProfileImageUrl(expert.profile_image) ? "none" : "flex" }}
-                  >
-                    {getInitials(isDeleted ? "D" : expert.user?.name)}
-                  </div>
-                  <span className="text-sm font-medium text-[#1F2933] group-hover:text-[#445446] group-hover:underline underline-offset-2 truncate transition-colors">
-                    {name}
-                  </span>
-                </button>
-
-                {/* Email */}
-                {email ? (
-                  <a href={`mailto:${email}`} className="text-sm text-gray-500 truncate hover:text-[#445446] hover:underline">
-                    {email}
-                  </a>
-                ) : (
-                  <span className="text-sm text-gray-300 italic">—</span>
-                )}
-
-                {/* Position */}
-                <p className="text-sm text-gray-500 truncate">
-                  {expert.position || <span className="italic text-gray-300">—</span>}
-                </p>
-
-                {/* Status */}
-                <div><StatusBadge status={expert.status} deleted={isDeleted} /></div>
-
-                {/* Joined */}
-                <p className="text-xs text-gray-500">{formatDate(expert.user?.created_at)}</p>
-
-                {/* Bookings count */}
-                {(() => {
-                  const count = expert._count?.bookings ?? 0;
-                  return count > 0 ? (
-                    <button
-                      onClick={() => navigate(`/dashboard/admin/bookings?search=${encodeURIComponent(expert.user?.name || "")}`)}
-                      className="text-sm font-medium text-[#445446] hover:underline text-left"
-                      title={t("expertMgmt.col.bookings")}
-                    >
-                      {count}
-                    </button>
-                  ) : (
-                    <span className="text-sm text-gray-300">0</span>
-                  );
-                })()}
-
-                {/* DAC7 flag */}
-                <div>
-                  {expert.dac7?.threshold_reached ? (
-                    <span
-                      title={`DAC7 threshold reached (${expert.dac7.year}): ${expert.dac7.transaction_count} transactions · £${expert.dac7.gross_earnings.toFixed(2)} gross`}
-                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300 cursor-default"
-                    >
-                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                      </svg>
-                      {t("expertMgmt.col.dac7")}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-gray-300">—</span>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-1.5">
-                  {isDeleted ? (
-                    <span className="text-xs text-gray-300 italic">—</span>
-                  ) : isActioning ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin mx-auto" />
-                  ) : expert.status === "SUSPENDED" ? (
-                    <button
-                      onClick={() => requestAction("reactivate", expert)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400 transition-all duration-150"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                      </svg>
-                      {t("expertMgmt.action.reactivate")}
-                    </button>
-                  ) : expert.status === "APPROVED" ? (
-                    <>
-                      <button
-                        onClick={() => requestAction("reject", expert)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-400 transition-all duration-150"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                        </svg>
-                        {t("expertMgmt.action.reject")}
-                      </button>
-                      <button
-                        onClick={() => requestAction("suspend", expert)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 transition-all duration-150"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
-                        </svg>
-                        {t("expertMgmt.action.suspend")}
-                      </button>
-                    </>
-                  ) : expert.status === "REJECTED" ? (
-                    <button
-                      onClick={() => requestAction("approve", expert)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400 transition-all duration-150"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                      </svg>
-                      {t("expertMgmt.action.approve")}
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => requestAction("approve", expert)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400 transition-all duration-150"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                        </svg>
-                        {t("expertMgmt.action.approve")}
-                      </button>
-                      <button
-                        onClick={() => requestAction("reject", expert)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-400 transition-all duration-150"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                        </svg>
-                        {t("expertMgmt.action.reject")}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                expert={expert}
+                isActioning={actionLoading === expert.id}
+                onAction={requestAction}
+                onNavigate={navigate}
+                t={t}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       <PaginationBar
@@ -662,7 +818,7 @@ const ExpertManagementSection = () => {
         t={t}
       />
 
-      {/* Confirm modal */}
+      {/* ── Confirm modal ── */}
       {confirmAction && (() => {
         const type = confirmAction.type;
         const cfg = {
