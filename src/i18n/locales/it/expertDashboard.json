@@ -644,8 +644,45 @@
 
   "settings": {
     "heading":    "Impostazioni",
-    "subheading": "Gestisci la sicurezza del tuo account e le preferenze di notifica.",
+    "subheading": "Gestisci il tuo account, la sicurezza e le preferenze di notifica.",
     "comingSoon": "Prossimamente",
+
+    "displayName": {
+      "title":       "Nome visualizzato",
+      "description": "Questo è il nome mostrato ai genitori sul tuo profilo pubblico e nelle comunicazioni di prenotazione.",
+      "placeholder": "Il tuo nome visualizzato",
+      "legalNote":   "Questo è solo il tuo nome visualizzato. Il nome legale per la rendicontazione fiscale DAC7 è gestito separatamente nel tuo profilo e non può essere modificato qui.",
+      "success":     "Nome visualizzato aggiornato.",
+      "saveBtn":     "Salva nome",
+      "savingBtn":   "Salvataggio…",
+      "errors": {
+        "required":   "Il nome visualizzato è obbligatorio.",
+        "saveFailed": "Impossibile aggiornare il nome. Riprova."
+      }
+    },
+
+    "emailChange": {
+      "title":              "Indirizzo email",
+      "verified":           "Verificato",
+      "changeLink":         "Cambia indirizzo email",
+      "warning":            "Verrà inviato un link di verifica al nuovo indirizzo. La tua email attuale rimane attiva fino alla conferma del cambio.",
+      "newEmailLabel":      "Nuovo indirizzo email",
+      "newEmailPlaceholder":"Inserisci il nuovo indirizzo email",
+      "passwordLabel":      "Conferma con la password attuale",
+      "passwordPlaceholder":"Inserisci la tua password attuale",
+      "sendBtn":            "Invia verifica",
+      "sendingBtn":         "Invio in corso…",
+      "cancelBtn":          "Annulla",
+      "sentTitle":          "Email di verifica inviata",
+      "sentBody":           "Abbiamo inviato un link a {{email}}. Cliccalo per confermare il nuovo indirizzo. La tua email attuale rimane attiva fino ad allora.",
+      "signOutLink":        "Disconnettiti",
+      "pendingNotice":      "Un link di verifica è stato inviato a {{email}}. Controlla la tua casella di posta per confermare il cambio.",
+      "errors": {
+        "emailRequired":    "Il nuovo indirizzo email è obbligatorio.",
+        "passwordRequired": "La password attuale è obbligatoria.",
+        "failed":           "Invio della verifica non riuscito. Riprova."
+      }
+    },
 
     "password": {
       "title":               "Cambia password",

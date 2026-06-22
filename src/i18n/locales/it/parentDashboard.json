@@ -48,7 +48,8 @@
     "verified": "Verificato",
     "unverified": "Non verificato",
     "changeLink": "Cambia indirizzo email",
-    "warning": "La modifica dell'email ti disconnetterà. Devi verificare il nuovo indirizzo prima di accedere di nuovo.",
+    "warning": "Verrà inviato un link di verifica al nuovo indirizzo. La tua email attuale rimane attiva fino alla conferma del cambio.",
+    "pendingNotice": "Un link di verifica è stato inviato a {{email}}. Controlla la tua casella di posta per confermare il cambio.",
     "newEmailLabel": "Nuovo indirizzo email",
     "newEmailPlaceholder": "nuovo@esempio.com",
     "confirmPasswordLabel": "Conferma con la password attuale",
@@ -58,8 +59,8 @@
     "sending": "Invio in corso…",
     "sentTitle": "Verifica il tuo nuovo indirizzo email",
     "sentLine1": "Abbiamo inviato un link di verifica a <1>{{email}}</1>.",
-    "sentLine2": "Fai clic per attivare il nuovo indirizzo. Sei stato disconnesso.",
-    "signInNew": "Accedi con il nuovo indirizzo email",
+    "sentLine2": "Fai clic per attivare il nuovo indirizzo. La tua email attuale rimane attiva fino ad allora.",
+    "signInNew": "Disconnettiti",
     "errors": {
       "required": "Il nuovo indirizzo email e la password attuale sono obbligatori.",
       "failed": "Impossibile aggiornare l'indirizzo email."

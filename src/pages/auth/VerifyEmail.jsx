@@ -60,7 +60,7 @@ const ResendForm = ({ title, description }) => {
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
-// states: 'verifying' | 'success' | 'already_verified' | 'expired' | 'invalid' | 'error'
+// states: 'verifying' | 'success' | 'already_verified' | 'email_changed' | 'expired' | 'invalid' | 'error'
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const [status,   setStatus]   = useState('verifying');
@@ -97,7 +97,8 @@ const VerifyEmail = () => {
         // Validate returnTo is a relative path before trusting it
         const safeReturnTo = rt && rt.startsWith('/') ? rt : null;
         setReturnTo(safeReturnTo);
-        setStatus(data.already_verified ? 'already_verified' : 'success');
+        if (data.email_changed) setStatus('email_changed');
+        else setStatus(data.already_verified ? 'already_verified' : 'success');
       })
       .catch((err) => {
         const errData = err?.data;
@@ -163,6 +164,27 @@ const VerifyEmail = () => {
               className="inline-block w-full bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium py-3 rounded-lg transition-colors duration-200"
             >
               Sign in to your account
+            </Link>
+          </>
+        )}
+
+        {/* Email change confirmed — must sign in with new address */}
+        {status === 'email_changed' && (
+          <>
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-5">
+              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">Email address updated!</h1>
+            <p className="text-sm text-gray-500 mb-8">
+              Your new email address is now active. Please sign in with it to continue.
+            </p>
+            <Link
+              to="/login"
+              className="inline-block w-full bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium py-3 rounded-lg transition-colors duration-200"
+            >
+              Sign in with new email
             </Link>
           </>
         )}
