@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateConnectLinkMutation } from '../../api/stripeApi';
+import { LOGO_SVG } from '../../assets/images';
 
 /**
  * Stripe redirects here when the onboarding link expires.
@@ -26,7 +27,7 @@ const StripeRefresh = () => {
         <div className="bg-white rounded-2xl shadow-lg border border-[#E4E7E4] w-full max-w-md px-8 py-10 text-center">
           <div className="flex items-center justify-center gap-2 mb-8">
             <img
-              src="/assets/images/Sage-Nest_Final.svg"
+              src={LOGO_SVG}
               alt="Sage Nest"
               className="h-7"
               onError={(e) => { e.target.style.display = 'none'; }}
@@ -58,7 +59,7 @@ const StripeRefresh = () => {
       <div className="bg-white rounded-2xl shadow-lg border border-[#E4E7E4] w-full max-w-md px-8 py-10 text-center">
         <div className="flex items-center justify-center gap-2 mb-8">
           <img
-            src="/assets/images/Sage-Nest_Final.svg"
+            src={LOGO_SVG}
             alt="Sage Nest"
             className="h-7"
             onError={(e) => { e.target.style.display = 'none'; }}

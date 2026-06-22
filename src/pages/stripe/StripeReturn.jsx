@@ -1,31 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLazyVerifyStripeReturnQuery } from '../../api/stripeApi';
-
-// ─── Status illustrations ─────────────────────────────────────────────────────
-const SuccessIcon = () => (
-  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-5">
-    <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-    </svg>
-  </div>
-);
-
-const WarningIcon = () => (
-  <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-5">
-    <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-    </svg>
-  </div>
-);
-
-const ErrorIcon = () => (
-  <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-5">
-    <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-    </svg>
-  </div>
-);
+import {
+  StripeSuccessIcon as SuccessIcon,
+  StripeWarningIcon as WarningIcon,
+  StripeErrorIcon as ErrorIcon,
+} from '../../assets/icons';
+import { LOGO_SVG } from '../../assets/images';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const StripeReturn = () => {
@@ -86,7 +67,7 @@ const StripeReturn = () => {
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <img
-            src="/assets/images/Sage-Nest_Final.svg"
+            src={LOGO_SVG}
             alt="Sage Nest"
             className="h-7"
             onError={(e) => { e.target.style.display = 'none'; }}

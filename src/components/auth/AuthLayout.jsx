@@ -1,4 +1,5 @@
 import LanguageSelector from '../LanguageSelector';
+import { LOGO_SVG } from '../../assets/images';
 
 const AuthLayout = ({ children }) => {
   return (
@@ -12,7 +13,7 @@ const AuthLayout = ({ children }) => {
         <div className="mb-4 text-center">
           <a href="https://the-sage-nest.webflow.io/">
             <img
-              src="/assets/images/Sage-Nest_Final.svg"
+              src={LOGO_SVG}
               alt="Sage Nest"
               className="w-32 mx-auto"
               onError={(e) => {

@@ -37,7 +37,7 @@ const PrivacyPolicyUpdateModal = ({ onAccept, onDecline, accepting }) => (
         </a>{' '}
         before accepting.
       </div>
-
+``
       <button
         onClick={onAccept}
         disabled={accepting}

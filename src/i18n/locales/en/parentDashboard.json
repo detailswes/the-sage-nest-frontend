@@ -48,7 +48,8 @@
     "verified": "Verified",
     "unverified": "Unverified",
     "changeLink": "Change email address",
-    "warning": "Changing your email will sign you out. You must verify the new address before logging back in.",
+    "warning": "A verification link will be sent to your new address. Your current email stays active until you confirm the change.",
+    "pendingNotice": "A verification link was sent to {{email}}. Check your inbox to confirm the change.",
     "newEmailLabel": "New email address",
     "newEmailPlaceholder": "new@example.com",
     "confirmPasswordLabel": "Confirm with current password",
@@ -58,8 +59,8 @@
     "sending": "Sending…",
     "sentTitle": "Verify your new email",
     "sentLine1": "We sent a verification link to <1>{{email}}</1>.",
-    "sentLine2": "Click it to activate your new address. You have been signed out.",
-    "signInNew": "Sign in with new email",
+    "sentLine2": "Click it to activate your new address. Your current email remains active until then.",
+    "signInNew": "Sign out",
     "errors": {
       "required": "New email and current password are required.",
       "failed": "Could not update email."
