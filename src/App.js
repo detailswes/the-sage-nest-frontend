@@ -37,7 +37,6 @@ import AdminExpertDetailSection from "./pages/dashboard/sections/AdminExpertDeta
 import AdminParentDetailSection from "./pages/dashboard/sections/AdminParentDetailSection";
 import PaymentsOverviewSection from "./pages/dashboard/sections/PaymentsOverviewSection";
 import AdminComplianceSection from "./pages/dashboard/sections/AdminComplianceSection";
-import LanguageSelector from "./components/LanguageSelector";
 
 function App() {
   return (
@@ -135,9 +134,6 @@ function App() {
             path="/book"
             element={
               <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x">
-                <div className="fixed top-4 right-4 z-50">
-                  <LanguageSelector variant="pill" />
-                </div>
                 <div className="max-w-xl mx-auto px-4 py-10">
                   <BookPage />
                 </div>

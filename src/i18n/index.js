@@ -14,6 +14,13 @@ import itAdminDashboard from './locales/it/adminDashboard.json';
 
 const STORAGE_KEY = 'sageNestLang';
 
+// Apply ?lang= URL param on any entry page so Webflow can pre-set the language.
+// This runs before React mounts, locking the language for the entire session.
+const _urlLang = new URLSearchParams(window.location.search).get('lang');
+if (_urlLang && ['en', 'it'].includes(_urlLang)) {
+  localStorage.setItem(STORAGE_KEY, _urlLang);
+}
+
 i18n
   .use(initReactI18next)
   .init({
