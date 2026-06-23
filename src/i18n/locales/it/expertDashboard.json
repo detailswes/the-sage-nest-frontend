@@ -110,6 +110,13 @@
       "statusPending":  "In attesa di approvazione",
       "memberSince":    "Membro da {{date}}"
     },
+    "sessionFormat": {
+      "label":    "Come eroghi le tue sessioni?",
+      "online":   "Solo online",
+      "inPerson": "Solo di persona",
+      "both":     "Sia online che di persona",
+      "hint":     "Controlla le opzioni di formato disponibili nella creazione dei servizi e il filtro mostrato nella directory degli esperti."
+    },
     "details": {
       "title":                "Dettagli profilo",
       "positionLabel":        "Titolo professionale",
@@ -396,6 +403,7 @@
       "descriptionPlaceholder":"Breve descrizione di cosa include questo servizio…",
       "formatLabel":          "Formato",
       "formatSelect":         "Seleziona un formato…",
+      "lockedFormatHint":     "Impostato dal formato di sessione del tuo profilo. Modificalo nelle impostazioni del Profilo.",
       "categoryLabel":        "Categoria",
       "categorySelect":       "Seleziona una categoria…",
       "durationLabel":        "Durata (min)",
