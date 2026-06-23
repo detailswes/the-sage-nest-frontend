@@ -11,6 +11,7 @@ import {
   formatTransferStatus,
 } from "../../../utils/formatBookingTime";
 import AdminActionsPanel from "../../../components/admin/AdminActionsPanel";
+import CenteredDateInput from "../../../components/CenteredDateInput";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -465,7 +466,63 @@ function RefundLogView() {
 
   return (
     <div>
-      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+      {/* Mobile refund cards */}
+      <div className="lg:hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border-2 border-[#c5ceba]">
+            <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
+              <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-[#445446]">{t("paymentsMgmt.refundLog.noRefunds")}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {entries.map((e) => {
+              const b = e.booking;
+              const isPartial = b && b.refund_amount != null && parseFloat(b.refund_amount) < parseFloat(b.amount);
+              return (
+                <div key={e.id} className="px-4 py-3 rounded-xl border border-[#c5ceba] bg-white space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium text-[#1F2933]">
+                      #{e.booking_id} · {new Date(e.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                    <span className="text-xs text-gray-400 whitespace-nowrap">
+                      {new Date(e.created_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 truncate">
+                    <span className="text-gray-400">{t("paymentsMgmt.refundLog.col.admin")}:</span> {e.admin_name}
+                  </p>
+                  {b?.parent?.name && (
+                    <p className="text-xs text-gray-500 truncate">
+                      <span className="text-gray-400">{t("paymentsMgmt.refundLog.col.parent")}:</span> {b.parent.name}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <span className="text-xs text-gray-400">
+                      {b ? formatCurrency(b.amount, b.currency) : "—"} →{" "}
+                      <span className="text-red-500 font-medium">−{b ? formatCurrency(b.refund_amount, b.currency) : "—"}</span>
+                      {isPartial && <span className="text-gray-400"> ({t("paymentsMgmt.partial")})</span>}
+                    </span>
+                    {b?.stripe_refund_id && (
+                      <span className="text-xs font-mono text-gray-400 truncate max-w-[120px]">{b.stripe_refund_id}</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop refund table */}
+      <div className="hidden lg:block bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
         {/* Table header */}
         <div className="grid grid-cols-[160px_140px_80px_1fr_110px_110px_180px] gap-3 px-4 py-3 bg-[#445446] border-b border-[#3a4a3b]">
           {[
@@ -685,7 +742,7 @@ const PaymentsOverviewSection = () => {
   return (
     <div>
       {/* Page header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-[#445446]">
             {t("paymentsMgmt.pageTitle")}
@@ -819,8 +876,22 @@ const PaymentsOverviewSection = () => {
               ))}
             </div>
 
-            {/* Date range — always one line */}
-            <div className="flex items-center gap-2 border border-[#c5ceba] rounded-xl px-3 py-2">
+            {/* Date range — mobile: CenteredDateInput */}
+            <div className="lg:hidden flex items-center gap-2 border border-[#c5ceba] rounded-xl px-3 py-2">
+              <span className="text-xs text-[#5e6d5b] flex-shrink-0">{t("paymentsMgmt.from")}</span>
+              <CenteredDateInput value={fromDate} onChange={handleFromChange} className="flex-1 text-sm py-0.5 bg-transparent" />
+              <span className="text-xs text-[#5e6d5b] flex-shrink-0">{t("paymentsMgmt.to")}</span>
+              <CenteredDateInput value={toDate} onChange={handleToChange} className="flex-1 text-sm py-0.5 bg-transparent" />
+              {(fromDate || toDate) && (
+                <button onClick={() => { setFromDate(""); setToDate(""); setPage(1); }}
+                  className="text-xs text-[#5e6d5b] hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors flex-shrink-0">
+                  {t("paymentsMgmt.clear")}
+                </button>
+              )}
+            </div>
+
+            {/* Date range — desktop: native inputs */}
+            <div className="hidden lg:flex items-center gap-2 border border-[#c5ceba] rounded-xl px-3 py-2">
               <span className="text-xs text-[#5e6d5b]">{t("paymentsMgmt.from")}</span>
               <input type="date" value={fromDate} onChange={handleFromChange}
                 className="text-sm outline-none bg-transparent text-[#1F2933]" />
@@ -828,18 +899,65 @@ const PaymentsOverviewSection = () => {
               <input type="date" value={toDate} onChange={handleToChange}
                 className="text-sm outline-none bg-transparent text-[#1F2933]" />
               {(fromDate || toDate) && (
-                <button
-                  onClick={() => { setFromDate(""); setToDate(""); setPage(1); }}
-                  className="text-xs text-[#5e6d5b] hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors"
-                >
+                <button onClick={() => { setFromDate(""); setToDate(""); setPage(1); }}
+                  className="text-xs text-[#5e6d5b] hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors">
                   {t("paymentsMgmt.clear")}
                 </button>
               )}
             </div>
           </div>
 
-          {/* Table */}
-          <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+          {/* Mobile cards */}
+          <div className="lg:hidden">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border-2 border-[#c5ceba]">
+                <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
+                  <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-semibold text-[#445446]">{t("paymentsMgmt.noTransactions")}</p>
+              </div>
+            ) : (
+              <div className={`space-y-2 ${isFetching ? "opacity-60 pointer-events-none" : ""}`}>
+                {transactions.map((tx) => (
+                  <button
+                    key={tx.id}
+                    onClick={() => setSelectedId(tx.id)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[#c5ceba] bg-white hover:bg-[#dfe2d7]/50 transition-colors text-left"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#1F2933]">#{tx.id} · {formatDate(tx.scheduled_at)}</p>
+                      {tx.parent?.name && (
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">
+                          <span className="text-gray-400">{t("paymentsMgmt.col.parent")}:</span> {tx.parent.name}
+                        </p>
+                      )}
+                      {tx.expert?.user?.name && (
+                        <p className="text-xs text-gray-500 truncate">
+                          <span className="text-gray-400">{t("paymentsMgmt.col.specialist")}:</span> {tx.expert.user.name}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {t("paymentsMgmt.col.fee")}: {formatCurrency(tx.platform_fee, tx.currency)} · {t("paymentsMgmt.col.payout")}: {specialistPayout(tx)}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
+                      <PaymentStatusBadge transaction={tx} />
+                      <AmountCell transaction={tx} />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden lg:block bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
             <div className="grid grid-cols-[60px_1fr_1fr_100px_100px_100px_160px_140px] gap-3 px-4 py-3 bg-[#445446] border-b border-[#3a4a3b]">
               {[
                 t("paymentsMgmt.col.id"),
