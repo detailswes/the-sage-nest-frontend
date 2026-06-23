@@ -313,7 +313,7 @@ const ParentManagementSection = () => {
           )}
         </div>
 
-        {/* Status filter — native select on mobile, tab bar on lg+ */}
+        {/* Mobile: native select for status */}
         <select
           value={activeFilter}
           onChange={(e) => handleFilterChange(e.target.value)}
@@ -326,28 +326,49 @@ const ParentManagementSection = () => {
           ))}
         </select>
 
-        <div className="hidden lg:inline-flex items-center border border-[#c5ceba] rounded-xl p-1 gap-0.5">
-          {STATUS_FILTER_KEYS.map((key) => {
-            const isActive = activeFilter === key;
-            return (
-              <button
-                key={key}
-                onClick={() => handleFilterChange(key)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  isActive ? "bg-[#445446] text-white shadow-sm" : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
-                }`}
-              >
-                {t(`parentMgmt.filter.${key}`)}
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}`}>
-                  {tabCount(key)}
-                </span>
-              </button>
-            );
-          })}
+        {/* Desktop: status tabs + date range all in one row */}
+        <div className="hidden lg:flex items-center gap-3">
+          <div className="inline-flex items-center border border-[#c5ceba] rounded-xl p-1 gap-0.5 flex-shrink-0">
+            {STATUS_FILTER_KEYS.map((key) => {
+              const isActive = activeFilter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleFilterChange(key)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                    isActive ? "bg-[#445446] text-white shadow-sm" : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
+                  }`}
+                >
+                  {t(`parentMgmt.filter.${key}`)}
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}`}>
+                    {tabCount(key)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Date filters inline */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{t("parentMgmt.registeredFrom")}</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
+              className="w-36 px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+            />
+            <span className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{t("parentMgmt.to")}</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => { setToDate(e.target.value); setPage(1); }}
+              className="w-36 px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+            />
+          </div>
         </div>
 
-        {/* Date range — stacked vertically */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* Mobile: date range grid */}
+        <div className="grid grid-cols-2 gap-2 lg:hidden">
           <div className="space-y-1">
             <p className="text-xs text-gray-500">{t("parentMgmt.registeredFrom")}</p>
             <CenteredDateInput
