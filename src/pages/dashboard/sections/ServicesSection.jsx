@@ -347,7 +347,7 @@ const ServicesSection = () => {
                 </select>
                 {lockedFormat && (
                   <p className="mt-1 text-xs text-gray-400">
-                    Set by your profile session format. Change it in your Profile settings.
+                    {t('services.form.lockedFormatHint')}
                   </p>
                 )}
                 {formErrors.format && <p className="mt-1.5 text-xs text-red-500">{formErrors.format}</p>}

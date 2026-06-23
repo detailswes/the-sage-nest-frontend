@@ -144,7 +144,7 @@ const DocCard = ({ type, docs }) => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border-2 border-[#c5ceba] p-6">
+      <div className="bg-white rounded-xl border-2 border-[#c5ceba] p-6 h-full flex flex-col">
         {/* Header row */}
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
@@ -264,7 +264,7 @@ const LegalDocumentsSection = () => {
           <span className="text-sm text-gray-400">{t("legalDocs.loading")}</span>
         </div>
       ) : (
-        <div className="space-y-4 max-w-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <DocCard type="PRIVACY_POLICY"   docs={privacyDocs} />
           <DocCard type="TERMS_CONDITIONS" docs={termsDocs}   />
         </div>

@@ -119,9 +119,9 @@ const LangChip = ({ label, selected, onToggle }) => (
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const SESSION_FORMAT_OPTIONS = [
-  { value: 'ONLINE',    label: 'Online only' },
-  { value: 'IN_PERSON', label: 'In-person only' },
-  { value: 'BOTH',      label: 'Both online and in-person' },
+  { value: 'ONLINE',    tKey: 'profile.sessionFormat.online' },
+  { value: 'IN_PERSON', tKey: 'profile.sessionFormat.inPerson' },
+  { value: 'BOTH',      tKey: 'profile.sessionFormat.both' },
 ];
 
 const EMPTY_FORM = {
@@ -532,7 +532,7 @@ const ProfileSection = () => {
           {/* Session format */}
           <div>
             <label className="block text-sm font-medium text-[#1F2933] mb-2">
-              How do you deliver your sessions? <span className="text-red-400">*</span> <PublicBadge />
+              {t('profile.sessionFormat.label')} <span className="text-red-400">*</span> <PublicBadge />
             </label>
             <div className="flex flex-col gap-2">
               {SESSION_FORMAT_OPTIONS.map((opt) => (
@@ -549,12 +549,12 @@ const ProfileSection = () => {
                     onChange={handleChange}
                     className="accent-[#445446]"
                   />
-                  <span className="text-sm font-medium">{opt.label}</span>
+                  <span className="text-sm font-medium">{t(opt.tKey)}</span>
                 </label>
               ))}
             </div>
             <p className="mt-1.5 text-xs text-gray-400">
-              This controls the format options available when creating services and the filter shown on the expert directory.
+              {t('profile.sessionFormat.hint')}
             </p>
           </div>
 

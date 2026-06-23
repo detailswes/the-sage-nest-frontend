@@ -110,6 +110,13 @@
       "statusPending":  "Pending Approval",
       "memberSince":    "Member since {{date}}"
     },
+    "sessionFormat": {
+      "label":    "How do you deliver your sessions?",
+      "online":   "Online only",
+      "inPerson": "In-person only",
+      "both":     "Both online and in-person",
+      "hint":     "This controls the format options available when creating services and the filter shown on the expert directory."
+    },
     "details": {
       "title":                "Profile Details",
       "positionLabel":        "Professional title",
@@ -396,6 +403,7 @@
       "descriptionPlaceholder":"Brief description of what this service includes…",
       "formatLabel":          "Format",
       "formatSelect":         "Select a format…",
+      "lockedFormatHint":     "Set by your profile session format. Change it in your Profile settings.",
       "categoryLabel":        "Category",
       "categorySelect":       "Select a category…",
       "durationLabel":        "Duration (min)",

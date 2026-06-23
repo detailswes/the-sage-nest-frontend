@@ -585,9 +585,44 @@ const ExpertManagementSection = () => {
           })}
         </div>
 
-        {/* Secondary filters: city, qualification, date range */}
-        <div className="grid grid-cols-2 gap-2">
-          {/* City */}
+        {/* Desktop: city · qual · date from · date to in one flex row */}
+        <div className="hidden lg:flex items-center gap-2">
+          <input
+            type="text"
+            value={cityFilter}
+            placeholder={t("expertMgmt.cityPlaceholder")}
+            onChange={(e) => { setCityFilter(e.target.value); setPage(1); }}
+            className={`flex-1 min-w-0 ${filterInputCls}`}
+          />
+          <select
+            value={qualFilter}
+            onChange={(e) => { setQualFilter(e.target.value); setPage(1); }}
+            className={`flex-1 min-w-0 ${filterInputCls}`}
+          >
+            {QUAL_OPTION_VALUES.map((value) => (
+              <option key={value} value={value}>
+                {value === "" ? t("expertMgmt.qual.all") : t(`expertMgmt.qual.${value}`)}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{t("expertMgmt.registeredFrom")}</span>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
+            className="w-36 px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+          />
+          <span className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{t("expertMgmt.to")}</span>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => { setToDate(e.target.value); setPage(1); }}
+            className="w-36 px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+          />
+        </div>
+
+        {/* Mobile: 2-col grid (city|qual on row 1, from|to on row 2) */}
+        <div className="grid grid-cols-2 gap-2 lg:hidden">
           <input
             type="text"
             value={cityFilter}
@@ -595,8 +630,6 @@ const ExpertManagementSection = () => {
             onChange={(e) => { setCityFilter(e.target.value); setPage(1); }}
             className={filterInputCls}
           />
-
-          {/* Qualification */}
           <select
             value={qualFilter}
             onChange={(e) => { setQualFilter(e.target.value); setPage(1); }}
@@ -608,25 +641,21 @@ const ExpertManagementSection = () => {
               </option>
             ))}
           </select>
-
-          {/* Date range — stacked vertically */}
-          <div className="col-span-2 space-y-2">
-            <div className="space-y-1">
-              <p className="text-xs text-gray-500">{t("expertMgmt.registeredFrom")}</p>
-              <CenteredDateInput
-                value={fromDate}
-                onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
-                className={filterInputCls}
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-500">{t("expertMgmt.to")}</p>
-              <CenteredDateInput
-                value={toDate}
-                onChange={(e) => { setToDate(e.target.value); setPage(1); }}
-                className={filterInputCls}
-              />
-            </div>
+          <div className="space-y-1">
+            <p className="text-xs text-gray-500">{t("expertMgmt.registeredFrom")}</p>
+            <CenteredDateInput
+              value={fromDate}
+              onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
+              className={filterInputCls}
+            />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-gray-500">{t("expertMgmt.to")}</p>
+            <CenteredDateInput
+              value={toDate}
+              onChange={(e) => { setToDate(e.target.value); setPage(1); }}
+              className={filterInputCls}
+            />
           </div>
         </div>
 

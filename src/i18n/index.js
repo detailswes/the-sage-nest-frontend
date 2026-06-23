@@ -19,6 +19,19 @@ const STORAGE_KEY = 'sageNestLang';
 const _urlLang = new URLSearchParams(window.location.search).get('lang');
 if (_urlLang && ['en', 'it'].includes(_urlLang)) {
   localStorage.setItem(STORAGE_KEY, _urlLang);
+} else if (window.location.pathname === '/book') {
+  // No explicit ?lang= param. Detect from the Webflow referrer path:
+  // Italian Webflow uses a /it/ path prefix; English has no prefix.
+  // Default to 'en' when there's no referrer (direct link, bookmark, etc.)
+  let _detectedLang = 'en';
+  if (document.referrer) {
+    try {
+      if (/\/it(\/|$)/.test(new URL(document.referrer).pathname)) {
+        _detectedLang = 'it';
+      }
+    } catch (_) {}
+  }
+  localStorage.setItem(STORAGE_KEY, _detectedLang);
 }
 
 i18n
