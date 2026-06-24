@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
 import ConfirmModal from '../../../components/ConfirmModal';
+import CenteredDateInput from '../../../components/CenteredDateInput';
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import {
   format,
@@ -738,21 +739,40 @@ const BlockoutPanel = ({
             <label className="block text-xs font-medium text-gray-600 mb-1">
               {t('availability.blockout.fromLabel')}
             </label>
-            <input
-              type="date"
-              value={form.date_from}
-              onChange={(e) => {
-                const val = e.target.value;
-                setForm((f) => ({
-                  ...f,
-                  date_from: val,
-                  date_to: f.date_to && f.date_to < val ? val : f.date_to,
-                }));
-                setFormErrors((fe) => ({ ...fe, date_from: "", date_to: "" }));
-              }}
-              className={inputClass(!!formErrors.date_from)}
-              min={new Date().toISOString().split("T")[0]}
-            />
+            {/* Mobile */}
+            <div className="lg:hidden">
+              <CenteredDateInput
+                value={form.date_from}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm((f) => ({
+                    ...f,
+                    date_from: val,
+                    date_to: f.date_to && f.date_to < val ? val : f.date_to,
+                  }));
+                  setFormErrors((fe) => ({ ...fe, date_from: "", date_to: "" }));
+                }}
+                className={inputClass(!!formErrors.date_from)}
+              />
+            </div>
+            {/* Desktop */}
+            <div className="hidden lg:block">
+              <input
+                type="date"
+                value={form.date_from}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm((f) => ({
+                    ...f,
+                    date_from: val,
+                    date_to: f.date_to && f.date_to < val ? val : f.date_to,
+                  }));
+                  setFormErrors((fe) => ({ ...fe, date_from: "", date_to: "" }));
+                }}
+                className={inputClass(!!formErrors.date_from)}
+                min={new Date().toISOString().split("T")[0]}
+              />
+            </div>
             {formErrors.date_from && (
               <p className="mt-0.5 text-xs text-red-500">{formErrors.date_from}</p>
             )}
@@ -761,16 +781,30 @@ const BlockoutPanel = ({
             <label className="block text-xs font-medium text-gray-600 mb-1">
               {t('availability.blockout.toLabel')}
             </label>
-            <input
-              type="date"
-              value={form.date_to}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, date_to: e.target.value }));
-                setFormErrors((fe) => ({ ...fe, date_to: "" }));
-              }}
-              className={inputClass(!!formErrors.date_to)}
-              min={form.date_from || new Date().toISOString().split("T")[0]}
-            />
+            {/* Mobile */}
+            <div className="lg:hidden">
+              <CenteredDateInput
+                value={form.date_to}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, date_to: e.target.value }));
+                  setFormErrors((fe) => ({ ...fe, date_to: "" }));
+                }}
+                className={inputClass(!!formErrors.date_to)}
+              />
+            </div>
+            {/* Desktop */}
+            <div className="hidden lg:block">
+              <input
+                type="date"
+                value={form.date_to}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, date_to: e.target.value }));
+                  setFormErrors((fe) => ({ ...fe, date_to: "" }));
+                }}
+                className={inputClass(!!formErrors.date_to)}
+                min={form.date_from || new Date().toISOString().split("T")[0]}
+              />
+            </div>
             {formErrors.date_to && (
               <p className="mt-0.5 text-xs text-red-500">{formErrors.date_to}</p>
             )}
@@ -910,9 +944,10 @@ const AvailabilitySection = () => {
   const { t, i18n } = useTranslation('expertDashboard');
   const lng = i18n.language;
 
-  const [view, setView] = useState("week");
+  const defaultView = typeof window !== "undefined" && window.innerWidth < 1024 ? "day" : "week";
+  const [view, setView] = useState(defaultView);
   const [date, setDate] = useState(new Date());
-  const [range, setRange] = useState(() => getRangeForView("week", new Date()));
+  const [range, setRange] = useState(() => getRangeForView(defaultView, new Date()));
 
   const [removingId,  setRemovingId]  = useState(null);
   const [slotError,   setSlotError]   = useState("");
