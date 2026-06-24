@@ -697,8 +697,9 @@ const PaymentsOverviewSection = () => {
     useExportTransactionsXlsxMutation();
 
   const transactions = data?.transactions ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = Math.ceil(total / LIMIT);
+  const total        = data?.total        ?? 0;
+  const totalPages   = Math.ceil(total / LIMIT);
+  const statusCounts = data?.counts       ?? {};
 
   const handleSearchChange = (e) => {
     setSearchInput(e.target.value);
@@ -744,9 +745,17 @@ const PaymentsOverviewSection = () => {
       {/* Page header */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-[#445446]">
-            {t("paymentsMgmt.pageTitle")}
-          </h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-[#445446] font-semibold">
+              {t("paymentsMgmt.pageTitle")}
+            </span>
+            <svg className="w-4 h-4 text-[#5e6d5b] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            <span className="text-sm font-medium text-[#445446]">
+              {view === "transactions" ? t("paymentsMgmt.viewTransactions") : t("paymentsMgmt.viewRefundLog")}
+            </span>
+          </div>
           <p className="text-sm text-[#5e6d5b] font-medium mt-1">
             {view === "transactions"
               ? t("paymentsMgmt.subtitleTransactions")
@@ -861,19 +870,32 @@ const PaymentsOverviewSection = () => {
 
             {/* Status pill tabs */}
             <div className="flex items-center flex-wrap gap-1 border border-[#c5ceba] rounded-xl p-1">
-              {FILTER_KEYS.map((key) => (
-                <button
-                  key={key}
-                  onClick={() => applyFilter(key)}
-                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                    activeFilter === key
-                      ? "bg-[#445446] text-white shadow-sm"
-                      : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
-                  }`}
-                >
-                  {t(`paymentsMgmt.filter.${key}`)}
-                </button>
-              ))}
+              {FILTER_KEYS.map((key) => {
+                const count = statusCounts[key];
+                const isActive = activeFilter === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => applyFilter(key)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                      isActive
+                        ? "bg-[#445446] text-white shadow-sm"
+                        : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
+                    }`}
+                  >
+                    {t(`paymentsMgmt.filter.${key}`)}
+                    {count != null && (
+                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-[#445446]/10 text-[#445446]"
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Date range — mobile: CenteredDateInput */}
@@ -894,10 +916,10 @@ const PaymentsOverviewSection = () => {
             <div className="hidden lg:flex items-center gap-2 border border-[#c5ceba] rounded-xl px-3 py-2">
               <span className="text-xs text-[#5e6d5b]">{t("paymentsMgmt.from")}</span>
               <input type="date" value={fromDate} onChange={handleFromChange}
-                className="text-sm outline-none bg-transparent text-[#1F2933]" />
+                className="text-sm outline-none bg-transparent text-[#1F2933] uppercase" />
               <span className="text-xs text-[#5e6d5b]">{t("paymentsMgmt.to")}</span>
               <input type="date" value={toDate} onChange={handleToChange}
-                className="text-sm outline-none bg-transparent text-[#1F2933]" />
+                className="text-sm outline-none bg-transparent text-[#1F2933] uppercase" />
               {(fromDate || toDate) && (
                 <button onClick={() => { setFromDate(""); setToDate(""); setPage(1); }}
                   className="text-xs text-[#5e6d5b] hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors">

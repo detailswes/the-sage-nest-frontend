@@ -259,7 +259,7 @@ const ServicesSection = () => {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold text-[#445446]">{t('services.heading')}</h2>
           <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('services.subheading')}</p>
@@ -267,7 +267,7 @@ const ServicesSection = () => {
         {!showForm && (
           <button
             onClick={openAdd}
-            className="flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm flex-shrink-0 ml-4"
+            className="self-start flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm flex-shrink-0 sm:ml-4"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -285,7 +285,7 @@ const ServicesSection = () => {
 
       {/* Add / Edit form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6 mb-5">
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-4 sm:p-6 mb-5">
           <h3 className="text-base font-semibold text-[#1F2933] mb-5">
             {editingId ? t('services.form.editTitle') : isDuplicating ? t('services.form.duplicateTitle') : t('services.form.addTitle')}
           </h3>
@@ -365,7 +365,7 @@ const ServicesSection = () => {
             </div>
 
             {/* Duration + Currency + Price */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.durationLabel')}</label>
                 <select name="duration_minutes" value={form.duration_minutes} onChange={handleChange}
@@ -387,7 +387,7 @@ const ServicesSection = () => {
                 </select>
                 {formErrors.currency && <p className="mt-1.5 text-xs text-red-500">{formErrors.currency}</p>}
               </div>
-              <div>
+              <div className="col-span-2 sm:col-span-1">
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.priceLabel')}</label>
                 <input type="number" name="price" value={form.price} onChange={handleChange}
                   placeholder="75.00" min="1.00" step="0.01" className={inputClass(!!formErrors.price)} />

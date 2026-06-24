@@ -324,7 +324,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 value={form.date_of_birth}
                 onChange={handleChange}
                 max={new Date().toISOString().split("T")[0]}
-                className={inputClass("date_of_birth")}
+                className={`${inputClass("date_of_birth")} uppercase`}
               />
               {fieldErrors.date_of_birth && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.date_of_birth}</p>}
             </div>
