@@ -66,13 +66,13 @@ const AdminComplianceSection = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold text-[#445446]">{t("legalCompliance.pageTitle")}</h2>
           <p className="text-sm text-[#5e6d5b] font-medium mt-0.5">{t("legalCompliance.pageSubtitle")}</p>
         </div>
         {/* Current versions */}
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
           {currentPpVersion && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#dfe2d7]/40 border border-[#c5ceba] text-[#5e6d5b] font-medium">
               Privacy Policy:
@@ -136,98 +136,136 @@ const AdminComplianceSection = () => {
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+      {/* Shared loading / empty states */}
+      {loading ? (
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] flex items-center justify-center py-20">
+          <div className="w-8 h-8 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
+            <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+            </svg>
           </div>
-        ) : rows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
-              <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-              </svg>
-            </div>
-            <p className="text-sm font-semibold text-[#445446]">
-              {filter === "non_compliant" ? t("legalCompliance.allCompliant") : t("legalCompliance.noParents")}
-            </p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#445446] border-b border-[#3a4a3b]">
-                {[
-                  t("legalCompliance.col.parent"),
-                  t("legalCompliance.col.privacyPolicy"),
-                  t("legalCompliance.col.terms"),
-                  t("legalCompliance.col.overall"),
-                  t("legalCompliance.col.actions"),
-                ].map((h, i) => (
-                  <th key={i} className={`text-xs font-semibold text-white uppercase tracking-wider px-5 py-3 ${i === 4 ? "text-right" : "text-left"}`}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#dfe2d7]">
-              {rows.map((p) => (
-                <tr key={p.id} className="hover:bg-[#dfe2d7]/50 transition-colors">
-                  {/* Parent */}
-                  <td className="px-5 py-3.5">
-                    <p className="font-medium text-[#1F2933]">{p.name || "—"}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{p.email}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {t("legalCompliance.joined", { date: formatDate(p.created_at) })}
-                    </p>
-                  </td>
-                  {/* PP */}
-                  <td className="px-5 py-3.5">
-                    <ComplianceBadge ok={p.pp_compliant} />
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      {p.pp_version
-                        ? t("legalCompliance.accepted", { version: p.pp_version, date: formatDate(p.pp_accepted_at) })
-                        : t("legalCompliance.neverAccepted")}
-                    </p>
-                    {!p.pp_compliant && currentPpVersion && (
-                      <p className="text-xs text-red-500 mt-0.5">
-                        {t("legalCompliance.current", { version: currentPpVersion })}
-                      </p>
-                    )}
-                  </td>
-                  {/* TC */}
-                  <td className="px-5 py-3.5">
-                    <ComplianceBadge ok={p.tc_compliant} />
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      {p.tc_version
-                        ? t("legalCompliance.accepted", { version: p.tc_version, date: formatDate(p.tc_accepted_at) })
-                        : t("legalCompliance.neverAccepted")}
-                    </p>
-                    {!p.tc_compliant && currentTcVersion && (
-                      <p className="text-xs text-red-500 mt-0.5">
-                        {t("legalCompliance.current", { version: currentTcVersion })}
-                      </p>
-                    )}
-                  </td>
-                  {/* Overall */}
-                  <td className="px-5 py-3.5">
-                    <ComplianceBadge ok={p.compliant} />
-                  </td>
-                  {/* Actions */}
-                  <td className="px-5 py-3.5 text-right">
-                    <Link
-                      to={`/dashboard/admin/parents/${p.id}`}
-                      className="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-[#c5ceba] text-[#5e6d5b] hover:border-[#445446] hover:text-[#445446] hover:bg-[#dfe2d7]/50 transition-all duration-150 whitespace-nowrap"
-                    >
-                      {t("legalCompliance.viewProfile")}
-                    </Link>
-                  </td>
+          <p className="text-sm font-semibold text-[#445446]">
+            {filter === "non_compliant" ? t("legalCompliance.allCompliant") : t("legalCompliance.noParents")}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="hidden lg:block bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[#445446] border-b border-[#3a4a3b]">
+                  {[
+                    t("legalCompliance.col.parent"),
+                    t("legalCompliance.col.privacyPolicy"),
+                    t("legalCompliance.col.terms"),
+                    t("legalCompliance.col.overall"),
+                    t("legalCompliance.col.actions"),
+                  ].map((h, i) => (
+                    <th key={i} className={`text-xs font-semibold text-white uppercase tracking-wider px-5 py-3 ${i === 4 ? "text-right" : "text-left"}`}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody className="divide-y divide-[#dfe2d7]">
+                {rows.map((p) => (
+                  <tr key={p.id} className="hover:bg-[#dfe2d7]/50 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <p className="font-medium text-[#1F2933]">{p.name || "—"}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{p.email}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{t("legalCompliance.joined", { date: formatDate(p.created_at) })}</p>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <ComplianceBadge ok={p.pp_compliant} />
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        {p.pp_version ? t("legalCompliance.accepted", { version: p.pp_version, date: formatDate(p.pp_accepted_at) }) : t("legalCompliance.neverAccepted")}
+                      </p>
+                      {!p.pp_compliant && currentPpVersion && (
+                        <p className="text-xs text-red-500 mt-0.5">{t("legalCompliance.current", { version: currentPpVersion })}</p>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <ComplianceBadge ok={p.tc_compliant} />
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        {p.tc_version ? t("legalCompliance.accepted", { version: p.tc_version, date: formatDate(p.tc_accepted_at) }) : t("legalCompliance.neverAccepted")}
+                      </p>
+                      {!p.tc_compliant && currentTcVersion && (
+                        <p className="text-xs text-red-500 mt-0.5">{t("legalCompliance.current", { version: currentTcVersion })}</p>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5"><ComplianceBadge ok={p.compliant} /></td>
+                    <td className="px-5 py-3.5 text-right">
+                      <Link to={`/dashboard/admin/parents/${p.id}`}
+                        className="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-[#c5ceba] text-[#5e6d5b] hover:border-[#445446] hover:text-[#445446] hover:bg-[#dfe2d7]/50 transition-all duration-150 whitespace-nowrap">
+                        {t("legalCompliance.viewProfile")}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="lg:hidden space-y-3">
+            {rows.map((p) => (
+              <div key={p.id} className="bg-white rounded-xl border border-[#c5ceba] px-4 py-4 space-y-3">
+                {/* Parent info */}
+                <div>
+                  <p className="font-medium text-[#1F2933]">{p.name || "—"}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{p.email}</p>
+                  <p className="text-xs text-gray-400">{t("legalCompliance.joined", { date: formatDate(p.created_at) })}</p>
+                </div>
+
+                {/* PP + TC rows */}
+                <div className="space-y-2 border-t border-[#dfe2d7] pt-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs text-gray-500 flex-shrink-0 pt-0.5">{t("legalCompliance.col.privacyPolicy")}</span>
+                    <div className="text-right">
+                      <ComplianceBadge ok={p.pp_compliant} />
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {p.pp_version ? t("legalCompliance.accepted", { version: p.pp_version, date: formatDate(p.pp_accepted_at) }) : t("legalCompliance.neverAccepted")}
+                      </p>
+                      {!p.pp_compliant && currentPpVersion && (
+                        <p className="text-xs text-red-500">{t("legalCompliance.current", { version: currentPpVersion })}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs text-gray-500 flex-shrink-0 pt-0.5">{t("legalCompliance.col.terms")}</span>
+                    <div className="text-right">
+                      <ComplianceBadge ok={p.tc_compliant} />
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {p.tc_version ? t("legalCompliance.accepted", { version: p.tc_version, date: formatDate(p.tc_accepted_at) }) : t("legalCompliance.neverAccepted")}
+                      </p>
+                      {!p.tc_compliant && currentTcVersion && (
+                        <p className="text-xs text-red-500">{t("legalCompliance.current", { version: currentTcVersion })}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overall + action */}
+                <div className="flex items-center justify-between border-t border-[#dfe2d7] pt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">{t("legalCompliance.col.overall")}:</span>
+                    <ComplianceBadge ok={p.compliant} />
+                  </div>
+                  <Link to={`/dashboard/admin/parents/${p.id}`}
+                    className="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-[#c5ceba] text-[#5e6d5b] hover:border-[#445446] hover:text-[#445446] hover:bg-[#dfe2d7]/50 transition-all duration-150 whitespace-nowrap">
+                    {t("legalCompliance.viewProfile")}
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Pagination */}
       {pages > 1 && (
