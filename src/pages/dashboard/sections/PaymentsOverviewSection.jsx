@@ -697,8 +697,9 @@ const PaymentsOverviewSection = () => {
     useExportTransactionsXlsxMutation();
 
   const transactions = data?.transactions ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = Math.ceil(total / LIMIT);
+  const total        = data?.total        ?? 0;
+  const totalPages   = Math.ceil(total / LIMIT);
+  const statusCounts = data?.counts       ?? {};
 
   const handleSearchChange = (e) => {
     setSearchInput(e.target.value);
@@ -861,19 +862,32 @@ const PaymentsOverviewSection = () => {
 
             {/* Status pill tabs */}
             <div className="flex items-center flex-wrap gap-1 border border-[#c5ceba] rounded-xl p-1">
-              {FILTER_KEYS.map((key) => (
-                <button
-                  key={key}
-                  onClick={() => applyFilter(key)}
-                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                    activeFilter === key
-                      ? "bg-[#445446] text-white shadow-sm"
-                      : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
-                  }`}
-                >
-                  {t(`paymentsMgmt.filter.${key}`)}
-                </button>
-              ))}
+              {FILTER_KEYS.map((key) => {
+                const count = statusCounts[key];
+                const isActive = activeFilter === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => applyFilter(key)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                      isActive
+                        ? "bg-[#445446] text-white shadow-sm"
+                        : "text-[#5e6d5b] hover:text-[#445446] hover:bg-[#dfe2d7]/50"
+                    }`}
+                  >
+                    {t(`paymentsMgmt.filter.${key}`)}
+                    {count != null && (
+                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-[#445446]/10 text-[#445446]"
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Date range — mobile: CenteredDateInput */}
