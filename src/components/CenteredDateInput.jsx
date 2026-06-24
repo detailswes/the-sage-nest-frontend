@@ -16,7 +16,7 @@ const CenteredDateInput = ({ value, onChange, className }) => {
         onClick={() => setOpen(true)}
         className={`${className} text-left ${!display ? "text-gray-400" : "text-[#1F2933]"}`}
       >
-        {display ?? "mm/dd/yyyy"}
+        {display ?? "DD/MM/YYYY"}
       </button>
 
       {open && (

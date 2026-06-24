@@ -769,7 +769,7 @@ const BlockoutPanel = ({
                   }));
                   setFormErrors((fe) => ({ ...fe, date_from: "", date_to: "" }));
                 }}
-                className={inputClass(!!formErrors.date_from)}
+                className={`${inputClass(!!formErrors.date_from)} uppercase`}
                 min={new Date().toISOString().split("T")[0]}
               />
             </div>
@@ -801,7 +801,7 @@ const BlockoutPanel = ({
                   setForm((f) => ({ ...f, date_to: e.target.value }));
                   setFormErrors((fe) => ({ ...fe, date_to: "" }));
                 }}
-                className={inputClass(!!formErrors.date_to)}
+                className={`${inputClass(!!formErrors.date_to)} uppercase`}
                 min={form.date_from || new Date().toISOString().split("T")[0]}
               />
             </div>

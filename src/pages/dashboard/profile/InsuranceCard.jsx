@@ -201,7 +201,7 @@ const InsuranceCard = ({ initialData = null }) => {
                   setDateWarning('');
                 }
               }}
-              className={inputClass(!form.policy_expires_at && !!formError)}
+              className={`${inputClass(!form.policy_expires_at && !!formError)} uppercase`}
             />
             {dateWarning && (
               <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
