@@ -368,13 +368,13 @@ const ProfileSection = () => {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-[#445446]">{t('profile.heading')}</h2>
           <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('profile.subheading')}</p>
         </div>
         {stripeStatus !== 'idle' && (
-          <div className="flex-shrink-0 mt-0.5 flex flex-col items-end gap-1">
+          <div className="flex-shrink-0 self-start sm:mt-0.5">
             <StripeButton status={stripeStatus} onConnect={handleConnectStripe} />
           </div>
         )}
@@ -410,7 +410,7 @@ const ProfileSection = () => {
       )}
 
       {/* Identity card */}
-      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6 mb-5 flex items-center gap-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-4 sm:p-6 mb-5 flex items-center gap-4 sm:gap-5">
         <div className="flex-shrink-0">
           <button
             type="button"
@@ -478,7 +478,7 @@ const ProfileSection = () => {
       </div>
 
       {/* Profile details form */}
-      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-4 sm:p-6">
         <h3 className="text-base font-semibold text-[#1F2933] mb-5">{t('profile.details.title')}</h3>
 
         <form onSubmit={handleSave} className="space-y-5">
@@ -739,7 +739,7 @@ const ProfileSection = () => {
       {profile && <InsuranceCard      initialData={profile.insurance || null} />}
 
       {/* GDPR Data Export */}
-      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6 mt-5">
+      <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-4 sm:p-6 mt-5">
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#445446]/8 flex items-center justify-center">
             <svg className="w-5 h-5 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
