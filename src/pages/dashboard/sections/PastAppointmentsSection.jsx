@@ -214,6 +214,87 @@ const Row = ({ booking }) => {
   );
 };
 
+// ─── Mobile card ─────────────────────────────────────────────────────────────
+const MobileCard = ({ booking }) => {
+  const { t, i18n } = useTranslation('expertDashboard');
+  const lng = i18n.language;
+  const [expanded, setExpanded] = useState(false);
+  const [note,     setNote]     = useState(booking.expert_note || '');
+  const status   = resolveStatus(booking);
+  const isOnline = booking.format === 'ONLINE';
+  const duration = booking.duration_minutes || booking.service?.duration_minutes || 0;
+
+  return (
+    <div className="bg-white rounded-xl border border-[#c5ceba] px-4 py-4">
+      {/* Date + status */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div>
+          <p className="text-sm font-semibold text-[#1F2933]">{formatDate(booking.scheduled_at, lng)}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{formatTime(booking.scheduled_at, lng)}</p>
+        </div>
+        <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_STYLES[status] || STATUS_STYLES.CANCELLED}`}>
+          {t('history.status.' + status, { defaultValue: status })}
+        </span>
+      </div>
+
+      {/* Parent */}
+      <p className="text-sm font-medium text-[#1F2933]">{booking.parent?.name || '—'}</p>
+      {booking.parent?.email && (
+        <a href={`mailto:${booking.parent.email}`} className="text-xs text-[#445446] hover:underline">
+          {booking.parent.email}
+        </a>
+      )}
+
+      {/* Service */}
+      <p className="text-xs text-gray-600 mt-2">{booking.service?.title || '—'}</p>
+
+      {/* Meta badges */}
+      <div className="flex items-center gap-2 flex-wrap mt-1.5 mb-3">
+        {duration > 0 && (
+          <span className="text-xs text-gray-400">{formatDuration(duration)}</span>
+        )}
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+          isOnline
+            ? 'bg-blue-50 text-blue-600 border border-blue-100'
+            : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
+        }`}>
+          {isOnline ? t('history.formats.ONLINE') : t('history.formats.IN_PERSON')}
+        </span>
+      </div>
+
+      {/* Note toggle */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border transition-colors ${
+          note
+            ? 'text-[#445446] border-[#445446]/30 bg-[#445446]/5 hover:bg-[#445446]/10'
+            : 'text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
+        }`}
+      >
+        <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+        </svg>
+        {note ? t('history.notes.hasNoteBtn') : t('history.notes.addNoteBtn')}
+      </button>
+
+      {/* Expanded inline note */}
+      {expanded && (
+        <div className="mt-3 border-t border-[#dfe2d7] pt-3">
+          <p className="text-xs font-medium text-[#5e6d5b] uppercase tracking-wide mb-1">
+            {t('history.notes.privateLabel')}
+            <span className="ml-1 normal-case font-normal text-[#5e6d5b]/60">{t('history.notes.privateSub')}</span>
+          </p>
+          <InlineNoteEditor
+            bookingId={booking.id}
+            initialNote={note}
+            onSaved={(v) => setNote(v || '')}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Main component ───────────────────────────────────────────────────────────
 const PastAppointmentsSection = () => {
   const { t } = useTranslation('expertDashboard');
@@ -259,7 +340,8 @@ const PastAppointmentsSection = () => {
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+          {/* Desktop table */}
+          <div className="hidden lg:block bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px]">
                 <thead>
@@ -280,6 +362,13 @@ const PastAppointmentsSection = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="lg:hidden space-y-3">
+            {bookings.map((b) => (
+              <MobileCard key={b.id} booking={b} />
+            ))}
           </div>
 
           <Pagination page={page} pages={pages} onChange={setPage} />
