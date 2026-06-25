@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { STORAGE_KEY } from '../i18n';
+import { ChevronDownIcon, CheckIcon } from '../assets/icons';
 
 const LANGUAGES = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -59,12 +60,7 @@ const LanguageSelector = ({ variant = 'default' }) => {
       >
         <span>{current.flag}</span>
         <span>{current.label}</span>
-        <svg
-          className={`w-3 h-3 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-        </svg>
+        <ChevronDownIcon className={`w-3 h-3 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
@@ -82,9 +78,7 @@ const LanguageSelector = ({ variant = 'default' }) => {
               <span className="text-base">{flag}</span>
               <span>{label}</span>
               {code === current.code && (
-                <svg className="w-3 h-3 ml-auto text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                </svg>
+                <CheckIcon className="w-3 h-3 ml-auto text-[#445446]" />
               )}
             </button>
           ))}

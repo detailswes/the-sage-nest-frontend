@@ -42,8 +42,6 @@ const CLUSTER_OPTIONS = [
   { value: 'FOR_PARENTS' },
   { value: 'FOR_BABY' },
   { value: 'PACKAGE' },
-  { value: 'GIFT' },
-  { value: 'EVENT' },
 ];
 
 const FORMAT_BADGE_CLS = {

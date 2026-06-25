@@ -6,6 +6,7 @@ import NotificationBell from "../../components/admin/NotificationBell";
 import {
   NavUsersIcon, NavLogoutIcon, NavDocumentIcon,
   NavBookingsIcon, NavPaymentsIcon, NavShieldIcon,
+  MenuIcon, XIcon, SignOutIcon,
 } from "../../assets/icons";
 import { LOGO_SVG } from "../../assets/images";
 
@@ -46,9 +47,7 @@ const AdminDashboard = () => {
           className="p-2 rounded-lg text-[#445446] hover:bg-[#c5ceba]/40 transition-colors"
           aria-label="Open menu"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
+          <MenuIcon />
         </button>
         <Link to="/dashboard/admin/experts" className="flex items-center gap-2" onClick={closeSidebar}>
           <img
@@ -99,9 +98,7 @@ const AdminDashboard = () => {
             className="lg:hidden p-1.5 rounded-lg text-[#445446] hover:bg-[#c5ceba]/40 transition-colors"
             aria-label="Close menu"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
+            <XIcon />
           </button>
         </div>
 
@@ -175,9 +172,7 @@ const AdminDashboard = () => {
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mx-auto mb-4">
-              <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
-              </svg>
+              <SignOutIcon className="w-6 h-6 text-red-500" />
             </div>
             <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
               {t("signOutModal.title")}
