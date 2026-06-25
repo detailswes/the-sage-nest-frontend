@@ -355,14 +355,14 @@ const ParentManagementSection = () => {
               type="date"
               value={fromDate}
               onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
-              className="w-36 px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+              className="w-36 px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition uppercase"
             />
             <span className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{t("parentMgmt.to")}</span>
             <input
               type="date"
               value={toDate}
               onChange={(e) => { setToDate(e.target.value); setPage(1); }}
-              className="w-36 px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition"
+              className="w-36 px-3 py-2 text-sm border border-[#c5ceba] rounded-lg bg-white text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition uppercase"
             />
           </div>
         </div>

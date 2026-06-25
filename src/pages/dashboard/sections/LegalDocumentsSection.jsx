@@ -18,49 +18,44 @@ const VersionHistory = ({ docs }) => {
 
   return (
     <div className="mt-4 border-t border-[#c5ceba] pt-4">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-        {t("legalDocs.versionHistory.title")}
-      </p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-[#E4E7E4]">
-              <th className="text-left font-semibold text-gray-400 pb-2 pr-4 whitespace-nowrap">
-                {t("legalDocs.versionHistory.col.version")}
-              </th>
-              <th className="text-left font-semibold text-gray-400 pb-2 pr-4 whitespace-nowrap">
-                {t("legalDocs.versionHistory.col.published")}
-              </th>
-              <th className="text-right font-semibold text-gray-400 pb-2 whitespace-nowrap">
-                {t("legalDocs.versionHistory.col.acceptances")}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#F0F2F0]">
-            {history.map((row) => (
-              <tr key={row.id} className="group">
-                <td className="py-2 pr-4 font-mono text-[#445446] font-semibold whitespace-nowrap">
-                  v{row.version}
-                </td>
-                <td className="py-2 pr-4 text-gray-500 whitespace-nowrap">
-                  {formatDate(row.effective_from)}
-                </td>
-                <td className="py-2 text-right">
-                  {row.accepted_count > 0 ? (
-                    <span className="inline-flex items-center gap-1 font-medium text-[#1F2933]">
-                      {row.accepted_count.toLocaleString()}
-                      <span className="text-gray-400 font-normal">
-                        {t("legalDocs.versionHistory.user", { count: row.accepted_count })}
-                      </span>
+      <div className="rounded-xl border border-[#c5ceba] overflow-hidden">
+        {/* Header row */}
+        <div className="grid grid-cols-[1fr_1fr_auto] gap-3 px-4 py-2.5 bg-[#445446]">
+          <span className="text-xs font-semibold text-white uppercase tracking-wider whitespace-nowrap">
+            {t("legalDocs.versionHistory.col.version")}
+          </span>
+          <span className="text-xs font-semibold text-white uppercase tracking-wider whitespace-nowrap">
+            {t("legalDocs.versionHistory.col.published")}
+          </span>
+          <span className="text-xs font-semibold text-white uppercase tracking-wider whitespace-nowrap text-right">
+            {t("legalDocs.versionHistory.col.acceptances")}
+          </span>
+        </div>
+        {/* Data rows */}
+        <div className="divide-y divide-[#E4E7E4]">
+          {history.map((row) => (
+            <div key={row.id} className="grid grid-cols-[1fr_1fr_auto] gap-3 px-4 py-3 items-center hover:bg-[#dfe2d7]/30 transition-colors">
+              <span className="text-sm font-mono font-semibold text-[#445446] whitespace-nowrap">
+                v{row.version}
+              </span>
+              <span className="text-sm text-gray-500 whitespace-nowrap">
+                {formatDate(row.effective_from)}
+              </span>
+              <span className="text-sm text-right">
+                {row.accepted_count > 0 ? (
+                  <span className="inline-flex items-center gap-1 font-medium text-[#1F2933]">
+                    {row.accepted_count.toLocaleString()}
+                    <span className="text-gray-400 font-normal text-xs">
+                      {t("legalDocs.versionHistory.user", { count: row.accepted_count })}
                     </span>
-                  ) : (
-                    <span className="text-gray-300">—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </span>
+                ) : (
+                  <span className="text-gray-300">—</span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -144,7 +139,7 @@ const DocCard = ({ type, docs }) => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border-2 border-[#c5ceba] p-6 h-full flex flex-col">
+      <div className="bg-white rounded-xl border-2 border-[#c5ceba] p-6 flex flex-col">
         {/* Header row */}
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
@@ -171,8 +166,11 @@ const DocCard = ({ type, docs }) => {
             href={docPath}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-[#445446] font-medium underline whitespace-nowrap"
+            className="flex-shrink-0 self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium text-[#445446] hover:bg-[#f0f2ed] transition-colors whitespace-nowrap"
           >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
             {t("legalDocs.card.viewCurrent")}
           </a>
         </div>
@@ -264,7 +262,7 @@ const LegalDocumentsSection = () => {
           <span className="text-sm text-gray-400">{t("legalDocs.loading")}</span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <DocCard type="PRIVACY_POLICY"   docs={privacyDocs} />
           <DocCard type="TERMS_CONDITIONS" docs={termsDocs}   />
         </div>
