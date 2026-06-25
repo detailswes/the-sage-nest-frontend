@@ -6,6 +6,10 @@ import {
   useExportParentsXlsxMutation,
 } from "../../../api/adminApi";
 import CenteredDateInput from "../../../components/CenteredDateInput";
+import {
+  UserIcon, SearchIcon, DownloadIcon, XIcon,
+  ChevronLeftIcon, ChevronRightIcon,
+} from "../../../assets/icons";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAGE_LIMIT = 10;
@@ -74,9 +78,7 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange, t }) => {
       </p>
       <div className="flex items-center gap-1">
         <button onClick={() => onPageChange(page - 1)} disabled={page === 1} className={navBtnCls(page === 1)}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
+          <ChevronLeftIcon className="w-4 h-4" />
           {t("parentMgmt.pagination.prev")}
         </button>
 
@@ -102,9 +104,7 @@ const PaginationBar = ({ page, totalPages, total, limit, onPageChange, t }) => {
 
         <button onClick={() => onPageChange(page + 1)} disabled={page === totalPages} className={navBtnCls(page === totalPages)}>
           {t("parentMgmt.pagination.next")}
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-          </svg>
+          <ChevronRightIcon className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -149,17 +149,13 @@ const ParentCard = ({ parent, isFetching, onNavigate, t }) => {
         </div>
 
         {/* Chevron */}
-        <svg className="w-4 h-4 text-gray-300 flex-shrink-0 mt-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-        </svg>
+        <ChevronRightIcon className="w-4 h-4 text-gray-300 flex-shrink-0 mt-2" />
       </div>
 
       {/* View strip */}
       <div className="px-4 py-2.5 border-t border-[#dfe2d7] bg-[#f9faf8] flex items-center justify-between">
         <span className="text-xs font-medium text-[#445446]">{t("parentMgmt.viewBtn")}</span>
-        <svg className="w-3.5 h-3.5 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-        </svg>
+        <ChevronRightIcon className="w-3.5 h-3.5 text-[#445446]" />
       </div>
     </button>
   );
@@ -269,9 +265,7 @@ const ParentManagementSection = () => {
           {exporting ? (
             <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
           ) : (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-            </svg>
+            <DownloadIcon className="w-4 h-4" />
           )}
           {exporting ? t("parentMgmt.exporting") : t("parentMgmt.exportBtn")}
         </button>
@@ -288,12 +282,7 @@ const ParentManagementSection = () => {
 
         {/* Search */}
         <div className="relative">
-          <svg
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-          </svg>
+          <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
             type="text"
             placeholder={t("parentMgmt.searchPlaceholder")}
@@ -306,9 +295,7 @@ const ParentManagementSection = () => {
               onClick={() => handleSearchChange("")}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
+              <XIcon className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -395,9 +382,7 @@ const ParentManagementSection = () => {
                 onClick={clearFilters}
                 className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
+                <XIcon className="w-3.5 h-3.5" />
                 {t("parentMgmt.clearFilters")}
               </button>
             )}
@@ -433,9 +418,7 @@ const ParentManagementSection = () => {
                   <td colSpan={5} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-                        </svg>
+                        <UserIcon className="w-5 h-5 text-[#c5ceba]" />
                       </div>
                       <p className="text-sm font-semibold text-[#445446]">{t("parentMgmt.noParents")}</p>
                     </div>
@@ -486,9 +469,7 @@ const ParentManagementSection = () => {
       {parents.length === 0 && !isFetching ? (
         <div className="lg:hidden bg-white rounded-2xl border-2 border-[#c5ceba] flex flex-col items-center justify-center py-16 text-center">
           <div className="w-12 h-12 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
-            <svg className="w-5 h-5 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-            </svg>
+            <UserIcon className="w-5 h-5 text-[#c5ceba]" />
           </div>
           <p className="text-sm font-semibold text-[#445446]">{t("parentMgmt.noParents")}</p>
         </div>

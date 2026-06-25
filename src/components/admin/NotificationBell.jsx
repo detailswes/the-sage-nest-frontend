@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGetAdminNotificationsQuery } from '../../api/adminApi';
+import { PencilDocumentIcon, GlobeLanguageIcon, BellIcon, XIcon } from '../../assets/icons';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,31 +31,17 @@ function saveDismissed(map) {
 const TYPE_CONFIG = {
   EXPERT_DRAFT_PENDING: {
     color: 'bg-amber-100 text-amber-600',
-    icon: (
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round"
-          d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-      </svg>
-    ),
+    icon: <PencilDocumentIcon className="w-3.5 h-3.5" />,
   },
   EXPERT_LANGUAGE_PENDING: {
     color: 'bg-blue-100 text-blue-600',
-    icon: (
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round"
-          d="m10.5 21 5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 0 1-3.827-5.802" />
-      </svg>
-    ),
+    icon: <GlobeLanguageIcon className="w-3.5 h-3.5" />,
   },
 };
 
 const DEFAULT_CONFIG = {
   color: 'bg-gray-100 text-gray-500',
-  icon: (
-    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-    </svg>
-  ),
+  icon: <BellIcon className="w-3.5 h-3.5" />,
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -115,10 +102,7 @@ const NotificationBell = ({ placement = "sidebar" }) => {
         }`}
         aria-label="Notifications"
       >
-        <svg className="w-4.5 h-4.5 w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round"
-            d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-        </svg>
+        <BellIcon className="w-[18px] h-[18px]" />
         {count > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
             {count > 9 ? '9+' : count}
@@ -150,10 +134,7 @@ const NotificationBell = ({ placement = "sidebar" }) => {
             {visibleNotifs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                 <div className="w-10 h-10 rounded-full bg-[#dfe2d7]/50 flex items-center justify-center mb-3">
-                  <svg className="w-4 h-4 text-[#c5ceba]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                  </svg>
+                  <BellIcon className="w-4 h-4 text-[#c5ceba]" />
                 </div>
                 <p className="text-sm font-semibold text-[#445446]">All caught up</p>
                 <p className="text-xs text-[#5e6d5b]/70 mt-0.5">No pending actions right now.</p>
@@ -187,9 +168,7 @@ const NotificationBell = ({ placement = "sidebar" }) => {
                       className="flex-shrink-0 mt-0.5 p-0.5 rounded text-gray-300 hover:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-label="Dismiss"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                      </svg>
+                      <XIcon className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 );

@@ -8,6 +8,7 @@ import { validateRegisterForm, checkPasswordStrength } from '../../utils/validat
 import { registerUser } from '../../api/authApi';
 import { useAuth } from '../../context/AuthContext';
 import useResendVerification from '../../hooks/useResendVerification';
+import { EnvelopeIcon, CheckCircleFilledIcon, InfoCircleFilledIcon } from '../../assets/icons';
 
 const ROLE_KEYS = ['EXPERT', 'PARENT'];
 
@@ -99,9 +100,7 @@ const Register = () => {
       <AuthLayout>
         <div className="text-center">
           <div className="w-16 h-16 rounded-full bg-[#445446]/10 flex items-center justify-center mx-auto mb-5">
-            <svg className="w-8 h-8 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-            </svg>
+            <EnvelopeIcon className="w-8 h-8 text-[#445446]" />
           </div>
 
           <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">{t('emailSent.title')}</h1>
@@ -271,13 +270,9 @@ const Register = () => {
               {checkPasswordStrength(form.password).map(({ key, ok }) => (
                 <li key={key} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
                   {ok ? (
-                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
-                    </svg>
+                    <CheckCircleFilledIcon className="w-3.5 h-3.5 flex-shrink-0" />
                   ) : (
-                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-.75-4.75a.75.75 0 0 0 1.5 0V8.75a.75.75 0 0 0-1.5 0v4.5Zm.75-7a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
-                    </svg>
+                    <InfoCircleFilledIcon className="w-3.5 h-3.5 flex-shrink-0" />
                   )}
                   {t(key)}
                 </li>

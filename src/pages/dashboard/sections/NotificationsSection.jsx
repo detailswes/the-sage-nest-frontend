@@ -3,6 +3,7 @@ import {
   useGetNotificationPreferencesQuery,
   useUpdateNotificationPreferencesMutation,
 } from '../../../api/expertApi';
+import { EnvelopeIcon, CheckIcon, XIcon } from '../../../assets/icons';
 
 // ─── Toggle row ───────────────────────────────────────────────────────────────
 const ToggleRow = ({ label, description, checked, onChange, disabled = false }) => (
@@ -95,9 +96,7 @@ const NotificationsSection = () => {
       <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6">
         {/* Card header */}
         <div className="flex items-center gap-2.5 py-4 border-b border-[#c5ceba]">
-          <svg className="w-4 h-4 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-          </svg>
+          <EnvelopeIcon className="w-4 h-4 text-[#445446]" />
           <span className="text-sm font-semibold text-[#1F2933]">Email notifications</span>
           {saving && (
             <div className="ml-auto w-4 h-4 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
@@ -135,13 +134,9 @@ const NotificationsSection = () => {
           }`}
         >
           {toast.type === 'success' ? (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-            </svg>
+            <CheckIcon className="w-4 h-4" />
           ) : (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
+            <XIcon className="w-4 h-4" />
           )}
           {toast.message}
         </div>

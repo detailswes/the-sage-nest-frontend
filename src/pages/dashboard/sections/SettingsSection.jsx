@@ -18,44 +18,11 @@ import {
   useDeleteAccountMutation,
 } from "../../../api/userApi";
 import { checkPasswordStrength } from "../../../utils/validation";
-
-// ─── Shared helpers ───────────────────────────────────────────────────────────
-
-const EyeIcon = ({ open }) =>
-  open ? (
-    <svg
-      className="w-4 h-4"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-      />
-    </svg>
-  ) : (
-    <svg
-      className="w-4 h-4"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"
-      />
-    </svg>
-  );
+import {
+  EyeOpenIcon, EyeOffBannerIcon, LockStrokeIcon, BellIcon, ShieldCheckIcon,
+  UserIcon, EnvelopeIcon, WarningTriangleIcon, UserMinusIcon,
+  CheckCircleFilledIcon, InfoCircleFilledIcon,
+} from "../../../assets/icons";
 
 const ToggleRow = ({
   label,
@@ -148,7 +115,7 @@ const PasswordField = ({
         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
         tabIndex={-1}
       >
-        <EyeIcon open={show[name]} />
+        {show[name] ? <EyeOpenIcon /> : <EyeOffBannerIcon className="w-4 h-4" />}
       </button>
     </div>
     {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
@@ -247,19 +214,7 @@ const ChangePasswordCard = () => {
   return (
     <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
       <div className="flex items-center gap-2.5 mb-5">
-        <svg
-          className="w-4 h-4 text-[#445446]"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
-          />
-        </svg>
+        <LockStrokeIcon className="w-4 h-4 text-[#445446]" />
         <h2 className="text-sm font-semibold text-[#1F2933]">
           {t("settings.password.title")}
         </h2>
@@ -297,29 +252,9 @@ const ChangePasswordCard = () => {
                   }`}
                 >
                   {ok ? (
-                    <svg
-                      className="w-3.5 h-3.5 flex-shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <CheckCircleFilledIcon className="w-3.5 h-3.5 flex-shrink-0" />
                   ) : (
-                    <svg
-                      className="w-3.5 h-3.5 flex-shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-.75-4.75a.75.75 0 0 0 1.5 0V8.75a.75.75 0 0 0-1.5 0v4.5Zm.75-7a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <InfoCircleFilledIcon className="w-3.5 h-3.5 flex-shrink-0" />
                   )}
                   {t(`settings.password.strength.${STRENGTH_KEYS[i]}`)}
                 </li>
@@ -383,19 +318,7 @@ const NotificationPreferencesCard = () => {
   return (
     <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6">
       <div className="flex items-center gap-2.5 py-4 border-b border-[#c5ceba]">
-        <svg
-          className="w-4 h-4 text-[#445446]"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
-          />
-        </svg>
+        <BellIcon className="w-4 h-4 text-[#445446]" />
         <span className="text-sm font-semibold text-[#1F2933]">
           {t("settings.notifications.title")}
         </span>
@@ -475,9 +398,7 @@ const DeleteAccountCard = () => {
   return (
     <div className="bg-white rounded-xl border border-red-200 px-6 py-5">
       <div className="flex items-center gap-2.5 mb-1">
-        <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
-        </svg>
+        <UserMinusIcon className="w-4 h-4 text-red-400" />
         <h2 className="text-sm font-semibold text-red-600">{t("settings.deleteAccount.title")}</h2>
       </div>
 
@@ -560,7 +481,7 @@ const DeleteAccountCard = () => {
                 tabIndex={-1}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <EyeIcon open={showPassword} />
+                {showPassword ? <EyeOpenIcon /> : <EyeOffBannerIcon className="w-4 h-4" />}
               </button>
             </div>
             {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
@@ -683,19 +604,7 @@ const TwoFactorCard = () => {
     <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-1">
-        <svg
-          className="w-4 h-4 text-[#445446]"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"
-          />
-        </svg>
+        <ShieldCheckIcon className="w-4 h-4 text-[#445446]" />
         <h2 className="text-sm font-semibold text-[#1F2933]">
           {t("settings.twoFactor.title")}
         </h2>
@@ -854,9 +763,7 @@ const DisplayNameCard = () => {
   return (
     <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
       <div className="flex items-center gap-2.5 mb-1">
-        <svg className="w-4 h-4 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-        </svg>
+        <UserIcon className="w-4 h-4 text-[#445446]" />
         <h2 className="text-sm font-semibold text-[#1F2933]">{t("settings.displayName.title")}</h2>
       </div>
       <p className="text-xs text-gray-500 mb-4 leading-relaxed">{t("settings.displayName.description")}</p>
@@ -936,9 +843,7 @@ const EmailChangeCard = () => {
     return (
       <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
         <div className="flex items-center gap-2.5 mb-4">
-          <svg className="w-4 h-4 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-          </svg>
+          <EnvelopeIcon className="w-4 h-4 text-[#445446]" />
           <h2 className="text-sm font-semibold text-[#1F2933]">{t("settings.emailChange.title")}</h2>
         </div>
         <div className="text-center py-2">
@@ -955,9 +860,7 @@ const EmailChangeCard = () => {
   return (
     <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
       <div className="flex items-center gap-2.5 mb-1">
-        <svg className="w-4 h-4 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-        </svg>
+        <EnvelopeIcon className="w-4 h-4 text-[#445446]" />
         <h2 className="text-sm font-semibold text-[#1F2933]">{t("settings.emailChange.title")}</h2>
       </div>
 
@@ -969,9 +872,7 @@ const EmailChangeCard = () => {
 
       {profile?.pending_email && (
         <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 mb-4">
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-          </svg>
+          <WarningTriangleIcon className="w-4 h-4 flex-shrink-0" />
           {t("settings.emailChange.pendingNotice", { email: profile.pending_email })}
         </div>
       )}

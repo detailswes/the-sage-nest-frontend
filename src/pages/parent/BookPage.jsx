@@ -20,6 +20,10 @@ import PasswordInput from '../../components/auth/PasswordInput';
 import useResendVerification from '../../hooks/useResendVerification';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
+import {
+  CheckIcon, ClipboardDocumentIcon, EnvelopeIcon,
+  CheckCircleFilledIcon, InfoCircleFilledIcon, ChevronLeftIcon,
+} from '../../assets/icons';
 
 const WEBFLOW_DIRECTORY_URL   = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL   || 'https://the-sage-nest.webflow.io/experts';
 const WEBFLOW_EXPERT_BASE_URL = process.env.REACT_APP_WEBFLOW_EXPERT_BASE_URL || 'https://the-sage-nest.webflow.io/experts';
@@ -50,9 +54,7 @@ const StepIndicator = ({ step }) => {
               : 'bg-[#E4E7E4] text-gray-400'
             }`}>
               {done ? (
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                <CheckIcon className="w-3.5 h-3.5" />
               ) : i + 1}
             </div>
             <span className={`text-xs mt-1 font-medium ${active ? 'text-[#445446]' : done ? 'text-[#445446]' : 'text-gray-400'}`}>
@@ -80,9 +82,7 @@ const TcModal = ({ isFirstBooking, onAccept, onDecline }) => {
       <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-6">
           <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z" />
-            </svg>
+            <ClipboardDocumentIcon className="w-6 h-6 text-amber-600" />
           </div>
           <h2 className="text-lg font-semibold text-[#1F2933] mb-2">
             {isFirstBooking ? t('tcModal.titleFirst') : t('tcModal.titleUpdated')}
@@ -114,9 +114,7 @@ const VerificationPendingPanel = ({ email, returnTo, onSwitchToLogin }) => {
   return (
     <div className="text-center py-2">
       <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
-        <svg className="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-        </svg>
+        <EnvelopeIcon className="w-6 h-6 text-blue-500" />
       </div>
       <h3 className="text-base font-semibold text-[#1F2933] mb-2">Check your inbox</h3>
       <p className="text-sm text-gray-500 mb-1">We sent a verification link to</p>
@@ -362,13 +360,9 @@ const InlineRegister = ({ onVerificationSent, returnTo }) => {
             {checkPasswordStrength(form.password).map(({ key, ok }) => (
               <li key={key} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
                 {ok ? (
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
-                  </svg>
+                  <CheckCircleFilledIcon className="w-3.5 h-3.5 flex-shrink-0" />
                 ) : (
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-.75-4.75a.75.75 0 0 0 1.5 0V8.75a.75.75 0 0 0-1.5 0v4.5Zm.75-7a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
-                  </svg>
+                  <InfoCircleFilledIcon className="w-3.5 h-3.5 flex-shrink-0" />
                 )}
                 {tAuth(key)}
               </li>
@@ -731,9 +725,7 @@ const BookPage = () => {
       <div>
         <a href={effectiveReturnUrl}
           className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
+          <ChevronLeftIcon className="w-4 h-4" />
           {t('serviceStep.back')}
         </a>
 
@@ -835,9 +827,7 @@ const BookPage = () => {
         <button
           onClick={() => fromPastBookings ? navigate('/dashboard/parent/past') : setStep(STEPS.SERVICE)}
           className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
+          <ChevronLeftIcon className="w-4 h-4" />
           {fromPastBookings ? t('slotStep.backToBookings') : t('slotStep.backToServices')}
         </button>
 
@@ -956,9 +946,7 @@ const BookPage = () => {
 
       <button onClick={() => { setSelectedSlot(null); setStep(STEPS.SLOT); }}
         className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-        </svg>
+        <ChevronLeftIcon className="w-4 h-4" />
         {t('confirmStep.back')}
       </button>
 
