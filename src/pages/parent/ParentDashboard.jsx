@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import {
   NavUpcomingIcon, NavPastIcon, NavProfileIcon, NavLogoutIcon,
+  MenuIcon, XIcon, SignOutIcon,
 } from "../../assets/icons";
 import { LOGO_SVG } from "../../assets/images";
 
@@ -22,6 +23,7 @@ const ParentDashboard = () => {
   const location = useLocation();
   const { t } = useTranslation("parentDashboard");
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const lastSegment = location.pathname.split("/").pop();
   const activeSection = VALID_SECTIONS.includes(lastSegment)
@@ -38,25 +40,71 @@ const ParentDashboard = () => {
         .toUpperCase()
     : "?";
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
-    <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex">
+    <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x">
+
+      {/* ── Mobile top bar (hidden on lg+) ── */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-20 h-14 bg-[#dfe2d7] border-b border-[#c5ceba] flex items-center justify-between px-4">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 rounded-lg text-[#445446] hover:bg-[#c5ceba]/40 transition-colors"
+          aria-label="Open menu"
+        >
+          <MenuIcon />
+        </button>
+        <Link to="/dashboard/parent/upcoming" className="flex items-center gap-2" onClick={closeSidebar}>
+          <img
+            src={LOGO_SVG}
+            alt="Sage Nest"
+            className="h-7"
+            onError={(e) => { e.target.style.display = "none"; }}
+          />
+          <span className="text-[#445446] font-bold text-sm tracking-tight">Sage Nest</span>
+        </Link>
+        <div className="w-9" />
+      </header>
+
+      {/* ── Sidebar backdrop (mobile only) ── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/50 lg:hidden"
+          onClick={closeSidebar}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ── Sidebar ── */}
-      <aside className="fixed inset-y-0 left-0 w-64 bg-[#dfe2d7] border-r-2 border-[#c5ceba] flex flex-col z-10">
-        {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-[#c5ceba]">
-          <a href="https://the-sage-nest.webflow.io/" className="flex items-center gap-2.5">
+      <aside
+        className={`fixed inset-y-0 left-0 w-64 bg-[#dfe2d7] border-r-2 border-[#c5ceba] flex flex-col z-30 transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0`}
+      >
+        {/* Logo + mobile close button */}
+        <div className="h-16 flex items-center justify-between px-6 border-b border-[#c5ceba]">
+          <Link
+            to="/dashboard/parent/upcoming"
+            className="flex items-center gap-2.5"
+            onClick={closeSidebar}
+          >
             <img
               src={LOGO_SVG}
               alt="Sage Nest"
               className="h-8"
-              onError={(e) => {
-                e.target.style.display = "none";
-              }}
+              onError={(e) => { e.target.style.display = "none"; }}
             />
             <span className="text-[#445446] font-bold text-base tracking-tight">
               Sage Nest
             </span>
-          </a>
+          </Link>
+          <button
+            onClick={closeSidebar}
+            className="lg:hidden p-1.5 rounded-lg text-[#445446] hover:bg-[#c5ceba]/40 transition-colors"
+            aria-label="Close menu"
+          >
+            <XIcon />
+          </button>
         </div>
 
         {/* User info */}
@@ -82,6 +130,7 @@ const ParentDashboard = () => {
               <Link
                 key={key}
                 to={`/dashboard/parent/${key}`}
+                onClick={closeSidebar}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
                     ? "bg-[#445446] text-white"
@@ -98,7 +147,7 @@ const ParentDashboard = () => {
         {/* Sign out */}
         <div className="p-3 border-t border-[#c5ceba]">
           <button
-            onClick={() => setShowSignOutConfirm(true)}
+            onClick={() => { closeSidebar(); setShowSignOutConfirm(true); }}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-[#445446] text-white hover:bg-[#3a4a3b] active:scale-95 transition-all duration-150"
           >
             <NavLogoutIcon />
@@ -108,8 +157,8 @@ const ParentDashboard = () => {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="ml-64 flex-1 min-h-screen">
-        <div className="px-8 py-8">
+      <main className="lg:ml-64 min-h-screen flex flex-col">
+        <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 mt-14 lg:mt-0 overflow-x-hidden">
           <Outlet />
         </div>
       </main>
@@ -124,19 +173,7 @@ const ParentDashboard = () => {
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mx-auto mb-4">
-              <svg
-                className="w-6 h-6 text-red-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"
-                />
-              </svg>
+              <SignOutIcon className="w-6 h-6 text-red-500" />
             </div>
             <h3 className="text-base font-semibold text-[#1F2933] text-center mb-1">
               {t("signOutModal.title")}
