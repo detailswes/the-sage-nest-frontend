@@ -880,7 +880,7 @@ const LegalConsentsSection = () => {
                     href="/privacy-policy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-shrink-0 text-xs text-[#445446] hover:underline font-medium"
+                    className="flex-shrink-0 self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium text-[#445446] hover:bg-[#f0f2ed] transition-colors whitespace-nowrap"
                   >
                     {t("legalConsents.viewLink")}
                   </a>
@@ -920,7 +920,7 @@ const LegalConsentsSection = () => {
                     href="/terms-and-conditions"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-shrink-0 text-xs text-[#445446] hover:underline font-medium"
+                    className="flex-shrink-0 self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium text-[#445446] hover:bg-[#f0f2ed] transition-colors whitespace-nowrap"
                   >
                     {t("legalConsents.viewLink")}
                   </a>
