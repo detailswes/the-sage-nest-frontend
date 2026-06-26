@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AuthLayout from '../../components/auth/AuthLayout';
 import PasswordInput from '../../components/auth/PasswordInput';
+import LanguageSelector from '../../components/LanguageSelector';
 import useAuthForm from '../../hooks/useAuthForm';
 import { validateRegisterForm, checkPasswordStrength } from '../../utils/validation';
 import { registerUser } from '../../api/authApi';
@@ -45,16 +46,16 @@ const Register = () => {
 
     const rawErrors = validateRegisterForm({ ...form, role: activeRole });
     if (Object.keys(rawErrors).length > 0) {
-      setErrors(Object.fromEntries(Object.entries(rawErrors).map(([k, v]) => [k, t(v)])));
+      setErrors(rawErrors);
       return;
     }
 
     if (!privacyPolicyAccepted) {
-      setErrors((prev) => ({ ...prev, privacyPolicy: tConsent('consentLabels.privacyRequired') }));
+      setErrors((prev) => ({ ...prev, privacyPolicy: 'consentErrors.privacyRequired' }));
       return;
     }
     if (!termsAccepted) {
-      setErrors((prev) => ({ ...prev, termsConditions: tConsent('consentLabels.termsRequired') }));
+      setErrors((prev) => ({ ...prev, termsConditions: 'consentErrors.termsRequired' }));
       return;
     }
 
@@ -207,7 +208,7 @@ const Register = () => {
               errors.name ? 'border-red-400' : 'border-[#E4E7E4]'
             }`}
           />
-          {errors.name && <p className="mt-1.5 text-xs text-red-500">{errors.name}</p>}
+          {errors.name && <p className="mt-1.5 text-xs text-red-500">{t(errors.name)}</p>}
         </div>
 
         {/* Email */}
@@ -226,7 +227,7 @@ const Register = () => {
               errors.email ? 'border-red-400' : 'border-[#E4E7E4]'
             }`}
           />
-          {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email}</p>}
+          {errors.email && <p className="mt-1.5 text-xs text-red-500">{t(errors.email)}</p>}
         </div>
 
         {/* Phone — Parent only */}
@@ -246,7 +247,7 @@ const Register = () => {
                 errors.phone ? 'border-red-400' : 'border-[#E4E7E4]'
               }`}
             />
-            {errors.phone && <p className="mt-1.5 text-xs text-red-500">{errors.phone}</p>}
+            {errors.phone && <p className="mt-1.5 text-xs text-red-500">{t(errors.phone)}</p>}
           </div>
         )}
 
@@ -263,7 +264,7 @@ const Register = () => {
             placeholder={t('register.passwordPlaceholder')}
             hasError={!!errors.password}
           />
-          {errors.password && <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>}
+          {errors.password && <p className="mt-1.5 text-xs text-red-500">{t(errors.password)}</p>}
           {/* Live strength checklist */}
           {form.password && (
             <ul className="mt-2 space-y-1">
@@ -295,8 +296,16 @@ const Register = () => {
             hasError={!!errors.confirmPassword}
           />
           {errors.confirmPassword && (
-            <p className="mt-1.5 text-xs text-red-500">{errors.confirmPassword}</p>
+            <p className="mt-1.5 text-xs text-red-500">{t(errors.confirmPassword)}</p>
           )}
+        </div>
+
+        {/* Language selector */}
+        <div>
+          <p className="text-xs text-gray-400 text-center mb-2">
+            {t('register.chooseLanguage')}
+          </p>
+          <LanguageSelector variant="inline" />
         </div>
 
         {/* Required consents + optional marketing */}
@@ -321,7 +330,7 @@ const Register = () => {
             </span>
           </label>
           {errors.privacyPolicy && (
-            <p className="text-xs text-red-500 -mt-1 ml-7">{errors.privacyPolicy}</p>
+            <p className="text-xs text-red-500 -mt-1 ml-7">{t(errors.privacyPolicy)}</p>
           )}
 
           {/* Terms & Conditions — required */}
@@ -344,7 +353,7 @@ const Register = () => {
             </span>
           </label>
           {errors.termsConditions && (
-            <p className="text-xs text-red-500 -mt-1 ml-7">{errors.termsConditions}</p>
+            <p className="text-xs text-red-500 -mt-1 ml-7">{t(errors.termsConditions)}</p>
           )}
 
           {/* Marketing consent — optional */}

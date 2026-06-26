@@ -43,6 +43,32 @@ const LanguageSelector = ({ variant = 'default' }) => {
     setOpen(false);
   };
 
+  // Inline variant — tab-style row, no floating dropdown
+  if (variant === 'inline') {
+    return (
+      <div className="flex rounded-xl bg-[#F5F7F5] border border-[#E4E7E4] p-1 gap-1">
+        {LANGUAGES.map(({ code, label, flag }) => (
+          <button
+            key={code}
+            type="button"
+            onClick={() => handleSelect(code)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+              code === current.code
+                ? 'bg-[#445446] text-white shadow-sm'
+                : 'text-gray-500 hover:text-[#1F2933]'
+            }`}
+          >
+            <span className="text-base leading-none">{flag}</span>
+            <span>{label}</span>
+            {code === current.code && (
+              <CheckIcon className="w-3.5 h-3.5 opacity-80" />
+            )}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   const dropdownPos = [
     dropUp   ? 'bottom-full mb-1' : 'top-full mt-1',
     dropRight ? 'right-0'         : 'left-0',

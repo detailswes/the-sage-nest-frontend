@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AuthLayout from "../../components/auth/AuthLayout";
 import PasswordInput from "../../components/auth/PasswordInput";
+import LanguageSelector from "../../components/LanguageSelector";
 import useAuthForm from "../../hooks/useAuthForm";
 import { validateLoginForm } from "../../utils/validation";
 import { loginUser, verifyOtpApi, resendOtpApi } from "../../api/authApi";
@@ -169,7 +170,7 @@ const Login = () => {
 
     const rawErrors = validateLoginForm(form);
     if (Object.keys(rawErrors).length > 0) {
-      setErrors(Object.fromEntries(Object.entries(rawErrors).map(([k, v]) => [k, t(v)])));
+      setErrors(rawErrors);
       return;
     }
 
@@ -307,7 +308,7 @@ const Login = () => {
             }`}
           />
           {errors.email && (
-            <p className="mt-1.5 text-xs text-red-500">{errors.email}</p>
+            <p className="mt-1.5 text-xs text-red-500">{t(errors.email)}</p>
           )}
         </div>
 
@@ -327,8 +328,16 @@ const Login = () => {
             hasError={!!errors.password}
           />
           {errors.password && (
-            <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>
+            <p className="mt-1.5 text-xs text-red-500">{t(errors.password)}</p>
           )}
+        </div>
+
+        {/* Language selector */}
+        <div>
+          <p className="text-xs text-gray-400 text-center mb-2">
+            {t("login.chooseLanguage")}
+          </p>
+          <LanguageSelector variant="inline" />
         </div>
 
         {/* Submit */}
