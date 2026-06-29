@@ -333,7 +333,9 @@ const Login = () => {
         </div>
 
         {/* Language selector */}
-        <div>
+        <div style={{
+          'marginTop': '2rem'
+        }}>
           <p className="text-xs text-gray-400 text-center mb-2">
             {t("login.chooseLanguage")}
           </p>
