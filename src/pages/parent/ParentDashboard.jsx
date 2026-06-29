@@ -54,7 +54,7 @@ const ParentDashboard = () => {
         >
           <MenuIcon />
         </button>
-        <Link to="/dashboard/parent/upcoming" className="flex items-center gap-2" onClick={closeSidebar}>
+        <a href="https://the-sage-nest.webflow.io/" className="flex items-center gap-2" onClick={closeSidebar}>
           <img
             src={LOGO_SVG}
             alt="Sage Nest"
@@ -62,7 +62,7 @@ const ParentDashboard = () => {
             onError={(e) => { e.target.style.display = "none"; }}
           />
           <span className="text-[#445446] font-bold text-sm tracking-tight">Sage Nest</span>
-        </Link>
+        </a>
         <div className="w-9" />
       </header>
 
@@ -83,8 +83,8 @@ const ParentDashboard = () => {
       >
         {/* Logo + mobile close button */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-[#c5ceba]">
-          <Link
-            to="/dashboard/parent/upcoming"
+          <a
+            href="https://the-sage-nest.webflow.io/"
             className="flex items-center gap-2.5"
             onClick={closeSidebar}
           >
@@ -97,7 +97,7 @@ const ParentDashboard = () => {
             <span className="text-[#445446] font-bold text-base tracking-tight">
               Sage Nest
             </span>
-          </Link>
+          </a>
           <button
             onClick={closeSidebar}
             className="lg:hidden p-1.5 rounded-lg text-[#445446] hover:bg-[#c5ceba]/40 transition-colors"
