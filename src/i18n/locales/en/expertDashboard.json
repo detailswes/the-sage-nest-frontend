@@ -692,6 +692,20 @@
       }
     },
 
+    "phone": {
+      "title":       "Phone Number",
+      "description": "Used to send you SMS notifications (e.g. if a client is running late). Never shared with clients and not displayed publicly.",
+      "placeholder": "+39 02 1234 5678",
+      "hint":        "Use international format, e.g. +39 02 1234 5678. Leave blank to remove.",
+      "saveBtn":     "Save phone number",
+      "savingBtn":   "Saving…",
+      "success":     "Phone number saved.",
+      "errors": {
+        "invalid":    "Please enter a valid phone number in international format (e.g. +39 02 1234 5678).",
+        "saveFailed": "Could not save phone number. Please try again."
+      }
+    },
+
     "password": {
       "title":               "Change Password",
       "currentLabel":        "Current password",

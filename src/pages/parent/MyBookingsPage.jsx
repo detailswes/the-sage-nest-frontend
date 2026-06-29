@@ -9,6 +9,7 @@ import {
   useVerifyPaymentMutation,
   useGetAvailableSlotsQuery,
   useGetAvailableDatesInMonthQuery,
+  useNotifyImLateMutation,
 } from '../../api/bookingApi';
 import { useAuth } from '../../context/AuthContext';
 import { getProfileImageUrl } from '../../utils/imageUrl';
@@ -306,8 +307,14 @@ const BookingCard = ({ booking, onViewDetails }) => {
   const [rescheduleSlot, setRescheduleSlot] = useState(null);
   const [monthArgs,      setMonthArgs]      = useState(null);
 
+  const [lateStep,  setLateStep]  = useState(null); // null | 'form' | 'confirm' | 'sent' | 'error'
+  const [lateDelay, setLateDelay] = useState(5);
+  const [lateNote,  setLateNote]  = useState('');
+  const [lateErr,   setLateErr]   = useState('');
+
   const [cancelBooking,    { isLoading: cancelling   }] = useCancelBookingMutation();
   const [rescheduleBooking, { isLoading: rescheduling }] = useRescheduleBookingMutation();
+  const [notifyImLate,      { isLoading: sendingLate  }] = useNotifyImLateMutation();
 
   const { data: rescheduleSlots = [], isFetching: slotsLoading } = useGetAvailableSlotsQuery(
     { expertId: booking.expert_id, date: rescheduleDate, serviceId: booking.service_id },
@@ -346,7 +353,20 @@ const BookingCard = ({ booking, onViewDetails }) => {
     ? t('detailSheet.deletedSpecialist')
     : (booking.expert?.user?.name || 'Expert');
   const duration        = formatDuration(booking.service?.duration_minutes);
-  const canReschedule   = booking.status === 'CONFIRMED' && isFuture && hrs >= 12;
+  const canReschedule       = booking.status === 'CONFIRMED' && isFuture && hrs >= 12;
+  const notificationAlready = booking.late_notifications?.length > 0;
+  const canShowImLate       = booking.status === 'CONFIRMED' && hrs > 0 && hrs <= 2 && !notificationAlready && lateStep !== 'sent';
+
+  const handleSendLate = async () => {
+    setLateErr('');
+    try {
+      await notifyImLate({ id: booking.id, delay_minutes: lateDelay, note: lateNote.trim() || undefined }).unwrap();
+      setLateStep('sent');
+    } catch (err) {
+      setLateErr(err?.data?.error || t('imLate.sendError'));
+      setLateStep('error');
+    }
+  };
 
   const openReschedule = () => {
     setShowCancel(false);
@@ -466,7 +486,7 @@ const BookingCard = ({ booking, onViewDetails }) => {
       </div>
 
       {/* Actions footer */}
-      {(canCancel || canReschedule || inLockoutWindow) && (
+      {(canCancel || canReschedule || inLockoutWindow || canShowImLate || lateStep !== null) && (
         <div className="px-5 pb-5 pt-0">
           <div className="border-t border-[#E4E7E4] pt-4 space-y-3">
 
@@ -479,6 +499,129 @@ const BookingCard = ({ booking, onViewDetails }) => {
                 <div>
                   <p className="text-xs font-medium text-amber-800">{t('card.lockoutTitle')}</p>
                   <p className="text-xs text-amber-700 mt-0.5">{t('card.lockoutMessage')}</p>
+                </div>
+              </div>
+            )}
+
+            {/* "I'm late" button */}
+            {canShowImLate && lateStep === null && (
+              <div className="flex justify-start">
+                <button
+                  onClick={() => { setLateDelay(5); setLateNote(''); setLateErr(''); setLateStep('form'); }}
+                  className="flex items-center gap-1.5 text-xs font-medium text-amber-700 border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                  </svg>
+                  {t('imLate.button')}
+                </button>
+              </div>
+            )}
+
+            {/* "I'm late" sent confirmation */}
+            {lateStep === 'sent' && (
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl">
+                <svg className="w-3.5 h-3.5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+                <p className="text-xs text-green-700">{t('imLate.sentConfirm', { name: expertName })}</p>
+              </div>
+            )}
+
+            {/* "I'm late" form — step 1: delay + note */}
+            {lateStep === 'form' && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-[#1F2933]">{t('imLate.formTitle')}</p>
+
+                {/* Delay chips */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-1.5">{t('imLate.delayLabel')}</p>
+                  <div className="flex gap-2">
+                    {[5, 10, 15].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setLateDelay(m)}
+                        className={`flex-1 py-2 rounded-lg border text-xs font-medium transition-colors ${
+                          lateDelay === m
+                            ? 'bg-amber-500 text-white border-amber-500'
+                            : 'bg-white text-[#1F2933] border-[#E4E7E4] hover:border-amber-400'
+                        }`}
+                      >
+                        {t('imLate.delayOption', { minutes: m })}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Optional note */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">{t('imLate.noteLabel')}</label>
+                  <textarea
+                    value={lateNote}
+                    onChange={(e) => setLateNote(e.target.value.slice(0, 160))}
+                    placeholder={t('imLate.notePlaceholder')}
+                    rows={2}
+                    maxLength={160}
+                    className="w-full border border-[#E4E7E4] rounded-lg px-3 py-2 text-xs text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none transition-colors"
+                  />
+                  <p className={`text-right text-xs mt-0.5 ${lateNote.length >= 140 ? 'text-amber-500' : 'text-gray-400'}`}>
+                    {lateNote.length} / 160
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setLateStep(null)}
+                    className="flex-1 py-2 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    {t('imLate.cancelBtn')}
+                  </button>
+                  <button
+                    onClick={() => setLateStep('confirm')}
+                    className="flex-1 py-2 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors"
+                  >
+                    {t('imLate.nextBtn')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* "I'm late" confirm — step 2 */}
+            {(lateStep === 'confirm' || lateStep === 'error') && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-[#1F2933]">{t('imLate.confirmTitle')}</p>
+
+                <div className="px-3 py-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                  <p className="text-xs text-amber-800">
+                    {t('imLate.confirmBody', { name: expertName, minutes: lateDelay })}
+                  </p>
+                  {lateNote.trim() && (
+                    <p className="text-xs text-amber-700 italic">&ldquo;{lateNote.trim()}&rdquo;</p>
+                  )}
+                </div>
+
+                {lateStep === 'error' && (
+                  <p className="text-xs text-red-600">{lateErr}</p>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setLateStep('form')}
+                    disabled={sendingLate}
+                    className="flex-1 py-2 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    {t('imLate.backBtn')}
+                  </button>
+                  <button
+                    onClick={handleSendLate}
+                    disabled={sendingLate}
+                    className="flex-1 py-2 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sendingLate
+                      ? <span className="flex items-center justify-center gap-1.5"><span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />{t('imLate.sendingBtn')}</span>
+                      : (lateStep === 'error' ? t('imLate.retryBtn') : t('imLate.confirmBtn'))}
+                  </button>
                 </div>
               </div>
             )}

@@ -305,6 +305,42 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
               </div>
             )}
 
+            {/* "I'm Late" notifications audit */}
+            {booking.late_notifications?.length > 0 && (
+              <div className="px-6 py-4 border-t border-[#E4E7E4]">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                  Running-Late Notifications
+                </p>
+                <div className="space-y-2">
+                  {booking.late_notifications.map((n) => (
+                    <div key={n.id} className="flex items-start gap-3 px-3 py-2.5 bg-[#F5F7F5] rounded-lg border border-[#E4E7E4]">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-medium text-[#1F2933]">~{n.delay_minutes} min late</span>
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${n.email_status === 'sent' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                            email: {n.email_status}
+                          </span>
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${n.sms_status === 'sent' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            sms: {n.sms_status}
+                          </span>
+                        </div>
+                        {n.note && (
+                          <p className="text-xs text-gray-500 mt-0.5 italic truncate">&ldquo;{n.note}&rdquo;</p>
+                        )}
+                        {n.email_error && (
+                          <p className="text-[10px] text-red-500 mt-0.5 truncate">Email err: {n.email_error}</p>
+                        )}
+                        {n.sms_error && (
+                          <p className="text-[10px] text-red-500 mt-0.5 truncate">SMS err: {n.sms_error}</p>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-gray-400 whitespace-nowrap flex-shrink-0 mt-0.5">{formatDateTime(n.fired_at)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Internal admin note */}
             <div className="px-6 py-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
