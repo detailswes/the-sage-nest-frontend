@@ -801,6 +801,80 @@ const DisplayNameCard = () => {
   );
 };
 
+// ─── Phone card (expert) ──────────────────────────────────────────────────────
+const PhoneCard = () => {
+  const { t } = useTranslation("expertDashboard");
+
+  const { data: profile, isLoading: loadingProfile } = useGetProfileQuery();
+  const [updateProfile, { isLoading: saving }] = useUpdateProfileMutation();
+
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (profile !== undefined) setPhone(profile?.phone || "");
+  }, [profile?.phone]);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError("");
+    const trimmed = phone.trim();
+    if (trimmed && !/^\+[0-9\s\-().]{7,20}$/.test(trimmed)) {
+      setError(t("settings.phone.errors.invalid"));
+      return;
+    }
+    try {
+      // updateProfile requires name — pass existing name so it isn't cleared
+      await updateProfile({ name: profile?.name || "", phone: trimmed || null }).unwrap();
+      toast.success(t("settings.phone.success"));
+    } catch (err) {
+      toast.error(err?.data?.error || t("settings.phone.errors.saveFailed"));
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border-2 border-[#c5ceba] px-6 py-5">
+      <div className="flex items-center gap-2.5 mb-1">
+        <svg className="w-4 h-4 text-[#445446]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+        </svg>
+        <h2 className="text-sm font-semibold text-[#1F2933]">{t("settings.phone.title")}</h2>
+      </div>
+      <p className="text-xs text-gray-500 mb-4 leading-relaxed">{t("settings.phone.description")}</p>
+
+      {loadingProfile ? (
+        <div className="flex items-center justify-center py-4">
+          <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+        </div>
+      ) : (
+        <form onSubmit={handleSave} className="space-y-3">
+          <div>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value); if (error) setError(""); }}
+              placeholder={t("settings.phone.placeholder")}
+              className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] transition ${error ? "border-red-400" : "border-[#c5ceba]"}`}
+            />
+            {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
+            <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">{t("settings.phone.hint")}</p>
+          </div>
+          <div className="flex justify-end pt-1">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex items-center gap-2 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors duration-200"
+            >
+              {saving && <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />}
+              {saving ? t("settings.phone.savingBtn") : t("settings.phone.saveBtn")}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
 // ─── Email Change card ────────────────────────────────────────────────────────
 const EmailChangeCard = () => {
   const { t } = useTranslation("expertDashboard");
@@ -946,6 +1020,8 @@ const SettingsSection = () => {
       <DisplayNameCard />
 
       <EmailChangeCard />
+
+      <PhoneCard />
 
       <ChangePasswordCard />
 

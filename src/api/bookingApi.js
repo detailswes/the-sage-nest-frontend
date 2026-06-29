@@ -87,6 +87,15 @@ export const bookingApi = createApi({
       query: (id) => ({ url: `/bookings/${id}/abandon`, method: 'POST' }),
       invalidatesTags: (result, error, id) => ['Booking', { type: 'Booking', id }],
     }),
+    // arg: { id, delay_minutes, note? }
+    notifyImLate: builder.mutation({
+      query: ({ id, delay_minutes, note }) => ({
+        url:    `/bookings/${id}/im-late`,
+        method: 'POST',
+        data:   { delay_minutes, note },
+      }),
+      invalidatesTags: (result, error, { id }) => ['Booking', { type: 'Booking', id }],
+    }),
 
     // ─── T&C version ──────────────────────────────────────────────────────────
     getCurrentTcVersion: builder.query({
@@ -130,4 +139,5 @@ export const {
   useAcceptTcMutation,
   useLockSlotMutation,
   useReleaseLockMutation,
+  useNotifyImLateMutation,
 } = bookingApi;

@@ -243,6 +243,24 @@
       "checkBookings":   "Controlla le mie prenotazioni"
     }
   },
+  "imLate": {
+    "button":       "Sono in ritardo",
+    "formTitle":    "Avvisa il tuo specialista",
+    "delayLabel":   "Di quanto sei in ritardo?",
+    "delayOption":  "~{{minutes}} min",
+    "noteLabel":    "Messaggio (opzionale)",
+    "notePlaceholder": "Es. bloccato nel traffico, arrivo subito…",
+    "cancelBtn":    "Annulla",
+    "nextBtn":      "Avanti →",
+    "confirmTitle": "Pronto a inviare?",
+    "confirmBody":  "{{name}} riceverà un'email (e SMS se disponibile) che sei in ritardo di ~{{minutes}} minuti.",
+    "confirmBtn":   "Invia notifica",
+    "sendingBtn":   "Invio…",
+    "retryBtn":     "Riprova",
+    "backBtn":      "← Indietro",
+    "sentConfirm":  "{{name}} è stato avvisato che sei in arrivo.",
+    "sendError":    "Impossibile inviare la notifica. Riprova."
+  },
   "consentLabels": {
     "privacyPrefix":       "Ho letto e accetto la",
     "privacyLink":         "Informativa sulla Privacy",

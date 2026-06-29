@@ -243,6 +243,24 @@
       "checkBookings":   "Check My Bookings"
     }
   },
+  "imLate": {
+    "button":       "I'm running late",
+    "formTitle":    "Notify your expert",
+    "delayLabel":   "How late will you be?",
+    "delayOption":  "~{{minutes}} min",
+    "noteLabel":    "Message (optional)",
+    "notePlaceholder": "E.g. stuck in traffic, will be there shortly…",
+    "cancelBtn":    "Cancel",
+    "nextBtn":      "Next →",
+    "confirmTitle": "Ready to send?",
+    "confirmBody":  "{{name}} will receive an email (and SMS if available) that you're running ~{{minutes}} minutes late.",
+    "confirmBtn":   "Send notification",
+    "sendingBtn":   "Sending…",
+    "retryBtn":     "Retry",
+    "backBtn":      "← Back",
+    "sentConfirm":  "{{name}} has been notified you're on your way.",
+    "sendError":    "Could not send notification. Please try again."
+  },
   "consentLabels": {
     "privacyPrefix":       "I have read and agree to the",
     "privacyLink":         "Privacy Policy",
