@@ -382,6 +382,7 @@
     "clusters": {
       "FOR_PARENTS": "For Parents",
       "FOR_BABY":    "For Baby",
+      "FOR_FAMILY":  "For Family",
       "PACKAGE":     "Package",
       "GIFT":        "Gift",
       "EVENT":       "Event"

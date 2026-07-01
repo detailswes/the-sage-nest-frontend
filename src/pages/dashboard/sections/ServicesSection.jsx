@@ -41,6 +41,7 @@ function formatPrice(price, currency = 'EUR', lng = 'en') {
 const CLUSTER_OPTIONS = [
   { value: 'FOR_PARENTS' },
   { value: 'FOR_BABY' },
+  { value: 'FOR_FAMILY' },
   { value: 'PACKAGE' },
 ];
 
@@ -51,6 +52,7 @@ const FORMAT_BADGE_CLS = {
 const CLUSTER_BADGE_CLS = {
   FOR_PARENTS: 'bg-pink-100 text-pink-700',
   FOR_BABY:    'bg-cyan-100 text-cyan-700',
+  FOR_FAMILY:  'bg-teal-100 text-teal-700',
   PACKAGE:     'bg-amber-100 text-amber-700',
   GIFT:        'bg-green-100 text-green-700',
   EVENT:       'bg-violet-100 text-violet-700',
