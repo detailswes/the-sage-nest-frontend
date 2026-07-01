@@ -648,6 +648,7 @@
     "clusterBadge": {
       "FOR_PARENTS": "Per genitori",
       "FOR_BABY": "Per bambini",
+      "FOR_FAMILY": "Per la famiglia",
       "PACKAGE": "Pacchetto",
       "GIFT": "Regalo",
       "EVENT": "Evento"

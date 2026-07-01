@@ -149,6 +149,7 @@ const VerificationPendingPanel = ({ email, returnTo, onSwitchToLogin }) => {
 const CLUSTER_BADGE = {
   FOR_PARENTS: { label: 'For the Parents', cls: 'bg-pink-100 text-pink-700' },
   FOR_BABY:    { label: 'For the Baby',    cls: 'bg-cyan-100 text-cyan-700' },
+  FOR_FAMILY:  { label: 'For the Family',  cls: 'bg-teal-100 text-teal-700' },
   PACKAGE:     { label: 'Package',         cls: 'bg-amber-100 text-amber-700' },
   GIFT:        { label: 'Gift',            cls: 'bg-green-100 text-green-700' },
   EVENT:       { label: 'Event',           cls: 'bg-violet-100 text-violet-700' },
