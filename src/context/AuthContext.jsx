@@ -1,6 +1,8 @@
 import { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { setAuthHeader, refreshAccessToken, logoutUser, acceptPrivacyPolicyApi } from '../api/authApi';
 import { ClipboardDocumentIcon } from '../assets/icons';
+import i18n from '../i18n';
 
 const AuthContext = createContext(null);
 
@@ -16,44 +18,46 @@ const readStoredUser = () => {
 };
 
 // ─── PP Re-acceptance Modal ───────────────────────────────────────────────────
-const PrivacyPolicyUpdateModal = ({ onAccept, onDecline, accepting }) => (
+const PrivacyPolicyUpdateModal = ({ onAccept, onDecline, accepting }) => {
+  const { t } = useTranslation('legal');
+  return (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
     <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-xl w-full max-w-md p-8">
       <div className="text-center mb-6">
         <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
           <ClipboardDocumentIcon className="w-6 h-6 text-amber-600" />
         </div>
-        <h2 className="text-lg font-semibold text-[#1F2933] mb-2">Privacy Policy Updated</h2>
+        <h2 className="text-lg font-semibold text-[#1F2933] mb-2">{t('ppModal.title')}</h2>
         <p className="text-sm text-gray-500 leading-relaxed">
-          Our Privacy Policy has been updated. Please review and accept the new version to continue using Sage Nest.
+          {t('ppModal.body')}
         </p>
       </div>
 
       <div className="bg-[#F5F7F5] rounded-xl border border-[#E4E7E4] p-4 mb-6 text-sm text-gray-600 leading-relaxed">
-        You can read the full updated{' '}
-        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
-          Privacy Policy
-        </a>{' '}
-        before accepting.
+        <Trans i18nKey="ppModal.readFull" ns="legal" components={[
+          // eslint-disable-next-line jsx-a11y/anchor-has-content
+          <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+        ]} />
       </div>
-``
+
       <button
         onClick={onAccept}
         disabled={accepting}
         className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed mb-3"
       >
-        {accepting ? 'Saving…' : 'I accept the updated Privacy Policy'}
+        {accepting ? t('ppModal.acceptingBtn') : t('ppModal.acceptBtn')}
       </button>
       <button
         onClick={onDecline}
         disabled={accepting}
         className="w-full py-2 px-4 text-sm text-gray-500 hover:text-[#1F2933] transition-colors disabled:opacity-60"
       >
-        Decline and log out
+        {t('ppModal.declineBtn')}
       </button>
     </div>
   </div>
-);
+  );
+};
 
 // ─── Provider ────────────────────────────────────────────────────────────────
 export const AuthProvider = ({ children }) => {
@@ -196,7 +200,7 @@ export const AuthProvider = ({ children }) => {
   const handlePpAccept = useCallback(async () => {
     setPpAccepting(true);
     try {
-      await acceptPrivacyPolicyApi();
+      await acceptPrivacyPolicyApi(i18n.language);
       setPpUpdateRequired(false);
       // Signal other open tabs to dismiss their modals too
       localStorage.setItem('pp_accepted', Date.now().toString());

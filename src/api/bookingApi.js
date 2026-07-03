@@ -102,7 +102,7 @@ export const bookingApi = createApi({
       query: () => ({ url: '/bookings/tc-version' }),
     }),
     acceptTc: builder.mutation({
-      query: () => ({ url: '/bookings/accept-tc', method: 'POST' }),
+      query: (language) => ({ url: '/bookings/accept-tc', method: 'POST', data: { language } }),
     }),
 
     // ─── Slot locking ──────────────────────────────────────────────────────────

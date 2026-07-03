@@ -14,7 +14,7 @@ import { EnvelopeIcon, CheckCircleFilledIcon, InfoCircleFilledIcon } from '../..
 const ROLE_KEYS = ['EXPERT', 'PARENT'];
 
 const Register = () => {
-  const { t }  = useTranslation('auth');
+  const { t, i18n }  = useTranslation('auth');
   const { t: tConsent } = useTranslation('parentBookings');
   const { login } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -74,6 +74,9 @@ const Register = () => {
         termsAccepted: true,
         marketingConsent,
         timezone: detectedTz,
+        // The language the Privacy Policy / T&C were actually displayed in
+        // when the user checked these boxes, pinned against their account.
+        language: i18n.language,
       };
       if (activeRole === 'PARENT') payload.phone = form.phone.trim();
 

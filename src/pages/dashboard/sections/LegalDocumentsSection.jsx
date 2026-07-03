@@ -9,6 +9,15 @@ const VERSION_RE = /^\d+(\.\d+)+$/;
 const formatDate = (iso) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
+// Renders a compact "EN 12 · IT 4" breakdown from { en: 12, it: 4 }, omitting zero counts.
+const formatByLanguage = (byLanguage) => {
+  if (!byLanguage) return null;
+  const parts = Object.entries(byLanguage)
+    .filter(([, count]) => count > 0)
+    .map(([lang, count]) => `${lang.toUpperCase()} ${count.toLocaleString()}`);
+  return parts.length > 0 ? parts.join(" · ") : null;
+};
+
 // ─── Version history table ─────────────────────────────────────────────────────
 const VersionHistory = ({ docs }) => {
   const { t } = useTranslation("adminDashboard");
@@ -43,11 +52,18 @@ const VersionHistory = ({ docs }) => {
               </span>
               <span className="text-sm text-right">
                 {row.accepted_count > 0 ? (
-                  <span className="inline-flex items-center gap-1 font-medium text-[#1F2933]">
-                    {row.accepted_count.toLocaleString()}
-                    <span className="text-gray-400 font-normal text-xs">
-                      {t("legalDocs.versionHistory.user", { count: row.accepted_count })}
+                  <span className="inline-flex flex-col items-end gap-0.5">
+                    <span className="inline-flex items-center gap-1 font-medium text-[#1F2933]">
+                      {row.accepted_count.toLocaleString()}
+                      <span className="text-gray-400 font-normal text-xs">
+                        {t("legalDocs.versionHistory.user", { count: row.accepted_count })}
+                      </span>
                     </span>
+                    {formatByLanguage(row.accepted_count_by_language) && (
+                      <span className="text-[11px] text-gray-400 font-normal">
+                        {formatByLanguage(row.accepted_count_by_language)}
+                      </span>
+                    )}
                   </span>
                 ) : (
                   <span className="text-gray-300">—</span>
@@ -155,6 +171,11 @@ const DocCard = ({ type, docs }) => {
                   <span className="ml-2 text-gray-400">
                     · {currentDoc.accepted_count.toLocaleString()}{" "}
                     {t("legalDocs.card.acceptance", { count: currentDoc.accepted_count })}
+                    {formatByLanguage(currentDoc.accepted_count_by_language) && (
+                      <span className="ml-1 text-gray-300">
+                        ({formatByLanguage(currentDoc.accepted_count_by_language)})
+                      </span>
+                    )}
                   </span>
                 )}
               </p>

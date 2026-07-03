@@ -1,0 +1,21 @@
+{
+  "brand": "Sage Nest",
+  "loading": "Loading…",
+  "versionLine": "Version {{version}} · Last updated {{date}}",
+  "privacyPolicy": {
+    "pageTitle": "Privacy Policy",
+    "placeholderNotice": "This is a placeholder Privacy Policy. The final version will be reviewed and approved by the client's legal team before launch."
+  },
+  "termsConditions": {
+    "pageTitle": "Terms & Conditions",
+    "placeholderNotice": "This is a placeholder Terms & Conditions document. The final version will be reviewed and approved by the client's legal team before launch."
+  },
+  "ppModal": {
+    "title": "Privacy Policy Updated",
+    "body": "Our Privacy Policy has been updated. Please review and accept the new version to continue using Sage Nest.",
+    "readFull": "You can read the full updated <0>Privacy Policy</0> before accepting.",
+    "acceptBtn": "I accept the updated Privacy Policy",
+    "acceptingBtn": "Saving…",
+    "declineBtn": "Decline and log out"
+  }
+}

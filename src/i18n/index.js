@@ -11,6 +11,8 @@ import enExpertDashboard from './locales/en/expertDashboard.json';
 import itExpertDashboard from './locales/it/expertDashboard.json';
 import enAdminDashboard from './locales/en/adminDashboard.json';
 import itAdminDashboard from './locales/it/adminDashboard.json';
+import enLegal from './locales/en/legal.json';
+import itLegal from './locales/it/legal.json';
 
 const STORAGE_KEY = 'sageNestLang';
 
@@ -38,8 +40,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      en: { auth: enAuth, parentDashboard: enParentDashboard, parentBookings: enParentBookings, expertDashboard: enExpertDashboard, adminDashboard: enAdminDashboard },
-      it: { auth: itAuth, parentDashboard: itParentDashboard, parentBookings: itParentBookings, expertDashboard: itExpertDashboard, adminDashboard: itAdminDashboard },
+      en: { auth: enAuth, parentDashboard: enParentDashboard, parentBookings: enParentBookings, expertDashboard: enExpertDashboard, adminDashboard: enAdminDashboard, legal: enLegal },
+      it: { auth: itAuth, parentDashboard: itParentDashboard, parentBookings: itParentBookings, expertDashboard: itExpertDashboard, adminDashboard: itAdminDashboard, legal: itLegal },
     },
     lng: localStorage.getItem(STORAGE_KEY) || 'en',
     fallbackLng: 'en',
