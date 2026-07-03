@@ -1,0 +1,21 @@
+{
+  "brand": "Sage Nest",
+  "loading": "Caricamento…",
+  "versionLine": "Versione {{version}} · Ultimo aggiornamento {{date}}",
+  "privacyPolicy": {
+    "pageTitle": "Informativa sulla privacy",
+    "placeholderNotice": "Questo è un testo segnaposto dell'Informativa sulla privacy. La versione definitiva sarà rivista e approvata dal team legale del cliente prima del lancio."
+  },
+  "termsConditions": {
+    "pageTitle": "Termini e Condizioni",
+    "placeholderNotice": "Questo è un testo segnaposto dei Termini e Condizioni. La versione definitiva sarà rivista e approvata dal team legale del cliente prima del lancio."
+  },
+  "ppModal": {
+    "title": "Informativa sulla privacy aggiornata",
+    "body": "La nostra Informativa sulla privacy è stata aggiornata. Ti preghiamo di rivedere e accettare la nuova versione per continuare a utilizzare Sage Nest.",
+    "readFull": "Puoi leggere l'<0>Informativa sulla privacy</0> aggiornata completa prima di accettare.",
+    "acceptBtn": "Accetto l'Informativa sulla privacy aggiornata",
+    "acceptingBtn": "Salvataggio…",
+    "declineBtn": "Rifiuta ed esci"
+  }
+}

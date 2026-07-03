@@ -682,7 +682,7 @@ const BookPage = () => {
 
   const handleTcAccept = async () => {
     setTcModalOpen(false);
-    try { await acceptTcFn().unwrap(); } catch { /* non-fatal */ }
+    try { await acceptTcFn(i18n.language).unwrap(); } catch { /* non-fatal */ }
     setTcAcceptanceRequired(false);
   };
 
