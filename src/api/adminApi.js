@@ -11,6 +11,7 @@ export const adminApi = createApi({
     "Transaction",
     "LegalDocument",
     "AdminNotification",
+    "WebflowSync",
   ],
   endpoints: (builder) => ({
     // ── Expert list ───────────────────────────────────────────────────────────
@@ -397,6 +398,26 @@ export const adminApi = createApi({
       query: () => ({ url: "/admin/notifications" }),
       providesTags: ["AdminNotification"],
     }),
+
+    // ── Webflow sync health ──────────────────────────────────────────────────
+    getWebflowSyncFailures: builder.query({
+      query: (params = {}) => ({ url: "/admin/webflow/failures", params }),
+      providesTags: ["WebflowSync"],
+    }),
+    retryWebflowSyncFailure: builder.mutation({
+      query: (id) => ({
+        url: `/admin/webflow/failures/${id}/retry`,
+        method: "POST",
+      }),
+      invalidatesTags: ["WebflowSync"],
+    }),
+    retryAllWebflowSyncFailures: builder.mutation({
+      query: () => ({
+        url: "/admin/webflow/failures/retry-bulk",
+        method: "POST",
+      }),
+      invalidatesTags: ["WebflowSync"],
+    }),
   }),
 });
 
@@ -450,5 +471,8 @@ export const {
   useAdminMarkTransferResolvedMutation,
   useGetRefundLogQuery,
   useGetAdminNotificationsQuery,
-  useExportTransactionsXlsxMutation
+  useExportTransactionsXlsxMutation,
+  useGetWebflowSyncFailuresQuery,
+  useRetryWebflowSyncFailureMutation,
+  useRetryAllWebflowSyncFailuresMutation,
 } = adminApi;

@@ -5,7 +5,8 @@
     "bookingManagement": "Booking Management",
     "paymentOverview": "Payment Overview",
     "legalDocuments": "Legal Documents",
-    "legalCompliance": "Legal Compliance"
+    "legalCompliance": "Legal Compliance",
+    "webflowSync": "Webflow Sync Health"
   },
   "signOut": "Sign out",
   "signOutModal": {
@@ -911,6 +912,48 @@
     "viewProfile": "View profile",
     "allCompliant": "All parents have accepted the current document versions.",
     "noParents": "No parents found.",
+    "pagination": {
+      "page": "Page {{page}} of {{pages}}",
+      "result_one": "result",
+      "result_other": "results",
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+
+  "webflowSync": {
+    "pageTitle": "Webflow Sync Health",
+    "pageSubtitle": "Items that failed to sync to Webflow after 3 retries — review and re-sync below.",
+    "filter": {
+      "pendingRetry": "Pending retry",
+      "all": "All"
+    },
+    "status": {
+      "pendingRetry": "Pending retry",
+      "resolved": "Resolved"
+    },
+    "col": {
+      "entity": "Entity",
+      "lastError": "Last error",
+      "attempts": "Attempts",
+      "status": "Status",
+      "lastAttempt": "Last attempt",
+      "actions": "Actions"
+    },
+    "empty": "No sync failures — everything is up to date.",
+    "retry": {
+      "button": "Re-sync",
+      "inProgress": "Syncing…",
+      "success": "Item re-synced successfully.",
+      "stillFailing": "Sync attempted but still failing — check the error and try again.",
+      "error": "Failed to trigger re-sync."
+    },
+    "retryAll": {
+      "button": "Re-sync all",
+      "inProgress": "Re-syncing all…",
+      "success": "Re-synced {{synced}} item(s).",
+      "partial": "Re-synced {{synced}} item(s), {{failed}} still failing."
+    },
     "pagination": {
       "page": "Page {{page}} of {{pages}}",
       "result_one": "result",
