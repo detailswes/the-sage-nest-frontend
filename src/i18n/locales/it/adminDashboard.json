@@ -5,7 +5,8 @@
     "bookingManagement": "Gestione Prenotazioni",
     "paymentOverview": "Panoramica Pagamenti",
     "legalDocuments": "Documenti Legali",
-    "legalCompliance": "Conformità Legale"
+    "legalCompliance": "Conformità Legale",
+    "webflowSync": "Stato Sincronizzazione Webflow"
   },
   "signOut": "Esci",
   "signOutModal": {
@@ -911,6 +912,48 @@
     "viewProfile": "Visualizza profilo",
     "allCompliant": "Tutti i genitori hanno accettato le versioni attuali dei documenti.",
     "noParents": "Nessun genitore trovato.",
+    "pagination": {
+      "page": "Pagina {{page}} di {{pages}}",
+      "result_one": "risultato",
+      "result_other": "risultati",
+      "previous": "Precedente",
+      "next": "Successivo"
+    }
+  },
+
+  "webflowSync": {
+    "pageTitle": "Stato Sincronizzazione Webflow",
+    "pageSubtitle": "Elementi che non sono stati sincronizzati con Webflow dopo 3 tentativi — controlla e ri-sincronizza qui sotto.",
+    "filter": {
+      "pendingRetry": "In attesa di nuovo tentativo",
+      "all": "Tutti"
+    },
+    "status": {
+      "pendingRetry": "In attesa di nuovo tentativo",
+      "resolved": "Risolto"
+    },
+    "col": {
+      "entity": "Elemento",
+      "lastError": "Ultimo errore",
+      "attempts": "Tentativi",
+      "status": "Stato",
+      "lastAttempt": "Ultimo tentativo",
+      "actions": "Azioni"
+    },
+    "empty": "Nessun errore di sincronizzazione — tutto è aggiornato.",
+    "retry": {
+      "button": "Ri-sincronizza",
+      "inProgress": "Sincronizzazione…",
+      "success": "Elemento ri-sincronizzato con successo.",
+      "stillFailing": "Tentativo eseguito ma ancora in errore — controlla l'errore e riprova.",
+      "error": "Impossibile avviare la ri-sincronizzazione."
+    },
+    "retryAll": {
+      "button": "Ri-sincronizza tutto",
+      "inProgress": "Ri-sincronizzazione in corso…",
+      "success": "{{synced}} elemento/i ri-sincronizzato/i.",
+      "partial": "{{synced}} elemento/i ri-sincronizzato/i, {{failed}} ancora in errore."
+    },
     "pagination": {
       "page": "Pagina {{page}} di {{pages}}",
       "result_one": "risultato",

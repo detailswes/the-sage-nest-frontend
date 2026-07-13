@@ -37,6 +37,7 @@ import AdminExpertDetailSection from "./pages/dashboard/sections/AdminExpertDeta
 import AdminParentDetailSection from "./pages/dashboard/sections/AdminParentDetailSection";
 import PaymentsOverviewSection from "./pages/dashboard/sections/PaymentsOverviewSection";
 import AdminComplianceSection from "./pages/dashboard/sections/AdminComplianceSection";
+import AdminWebflowSyncSection from "./pages/dashboard/sections/AdminWebflowSyncSection";
 
 function App() {
   return (
@@ -185,6 +186,7 @@ function App() {
             <Route path="payments"        element={<PaymentsOverviewSection />} />
             <Route path="legal-documents" element={<LegalDocumentsSection />} />
             <Route path="compliance"      element={<AdminComplianceSection />} />
+            <Route path="webflow-sync"    element={<AdminWebflowSyncSection />} />
           </Route>
 
           {/* Stripe redirect pages — require EXPERT auth */}

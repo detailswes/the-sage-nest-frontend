@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "../../components/admin/NotificationBell";
 import {
   NavUsersIcon, NavLogoutIcon, NavDocumentIcon,
-  NavBookingsIcon, NavPaymentsIcon, NavShieldIcon,
+  NavBookingsIcon, NavPaymentsIcon, NavShieldIcon, NavSyncIcon,
   MenuIcon, XIcon, SignOutIcon,
 } from "../../assets/icons";
 import { LOGO_SVG } from "../../assets/images";
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { path: "payments",        tKey: "nav.paymentOverview",   Icon: NavPaymentsIcon },
   { path: "legal-documents", tKey: "nav.legalDocuments",    Icon: NavDocumentIcon },
   { path: "compliance",      tKey: "nav.legalCompliance",   Icon: NavShieldIcon },
+  { path: "webflow-sync",    tKey: "nav.webflowSync",       Icon: NavSyncIcon },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -28,7 +29,7 @@ const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const segments = location.pathname.split("/");
-  const knownSections = ["experts", "parents", "bookings", "payments", "legal-documents", "compliance"];
+  const knownSections = ["experts", "parents", "bookings", "payments", "legal-documents", "compliance", "webflow-sync"];
   const activeSection = knownSections.find((s) => segments.includes(s)) ?? "experts";
 
   const initials = user?.name
