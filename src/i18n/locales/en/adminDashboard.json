@@ -950,9 +950,17 @@
     },
     "retryAll": {
       "button": "Re-sync all",
+      "hint": "Retries only the items in the failure queue below.",
       "inProgress": "Re-syncing all…",
       "success": "Re-synced {{synced}} item(s).",
       "partial": "Re-synced {{synced}} item(s), {{failed}} still failing."
+    },
+    "syncAll": {
+      "button": "Sync all to Webflow",
+      "hint": "Re-syncs every approved expert, even ones that already synced successfully.",
+      "inProgress": "Syncing all…",
+      "success": "Synced {{synced}} expert(s) to Webflow.",
+      "partial": "Synced {{synced}} expert(s), {{failed}} failed — check the failure queue below."
     },
     "pagination": {
       "page": "Page {{page}} of {{pages}}",

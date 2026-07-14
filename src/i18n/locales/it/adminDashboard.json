@@ -950,9 +950,17 @@
     },
     "retryAll": {
       "button": "Ri-sincronizza tutto",
+      "hint": "Riprova solo gli elementi nella coda degli errori qui sotto.",
       "inProgress": "Ri-sincronizzazione in corso…",
       "success": "{{synced}} elemento/i ri-sincronizzato/i.",
       "partial": "{{synced}} elemento/i ri-sincronizzato/i, {{failed}} ancora in errore."
+    },
+    "syncAll": {
+      "button": "Sincronizza tutto con Webflow",
+      "hint": "Ri-sincronizza ogni esperto approvato, anche quelli già sincronizzati con successo.",
+      "inProgress": "Sincronizzazione di tutto in corso…",
+      "success": "{{synced}} esperto/i sincronizzato/i con Webflow.",
+      "partial": "{{synced}} esperto/i sincronizzato/i, {{failed}} non riusciti — controlla la coda degli errori qui sotto."
     },
     "pagination": {
       "page": "Pagina {{page}} di {{pages}}",

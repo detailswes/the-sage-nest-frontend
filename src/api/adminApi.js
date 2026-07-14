@@ -418,6 +418,13 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["WebflowSync"],
     }),
+    syncAllWebflow: builder.mutation({
+      query: () => ({
+        url: "/admin/webflow/sync-all",
+        method: "POST",
+      }),
+      invalidatesTags: ["WebflowSync", "Expert"],
+    }),
   }),
 });
 
@@ -475,4 +482,5 @@ export const {
   useGetWebflowSyncFailuresQuery,
   useRetryWebflowSyncFailureMutation,
   useRetryAllWebflowSyncFailuresMutation,
+  useSyncAllWebflowMutation,
 } = adminApi;
