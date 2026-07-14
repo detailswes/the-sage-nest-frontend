@@ -5,6 +5,7 @@ import {
   useGetWebflowSyncFailuresQuery,
   useRetryWebflowSyncFailureMutation,
   useRetryAllWebflowSyncFailuresMutation,
+  useSyncAllWebflowMutation,
 } from "../../../api/adminApi";
 
 const formatDate = (iso) =>
@@ -41,6 +42,7 @@ const AdminWebflowSyncSection = () => {
   const { data: result, isLoading, isFetching } = useGetWebflowSyncFailuresQuery(queryParams);
   const [retryOne]  = useRetryWebflowSyncFailureMutation();
   const [retryAll, { isLoading: retryingAll }] = useRetryAllWebflowSyncFailuresMutation();
+  const [syncAll, { isLoading: syncingAll }]   = useSyncAllWebflowMutation();
 
   const rows       = result?.failures ?? [];
   const total      = result?.total ?? 0;
@@ -79,6 +81,19 @@ const AdminWebflowSyncSection = () => {
     }
   };
 
+  const handleSyncAll = async () => {
+    try {
+      const res = await syncAll().unwrap();
+      if (res.failed > 0) {
+        toast.error(t("webflowSync.syncAll.partial", { synced: res.synced, failed: res.failed }));
+      } else {
+        toast.success(t("webflowSync.syncAll.success", { synced: res.synced }));
+      }
+    } catch (e) {
+      toast.error(e?.data?.error || t("webflowSync.retry.error"));
+    }
+  };
+
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -86,13 +101,24 @@ const AdminWebflowSyncSection = () => {
           <h2 className="text-xl font-semibold text-[#445446]">{t("webflowSync.pageTitle")}</h2>
           <p className="text-sm text-[#5e6d5b] font-medium mt-0.5">{t("webflowSync.pageSubtitle")}</p>
         </div>
-        <button
-          onClick={handleRetryAll}
-          disabled={retryingAll || rows.length === 0}
-          className="inline-flex items-center justify-center text-sm font-medium px-4 py-2 rounded-lg bg-[#445446] text-white hover:bg-[#374437] disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-        >
-          {retryingAll ? t("webflowSync.retryAll.inProgress") : t("webflowSync.retryAll.button")}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSyncAll}
+            disabled={syncingAll}
+            title={t("webflowSync.syncAll.hint")}
+            className="inline-flex items-center justify-center text-sm font-medium px-4 py-2 rounded-lg border border-[#c5ceba] text-[#5e6d5b] hover:border-[#445446] hover:text-[#445446] hover:bg-[#dfe2d7]/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+          >
+            {syncingAll ? t("webflowSync.syncAll.inProgress") : t("webflowSync.syncAll.button")}
+          </button>
+          <button
+            onClick={handleRetryAll}
+            disabled={retryingAll || rows.length === 0}
+            title={t("webflowSync.retryAll.hint")}
+            className="inline-flex items-center justify-center text-sm font-medium px-4 py-2 rounded-lg bg-[#445446] text-white hover:bg-[#374437] disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            {retryingAll ? t("webflowSync.retryAll.inProgress") : t("webflowSync.retryAll.button")}
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
