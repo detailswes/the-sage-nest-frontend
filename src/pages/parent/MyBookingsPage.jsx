@@ -734,19 +734,19 @@ const BookingCard = ({ booking, onViewDetails }) => {
                         type="checkbox"
                         checked={rescheduleWithdrawalAccepted}
                         onChange={(e) => setRescheduleWithdrawalAccepted(e.target.checked)}
-                        className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+                        className="mt-px h-3.5 w-3.5 shrink-0 accent-[#445446] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 rounded-sm"
                       />
                       <span className="text-xs text-[#1F2933] leading-relaxed">{t('card.withdrawalLabel')}</span>
                     </label>
                     <button
                       type="button"
                       onClick={() => setRescheduleWithdrawalOpen((o) => !o)}
-                      className="text-[11px] text-gray-400 hover:text-[#445446] underline ml-5"
+                      className="text-[11px] text-gray-400 hover:text-[#445446] underline ml-[22px]"
                     >
                       {t('card.withdrawalWhy')}
                     </button>
                     {rescheduleWithdrawalOpen && (
-                      <p className="text-[11px] text-gray-400 leading-relaxed ml-5">{t('card.withdrawalWhyBody')}</p>
+                      <p className="text-[11px] text-gray-400 leading-relaxed ml-[22px]">{t('card.withdrawalWhyBody')}</p>
                     )}
                   </div>
                 )}
