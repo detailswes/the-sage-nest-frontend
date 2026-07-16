@@ -28,6 +28,15 @@ const WEBFLOW_DIRECTORY_URL   = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL   ||
 const WEBFLOW_EXPERT_BASE_URL = process.env.REACT_APP_WEBFLOW_EXPERT_BASE_URL || 'https://the-sage-nest.webflow.io/experts';
 const WITHDRAWAL_WINDOW_MS    = 14 * 24 * 60 * 60 * 1000;
 
+// Picks the PDF for the current UI language, falling back to the other
+// language's PDF, then to the in-app page, if the admin hasn't uploaded
+// both yet.
+function resolveDocUrl(doc, lang, fallbackPath) {
+  if (!doc) return fallbackPath;
+  const preferred = lang === 'it' ? doc.file_url_it : doc.file_url_en;
+  return preferred || doc.file_url_en || doc.file_url_it || fallbackPath;
+}
+
 // ─── Steps ───────────────────────────────────────────────────────────────────
 const STEPS = { SERVICE: 'service', SLOT: 'slot', CONFIRM: 'confirm' };
 
@@ -85,12 +94,12 @@ const ConsentBlock = ({
   withdrawalAccepted, setWithdrawalAccepted,
   marketingConsent, setMarketingConsent,
 }) => {
-  const { t } = useTranslation('parentBookings');
+  const { t, i18n } = useTranslation('parentBookings');
   const [whyOpen, setWhyOpen] = useState(false);
 
-  const termsHref        = legalVersions?.terms_conditions?.file_url || '/terms-conditions';
-  const cancellationHref = legalVersions?.cancellation_policy?.file_url || '/cancellation-policy';
-  const privacyHref      = legalVersions?.privacy_policy?.file_url || '/privacy-policy';
+  const termsHref        = resolveDocUrl(legalVersions?.terms_conditions, i18n.language, '/terms-conditions');
+  const cancellationHref = resolveDocUrl(legalVersions?.cancellation_policy, i18n.language, '/cancellation-policy');
+  const privacyHref      = resolveDocUrl(legalVersions?.privacy_policy, i18n.language, '/privacy-policy');
 
   const checkboxCls = "mt-px h-3.5 w-3.5 shrink-0 accent-[#445446] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 rounded-sm";
 

@@ -253,12 +253,14 @@ export const adminApi = createApi({
       providesTags: ["LegalDocument"],
     }),
     // arg: { type, version, document? }
+    // arg: { type, version, documentEn, documentIt } — both PDFs required
     bumpLegalDocument: builder.mutation({
-      query: ({ type, version, document }) => {
+      query: ({ type, version, documentEn, documentIt }) => {
         const fd = new FormData();
         fd.append("type", type);
         fd.append("version", version);
-        if (document) fd.append("document", document);
+        if (documentEn) fd.append("document_en", documentEn);
+        if (documentIt) fd.append("document_it", documentIt);
         return {
           url: "/admin/legal-documents/bump",
           method: "POST",
