@@ -92,17 +92,19 @@ const ConsentBlock = ({
   const cancellationHref = legalVersions?.cancellation_policy?.file_url || '/cancellation-policy';
   const privacyHref      = legalVersions?.privacy_policy?.file_url || '/privacy-policy';
 
+  const checkboxCls = "mt-px h-3.5 w-3.5 shrink-0 accent-[#445446] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 rounded-sm";
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {/* Checkbox A — mandatory */}
-      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+      <label className="flex items-start gap-2 cursor-pointer select-none">
         <input
           type="checkbox"
           checked={tcAccepted}
           onChange={(e) => setTcAccepted(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+          className={checkboxCls}
         />
-        <span className="text-sm text-[#1F2933] leading-snug">
+        <span className="text-xs text-[#1F2933] leading-relaxed">
           <Trans
             i18nKey="consentBlock.termsLabel"
             ns="parentBookings"
@@ -118,39 +120,39 @@ const ConsentBlock = ({
 
       {/* Checkbox B — conditional withdrawal consent */}
       {withdrawalApplicable && (
-        <div className="pl-0.5 space-y-1.5">
-          <p className="text-xs text-gray-500">{t('consentBlock.withdrawalLeadIn')}</p>
-          <label className="flex items-start gap-2.5 cursor-pointer select-none">
+        <div className="space-y-1.5">
+          <p className="text-xs text-gray-500 leading-relaxed">{t('consentBlock.withdrawalLeadIn')}</p>
+          <label className="flex items-start gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={withdrawalAccepted}
               onChange={(e) => setWithdrawalAccepted(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+              className={checkboxCls}
             />
-            <span className="text-sm text-[#1F2933] leading-snug">{t('consentBlock.withdrawalLabel')}</span>
+            <span className="text-xs text-[#1F2933] leading-relaxed">{t('consentBlock.withdrawalLabel')}</span>
           </label>
           <button
             type="button"
             onClick={() => setWhyOpen((o) => !o)}
-            className="text-xs text-gray-400 hover:text-[#445446] underline ml-6"
+            className="text-[11px] text-gray-400 hover:text-[#445446] underline ml-[22px]"
           >
             {t('consentBlock.withdrawalWhy')}
           </button>
           {whyOpen && (
-            <p className="text-xs text-gray-400 leading-relaxed ml-6">{t('consentBlock.withdrawalWhyBody')}</p>
+            <p className="text-[11px] text-gray-400 leading-relaxed ml-[22px]">{t('consentBlock.withdrawalWhyBody')}</p>
           )}
         </div>
       )}
 
       {/* Checkbox C — optional marketing */}
-      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+      <label className="flex items-start gap-2 cursor-pointer select-none">
         <input
           type="checkbox"
           checked={marketingConsent}
           onChange={(e) => setMarketingConsent(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+          className={checkboxCls}
         />
-        <span className="text-sm text-gray-500 leading-snug">{t('consentLabels.marketingOptIn')}</span>
+        <span className="text-xs text-gray-500 leading-relaxed">{t('consentLabels.marketingOptIn')}</span>
       </label>
 
       {/* Plain-text privacy notice — no checkbox */}
