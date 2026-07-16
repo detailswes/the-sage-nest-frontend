@@ -25,9 +25,13 @@ export const bookingApi = createApi({
       query: ({ id, reason }) => ({ url: `/bookings/${id}`, method: 'DELETE', data: { reason } }),
       invalidatesTags: (result, error, { id }) => ['Booking', { type: 'Booking', id }],
     }),
-    // arg: { id, newScheduledAt }
+    // arg: { id, newScheduledAt, withdrawalAccepted? }
     rescheduleBooking: builder.mutation({
-      query: ({ id, newScheduledAt }) => ({ url: `/bookings/${id}/reschedule`, method: 'PATCH', data: { newScheduledAt } }),
+      query: ({ id, newScheduledAt, withdrawalAccepted }) => ({
+        url: `/bookings/${id}/reschedule`,
+        method: 'PATCH',
+        data: { newScheduledAt, withdrawalAccepted },
+      }),
       invalidatesTags: (result, error, { id }) => ['Booking', { type: 'Booking', id }, 'UpcomingAppointment', 'CalendarBooking'],
     }),
 
@@ -97,14 +101,6 @@ export const bookingApi = createApi({
       invalidatesTags: (result, error, { id }) => ['Booking', { type: 'Booking', id }],
     }),
 
-    // ─── T&C version ──────────────────────────────────────────────────────────
-    getCurrentTcVersion: builder.query({
-      query: () => ({ url: '/bookings/tc-version' }),
-    }),
-    acceptTc: builder.mutation({
-      query: (language) => ({ url: '/bookings/accept-tc', method: 'POST', data: { language } }),
-    }),
-
     // ─── Slot locking ──────────────────────────────────────────────────────────
     // arg: { expertId, slotStart }
     lockSlot: builder.mutation({
@@ -135,8 +131,6 @@ export const {
   useExpertCancelBookingMutation,
   useVerifyPaymentMutation,
   useAbandonBookingMutation,
-  useGetCurrentTcVersionQuery,
-  useAcceptTcMutation,
   useLockSlotMutation,
   useReleaseLockMutation,
   useNotifyImLateMutation,

@@ -29,6 +29,7 @@ import CheckoutPage from "./pages/parent/CheckoutPage";
 import BookingStatusPage from "./pages/parent/BookingStatusPage";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import TermsConditionsPage from "./pages/legal/TermsConditionsPage";
+import CancellationPolicyPage from "./pages/legal/CancellationPolicyPage";
 import ExpertManagementSection from "./pages/dashboard/sections/ExpertManagementSection";
 import ParentManagementSection from "./pages/dashboard/sections/ParentManagementSection";
 import LegalDocumentsSection from "./pages/dashboard/sections/LegalDocumentsSection";
@@ -208,8 +209,9 @@ function App() {
           />
 
           {/* Legal pages — public, no auth required */}
-          <Route path="/privacy-policy"    element={<PrivacyPolicyPage />} />
-          <Route path="/terms-conditions"  element={<TermsConditionsPage />} />
+          <Route path="/privacy-policy"      element={<PrivacyPolicyPage />} />
+          <Route path="/terms-conditions"    element={<TermsConditionsPage />} />
+          <Route path="/cancellation-policy" element={<CancellationPolicyPage />} />
 
           {/* Email verification — public, no auth required */}
           <Route path="/verify-email" element={<VerifyEmail />} />

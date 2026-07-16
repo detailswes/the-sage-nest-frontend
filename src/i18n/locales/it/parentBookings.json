@@ -69,7 +69,12 @@
     "cancelError":            "Impossibile cancellare. Riprova.",
     "rescheduleError":        "Impossibile riprogrammare. Riprova.",
     "refundFull":             "Riceverai un rimborso completo{{amount}}.",
-    "refundHalf":             "Riceverai un rimborso del 50%{{amount}} — la cancellazione avviene tra 12 e 24 ore prima della sessione."
+    "refundHalf":             "Riceverai un rimborso del 50%{{amount}} — la cancellazione avviene tra 12 e 24 ore prima della sessione.",
+    "withdrawalLeadIn":       "La tua nuova Sessione potrebbe svolgersi entro i prossimi 14 giorni, quindi ci serve la tua conferma:",
+    "withdrawalLabel":        "Richiedo espressamente che la mia Sessione si svolga prima della scadenza del periodo di recesso di 14 giorni e sono consapevole che il diritto di recesso si perde una volta che la Sessione si è svolta per intero.",
+    "withdrawalWhy":          "Perché mi viene chiesto?",
+    "withdrawalWhyBody":      "La legge europea ti riconosce 14 giorni per cambiare idea sugli acquisti online. Poiché la tua Sessione potrebbe svolgersi entro questi 14 giorni, ti chiediamo di confermare che desideri che abbia luogo — le tue possibilità di cancellazione e modifica previste dalle nostre condizioni restano invariate.",
+    "withdrawalRequiredError": "Conferma il consenso all'esecuzione anticipata per riprogrammare entro i prossimi 14 giorni."
   },
   "pastCard": {
     "viewDetails":              "Visualizza dettagli",
@@ -110,14 +115,13 @@
     "expertCancelNote": "Se il tuo esperto cancella per qualsiasi motivo, riceverai sempre un <1>rimborso completo</1> indipendentemente dal momento.",
     "footer":          "Le cancellazioni vengono elaborate in base all'orario in cui la tua richiesta viene ricevuta da Sage Nest. Se hai domande, il nostro team di supporto è qui per aiutarti."
   },
-  "tcModal": {
-    "titleFirst":   "Termini e Condizioni",
-    "titleUpdated": "Termini e Condizioni aggiornati",
-    "bodyFirst":    "Prima di effettuare una prenotazione, ti chiediamo di leggere e accettare i nostri Termini e Condizioni.",
-    "bodyUpdated":  "I nostri Termini e Condizioni sono stati aggiornati dall'ultima tua prenotazione. Devi leggere e accettare la nuova versione prima di procedere.",
-    "readFull":     "Puoi leggere i <0>Termini e Condizioni</0> completi prima di accettare.",
-    "acceptBtn":    "Accetto i Termini e Condizioni",
-    "cancelBtn":    "Annulla e torna indietro"
+  "consentBlock": {
+    "termsLabel":        "Ho letto e accetto i <0>Termini di Consumo</0> e le <1>Condizioni di Cancellazione e Modifica della Prenotazione</1>.",
+    "withdrawalLeadIn":  "La tua Sessione potrebbe svolgersi entro i prossimi 14 giorni, quindi ci serve la tua conferma:",
+    "withdrawalLabel":   "Richiedo espressamente che la mia Sessione si svolga prima della scadenza del periodo di recesso di 14 giorni e sono consapevole che il diritto di recesso si perde una volta che la Sessione si è svolta per intero.",
+    "withdrawalWhy":     "Perché mi viene chiesto?",
+    "withdrawalWhyBody": "La legge europea ti riconosce 14 giorni per cambiare idea sugli acquisti online. Poiché la tua Sessione potrebbe svolgersi entro questi 14 giorni, ti chiediamo di confermare che desideri che abbia luogo — le tue possibilità di cancellazione e modifica previste dalle nostre condizioni restano invariate.",
+    "privacyNotice":     "I tuoi dati personali sono trattati per gestire la tua prenotazione, come descritto nella nostra <0>Informativa sulla Privacy</0>."
   },
   "serviceStep": {
     "back":            "Torna al profilo dell'esperto",
@@ -262,13 +266,10 @@
     "sendError":    "Impossibile inviare la notifica. Riprova."
   },
   "consentLabels": {
-    "privacyPrefix":       "Ho letto e accetto la",
-    "privacyLink":         "Informativa sulla Privacy",
     "termsPrefix":         "Ho letto e accetto i",
     "termsLink":           "Termini e Condizioni",
     "marketingOptIn":      "Desidero ricevere suggerimenti, consigli di esperti e aggiornamenti da Sage Nest via email. Puoi annullare l'iscrizione in qualsiasi momento.",
     "marketingOptInShort": "Desidero ricevere consigli occasionali da Sage Nest (opzionale)",
-    "privacyRequired":     "Devi accettare l'Informativa sulla Privacy per continuare.",
     "termsRequired":       "Devi accettare i Termini e Condizioni per continuare."
   }
 }

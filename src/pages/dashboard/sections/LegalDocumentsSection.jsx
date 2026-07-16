@@ -77,12 +77,19 @@ const VersionHistory = ({ docs }) => {
   );
 };
 
+const DOC_PATH = {
+  PRIVACY_POLICY: "/privacy-policy",
+  TERMS_CONDITIONS: "/terms-conditions",
+  CANCELLATION_POLICY: "/cancellation-policy",
+};
+
 // ─── Doc card ──────────────────────────────────────────────────────────────────
 const DocCard = ({ type, docs }) => {
   const { t } = useTranslation("adminDashboard");
   const [bumpLegalDocument, { isLoading: loading }] = useBumpLegalDocumentMutation();
 
   const [version,        setVersion]        = useState("");
+  const [file,           setFile]           = useState(null);
   const [confirmPending, setConfirmPending] = useState(false);
   const [historyOpen,    setHistoryOpen]    = useState(false);
 
@@ -92,20 +99,22 @@ const DocCard = ({ type, docs }) => {
   const trimmed      = version.trim();
   const versionValid = VERSION_RE.test(trimmed);
   const showFmtHint  = trimmed.length > 0 && !versionValid;
+  const canPublish   = versionValid && !!file;
 
   const docLabel = t(`legalDocs.docType.${type}`);
-  const docPath  = type === "PRIVACY_POLICY" ? "/privacy-policy" : "/terms-conditions";
+  const docPath  = DOC_PATH[type];
 
   const handleBump = () => {
-    if (!versionValid) return;
+    if (!canPublish) return;
     setConfirmPending(true);
   };
 
   const handleConfirmedBump = async () => {
     setConfirmPending(false);
     try {
-      await bumpLegalDocument({ type, version: trimmed }).unwrap();
+      await bumpLegalDocument({ type, version: trimmed, document: file }).unwrap();
       setVersion("");
+      setFile(null);
       toast.success(t("legalDocs.card.publishSuccess", { version: trimmed, docLabel }));
     } catch (err) {
       toast.error(err?.data?.error || t("legalDocs.card.publishError"));
@@ -118,7 +127,7 @@ const DocCard = ({ type, docs }) => {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={(e) => {
-            if (e.target === e.currentTarget) { setConfirmPending(false); setVersion(""); }
+            if (e.target === e.currentTarget) { setConfirmPending(false); setVersion(""); setFile(null); }
           }}
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -134,12 +143,14 @@ const DocCard = ({ type, docs }) => {
               {t("legalDocs.confirmModal.body")}
               {type === "PRIVACY_POLICY"
                 ? t("legalDocs.confirmModal.bodyPrivacy")
-                : t("legalDocs.confirmModal.bodyTerms")}
+                : type === "TERMS_CONDITIONS"
+                ? t("legalDocs.confirmModal.bodyTerms")
+                : t("legalDocs.confirmModal.bodyCancellation")}
               {t("legalDocs.confirmModal.cannotUndo")}
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => { setConfirmPending(false); setVersion(""); }}
+                onClick={() => { setConfirmPending(false); setVersion(""); setFile(null); }}
                 className="flex-1 py-2.5 px-4 rounded-lg border-2 border-[#c5ceba] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
                 {t("legalDocs.confirmModal.cancel")}
@@ -184,7 +195,7 @@ const DocCard = ({ type, docs }) => {
             )}
           </div>
           <a
-            href={docPath}
+            href={currentDoc?.file_url || docPath}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-shrink-0 self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium text-[#445446] hover:bg-[#f0f2ed] transition-colors whitespace-nowrap"
@@ -192,7 +203,7 @@ const DocCard = ({ type, docs }) => {
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
             </svg>
-            {t("legalDocs.card.viewCurrent")}
+            {currentDoc?.file_url ? t("legalDocs.card.viewCurrentPdf") : t("legalDocs.card.viewCurrent")}
           </a>
         </div>
 
@@ -202,7 +213,9 @@ const DocCard = ({ type, docs }) => {
             {t("legalDocs.card.instructions", { path: docPath })}
             {type === "PRIVACY_POLICY"
               ? t("legalDocs.card.reacceptPrivacy")
-              : t("legalDocs.card.reacceptTerms")}
+              : type === "TERMS_CONDITIONS"
+              ? t("legalDocs.card.reacceptTerms")
+              : ""}
           </p>
           <div className="flex gap-2">
             <input
@@ -216,17 +229,31 @@ const DocCard = ({ type, docs }) => {
                   : "border-[#E4E7E4] focus:border-[#445446]"
               }`}
             />
-            <button
-              onClick={handleBump}
-              disabled={loading || !versionValid}
-              className="px-4 py-2 rounded-lg bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {loading ? t("legalDocs.card.publishing") : t("legalDocs.card.publishBtn")}
-            </button>
           </div>
           {showFmtHint && (
             <p className="text-xs text-red-500">{t("legalDocs.card.formatHint")}</p>
           )}
+          <div className="flex items-center gap-2">
+            <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-[#c5ceba] text-xs text-gray-500 cursor-pointer hover:border-[#445446] hover:text-[#445446] transition-colors truncate">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+              </svg>
+              <span className="truncate">{file ? file.name : t("legalDocs.card.choosePdf")}</span>
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+            </label>
+            <button
+              onClick={handleBump}
+              disabled={loading || !canPublish}
+              className="px-4 py-2 rounded-lg bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {loading ? t("legalDocs.card.publishing") : t("legalDocs.card.publishBtn")}
+            </button>
+          </div>
         </div>
 
         {/* Version history — collapsible */}
@@ -261,8 +288,9 @@ const LegalDocumentsSection = () => {
   const { t } = useTranslation("adminDashboard");
   const { data, isLoading, isError } = useGetLegalDocumentsQuery();
 
-  const privacyDocs = data?.privacy_policy   ?? [];
-  const termsDocs   = data?.terms_conditions ?? [];
+  const privacyDocs      = data?.privacy_policy      ?? [];
+  const termsDocs        = data?.terms_conditions    ?? [];
+  const cancellationDocs = data?.cancellation_policy ?? [];
 
   return (
     <div>
@@ -284,8 +312,9 @@ const LegalDocumentsSection = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          <DocCard type="PRIVACY_POLICY"   docs={privacyDocs} />
-          <DocCard type="TERMS_CONDITIONS" docs={termsDocs}   />
+          <DocCard type="PRIVACY_POLICY"      docs={privacyDocs}      />
+          <DocCard type="TERMS_CONDITIONS"    docs={termsDocs}        />
+          <DocCard type="CANCELLATION_POLICY" docs={cancellationDocs} />
         </div>
       )}
     </div>

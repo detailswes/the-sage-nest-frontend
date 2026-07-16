@@ -37,7 +37,6 @@ const Register = () => {
     handleChange,
   } = useAuthForm({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
 
-  const [privacyPolicyAccepted, setPrivacyPolicyAccepted] = useState(false);
   const [termsAccepted, setTermsAccepted]                 = useState(false);
   const [marketingConsent, setMarketingConsent]           = useState(false);
 
@@ -50,10 +49,6 @@ const Register = () => {
       return;
     }
 
-    if (!privacyPolicyAccepted) {
-      setErrors((prev) => ({ ...prev, privacyPolicy: 'consentErrors.privacyRequired' }));
-      return;
-    }
     if (!termsAccepted) {
       setErrors((prev) => ({ ...prev, termsConditions: 'consentErrors.termsRequired' }));
       return;
@@ -70,7 +65,6 @@ const Register = () => {
         email: form.email,
         password: form.password,
         role: activeRole,
-        privacyPolicyAccepted: true,
         termsAccepted: true,
         marketingConsent,
         timezone: detectedTz,
@@ -311,31 +305,8 @@ const Register = () => {
           <LanguageSelector variant="inline" />
         </div>
 
-        {/* Required consents + optional marketing */}
+        {/* Required consent + optional marketing */}
         <div className="space-y-3 pt-1">
-          {/* Privacy Policy — required */}
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={privacyPolicyAccepted}
-              onChange={(e) => {
-                setPrivacyPolicyAccepted(e.target.checked);
-                if (e.target.checked) setErrors((prev) => { const { privacyPolicy: _, ...rest } = prev; return rest; });
-              }}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
-            />
-            <span className="text-sm text-[#1F2933] leading-snug">
-              {tConsent('consentLabels.privacyPrefix')}{' '}
-              <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
-                {tConsent('consentLabels.privacyLink')}
-              </a>
-              <span className="text-red-500 ml-0.5">*</span>
-            </span>
-          </label>
-          {errors.privacyPolicy && (
-            <p className="text-xs text-red-500 -mt-1 ml-7">{t(errors.privacyPolicy)}</p>
-          )}
-
           {/* Terms & Conditions — required */}
           <label className="flex items-start gap-3 cursor-pointer">
             <input
@@ -375,7 +346,7 @@ const Register = () => {
 
         <button
           type="submit"
-          disabled={loading || !privacyPolicyAccepted || !termsAccepted}
+          disabled={loading || !termsAccepted}
           className="w-full bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors duration-200 text-sm mt-2"
         >
           {submitLabel}

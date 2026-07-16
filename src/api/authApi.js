@@ -88,11 +88,6 @@ export const deleteAccountApi = async ({ password }) => {
   return response.data;
 };
 
-export const acceptPrivacyPolicyApi = async (language) => {
-  const response = await api.post("/auth/accept-pp", { language });
-  return response.data;
-};
-
 export const exportMyDataApi = async () => {
   const response = await api.get("/auth/data-export");
   return response.data;

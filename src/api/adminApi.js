@@ -252,13 +252,20 @@ export const adminApi = createApi({
       query: () => ({ url: "/admin/legal-documents" }),
       providesTags: ["LegalDocument"],
     }),
-    // arg: { type, version }
+    // arg: { type, version, document? }
     bumpLegalDocument: builder.mutation({
-      query: ({ type, version }) => ({
-        url: "/admin/legal-documents/bump",
-        method: "POST",
-        data: { type, version },
-      }),
+      query: ({ type, version, document }) => {
+        const fd = new FormData();
+        fd.append("type", type);
+        fd.append("version", version);
+        if (document) fd.append("document", document);
+        return {
+          url: "/admin/legal-documents/bump",
+          method: "POST",
+          data: fd,
+          headers: { "Content-Type": "multipart/form-data" },
+        };
+      },
       invalidatesTags: ["LegalDocument"],
     }),
 
