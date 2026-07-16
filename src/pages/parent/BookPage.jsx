@@ -8,11 +8,10 @@ import {
   useGetAvailableSlotsQuery,
   useGetAvailableDatesInMonthQuery,
   useCreateBookingMutation,
-  useGetCurrentTcVersionQuery,
-  useAcceptTcMutation,
   useLockSlotMutation,
   useReleaseLockMutation,
 } from '../../api/bookingApi';
+import { useGetLegalVersionsQuery } from '../../api/userApi';
 import { loginUser, registerUser, verifyOtpApi } from '../../api/authApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import { validateLoginForm, validateRegisterForm, checkPasswordStrength } from '../../utils/validation';
@@ -21,12 +20,13 @@ import useResendVerification from '../../hooks/useResendVerification';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
 import {
-  CheckIcon, ClipboardDocumentIcon, EnvelopeIcon,
+  CheckIcon, EnvelopeIcon,
   CheckCircleFilledIcon, InfoCircleFilledIcon, ChevronLeftIcon,
 } from '../../assets/icons';
 
 const WEBFLOW_DIRECTORY_URL   = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL   || 'https://the-sage-nest.webflow.io/experts';
 const WEBFLOW_EXPERT_BASE_URL = process.env.REACT_APP_WEBFLOW_EXPERT_BASE_URL || 'https://the-sage-nest.webflow.io/experts';
+const WITHDRAWAL_WINDOW_MS    = 14 * 24 * 60 * 60 * 1000;
 
 // ─── Steps ───────────────────────────────────────────────────────────────────
 const STEPS = { SERVICE: 'service', SLOT: 'slot', CONFIRM: 'confirm' };
@@ -74,36 +74,96 @@ const StepIndicator = ({ step }) => {
   );
 };
 
-// ─── T&C modal ───────────────────────────────────────────────────────────────
-const TcModal = ({ isFirstBooking, onAccept, onDecline }) => {
+// ─── Checkout consent block ───────────────────────────────────────────────────
+// Mandatory T&C+cancellation-policy checkbox, conditional 14-day withdrawal
+// checkbox, optional marketing checkbox, and a plain-text privacy notice.
+// Every field starts unchecked on every visit — no prior acceptance is reused.
+const ConsentBlock = ({
+  legalVersions,
+  withdrawalApplicable,
+  tcAccepted, setTcAccepted,
+  withdrawalAccepted, setWithdrawalAccepted,
+  marketingConsent, setMarketingConsent,
+}) => {
   const { t } = useTranslation('parentBookings');
+  const [whyOpen, setWhyOpen] = useState(false);
+
+  const termsHref        = legalVersions?.terms_conditions?.file_url || '/terms-conditions';
+  const cancellationHref = legalVersions?.cancellation_policy?.file_url || '/cancellation-policy';
+  const privacyHref      = legalVersions?.privacy_policy?.file_url || '/privacy-policy';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="bg-white rounded-2xl border border-[#E4E7E4] shadow-xl w-full max-w-md p-8">
-        <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-            <ClipboardDocumentIcon className="w-6 h-6 text-amber-600" />
-          </div>
-          <h2 className="text-lg font-semibold text-[#1F2933] mb-2">
-            {isFirstBooking ? t('tcModal.titleFirst') : t('tcModal.titleUpdated')}
-          </h2>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            {isFirstBooking ? t('tcModal.bodyFirst') : t('tcModal.bodyUpdated')}
-          </p>
+    <div className="space-y-3">
+      {/* Checkbox A — mandatory */}
+      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={tcAccepted}
+          onChange={(e) => setTcAccepted(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+        />
+        <span className="text-sm text-[#1F2933] leading-snug">
+          <Trans
+            i18nKey="consentBlock.termsLabel"
+            ns="parentBookings"
+            components={[
+              // eslint-disable-next-line jsx-a11y/anchor-has-content
+              <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+              // eslint-disable-next-line jsx-a11y/anchor-has-content
+              <a href={cancellationHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+            ]}
+          />
+        </span>
+      </label>
+
+      {/* Checkbox B — conditional withdrawal consent */}
+      {withdrawalApplicable && (
+        <div className="pl-0.5 space-y-1.5">
+          <p className="text-xs text-gray-500">{t('consentBlock.withdrawalLeadIn')}</p>
+          <label className="flex items-start gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={withdrawalAccepted}
+              onChange={(e) => setWithdrawalAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+            />
+            <span className="text-sm text-[#1F2933] leading-snug">{t('consentBlock.withdrawalLabel')}</span>
+          </label>
+          <button
+            type="button"
+            onClick={() => setWhyOpen((o) => !o)}
+            className="text-xs text-gray-400 hover:text-[#445446] underline ml-6"
+          >
+            {t('consentBlock.withdrawalWhy')}
+          </button>
+          {whyOpen && (
+            <p className="text-xs text-gray-400 leading-relaxed ml-6">{t('consentBlock.withdrawalWhyBody')}</p>
+          )}
         </div>
-        <div className="bg-[#F5F7F5] rounded-xl border border-[#E4E7E4] p-4 mb-6 text-sm text-gray-600 leading-relaxed">
-          <Trans i18nKey="tcModal.readFull" ns="parentBookings" components={[
+      )}
+
+      {/* Checkbox C — optional marketing */}
+      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={marketingConsent}
+          onChange={(e) => setMarketingConsent(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+        />
+        <span className="text-sm text-gray-500 leading-snug">{t('consentLabels.marketingOptIn')}</span>
+      </label>
+
+      {/* Plain-text privacy notice — no checkbox */}
+      <p className="text-xs text-gray-400 leading-relaxed">
+        <Trans
+          i18nKey="consentBlock.privacyNotice"
+          ns="parentBookings"
+          components={[
             // eslint-disable-next-line jsx-a11y/anchor-has-content
-            <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
-          ]} />
-        </div>
-        <button onClick={onAccept} className="w-full py-3 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors mb-3">
-          {t('tcModal.acceptBtn')}
-        </button>
-        <button onClick={onDecline} className="w-full py-2 px-4 text-sm text-gray-500 hover:text-[#1F2933] transition-colors">
-          {t('tcModal.cancelBtn')}
-        </button>
-      </div>
+            <a href={privacyHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] underline" />,
+          ]}
+        />
+      </p>
     </div>
   );
 };
@@ -306,7 +366,6 @@ const InlineRegister = ({ onVerificationSent, returnTo }) => {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketing, setMarketing] = useState(false);
 
@@ -315,7 +374,6 @@ const InlineRegister = ({ onVerificationSent, returnTo }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validateRegisterForm({ ...form, role: 'PARENT' });
-    if (!privacyAccepted) errs.privacyPolicy = t('consentLabels.privacyRequired');
     if (!termsAccepted)   errs.termsConditions = t('consentLabels.termsRequired');
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true); setServerError('');
@@ -324,7 +382,7 @@ const InlineRegister = ({ onVerificationSent, returnTo }) => {
       await registerUser({
         name: form.name, email: form.email, password: form.password,
         role: 'PARENT', phone: form.phone.trim(),
-        privacyPolicyAccepted: true, termsAccepted: true,
+        termsAccepted: true,
         marketingConsent: marketing, timezone: tz,
         returnTo,
       });
@@ -382,7 +440,6 @@ const InlineRegister = ({ onVerificationSent, returnTo }) => {
       <div className="space-y-2 pt-1">
         {[
           { id: 'terms',   checked: termsAccepted,   onChange: () => setTermsAccepted((v) => !v),   label: <>{t('consentLabels.termsPrefix')} <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">{t('consentLabels.termsLink')}</a></>, err: errors.termsConditions },
-          { id: 'privacy', checked: privacyAccepted, onChange: () => setPrivacyAccepted((v) => !v), label: <>{t('consentLabels.privacyPrefix')} <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">{t('consentLabels.privacyLink')}</a></>,           err: errors.privacyPolicy },
           { id: 'mkt',     checked: marketing,       onChange: () => setMarketing((v) => !v),       label: t('consentLabels.marketingOptInShort') },
         ].map(({ id, checked, onChange, label, err }) => (
           <div key={id}>
@@ -436,10 +493,12 @@ const BookPage = () => {
 
   // Confirm + payment state
   const [authTab,              setAuthTab]              = useState('register');
-  const [tcAcceptanceRequired, setTcAcceptanceRequired] = useState(false);
-  const [tcIsFirstBooking,     setTcIsFirstBooking]     = useState(false);
-  const [tcModalOpen,          setTcModalOpen]          = useState(false);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState(null);
+
+  // Checkout consent — always starts unchecked, never restored/reused across visits.
+  const [tcAccepted,          setTcAccepted]          = useState(false);
+  const [withdrawalAccepted,  setWithdrawalAccepted]  = useState(false);
+  const [marketingConsent,    setMarketingConsent]    = useState(false);
 
   // Slot lock
   const [lockId,        setLockId]        = useState(null);
@@ -453,7 +512,6 @@ const BookPage = () => {
   const [lockSlotFn, { isLoading: locking }] = useLockSlotMutation();
   const [releaseLock]                        = useReleaseLockMutation();
   const [createBooking, { isLoading: creating }] = useCreateBookingMutation();
-  const [acceptTcFn]                         = useAcceptTcMutation();
 
   // ── RTK queries ───────────────────────────────────────────────────────────
   // Expert public profile — skip when restore path or no expertId
@@ -486,10 +544,15 @@ const BookPage = () => {
     [availableDatesRaw]
   );
 
-  // T&C version — skip until user is authenticated; refetch after inline auth
-  const { data: tcData, refetch: refetchTc } = useGetCurrentTcVersionQuery(undefined, {
-    skip: !user,
-  });
+  // Live legal document versions/links for the checkout consent block
+  const { data: legalVersions } = useGetLegalVersionsQuery();
+
+  // 14-day cooling-off period, measured from now (the moment of booking creation) —
+  // mirrors the server-side check in createBooking().
+  const withdrawalApplicable = !!(
+    selectedSlot &&
+    new Date(selectedSlot.start).getTime() - Date.now() <= WITHDRAWAL_WINDOW_MS
+  );
 
   // ── Derive loading/error from query state ─────────────────────────────────
   const loading = !locationState?.restore && !!expertIdParam && expertLoading;
@@ -542,13 +605,12 @@ const BookPage = () => {
     if (expertIsError) setError('Could not load expert. Please try again.');
   }, [expertIsError]);
 
-  // Sync T&C state from query (re-runs when user logs in and query fetches)
+  // Reset checkout consent whenever the selected slot changes — never carry
+  // acceptance across a different session date/time.
   useEffect(() => {
-    if (!tcData) return;
-    // Both first-time users AND users whose TC version changed must accept
-    setTcAcceptanceRequired(!!(tcData.version_updated || tcData.is_first_booking));
-    setTcIsFirstBooking(!!tcData.is_first_booking);
-  }, [tcData]);
+    setTcAccepted(false);
+    setWithdrawalAccepted(false);
+  }, [selectedSlot?.start]);
 
   // Release lock on unmount
   useEffect(() => {
@@ -644,6 +706,10 @@ const BookPage = () => {
       const result = await createBooking({
         expertId: selectedExpert.id, serviceId: selectedService.id,
         scheduledAt: selectedSlot.start, format: selectedFormat, lockId: lid,
+        tcAccepted,
+        withdrawalAccepted: withdrawalApplicable ? withdrawalAccepted : undefined,
+        marketingConsent,
+        language: i18n.language,
       }).unwrap();
       lockIdRef.current = null;
       setLockId(null); setLockExpiresAt(null);
@@ -664,41 +730,19 @@ const BookPage = () => {
         },
       });
     } catch (err) {
-      const errMsg = err?.data?.error || '';
-      if (errMsg.toLowerCase().includes('terms') || errMsg.toLowerCase().includes('conditions')) {
-        setTcAcceptanceRequired(true);
-        setTcIsFirstBooking(!!(err?.data?.is_first_booking ?? tcIsFirstBooking));
-        setTcModalOpen(true);
-        return;
-      }
-      toast.error(errMsg || t('slotStep.bookError'));
+      toast.error(err?.data?.error || t('slotStep.bookError'));
     }
   };
 
   const handleProceed = () => {
-    if (tcAcceptanceRequired) { setTcModalOpen(true); return; }
+    if (!tcAccepted) return;
+    if (withdrawalApplicable && !withdrawalAccepted) return;
     doCheckout(lockId || null);
   };
 
-  const handleTcAccept = async () => {
-    setTcModalOpen(false);
-    try { await acceptTcFn(i18n.language).unwrap(); } catch { /* non-fatal */ }
-    setTcAcceptanceRequired(false);
-  };
-
-  // Called after inline auth succeeds — re-check T&C with the fresh auth token.
-  const handleAuthSuccess = async () => {
-    try {
-      const result = await refetchTc().unwrap();
-      if (result?.version_updated) {
-        setTcAcceptanceRequired(true);
-        setTcIsFirstBooking(!!result.is_first_booking);
-        setTcModalOpen(true);
-      }
-    } catch {
-      // Non-fatal — backend validates T&C on createBooking
-    }
-  };
+  // Called after inline auth succeeds — nothing to re-check; the consent block
+  // is always shown fresh below, regardless of any prior acceptance.
+  const handleAuthSuccess = () => {};
 
   // ── Loading / error ───────────────────────────────────────────────────────
   if (loading) {
@@ -941,10 +985,6 @@ const BookPage = () => {
   // ── Step: CONFIRM ─────────────────────────────────────────────────────────
   return (
     <div>
-      {tcModalOpen && (
-        <TcModal isFirstBooking={tcIsFirstBooking} onAccept={handleTcAccept} onDecline={() => setTcModalOpen(false)} />
-      )}
-
       <button onClick={() => { setSelectedSlot(null); setStep(STEPS.SLOT); }}
         className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
         <ChevronLeftIcon className="w-4 h-4" />
@@ -1018,8 +1058,16 @@ const BookPage = () => {
         <div className="p-5 pt-0">
           {user ? (
             <>
-              <button onClick={handleProceed} disabled={creating || locking}
-                className="w-full py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+              <ConsentBlock
+                legalVersions={legalVersions}
+                withdrawalApplicable={withdrawalApplicable}
+                tcAccepted={tcAccepted} setTcAccepted={setTcAccepted}
+                withdrawalAccepted={withdrawalAccepted} setWithdrawalAccepted={setWithdrawalAccepted}
+                marketingConsent={marketingConsent} setMarketingConsent={setMarketingConsent}
+              />
+              <button onClick={handleProceed}
+                disabled={creating || locking || !tcAccepted || (withdrawalApplicable && !withdrawalAccepted)}
+                className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                 {creating || locking ? t('confirmStep.preparingBtn') : t('confirmStep.proceedBtn')}
               </button>
             </>

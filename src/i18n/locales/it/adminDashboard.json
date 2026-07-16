@@ -973,12 +973,13 @@
 
   "legalDocs": {
     "pageTitle": "Documenti Legali",
-    "pageSubtitle": "Visualizza le versioni attuali e pubblica aggiornamenti dopo che il contenuto della pagina è stato aggiornato dagli sviluppatori.",
+    "pageSubtitle": "Carica un PDF e pubblica una nuova versione. I link ai documenti live usati in registrazione e checkout si aggiornano automaticamente.",
     "loadError": "Impossibile caricare le versioni dei documenti legali.",
     "loading": "Caricamento…",
     "docType": {
       "PRIVACY_POLICY": "Informativa sulla Privacy",
-      "TERMS_CONDITIONS": "Termini e Condizioni"
+      "TERMS_CONDITIONS": "Termini e Condizioni",
+      "CANCELLATION_POLICY": "Condizioni di Cancellazione e Modifica"
     },
     "card": {
       "version": "Versione {{v}}",
@@ -987,9 +988,11 @@
       "acceptance_other": "accettazioni",
       "noVersion": "Nessuna versione pubblicata",
       "viewCurrent": "Visualizza attuale",
-      "instructions": "Assicurarsi che il contenuto aggiornato sia già attivo sulla pagina {{path}} prima di pubblicare.",
-      "reacceptPrivacy": " Tutti gli utenti (genitori ed esperti) saranno invitati a ri-accettare al prossimo accesso.",
-      "reacceptTerms": " Tutti i genitori saranno invitati a ri-accettare prima della prossima prenotazione.",
+      "viewCurrentPdf": "Visualizza PDF attuale",
+      "choosePdf": "Scegli PDF…",
+      "instructions": "Allega il PDF aggiornato qui sotto prima di pubblicare.",
+      "reacceptPrivacy": " Gli utenti vedranno una notifica non bloccante dell'aggiornamento — nessuna nuova accettazione forzata.",
+      "reacceptTerms": " Tutti i genitori dovranno confermare questa versione alla prossima prenotazione.",
       "versionPlaceholder": "es. 1.1 o 2.0.1",
       "publishBtn": "Pubblica",
       "publishing": "Pubblicazione…",
@@ -1000,9 +1003,10 @@
     },
     "confirmModal": {
       "title": "Pubblicare {{docLabel}} v{{version}}?",
-      "body": "Assicurarsi che il contenuto aggiornato sia già attivo sulla pagina prima di confermare.",
-      "bodyPrivacy": " Tutti gli utenti (genitori ed esperti) saranno invitati a ri-accettare al prossimo accesso.",
-      "bodyTerms": " Tutti i genitori saranno invitati a ri-accettare prima della prossima prenotazione.",
+      "body": "Assicurarsi che il PDF allegato sia la versione definitiva prima di confermare.",
+      "bodyPrivacy": " Gli utenti vedranno una notifica non bloccante dell'aggiornamento — nessuna nuova accettazione forzata.",
+      "bodyTerms": " Tutti i genitori dovranno confermare questa versione alla prossima prenotazione.",
+      "bodyCancellation": " Questa versione diventerà immediatamente quella collegata dal checkout.",
       "cannotUndo": " Questa operazione non può essere annullata.",
       "cancel": "Annulla",
       "confirm": "Sì, pubblica"

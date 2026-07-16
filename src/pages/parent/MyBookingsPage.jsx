@@ -11,10 +11,11 @@ import {
   useGetAvailableDatesInMonthQuery,
   useNotifyImLateMutation,
 } from '../../api/bookingApi';
-import { useAuth } from '../../context/AuthContext';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
+
+const WITHDRAWAL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(isoStr, lng = 'en') {
@@ -306,6 +307,8 @@ const BookingCard = ({ booking, onViewDetails }) => {
   );
   const [rescheduleSlot, setRescheduleSlot] = useState(null);
   const [monthArgs,      setMonthArgs]      = useState(null);
+  const [rescheduleWithdrawalAccepted, setRescheduleWithdrawalAccepted] = useState(false);
+  const [rescheduleWithdrawalOpen,     setRescheduleWithdrawalOpen]     = useState(false);
 
   const [lateStep,  setLateStep]  = useState(null); // null | 'form' | 'confirm' | 'sent' | 'error'
   const [lateDelay, setLateDelay] = useState(5);
@@ -330,10 +333,18 @@ const BookingCard = ({ booking, onViewDetails }) => {
     [availableDatesRaw]
   );
 
-  // Reset selected slot when date changes
+  // Reset selected slot (and any withdrawal consent) when date changes
   useEffect(() => {
     setRescheduleSlot(null);
+    setRescheduleWithdrawalAccepted(false);
   }, [rescheduleDate]);
+
+  // 14-day cooling-off period is anchored to the ORIGINAL booking date, not the
+  // (new) session date — mirrors the server-side check in rescheduleBooking().
+  const rescheduleWithdrawalApplicable = !!(
+    rescheduleSlot &&
+    new Date(rescheduleSlot.start).getTime() - new Date(booking.created_at).getTime() <= WITHDRAWAL_WINDOW_MS
+  );
 
   const fetchAvailableDates = useCallback((year, month) => {
     setMonthArgs({ expertId: booking.expert_id, year, month, serviceId: booking.service_id });
@@ -372,6 +383,7 @@ const BookingCard = ({ booking, onViewDetails }) => {
     setShowCancel(false);
     setMonthArgs(null);
     setRescheduleSlot(null);
+    setRescheduleWithdrawalAccepted(false);
     setShowReschedule(true);
   };
 
@@ -393,12 +405,22 @@ const BookingCard = ({ booking, onViewDetails }) => {
 
   const handleConfirmReschedule = async () => {
     if (!rescheduleSlot) return;
+    if (rescheduleWithdrawalApplicable && !rescheduleWithdrawalAccepted) return;
     try {
-      await rescheduleBooking({ id: booking.id, newScheduledAt: rescheduleSlot.start }).unwrap();
+      await rescheduleBooking({
+        id: booking.id,
+        newScheduledAt: rescheduleSlot.start,
+        withdrawalAccepted: rescheduleWithdrawalApplicable ? true : undefined,
+      }).unwrap();
       setShowReschedule(false);
       setRescheduleSlot(null);
+      setRescheduleWithdrawalAccepted(false);
       toast.success(t('card.rescheduledTitle'));
     } catch (err) {
+      if (err?.data?.withdrawal_required) {
+        toast.error(t('card.withdrawalRequiredError'));
+        return;
+      }
       toast.error(err?.data?.error || t('card.rescheduleError'));
     }
   };
@@ -704,16 +726,41 @@ const BookingCard = ({ booking, onViewDetails }) => {
                   </div>
                 )}
 
+                {rescheduleWithdrawalApplicable && (
+                  <div className="space-y-1.5 px-3 py-2.5 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg">
+                    <p className="text-xs text-gray-500">{t('card.withdrawalLeadIn')}</p>
+                    <label className="flex items-start gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={rescheduleWithdrawalAccepted}
+                        onChange={(e) => setRescheduleWithdrawalAccepted(e.target.checked)}
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+                      />
+                      <span className="text-xs text-[#1F2933] leading-relaxed">{t('card.withdrawalLabel')}</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setRescheduleWithdrawalOpen((o) => !o)}
+                      className="text-[11px] text-gray-400 hover:text-[#445446] underline ml-5"
+                    >
+                      {t('card.withdrawalWhy')}
+                    </button>
+                    {rescheduleWithdrawalOpen && (
+                      <p className="text-[11px] text-gray-400 leading-relaxed ml-5">{t('card.withdrawalWhyBody')}</p>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <button
-                    onClick={() => { setShowReschedule(false); setRescheduleSlot(null); }}
+                    onClick={() => { setShowReschedule(false); setRescheduleSlot(null); setRescheduleWithdrawalAccepted(false); }}
                     className="flex-1 py-2 text-xs font-medium border border-[#E4E7E4] rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                   >
                     {t('card.keepCurrentTime')}
                   </button>
                   <button
                     onClick={handleConfirmReschedule}
-                    disabled={!rescheduleSlot || rescheduling}
+                    disabled={!rescheduleSlot || rescheduling || (rescheduleWithdrawalApplicable && !rescheduleWithdrawalAccepted)}
                     className="flex-1 py-2 text-xs font-medium bg-[#445446] hover:bg-[#3a4a3b] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {rescheduling ? t('card.rescheduling') : t('card.confirmReschedule')}
@@ -966,10 +1013,6 @@ const PastBookingCard = ({ booking, onViewDetails }) => {
 // ─── Main page ────────────────────────────────────────────────────────────────
 const MyBookingsPage = ({ view = 'upcoming' }) => {
   const { t } = useTranslation('parentBookings');
-  const { triggerPpCheck } = useAuth();
-
-  // Fire any deferred Privacy Policy update modal
-  useEffect(() => { triggerPpCheck(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: bookings = [], isLoading, isError } = useGetMyBookingsQuery();
   const [verifyPayment] = useVerifyPaymentMutation();

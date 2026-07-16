@@ -69,7 +69,12 @@
     "cancelError":            "Could not cancel. Please try again.",
     "rescheduleError":        "Could not reschedule. Please try again.",
     "refundFull":             "You'll receive a full refund{{amount}}.",
-    "refundHalf":             "You'll receive a 50% refund{{amount}} — cancellation is between 12 and 24 hours before your session."
+    "refundHalf":             "You'll receive a 50% refund{{amount}} — cancellation is between 12 and 24 hours before your session.",
+    "withdrawalLeadIn":       "Your new Session may take place within the next 14 days, so we need your go-ahead:",
+    "withdrawalLabel":        "I expressly request that my Session take place before the end of the 14-day cooling-off (withdrawal) period, and I understand that my right of withdrawal ends once the Session has been fully delivered.",
+    "withdrawalWhy":          "Why am I asked this?",
+    "withdrawalWhyBody":      "EU law gives you 14 days to change your mind about online purchases. Because your Session may happen within those 14 days, we ask you to confirm you'd like to go ahead — your options under our Cancellation and Rescheduling Policy are not affected.",
+    "withdrawalRequiredError": "Please confirm the early-performance consent to reschedule into the next 14 days."
   },
   "pastCard": {
     "viewDetails":              "View details",
@@ -110,14 +115,13 @@
     "expertCancelNote": "If your expert cancels for any reason, you will always receive a <1>full refund</1> regardless of timing.",
     "footer":          "Cancellations are processed based on the time your request is received by Sage Nest. If you have any questions, our support team is here to help."
   },
-  "tcModal": {
-    "titleFirst":   "Terms & Conditions",
-    "titleUpdated": "Terms & Conditions Updated",
-    "bodyFirst":    "Please review and accept our Terms & Conditions before making a booking.",
-    "bodyUpdated":  "Our Terms & Conditions have been updated since your last booking. You must review and accept the new version before making a new booking.",
-    "readFull":     "You can read the full <0>Terms & Conditions</0> before accepting.",
-    "acceptBtn":    "I accept the Terms & Conditions",
-    "cancelBtn":    "Cancel and go back"
+  "consentBlock": {
+    "termsLabel":        "I have read and accept the <0>Consumer Terms</0> and the <1>Cancellation and Rescheduling Policy</1>.",
+    "withdrawalLeadIn":  "Your Session may take place within the next 14 days, so we need your go-ahead:",
+    "withdrawalLabel":   "I expressly request that my Session take place before the end of the 14-day cooling-off (withdrawal) period, and I understand that my right of withdrawal ends once the Session has been fully delivered.",
+    "withdrawalWhy":     "Why am I asked this?",
+    "withdrawalWhyBody": "EU law gives you 14 days to change your mind about online purchases. Because your Session may happen within those 14 days, we ask you to confirm you'd like to go ahead — your options under our Cancellation and Rescheduling Policy are not affected.",
+    "privacyNotice":     "Your personal data is processed to manage your booking, as described in our <0>Privacy Policy</0>."
   },
   "serviceStep": {
     "back":            "Back to expert profile",
@@ -262,13 +266,10 @@
     "sendError":    "Could not send notification. Please try again."
   },
   "consentLabels": {
-    "privacyPrefix":       "I have read and agree to the",
-    "privacyLink":         "Privacy Policy",
     "termsPrefix":         "I have read and agree to the",
     "termsLink":           "Terms & Conditions",
     "marketingOptIn":      "I'd like to receive tips, expert advice, and updates from Sage Nest by email. You can unsubscribe at any time.",
     "marketingOptInShort": "I'd like occasional parenting tips from Sage Nest (optional)",
-    "privacyRequired":     "You must accept the Privacy Policy to continue.",
     "termsRequired":       "You must accept the Terms & Conditions to continue."
   }
 }

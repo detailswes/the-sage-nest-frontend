@@ -973,12 +973,13 @@
 
   "legalDocs": {
     "pageTitle": "Legal Documents",
-    "pageSubtitle": "View current versions and publish updates after the page content has been updated by developers.",
+    "pageSubtitle": "Upload a PDF and publish a new version. The live document links used at signup and checkout update automatically.",
     "loadError": "Could not load legal document versions.",
     "loading": "Loading…",
     "docType": {
       "PRIVACY_POLICY": "Privacy Policy",
-      "TERMS_CONDITIONS": "Terms & Conditions"
+      "TERMS_CONDITIONS": "Terms & Conditions",
+      "CANCELLATION_POLICY": "Cancellation & Rescheduling Policy"
     },
     "card": {
       "version": "Version {{v}}",
@@ -987,9 +988,11 @@
       "acceptance_other": "acceptances",
       "noVersion": "No version published yet",
       "viewCurrent": "View current",
-      "instructions": "Make sure the updated content is already live on the {{path}} page before publishing.",
-      "reacceptPrivacy": " All users (parents and experts) will be prompted to re-accept on their next login.",
-      "reacceptTerms": " All parents will be prompted to re-accept before their next booking.",
+      "viewCurrentPdf": "View current PDF",
+      "choosePdf": "Choose PDF…",
+      "instructions": "Attach the updated PDF below before publishing.",
+      "reacceptPrivacy": " Users will see a non-blocking notice of the update — no forced re-acceptance.",
+      "reacceptTerms": " All parents will be asked to confirm this version at their next booking.",
       "versionPlaceholder": "e.g. 1.1 or 2.0.1",
       "publishBtn": "Publish",
       "publishing": "Publishing…",
@@ -1000,9 +1003,10 @@
     },
     "confirmModal": {
       "title": "Publish {{docLabel}} v{{version}}?",
-      "body": "Make sure the updated content is already live on the page before confirming.",
-      "bodyPrivacy": " All users (parents and experts) will be prompted to re-accept on their next login.",
-      "bodyTerms": " All parents will be prompted to re-accept before their next booking.",
+      "body": "Make sure the attached PDF is the final version before confirming.",
+      "bodyPrivacy": " Users will see a non-blocking notice of the update — no forced re-acceptance.",
+      "bodyTerms": " All parents will be asked to confirm this version at their next booking.",
+      "bodyCancellation": " This version will immediately become the one linked from checkout.",
       "cannotUndo": " This cannot be undone.",
       "cancel": "Cancel",
       "confirm": "Yes, publish"

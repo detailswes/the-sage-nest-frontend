@@ -77,7 +77,7 @@ api.interceptors.response.use(
 
       window.dispatchEvent(
         new CustomEvent('auth:tokenRefreshed', {
-          detail: { accessToken: data.accessToken, user: data.user, pp_update_required: data.pp_update_required },
+          detail: { accessToken: data.accessToken, user: data.user },
         })
       );
 
