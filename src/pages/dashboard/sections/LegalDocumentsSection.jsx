@@ -89,7 +89,8 @@ const DocCard = ({ type, docs }) => {
   const [bumpLegalDocument, { isLoading: loading }] = useBumpLegalDocumentMutation();
 
   const [version,        setVersion]        = useState("");
-  const [file,           setFile]           = useState(null);
+  const [fileEn,         setFileEn]         = useState(null);
+  const [fileIt,         setFileIt]         = useState(null);
   const [confirmPending, setConfirmPending] = useState(false);
   const [historyOpen,    setHistoryOpen]    = useState(false);
 
@@ -99,7 +100,7 @@ const DocCard = ({ type, docs }) => {
   const trimmed      = version.trim();
   const versionValid = VERSION_RE.test(trimmed);
   const showFmtHint  = trimmed.length > 0 && !versionValid;
-  const canPublish   = versionValid && !!file;
+  const canPublish   = versionValid && !!fileEn && !!fileIt;
 
   const docLabel = t(`legalDocs.docType.${type}`);
   const docPath  = DOC_PATH[type];
@@ -109,12 +110,13 @@ const DocCard = ({ type, docs }) => {
     setConfirmPending(true);
   };
 
+  const resetForm = () => { setVersion(""); setFileEn(null); setFileIt(null); };
+
   const handleConfirmedBump = async () => {
     setConfirmPending(false);
     try {
-      await bumpLegalDocument({ type, version: trimmed, document: file }).unwrap();
-      setVersion("");
-      setFile(null);
+      await bumpLegalDocument({ type, version: trimmed, documentEn: fileEn, documentIt: fileIt }).unwrap();
+      resetForm();
       toast.success(t("legalDocs.card.publishSuccess", { version: trimmed, docLabel }));
     } catch (err) {
       toast.error(err?.data?.error || t("legalDocs.card.publishError"));
@@ -127,7 +129,7 @@ const DocCard = ({ type, docs }) => {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={(e) => {
-            if (e.target === e.currentTarget) { setConfirmPending(false); setVersion(""); setFile(null); }
+            if (e.target === e.currentTarget) { setConfirmPending(false); resetForm(); }
           }}
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -150,7 +152,7 @@ const DocCard = ({ type, docs }) => {
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => { setConfirmPending(false); setVersion(""); setFile(null); }}
+                onClick={() => { setConfirmPending(false); resetForm(); }}
                 className="flex-1 py-2.5 px-4 rounded-lg border-2 border-[#c5ceba] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
                 {t("legalDocs.confirmModal.cancel")}
@@ -194,17 +196,50 @@ const DocCard = ({ type, docs }) => {
               <p className="text-xs text-red-500 mt-1">{t("legalDocs.card.noVersion")}</p>
             )}
           </div>
-          <a
-            href={currentDoc?.file_url || docPath}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-shrink-0 self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium text-[#445446] hover:bg-[#f0f2ed] transition-colors whitespace-nowrap"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-            </svg>
-            {currentDoc?.file_url ? t("legalDocs.card.viewCurrentPdf") : t("legalDocs.card.viewCurrent")}
-          </a>
+          <div className="flex-shrink-0 self-start flex flex-col gap-1.5 items-end">
+            {currentDoc?.file_url_en || currentDoc?.file_url_it ? (
+              <>
+                {currentDoc?.file_url_en && (
+                  <a
+                    href={currentDoc.file_url_en}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium text-[#445446] hover:bg-[#f0f2ed] transition-colors whitespace-nowrap"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                    {t("legalDocs.card.viewCurrentPdfEn")}
+                  </a>
+                )}
+                {currentDoc?.file_url_it && (
+                  <a
+                    href={currentDoc.file_url_it}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium text-[#445446] hover:bg-[#f0f2ed] transition-colors whitespace-nowrap"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                    {t("legalDocs.card.viewCurrentPdfIt")}
+                  </a>
+                )}
+              </>
+            ) : (
+              <a
+                href={docPath}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium text-[#445446] hover:bg-[#f0f2ed] transition-colors whitespace-nowrap"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+                {t("legalDocs.card.viewCurrent")}
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Publish controls */}
@@ -233,19 +268,29 @@ const DocCard = ({ type, docs }) => {
           {showFmtHint && (
             <p className="text-xs text-red-500">{t("legalDocs.card.formatHint")}</p>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-[#c5ceba] text-xs text-gray-500 cursor-pointer hover:border-[#445446] hover:text-[#445446] transition-colors truncate">
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
-              </svg>
-              <span className="truncate">{file ? file.name : t("legalDocs.card.choosePdf")}</span>
+              <span className="flex-shrink-0 inline-flex items-center justify-center w-5 h-4 rounded-sm bg-gray-100 text-[10px] font-bold text-gray-500">EN</span>
+              <span className="truncate">{fileEn ? fileEn.name : t("legalDocs.card.choosePdfEn")}</span>
               <input
                 type="file"
                 accept="application/pdf"
                 className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                onChange={(e) => setFileEn(e.target.files?.[0] || null)}
               />
             </label>
+            <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-[#c5ceba] text-xs text-gray-500 cursor-pointer hover:border-[#445446] hover:text-[#445446] transition-colors truncate">
+              <span className="flex-shrink-0 inline-flex items-center justify-center w-5 h-4 rounded-sm bg-gray-100 text-[10px] font-bold text-gray-500">IT</span>
+              <span className="truncate">{fileIt ? fileIt.name : t("legalDocs.card.choosePdfIt")}</span>
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => setFileIt(e.target.files?.[0] || null)}
+              />
+            </label>
+          </div>
+          <div className="flex justify-end">
             <button
               onClick={handleBump}
               disabled={loading || !canPublish}
