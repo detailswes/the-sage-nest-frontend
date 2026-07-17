@@ -7,8 +7,10 @@ import LanguageSelector from '../../components/LanguageSelector';
 import useAuthForm from '../../hooks/useAuthForm';
 import { validateRegisterForm, checkPasswordStrength } from '../../utils/validation';
 import { registerUser } from '../../api/authApi';
+import { useGetLegalVersionsQuery } from '../../api/userApi';
 import { useAuth } from '../../context/AuthContext';
 import useResendVerification from '../../hooks/useResendVerification';
+import { resolveDocUrl } from '../../utils/legalDocs';
 import { EnvelopeIcon, CheckCircleFilledIcon, InfoCircleFilledIcon } from '../../assets/icons';
 
 const ROLE_KEYS = ['EXPERT', 'PARENT'];
@@ -20,6 +22,8 @@ const Register = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [emailSent, setEmailSent] = useState(null); // { email }
   const { resend, status: resendStatus, countdown } = useResendVerification();
+  const { data: legalVersions } = useGetLegalVersionsQuery();
+  const termsHref = resolveDocUrl(legalVersions?.terms_conditions, i18n.language, '/terms-conditions');
 
   const roleParam = searchParams.get('user')?.toUpperCase();
   const activeRole = ROLE_KEYS.includes(roleParam) ? roleParam : 'EXPERT';
@@ -320,7 +324,7 @@ const Register = () => {
             />
             <span className="text-sm text-[#1F2933] leading-snug">
               {tConsent('consentLabels.termsPrefix')}{' '}
-              <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
+              <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
                 {tConsent('consentLabels.termsLink')}
               </a>
               <span className="text-red-500 ml-0.5">*</span>

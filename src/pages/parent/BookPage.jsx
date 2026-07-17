@@ -14,6 +14,7 @@ import {
 import { useGetLegalVersionsQuery } from '../../api/userApi';
 import { loginUser, registerUser, verifyOtpApi } from '../../api/authApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
+import { resolveDocUrl } from '../../utils/legalDocs';
 import { validateLoginForm, validateRegisterForm, checkPasswordStrength } from '../../utils/validation';
 import PasswordInput from '../../components/auth/PasswordInput';
 import useResendVerification from '../../hooks/useResendVerification';
@@ -27,15 +28,6 @@ import {
 const WEBFLOW_DIRECTORY_URL   = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL   || 'https://the-sage-nest.webflow.io/experts';
 const WEBFLOW_EXPERT_BASE_URL = process.env.REACT_APP_WEBFLOW_EXPERT_BASE_URL || 'https://the-sage-nest.webflow.io/experts';
 const WITHDRAWAL_WINDOW_MS    = 14 * 24 * 60 * 60 * 1000;
-
-// Picks the PDF for the current UI language, falling back to the other
-// language's PDF, then to the in-app page, if the admin hasn't uploaded
-// both yet.
-function resolveDocUrl(doc, lang, fallbackPath) {
-  if (!doc) return fallbackPath;
-  const preferred = lang === 'it' ? doc.file_url_it : doc.file_url_en;
-  return preferred || doc.file_url_en || doc.file_url_it || fallbackPath;
-}
 
 // ─── Steps ───────────────────────────────────────────────────────────────────
 const STEPS = { SERVICE: 'service', SLOT: 'slot', CONFIRM: 'confirm' };
@@ -292,7 +284,16 @@ const ExpertHeader = ({ expert }) => {
 };
 
 // ─── Inline Login form ────────────────────────────────────────────────────────
-const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
+// Consent checkboxes are shown right in this form (below the credentials) so a
+// returning parent ticks them while signing in, then lands straight on the
+// Stripe checkout page — no extra screen just to re-confirm the same checkboxes.
+const InlineLogin = ({
+  onSuccess, onVerificationNeeded,
+  legalVersions, withdrawalApplicable,
+  tcAccepted, setTcAccepted,
+  withdrawalAccepted, setWithdrawalAccepted,
+  marketingConsent, setMarketingConsent,
+}) => {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
@@ -303,15 +304,18 @@ const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
   const [otpLoading, setOtpLoading] = useState(false);
   const { login } = useAuth();
 
+  const consentValid = tcAccepted && (!withdrawalApplicable || withdrawalAccepted);
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!consentValid) return;
     const errs = validateLoginForm({ email, password });
     if (Object.keys(errs).length) { setError(errs.email || errs.password || 'Invalid credentials'); return; }
     setLoading(true); setError('');
     try {
       const data = await loginUser({ email, password });
       if (data.otp_token) { setOtpToken(data.otp_token); }
-      else { login(data); onSuccess(); }
+      else { login(data); await onSuccess(); }
     } catch (err) {
       if (err?.response?.data?.email_not_verified && onVerificationNeeded) {
         onVerificationNeeded(email);
@@ -327,7 +331,7 @@ const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
     setOtpLoading(true); setOtpError('');
     try {
       const data = await verifyOtpApi({ otp_token: otpToken, code: otp });
-      login(data); onSuccess();
+      login(data); await onSuccess();
     } catch (err) {
       setOtpError(err?.response?.data?.error || 'Incorrect code. Please try again.');
     } finally { setOtpLoading(false); }
@@ -341,9 +345,9 @@ const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
           placeholder="000000" maxLength={6}
           className="w-full px-4 py-3 rounded-lg border border-[#E4E7E4] text-sm text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]" />
         {otpError && <p className="text-xs text-red-600">{otpError}</p>}
-        <button type="submit" disabled={otpLoading}
-          className="w-full py-3 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60">
-          {otpLoading ? 'Verifying…' : 'Verify & continue'}
+        <button type="submit" disabled={otpLoading || !consentValid}
+          className="w-full py-3 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+          {otpLoading ? 'Verifying…' : 'Verify & pay'}
         </button>
       </form>
     );
@@ -361,18 +365,30 @@ const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
         <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" />
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
-      <button type="submit" disabled={loading}
-        className="w-full py-3 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60">
-        {loading ? 'Signing in…' : 'Sign in & continue'}
+
+      <div className="pt-1">
+        <ConsentBlock
+          legalVersions={legalVersions}
+          withdrawalApplicable={withdrawalApplicable}
+          tcAccepted={tcAccepted} setTcAccepted={setTcAccepted}
+          withdrawalAccepted={withdrawalAccepted} setWithdrawalAccepted={setWithdrawalAccepted}
+          marketingConsent={marketingConsent} setMarketingConsent={setMarketingConsent}
+        />
+      </div>
+
+      <button type="submit" disabled={loading || !consentValid}
+        className="w-full py-3 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+        {loading ? 'Signing in…' : 'Sign in & pay'}
       </button>
     </form>
   );
 };
 
 // ─── Inline Register form ─────────────────────────────────────────────────────
-const InlineRegister = ({ onVerificationSent, returnTo }) => {
-  const { t } = useTranslation('parentBookings');
+const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
+  const { t, i18n } = useTranslation('parentBookings');
   const { t: tAuth } = useTranslation('auth');
+  const termsHref = resolveDocUrl(legalVersions?.terms_conditions, i18n.language, '/terms-conditions');
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
@@ -450,7 +466,7 @@ const InlineRegister = ({ onVerificationSent, returnTo }) => {
 
       <div className="space-y-2 pt-1">
         {[
-          { id: 'terms',   checked: termsAccepted,   onChange: () => setTermsAccepted((v) => !v),   label: <>{t('consentLabels.termsPrefix')} <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">{t('consentLabels.termsLink')}</a></>, err: errors.termsConditions },
+          { id: 'terms',   checked: termsAccepted,   onChange: () => setTermsAccepted((v) => !v),   label: <>{t('consentLabels.termsPrefix')} <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">{t('consentLabels.termsLink')}</a></>, err: errors.termsConditions },
           { id: 'mkt',     checked: marketing,       onChange: () => setMarketing((v) => !v),       label: t('consentLabels.marketingOptInShort') },
         ].map(({ id, checked, onChange, label, err }) => (
           <div key={id}>
@@ -750,10 +766,6 @@ const BookPage = () => {
     if (withdrawalApplicable && !withdrawalAccepted) return;
     doCheckout(lockId || null);
   };
-
-  // Called after inline auth succeeds — nothing to re-check; the consent block
-  // is always shown fresh below, regardless of any prior acceptance.
-  const handleAuthSuccess = () => {};
 
   // ── Loading / error ───────────────────────────────────────────────────────
   if (loading) {
@@ -1099,8 +1111,13 @@ const BookPage = () => {
                 <>
                   <p className="text-base font-semibold text-[#1F2933] mb-4">{t('confirmStep.signInTitle')}</p>
                   <InlineLogin
-                    onSuccess={handleAuthSuccess}
+                    onSuccess={() => doCheckout(lockId || null)}
                     onVerificationNeeded={setPendingVerificationEmail}
+                    legalVersions={legalVersions}
+                    withdrawalApplicable={withdrawalApplicable}
+                    tcAccepted={tcAccepted} setTcAccepted={setTcAccepted}
+                    withdrawalAccepted={withdrawalAccepted} setWithdrawalAccepted={setWithdrawalAccepted}
+                    marketingConsent={marketingConsent} setMarketingConsent={setMarketingConsent}
                   />
                   <p className="text-sm text-gray-500 text-center mt-4">
                     {t('confirmStep.noAccount')}{' '}
@@ -1120,6 +1137,7 @@ const BookPage = () => {
                   </p>
                   <InlineRegister
                     onVerificationSent={setPendingVerificationEmail}
+                    legalVersions={legalVersions}
                     returnTo={
                       `/book?expertId=${expertIdParam || ''}` +
                       ((serviceIdParam || selectedService?.id) ? `&serviceId=${serviceIdParam || selectedService?.id}` : '') +
