@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { STORAGE_KEY } from '../i18n';
 import { ChevronDownIcon, CheckIcon } from '../assets/icons';
+import { useAuth } from '../context/AuthContext';
+import { updateLanguageApi } from '../api/authApi';
 
 const LANGUAGES = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -13,6 +15,7 @@ const DROPDOWN_W = 144; // w-36 = 144px
 
 const LanguageSelector = ({ variant = 'default' }) => {
   const { i18n } = useTranslation();
+  const { user, updateUser } = useAuth() || {};
   const current = LANGUAGES.find((l) => l.code === i18n.language) || LANGUAGES[0];
   const [open, setOpen]       = useState(false);
   const [dropUp, setDropUp]   = useState(false);
@@ -41,6 +44,15 @@ const LanguageSelector = ({ variant = 'default' }) => {
     i18n.changeLanguage(code);
     localStorage.setItem(STORAGE_KEY, code);
     setOpen(false);
+
+    // Persist as the user's durable preference (used for future emails, etc.)
+    // once they're logged in — not changeable back by browser/locale detection.
+    if (user) {
+      updateUser({ language: code });
+      updateLanguageApi(code).catch(() => {
+        // Best-effort — the UI already reflects the choice via i18n/localStorage.
+      });
+    }
   };
 
   // Inline variant — tab-style row, no floating dropdown
