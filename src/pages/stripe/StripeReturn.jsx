@@ -23,7 +23,7 @@ const StripeReturn = () => {
       const data = await triggerVerify(undefined, false).unwrap();
       if (data.onboarding_complete) {
         setStatus('success');
-      } else if (data.details_submitted && !data.card_payments_active) {
+      } else if (data.onboarding_pending) {
         setStatus('pending');
       } else {
         setStatus('incomplete');
