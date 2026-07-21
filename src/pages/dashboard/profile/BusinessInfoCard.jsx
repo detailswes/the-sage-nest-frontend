@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { isValidIBAN, electronicFormatIBAN } from "ibantools";
 import { useSaveBusinessInfoMutation } from "../../../api/expertApi";
+import { COUNTRIES, getCountryName } from "../../../utils/countries";
 
 const Spinner = () => (
   <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin flex-shrink-0" />
@@ -220,7 +221,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
             <InfoRow label={t("profile.business.infoRows.street")} value={data.address_street} />
             <InfoRow label={t("profile.business.infoRows.city")} value={data.address_city} />
             <InfoRow label={t("profile.business.infoRows.postalCode")} value={data.address_postal_code} />
-            <InfoRow label={t("profile.business.infoRows.country")} value={data.address_country} />
+            <InfoRow label={t("profile.business.infoRows.country")} value={getCountryName(data.address_country)} />
             <InfoRow label={t("profile.business.infoRows.tin")} value={data.tin} />
             {data.entity_type === "COMPANY" && (
               <InfoRow label={t("profile.business.infoRows.vatNumber")} value={data.vat_number} />
@@ -372,14 +373,17 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 </div>
               </div>
               <div>
-                <input
-                  type="text"
+                <select
                   name="address_country"
                   value={form.address_country}
                   onChange={handleChange}
-                  placeholder={t("profile.business.form.countryPlaceholder")}
                   className={inputClass("address_country")}
-                />
+                >
+                  <option value="">{t("profile.business.form.countryPlaceholder")}</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
                 {fieldErrors.address_country && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.address_country}</p>}
               </div>
             </div>

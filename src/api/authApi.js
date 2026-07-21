@@ -70,6 +70,11 @@ export const updateProfileApi = async ({ name, phone, city, timezone }) => {
   return response.data;
 };
 
+export const updateLanguageApi = async (language) => {
+  const response = await api.patch("/auth/language", { language });
+  return response.data;
+};
+
 export const updateEmailApi = async ({ email, password }) => {
   const response = await api.patch("/auth/profile/email", { email, password });
   return response.data;

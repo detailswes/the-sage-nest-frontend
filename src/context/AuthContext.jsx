@@ -1,9 +1,20 @@
 import { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { setAuthHeader, refreshAccessToken, logoutUser } from '../api/authApi';
+import i18n, { STORAGE_KEY as LANG_STORAGE_KEY } from '../i18n';
 
 const AuthContext = createContext(null);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+// Once a user is known (login, session restore, token refresh), their saved
+// language preference wins over whatever localStorage/browser detection had
+// guessed — it's an explicit, durable choice, not a changeable default.
+const syncLanguageFromUser = (user) => {
+  if (user?.language && ['en', 'it'].includes(user.language) && user.language !== i18n.language) {
+    i18n.changeLanguage(user.language);
+    localStorage.setItem(LANG_STORAGE_KEY, user.language);
+  }
+};
+
 const readStoredUser = () => {
   try {
     const raw = localStorage.getItem('user');
@@ -51,6 +62,7 @@ export const AuthProvider = ({ children }) => {
         applyToken(data.accessToken);
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
+        syncLanguageFromUser(data.user);
       } catch (err) {
         const status = err?.response?.status;
         if (status === 401 || status === 403) {
@@ -80,6 +92,7 @@ export const AuthProvider = ({ children }) => {
       applyToken(e.detail.accessToken);
       setUser(e.detail.user);
       // interceptor already updated localStorage
+      syncLanguageFromUser(e.detail.user);
     };
 
     window.addEventListener('auth:logout', handleLogout);
@@ -100,6 +113,7 @@ export const AuthProvider = ({ children }) => {
       applyToken(data.accessToken);
       setUser(data.user);
       localStorage.setItem('user', JSON.stringify(data.user));
+      syncLanguageFromUser(data.user);
     },
     [applyToken]
   );
