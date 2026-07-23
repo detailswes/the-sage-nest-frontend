@@ -399,11 +399,6 @@ const AdminExpertDetailSection = () => {
                 <a href={`mailto:${email}`} className="text-sm text-gray-400 hover:text-[#445446] hover:underline block mt-0.5">{email}</a>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <StatusBadge status={expert.status} />
-                  {expert.status === "APPROVED" && !expert.is_published && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 border border-orange-200">
-                      {t("expertDetail.badge.unlisted")}
-                    </span>
-                  )}
                   {expert.user?.is_verified ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
                       {t("expertDetail.badge.emailVerified")}

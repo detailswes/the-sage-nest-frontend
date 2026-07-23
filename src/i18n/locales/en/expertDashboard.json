@@ -24,10 +24,6 @@
       "title": "Add your availability so parents can book you",
       "body":  "Your profile is live but you have no availability set for the next 14 days — parents won't be able to book a session until you do.",
       "cta":   "Set your availability →"
-    },
-    "unpublished": {
-      "title": "Your profile is currently hidden from search",
-      "body":  "Your account is approved but has been temporarily removed from parent search results by the Sage Nest team. Please contact support if you have questions."
     }
   },
   "upcomingAppointments": {
