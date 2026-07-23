@@ -185,6 +185,17 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
               </div>
             </div>
 
+            {/* Legal — audit trail of what was shown at booking time */}
+            {booking.consent?.privacy_policy_version_displayed && (
+              <div className="px-6 py-4">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{t("bookingModal.sections.legal")}</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">{t("bookingModal.labels.privacyPolicyVersionDisplayed")}</span>
+                  <span className="font-medium text-[#1F2933]">{booking.consent.privacy_policy_version_displayed}</span>
+                </div>
+              </div>
+            )}
+
             {/* Payment details */}
             <div className="px-6 py-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{t("bookingModal.sections.payment")}</p>

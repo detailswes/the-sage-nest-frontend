@@ -54,7 +54,6 @@ const AdminComplianceSection = () => {
   const total              = result?.total ?? 0;
   const pages              = result?.pages ?? 1;
   const currentPage        = result?.page  ?? page;
-  const currentPpVersion   = result?.current_pp_version  ?? null;
   const currentTcVersion   = result?.current_tc_version  ?? null;
 
   const loading = isLoading || isFetching;
@@ -73,12 +72,6 @@ const AdminComplianceSection = () => {
         </div>
         {/* Current versions */}
         <div className="flex items-center gap-2 text-xs flex-wrap">
-          {currentPpVersion && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#dfe2d7]/40 border border-[#c5ceba] text-[#5e6d5b] font-medium">
-              Privacy Policy:
-              <span className="text-[#445446] font-semibold">{currentPpVersion}</span>
-            </span>
-          )}
           {currentTcVersion && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#dfe2d7]/40 border border-[#c5ceba] text-[#5e6d5b] font-medium">
               Terms & Conditions:
@@ -161,12 +154,11 @@ const AdminComplianceSection = () => {
                 <tr className="bg-[#445446] border-b border-[#3a4a3b]">
                   {[
                     t("legalCompliance.col.parent"),
-                    t("legalCompliance.col.privacyPolicy"),
                     t("legalCompliance.col.terms"),
                     t("legalCompliance.col.overall"),
                     t("legalCompliance.col.actions"),
                   ].map((h, i) => (
-                    <th key={i} className={`text-xs font-semibold text-white uppercase tracking-wider px-5 py-3 ${i === 4 ? "text-right" : "text-left"}`}>
+                    <th key={i} className={`text-xs font-semibold text-white uppercase tracking-wider px-5 py-3 ${i === 3 ? "text-right" : "text-left"}`}>
                       {h}
                     </th>
                   ))}
@@ -179,15 +171,6 @@ const AdminComplianceSection = () => {
                       <p className="font-medium text-[#1F2933]">{p.name || "—"}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{p.email}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{t("legalCompliance.joined", { date: formatDate(p.created_at) })}</p>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <ComplianceBadge ok={p.pp_compliant} />
-                      <p className="text-xs text-gray-400 mt-1.5">
-                        {p.pp_version ? t("legalCompliance.accepted", { version: p.pp_version, date: formatDate(p.pp_accepted_at) }) : t("legalCompliance.neverAccepted")}
-                      </p>
-                      {!p.pp_compliant && currentPpVersion && (
-                        <p className="text-xs text-red-500 mt-0.5">{t("legalCompliance.current", { version: currentPpVersion })}</p>
-                      )}
                     </td>
                     <td className="px-5 py-3.5">
                       <ComplianceBadge ok={p.tc_compliant} />
@@ -222,20 +205,8 @@ const AdminComplianceSection = () => {
                   <p className="text-xs text-gray-400">{t("legalCompliance.joined", { date: formatDate(p.created_at) })}</p>
                 </div>
 
-                {/* PP + TC rows */}
+                {/* TC row */}
                 <div className="space-y-2 border-t border-[#dfe2d7] pt-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-xs text-gray-500 flex-shrink-0 pt-0.5">{t("legalCompliance.col.privacyPolicy")}</span>
-                    <div className="text-right">
-                      <ComplianceBadge ok={p.pp_compliant} />
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {p.pp_version ? t("legalCompliance.accepted", { version: p.pp_version, date: formatDate(p.pp_accepted_at) }) : t("legalCompliance.neverAccepted")}
-                      </p>
-                      {!p.pp_compliant && currentPpVersion && (
-                        <p className="text-xs text-red-500">{t("legalCompliance.current", { version: currentPpVersion })}</p>
-                      )}
-                    </div>
-                  </div>
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-xs text-gray-500 flex-shrink-0 pt-0.5">{t("legalCompliance.col.terms")}</span>
                     <div className="text-right">

@@ -7,7 +7,7 @@ import { getProfileImageUrl } from "../../utils/imageUrl";
 import {
   NavUserIcon, NavBriefcaseIcon, NavCalendarIcon,
   NavAppointmentsIcon, NavSettingsIcon, NavLogoutIcon,
-  MenuIcon, XIcon, WarningTriangleIcon, CalendarIcon, EyeOffBannerIcon, SignOutIcon,
+  MenuIcon, XIcon, WarningTriangleIcon, CalendarIcon, SignOutIcon,
 } from "../../assets/icons";
 import { LOGO_SVG } from "../../assets/images";
 
@@ -42,7 +42,6 @@ const ExpertDashboard = () => {
   const sidebarImage = imgError ? null : getProfileImageUrl(profile?.profile_image);
   const expertStatus = profile?.status ?? null;
   const changeRequestNote = profile?.change_request_note || "";
-  const isPublished = profile?.is_published ?? true;
   const hasAvailability = availError ? true : availSlots ? availSlots.length > 0 : null;
 
   const lastSegment = location.pathname.split("/").pop();
@@ -209,18 +208,6 @@ const ExpertDashboard = () => {
             </div>
           )}
 
-          {/* Unpublished banner */}
-          {expertStatus === "APPROVED" && !isPublished && (
-            <div className="mb-6 rounded-xl border border-orange-300 bg-orange-50 px-5 py-4">
-              <div className="flex items-start gap-3">
-                <EyeOffBannerIcon className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-orange-800">{t('banners.unpublished.title')}</p>
-                  <p className="text-sm text-orange-700 mt-1">{t('banners.unpublished.body')}</p>
-                </div>
-              </div>
-            </div>
-          )}
 
           <Outlet />
         </div>

@@ -837,7 +837,6 @@ const LegalConsentsSection = () => {
   };
 
   const lng = i18n.language;
-  const latestPp = data?.privacy_policy?.[0];
   const latestTcReg = data?.terms_registration?.[0];
   const bookingTcCount = data?.terms_per_booking?.length ?? 0;
   const latestBookingTc = data?.terms_per_booking?.[0];
@@ -858,40 +857,6 @@ const LegalConsentsSection = () => {
           <p className="text-sm text-red-500">{t("legalConsents.loadError")}</p>
         ) : (
           <div className="divide-y divide-[#F0F2F0] space-y-0">
-
-            {/* Privacy Policy */}
-            <ConsentRow label={t("legalConsents.ppLabel")}>
-              {latestPp ? (
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm text-[#1F2933] font-medium">
-                      {t("legalConsents.version", { version: latestPp.version })}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {t("legalConsents.accepted", { date: fmtDate(latestPp.accepted_at, lng) })}
-                    </p>
-                    {data.privacy_policy.length > 1 && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        {t("legalConsents.previousVersions", { count: data.privacy_policy.length - 1 })}
-                      </p>
-                    )}
-                  </div>
-                  <a
-                    href="/privacy-policy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-shrink-0 self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c5ceba] text-xs font-medium text-[#445446] hover:bg-[#f0f2ed] transition-colors whitespace-nowrap"
-                  >
-                    {t("legalConsents.viewLink")}
-                  </a>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400">{t("legalConsents.noRecord")}</p>
-              )}
-              <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-                {t("legalConsents.ppRequired")}
-              </p>
-            </ConsentRow>
 
             {/* Terms & Conditions */}
             <ConsentRow label={t("legalConsents.tcLabel")}>

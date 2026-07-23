@@ -24,10 +24,6 @@
       "title": "Aggiungi la tua disponibilità per ricevere prenotazioni",
       "body":  "Il tuo profilo è attivo ma non hai disponibilità impostata per i prossimi 14 giorni — i genitori non potranno prenotare una sessione finché non lo farai.",
       "cta":   "Imposta la tua disponibilità →"
-    },
-    "unpublished": {
-      "title": "Il tuo profilo è attualmente nascosto dalla ricerca",
-      "body":  "Il tuo account è approvato ma è stato temporaneamente rimosso dai risultati di ricerca dei genitori dal team di Sage Nest. Contatta l'assistenza per ulteriori informazioni."
     }
   },
   "upcomingAppointments": {

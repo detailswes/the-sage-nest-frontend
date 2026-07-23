@@ -431,68 +431,52 @@ const AdminParentDetailSection = () => {
                     </span>
                   );
 
+                const tcAccepted   = lc.tc_acceptances[0]?.version ?? lc.tc_at_registration?.tc_version ?? null;
+                const tcAcceptedAt = lc.tc_acceptances[0]?.accepted_at ?? lc.tc_at_registration?.accepted_at ?? null;
+
                 return (
                   <div className="space-y-5">
-                    {/* Summary cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {[
-                        { labelKey: "parentDetail.consents.privacyPolicy", current: lc.current_pp_version, accepted: lc.pp_acceptances[0]?.version ?? null, at: lc.pp_acceptances[0]?.accepted_at ?? null, ok: lc.pp_compliant },
-                        { labelKey: "parentDetail.consents.terms", current: lc.current_tc_version, accepted: lc.tc_acceptances[0]?.version ?? lc.tc_at_registration?.tc_version ?? null, at: lc.tc_acceptances[0]?.accepted_at ?? lc.tc_at_registration?.accepted_at ?? null, ok: lc.tc_compliant },
-                      ].map(({ labelKey, current, accepted, at, ok }) => (
-                        <div key={labelKey} className="bg-[#dfe2d7]/20 rounded-xl border border-[#c5ceba] px-4 py-4">
-                          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-                            <p className="text-sm font-semibold text-[#1F2933]">{t(labelKey)}</p>
-                            <ComplianceBadge ok={ok} />
-                          </div>
-                          <div className="space-y-1.5 text-xs">
-                            <div className="flex justify-between gap-2">
-                              <span className="text-gray-400 flex-shrink-0">{t("parentDetail.consents.currentVersion")}</span>
-                              <span className="font-medium text-[#1F2933] text-right">{current ?? "—"}</span>
-                            </div>
-                            <div className="flex justify-between gap-2">
-                              <span className="text-gray-400 flex-shrink-0">{t("parentDetail.consents.acceptedVersion")}</span>
-                              <span className={`font-medium text-right ${accepted && accepted === current ? "text-green-700" : "text-red-600"}`}>
-                                {accepted ?? t("parentDetail.consents.neverAccepted")}
-                              </span>
-                            </div>
-                            <div className="flex justify-between gap-2">
-                              <span className="text-gray-400 flex-shrink-0">{t("parentDetail.consents.acceptedOn")}</span>
-                              <span className="font-medium text-[#1F2933] text-right">{fmtDate(at)}</span>
-                            </div>
-                          </div>
+                    {/* Summary card */}
+                    <div className="bg-[#dfe2d7]/20 rounded-xl border border-[#c5ceba] px-4 py-4">
+                      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                        <p className="text-sm font-semibold text-[#1F2933]">{t("parentDetail.consents.terms")}</p>
+                        <ComplianceBadge ok={lc.tc_compliant} />
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between gap-2">
+                          <span className="text-gray-400 flex-shrink-0">{t("parentDetail.consents.currentVersion")}</span>
+                          <span className="font-medium text-[#1F2933] text-right">{lc.current_tc_version ?? "—"}</span>
                         </div>
-                      ))}
+                        <div className="flex justify-between gap-2">
+                          <span className="text-gray-400 flex-shrink-0">{t("parentDetail.consents.acceptedVersion")}</span>
+                          <span className={`font-medium text-right ${tcAccepted && tcAccepted === lc.current_tc_version ? "text-green-700" : "text-red-600"}`}>
+                            {tcAccepted ?? t("parentDetail.consents.neverAccepted")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-gray-400 flex-shrink-0">{t("parentDetail.consents.acceptedOn")}</span>
+                          <span className="font-medium text-[#1F2933] text-right">{fmtDate(tcAcceptedAt)}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Privacy Policy history */}
+                    {/* Marketing consent — decoupled from legal-document acceptances */}
                     <div className="bg-[#dfe2d7]/20 rounded-xl border border-[#c5ceba] px-4 py-4">
-                      <SectionLabel>{t("parentDetail.consents.ppHistory")}</SectionLabel>
-                      {lc.pp_acceptances.length === 0 ? (
-                        <p className="text-sm text-gray-400">{t("parentDetail.consents.noPpHistory")}</p>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs min-w-[320px]">
-                            <thead><tr className="border-b border-[#c5ceba]">
-                              {[t("parentDetail.consents.colVersion"), t("parentDetail.consents.colAcceptedOn"), t("parentDetail.consents.colMarketing")].map((h) => (
-                                <th key={h} className="text-left text-[#5e6d5b] font-semibold pb-2 pr-4 whitespace-nowrap">{h}</th>
-                              ))}
-                            </tr></thead>
-                            <tbody className="divide-y divide-[#dfe2d7]">
-                              {lc.pp_acceptances.map((a, i) => (
-                                <tr key={i}>
-                                  <td className="py-2 pr-4 font-medium text-[#1F2933]">{a.version}</td>
-                                  <td className="py-2 pr-4 text-gray-500 whitespace-nowrap">{fmtDate(a.accepted_at)}</td>
-                                  <td className="py-2">
-                                    {a.marketing_consent
-                                      ? <span className="text-green-700 font-medium">{t("parentDetail.consents.granted")}</span>
-                                      : <span className="text-gray-400">{t("parentDetail.consents.notGranted")}</span>}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                      <SectionLabel>{t("parentDetail.consents.marketingConsent")}</SectionLabel>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        {lc.marketing_consent.consent ? (
+                          <span className="text-green-700 font-medium text-sm">{t("parentDetail.consents.granted")}</span>
+                        ) : (
+                          <span className="text-gray-400 text-sm">{t("parentDetail.consents.notGranted")}</span>
+                        )}
+                        <span className="text-xs text-gray-500">
+                          {lc.marketing_consent.consent
+                            ? `${t("parentDetail.consents.acceptedOn")} ${fmtDate(lc.marketing_consent.accepted_at)}`
+                            : lc.marketing_consent.withdrawn_at
+                              ? `${t("parentDetail.consents.withdrawnOn")} ${fmtDate(lc.marketing_consent.withdrawn_at)}`
+                              : "—"}
+                        </span>
+                      </div>
                     </div>
 
                     {/* T&C history */}

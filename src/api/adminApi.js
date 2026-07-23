@@ -97,27 +97,6 @@ export const adminApi = createApi({
         { type: "Expert", id },
       ],
     }),
-    unpublishExpert: builder.mutation({
-      query: (id) => ({
-        url: `/admin/experts/${id}/unpublish`,
-        method: "POST",
-      }),
-      invalidatesTags: (result, error, id) => [
-        "Expert",
-        { type: "Expert", id },
-      ],
-    }),
-    republishExpert: builder.mutation({
-      query: (id) => ({
-        url: `/admin/experts/${id}/republish`,
-        method: "POST",
-      }),
-      invalidatesTags: (result, error, id) => [
-        "Expert",
-        { type: "Expert", id },
-      ],
-    }),
-
     // ── Support tools ─────────────────────────────────────────────────────────
     sendPasswordReset: builder.mutation({
       query: (id) => ({
@@ -447,8 +426,6 @@ export const {
   useApproveProfileDraftMutation,
   useRejectProfileDraftMutation,
   useRequestChangesMutation,
-  useUnpublishExpertMutation,
-  useRepublishExpertMutation,
   useSendPasswordResetMutation,
   useResendVerificationMutation,
   useManuallyVerifyMutation,
