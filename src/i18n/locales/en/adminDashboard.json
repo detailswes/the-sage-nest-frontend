@@ -984,6 +984,8 @@
       "published": "published {{date}}",
       "acceptance_one": "acceptance",
       "acceptance_other": "acceptances",
+      "shownAtSignup_one": "parent shown at signup",
+      "shownAtSignup_other": "parents shown at signup",
       "noVersion": "No version published yet",
       "viewCurrent": "View current",
       "viewCurrentPdfEn": "View current PDF (EN)",
@@ -1016,10 +1018,13 @@
       "col": {
         "version": "Version",
         "published": "Published",
-        "acceptances": "Acceptances"
+        "acceptances": "Acceptances",
+        "shownTo": "Shown to"
       },
       "user_one": "user",
-      "user_other": "users"
+      "user_other": "users",
+      "shownToUser_one": "parent",
+      "shownToUser_other": "parents"
     }
   },
 
