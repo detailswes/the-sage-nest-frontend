@@ -984,6 +984,8 @@
       "published": "pubblicato {{date}}",
       "acceptance_one": "accettazione",
       "acceptance_other": "accettazioni",
+      "shownAtSignup_one": "genitore raggiunto alla registrazione",
+      "shownAtSignup_other": "genitori raggiunti alla registrazione",
       "noVersion": "Nessuna versione pubblicata",
       "viewCurrent": "Visualizza attuale",
       "viewCurrentPdfEn": "Visualizza PDF attuale (EN)",
@@ -1016,10 +1018,13 @@
       "col": {
         "version": "Versione",
         "published": "Pubblicato",
-        "acceptances": "Accettazioni"
+        "acceptances": "Accettazioni",
+        "shownTo": "Mostrato a"
       },
       "user_one": "utente",
-      "user_other": "utenti"
+      "user_other": "utenti",
+      "shownToUser_one": "genitore",
+      "shownToUser_other": "genitori"
     }
   },
 

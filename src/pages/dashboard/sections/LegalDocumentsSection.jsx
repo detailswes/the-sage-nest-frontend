@@ -19,9 +19,10 @@ const formatByLanguage = (byLanguage) => {
 };
 
 // ─── Version history table ─────────────────────────────────────────────────────
-const VersionHistory = ({ docs }) => {
+const VersionHistory = ({ docs, type }) => {
   const { t } = useTranslation("adminDashboard");
   const history = docs.slice(1); // everything after the current (latest) version
+  const isPrivacy = type === "PRIVACY_POLICY";
 
   if (history.length === 0) return null;
 
@@ -37,7 +38,7 @@ const VersionHistory = ({ docs }) => {
             {t("legalDocs.versionHistory.col.published")}
           </span>
           <span className="text-xs font-semibold text-white uppercase tracking-wider whitespace-nowrap text-right">
-            {t("legalDocs.versionHistory.col.acceptances")}
+            {isPrivacy ? t("legalDocs.versionHistory.col.shownTo") : t("legalDocs.versionHistory.col.acceptances")}
           </span>
         </div>
         {/* Data rows */}
@@ -56,7 +57,7 @@ const VersionHistory = ({ docs }) => {
                     <span className="inline-flex items-center gap-1 font-medium text-[#1F2933]">
                       {row.accepted_count.toLocaleString()}
                       <span className="text-gray-400 font-normal text-xs">
-                        {t("legalDocs.versionHistory.user", { count: row.accepted_count })}
+                        {t(isPrivacy ? "legalDocs.versionHistory.shownToUser" : "legalDocs.versionHistory.user", { count: row.accepted_count })}
                       </span>
                     </span>
                     {formatByLanguage(row.accepted_count_by_language) && (
@@ -183,7 +184,9 @@ const DocCard = ({ type, docs }) => {
                 {currentDoc.accepted_count > 0 && (
                   <span className="ml-2 text-gray-400">
                     · {currentDoc.accepted_count.toLocaleString()}{" "}
-                    {t("legalDocs.card.acceptance", { count: currentDoc.accepted_count })}
+                    {type === "PRIVACY_POLICY"
+                      ? t("legalDocs.card.shownAtSignup", { count: currentDoc.accepted_count })
+                      : t("legalDocs.card.acceptance", { count: currentDoc.accepted_count })}
                     {formatByLanguage(currentDoc.accepted_count_by_language) && (
                       <span className="ml-1 text-gray-300">
                         ({formatByLanguage(currentDoc.accepted_count_by_language)})
@@ -320,7 +323,7 @@ const DocCard = ({ type, docs }) => {
               </span>
             </button>
 
-            {historyOpen && <VersionHistory docs={docs} />}
+            {historyOpen && <VersionHistory docs={docs} type={type} />}
           </div>
         )}
       </div>
