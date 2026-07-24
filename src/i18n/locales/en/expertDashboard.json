@@ -406,6 +406,7 @@
       "durationLabel":        "Duration (min)",
       "durationSelect":       "Select duration",
       "currencyLabel":        "Currency",
+      "lockedCurrencyHint":   "Fixed to your account's payout currency. Contact support to change it.",
       "priceLabel":           "Price",
       "cancelBtn":            "Cancel",
       "savingBtn":            "Saving…",
@@ -430,9 +431,18 @@
     "card": {
       "active":        "Active",
       "inactive":      "Inactive",
+      "needsReview":   "Needs price review",
       "deleteConfirm": "Delete?",
       "cancelBtn":     "Cancel",
       "deleteBtn":     "Delete"
+    },
+    "currencyUnconfirmed": {
+      "title": "Connect Stripe to confirm your payout currency before adding services",
+      "body":  "We haven't confirmed your Stripe payout currency yet. Finish connecting your Stripe account before adding services."
+    },
+    "currencyMismatch": {
+      "body":      "Your account currency changed from {{from}} to {{to}}. This service was unpublished so its price isn't carried over automatically — review the price below in {{to}} and save to republish.",
+      "badgeHint": "Currently priced in {{currency}}, which no longer matches your account currency. Edit and save to republish."
     }
   },
 

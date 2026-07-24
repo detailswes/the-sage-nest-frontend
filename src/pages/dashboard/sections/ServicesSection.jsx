@@ -18,14 +18,17 @@ const FORMAT_OPTIONS  = [
   { value: 'ONLINE' },
   { value: 'IN_PERSON' },
 ];
-const CURRENCY_OPTIONS = [
-  { value: 'EUR', label: 'EUR (€)' },
-  { value: 'GBP', label: 'GBP (£)' },
-  { value: 'DKK', label: 'DKK (kr)' },
-  { value: 'SEK', label: 'SEK (kr)' },
-  { value: 'NOK', label: 'NOK (kr)' },
-  { value: 'CHF', label: 'CHF (Fr)' },
-];
+// Display labels only — which currency actually applies to an expert is
+// locked server-side to their account currency (see profile.currency), not
+// chosen here.
+const CURRENCY_LABELS = {
+  EUR: 'EUR (€)',
+  GBP: 'GBP (£)',
+  DKK: 'DKK (kr)',
+  SEK: 'SEK (kr)',
+  NOK: 'NOK (kr)',
+  CHF: 'CHF (Fr)',
+};
 const PRICE_LIMITS = {
   EUR: { min: 5,   max: 2000  },
   GBP: { min: 5,   max: 2000  },
@@ -84,11 +87,21 @@ const ServicesSection = () => {
   const services = localOrder ?? serverServices;
 
   const sessionFormat = profile?.session_format || null;
+  // Currency is anchored to the expert's confirmed Stripe account currency —
+  // never a per-service choice. Until Stripe has reported one (right after
+  // onboarding, via a webhook), it's null and services can't be added.
+  const expertCurrency = profile?.currency || null;
+  const currencyConfirmed = !!expertCurrency;
 
   const [showForm, setShowForm]       = useState(false);
   const [editingId, setEditingId]     = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
   const [formErrors, setFormErrors]   = useState({});
+  // Currency the service was actually saved under, captured when opening
+  // edit/duplicate — used to detect and explain a currency mismatch (e.g.
+  // after the expert's Stripe account currency changed and this service was
+  // unpublished pending reconfirmation).
+  const [originalCurrency, setOriginalCurrency] = useState(null);
 
   const [isDuplicating, setIsDuplicating] = useState(false);
 
@@ -135,22 +148,29 @@ const ServicesSection = () => {
   };
 
   const openAdd = () => {
+    if (!currencyConfirmed) return;
     setEditingId(null);
     setIsDuplicating(false);
-    setForm({ ...EMPTY_FORM, format: lockedFormat || '' });
+    setOriginalCurrency(null);
+    setForm({ ...EMPTY_FORM, currency: expertCurrency, format: lockedFormat || '' });
     setFormErrors({});
     setShowForm(true);
   };
 
   const openDuplicate = (svc) => {
+    if (!currencyConfirmed) return;
     setEditingId(null);
     setIsDuplicating(true);
+    setOriginalCurrency(svc.currency || null);
     setForm({
       title:            svc.title,
       description:      svc.description  || '',
       duration_minutes: String(svc.duration_minutes),
       price:            String(svc.price),
-      currency:         svc.currency     || 'EUR',
+      // Always the confirmed account currency, not whatever the source
+      // service was saved under — if they differ, the price below needs a
+      // deliberate review rather than being silently carried over.
+      currency:         expertCurrency,
       format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
     });
@@ -159,13 +179,15 @@ const ServicesSection = () => {
   };
 
   const openEdit = (svc) => {
+    if (!currencyConfirmed) return;
     setEditingId(svc.id);
+    setOriginalCurrency(svc.currency || null);
     setForm({
       title:            svc.title,
       description:      svc.description  || '',
       duration_minutes: String(svc.duration_minutes),
       price:            String(svc.price),
-      currency:         svc.currency     || 'EUR',
+      currency:         expertCurrency,
       format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
     });
@@ -177,6 +199,7 @@ const ServicesSection = () => {
     setShowForm(false);
     setEditingId(null);
     setIsDuplicating(false);
+    setOriginalCurrency(null);
     setForm(EMPTY_FORM);
     setFormErrors({});
   };
@@ -236,8 +259,8 @@ const ServicesSection = () => {
     setTogglingId(svc.id);
     try {
       await updateService({ id: svc.id, is_active: !svc.is_active }).unwrap();
-    } catch {
-      toast.error(t('services.errors.updateFailed'));
+    } catch (err) {
+      toast.error(err?.data?.error || t('services.errors.updateFailed'));
     } finally {
       setTogglingId(null);
     }
@@ -267,7 +290,9 @@ const ServicesSection = () => {
         {!showForm && (
           <button
             onClick={openAdd}
-            className="self-start flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm flex-shrink-0 sm:ml-4"
+            disabled={!currencyConfirmed}
+            title={!currencyConfirmed ? t('services.currencyUnconfirmed.title') : undefined}
+            className="self-start flex items-center gap-1.5 bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#445446] text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm flex-shrink-0 sm:ml-4"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -283,12 +308,23 @@ const ServicesSection = () => {
         </div>
       )}
 
+      {!currencyConfirmed && (
+        <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+          {t('services.currencyUnconfirmed.body')}
+        </div>
+      )}
+
       {/* Add / Edit form */}
       {showForm && (
         <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-4 sm:p-6 mb-5">
           <h3 className="text-base font-semibold text-[#1F2933] mb-5">
             {editingId ? t('services.form.editTitle') : isDuplicating ? t('services.form.duplicateTitle') : t('services.form.addTitle')}
           </h3>
+          {originalCurrency && originalCurrency !== form.currency && (
+            <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+              {t('services.currencyMismatch.body', { from: originalCurrency, to: form.currency })}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* Title */}
             <div>
@@ -379,12 +415,12 @@ const ServicesSection = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.currencyLabel')}</label>
-                <select name="currency" value={form.currency} onChange={handleChange}
-                  className={inputClass(!!formErrors.currency)}>
-                  {CURRENCY_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                <div className="w-full px-4 py-3 rounded-lg border border-[#E4E7E4] bg-gray-50 text-sm text-[#1F2933]">
+                  {CURRENCY_LABELS[form.currency] || form.currency}
+                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  {t('services.form.lockedCurrencyHint')}
+                </p>
                 {formErrors.currency && <p className="mt-1.5 text-xs text-red-500">{formErrors.currency}</p>}
               </div>
               <div className="col-span-2 sm:col-span-1">
@@ -433,9 +469,16 @@ const ServicesSection = () => {
                   {/* Badges row */}
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${svc.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
-                      {svc.is_active ? t('services.card.active') : t('services.card.inactive')}
-                    </span>
+                    {!svc.is_active && currencyConfirmed && svc.currency !== expertCurrency ? (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-amber-100 text-amber-700"
+                        title={t('services.currencyMismatch.badgeHint', { currency: svc.currency })}>
+                        {t('services.card.needsReview')}
+                      </span>
+                    ) : (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${svc.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                        {svc.is_active ? t('services.card.active') : t('services.card.inactive')}
+                      </span>
+                    )}
                     {svc.format && FORMAT_BADGE_CLS[svc.format] && (
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${FORMAT_BADGE_CLS[svc.format]}`}>
                         {t('services.formats.' + svc.format)}

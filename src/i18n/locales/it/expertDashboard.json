@@ -406,6 +406,7 @@
       "durationLabel":        "Durata (min)",
       "durationSelect":       "Seleziona durata",
       "currencyLabel":        "Valuta",
+      "lockedCurrencyHint":   "Fissata alla valuta di pagamento del tuo account. Contatta l'assistenza per modificarla.",
       "priceLabel":           "Prezzo",
       "cancelBtn":            "Annulla",
       "savingBtn":            "Salvataggio…",
@@ -430,9 +431,18 @@
     "card": {
       "active":        "Attivo",
       "inactive":      "Inattivo",
+      "needsReview":   "Prezzo da rivedere",
       "deleteConfirm": "Eliminare?",
       "cancelBtn":     "Annulla",
       "deleteBtn":     "Elimina"
+    },
+    "currencyUnconfirmed": {
+      "title": "Collega Stripe per confermare la tua valuta di pagamento prima di aggiungere servizi",
+      "body":  "Non abbiamo ancora confermato la tua valuta di pagamento Stripe. Completa il collegamento del tuo account Stripe prima di aggiungere servizi."
+    },
+    "currencyMismatch": {
+      "body":      "La valuta del tuo account è cambiata da {{from}} a {{to}}. Questo servizio è stato disattivato perché il prezzo non viene riportato automaticamente: rivedi il prezzo qui sotto in {{to}} e salva per ripubblicarlo.",
+      "badgeHint": "Attualmente prezzato in {{currency}}, che non corrisponde più alla valuta del tuo account. Modifica e salva per ripubblicare."
     }
   },
 
