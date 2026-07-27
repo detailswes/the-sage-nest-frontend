@@ -25,8 +25,8 @@ import {
   CheckCircleFilledIcon, InfoCircleFilledIcon, ChevronLeftIcon,
 } from '../../assets/icons';
 
-const WEBFLOW_DIRECTORY_URL   = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL   || 'https://the-sage-nest.webflow.io/experts';
-const WEBFLOW_EXPERT_BASE_URL = process.env.REACT_APP_WEBFLOW_EXPERT_BASE_URL || 'https://the-sage-nest.webflow.io/experts';
+const WEBFLOW_DIRECTORY_URL   = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL   || 'https://www.sagenest.org/experts';
+const WEBFLOW_EXPERT_BASE_URL = process.env.REACT_APP_WEBFLOW_EXPERT_BASE_URL || 'https://www.sagenest.org/experts';
 const WITHDRAWAL_WINDOW_MS    = 14 * 24 * 60 * 60 * 1000;
 
 // ─── Steps ───────────────────────────────────────────────────────────────────
