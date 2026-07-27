@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { forgotPasswordApi } from '../../api/authApi';
 import { EnvelopeIcon, LockStrokeIcon } from '../../assets/icons';
+import { validateEmail } from '../../utils/validation';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -13,7 +14,7 @@ const ForgotPassword = () => {
 
   const validate = () => {
     if (!email.trim()) return 'Email is required.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email.';
+    if (!validateEmail(email)) return 'Please enter a valid email.';
     return '';
   };
 

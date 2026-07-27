@@ -142,6 +142,7 @@ const ProfileSection = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef(null);
   const formSeeded = useRef(false);
+  const stripeToastShown = useRef(false);
 
   const [form, setForm]                 = useState(EMPTY_FORM);
   const [imageUrl, setImageUrl]         = useState(null);
@@ -158,16 +159,28 @@ const ProfileSection = () => {
   const [createConnectLink] = useCreateConnectLinkMutation();
 
   const hasStripeAccount = !!profile?.stripe_account_id;
+  // Stripe's activation of a just-submitted account is asynchronous — while
+  // onboarding_pending is true we're not "incomplete", we're just waiting on
+  // Stripe, so keep polling until it flips to complete instead of parking the
+  // expert on the amber "finish setup" button for something that isn't stuck.
+  const [pollStripeStatus, setPollStripeStatus] = useState(false);
   const { data: stripeVerify, isFetching: checkingStripe } = useVerifyStripeReturnQuery(
     undefined,
-    { skip: !hasStripeAccount },
+    { skip: !hasStripeAccount, pollingInterval: pollStripeStatus ? 4000 : 0 },
   );
+
+  useEffect(() => {
+    if (stripeVerify?.onboarding_pending) setPollStripeStatus(true);
+    else if (stripeVerify?.onboarding_complete) setPollStripeStatus(false);
+  }, [stripeVerify]);
 
   const stripeStatus = (() => {
     if (stripeConnecting) return 'connecting';
     if (!hasStripeAccount) return loading ? 'idle' : 'not_connected';
-    if (checkingStripe) return 'checking';
-    return stripeVerify?.onboarding_complete ? 'connected' : 'incomplete';
+    if (!stripeVerify) return checkingStripe ? 'checking' : 'incomplete';
+    if (stripeVerify.onboarding_complete) return 'connected';
+    if (stripeVerify.onboarding_pending) return 'checking';
+    return 'incomplete';
   })();
 
   // Seed form once when profile loads
@@ -200,7 +213,8 @@ const ProfileSection = () => {
   }, [savedAsDraft]);
 
   useEffect(() => {
-    if (searchParams.get('stripe') === 'success') {
+    if (searchParams.get('stripe') === 'success' && !stripeToastShown.current) {
+      stripeToastShown.current = true;
       toast.success(t('profile.stripeSuccess.title'));
       setSearchParams({}, { replace: true });
     }

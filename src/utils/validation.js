@@ -1,6 +1,10 @@
+// Requires a dot-atom local part and a domain made of valid, non-empty
+// dot-separated labels (rejects stray commas/spaces/consecutive dots like
+// "user@host,.com").
+const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+
 export const validateEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
+  return EMAIL_REGEX.test(email);
 };
 
 // European phone: international (+3x/+4x E.164) or local format (7–15 digits)
