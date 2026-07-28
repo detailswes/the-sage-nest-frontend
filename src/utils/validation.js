@@ -39,7 +39,10 @@ export const validateLoginForm = ({ email, password }) => {
   return errors;
 };
 
-export const validateRegisterForm = ({ name, email, password, confirmPassword, phone, role }) => {
+export const validateRegisterForm = ({
+  name, email, password, confirmPassword, phone, role,
+  city, addressStreet, addressPostalCode, addressCountry, fiscalCode,
+}) => {
   const errors = {};
 
   if (!name || !name.trim()) errors.name = 'validation.nameRequired';
@@ -60,6 +63,14 @@ export const validateRegisterForm = ({ name, email, password, confirmPassword, p
   if (role === 'PARENT') {
     if (!phone || !phone.trim())  errors.phone = 'validation.phoneRequired';
     else if (!validatePhone(phone)) errors.phone = 'validation.phoneInvalid';
+
+    // Collected once here so experts have what they need for invoicing without
+    // the parent being asked again on every booking.
+    if (!city || !city.trim())               errors.city = 'validation.cityRequired';
+    if (!addressStreet || !addressStreet.trim())         errors.addressStreet = 'validation.addressStreetRequired';
+    if (!addressPostalCode || !addressPostalCode.trim()) errors.addressPostalCode = 'validation.addressPostalCodeRequired';
+    if (!addressCountry || !addressCountry.trim())       errors.addressCountry = 'validation.addressCountryRequired';
+    if (!fiscalCode || !fiscalCode.trim())     errors.fiscalCode = 'validation.fiscalCodeRequired';
   }
 
   return errors;

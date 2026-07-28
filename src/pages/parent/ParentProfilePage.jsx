@@ -85,6 +85,10 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
   const [name,     setName]     = useState(profile.name     || "");
   const [phone,    setPhone]    = useState(profile.phone    || "");
   const [city,     setCity]     = useState(profile.city     || "");
+  const [addressStreet,     setAddressStreet]     = useState(profile.address_street      || "");
+  const [addressPostalCode, setAddressPostalCode] = useState(profile.address_postal_code || "");
+  const [addressCountry,    setAddressCountry]    = useState(profile.address_country     || "");
+  const [fiscalCode,        setFiscalCode]        = useState(profile.fiscal_code         || "");
   const [timezone, setTimezone] = useState(
     profile.timezone || detectedTimezone || TIMEZONES[0].value
   );
@@ -111,6 +115,10 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
         phone:    phone.trim(),
         city:     city.trim() || null,
         timezone: timezone || null,
+        addressStreet:     addressStreet.trim()     || null,
+        addressPostalCode: addressPostalCode.trim() || null,
+        addressCountry:    addressCountry.trim()    || null,
+        fiscalCode:        fiscalCode.trim()         || null,
       }).unwrap();
       onUpdated(updated);
       toast.success(t("personalInfo.saveSuccess"));
@@ -161,6 +169,48 @@ const PersonalInfoSection = ({ profile, onUpdated }) => {
           />
           <p className="mt-1 text-xs text-gray-400">{t("personalInfo.cityHint")}</p>
         </Field>
+
+        <div className="pt-2 border-t border-[#E4E7E4]">
+          <p className="text-xs font-medium text-[#1F2933] mb-3 mt-4">{t("personalInfo.invoicingHeading")}</p>
+          <div className="space-y-4">
+            <Field label={t("personalInfo.addressStreet")}>
+              <Input
+                type="text"
+                value={addressStreet}
+                onChange={(e) => setAddressStreet(e.target.value)}
+                placeholder={t("personalInfo.addressStreetPlaceholder")}
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label={t("personalInfo.addressPostalCode")}>
+                <Input
+                  type="text"
+                  value={addressPostalCode}
+                  onChange={(e) => setAddressPostalCode(e.target.value)}
+                  placeholder={t("personalInfo.addressPostalCodePlaceholder")}
+                />
+              </Field>
+              <Field label={t("personalInfo.addressCountry")}>
+                <Input
+                  type="text"
+                  value={addressCountry}
+                  onChange={(e) => setAddressCountry(e.target.value)}
+                  placeholder={t("personalInfo.addressCountryPlaceholder")}
+                />
+              </Field>
+            </div>
+            <Field label={t("personalInfo.fiscalCode")}>
+              <Input
+                type="text"
+                value={fiscalCode}
+                onChange={(e) => setFiscalCode(e.target.value)}
+                placeholder={t("personalInfo.fiscalCodePlaceholder")}
+              />
+              <p className="mt-1 text-xs text-gray-400">{t("personalInfo.fiscalCodeHint")}</p>
+            </Field>
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t("personalInfo.timezone")}</label>
           <select
