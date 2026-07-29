@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { useGetPastAppointmentsQuery, useSaveExpertNoteMutation } from '../../../api/bookingApi';
 import { HistoryIcon } from '../../../assets/icons';
+import BookingInvoicingInfo from '../../../components/booking/BookingInvoicingInfo';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(iso, lng = 'en') {
@@ -207,6 +208,9 @@ const Row = ({ booking }) => {
               initialNote={note}
               onSaved={(v) => setNote(v || '')}
             />
+            <div className="mt-3">
+              <BookingInvoicingInfo booking={booking} />
+            </div>
           </td>
         </tr>
       )}
@@ -289,6 +293,9 @@ const MobileCard = ({ booking }) => {
             initialNote={note}
             onSaved={(v) => setNote(v || '')}
           />
+          <div className="mt-3">
+            <BookingInvoicingInfo booking={booking} />
+          </div>
         </div>
       )}
     </div>
