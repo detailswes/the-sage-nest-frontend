@@ -10,6 +10,7 @@ import {
 import {
   CalendarCheckIcon, UserIcon, EnvelopeIcon, BriefcaseIcon, LinkIcon,
 } from '../../../assets/icons';
+import BookingInvoicingInfo from '../../../components/booking/BookingInvoicingInfo';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatAppointmentDate(isoString, lng = 'en') {
@@ -209,6 +210,7 @@ const AppointmentCard = ({ booking, onCancelRequest }) => {
             </span>
           </span>
         </div>
+        <BookingInvoicingInfo booking={booking} />
       </div>
 
       {/* Amber reminder banner */}

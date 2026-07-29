@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import AuthLayout from '../../components/auth/AuthLayout';
 import PasswordInput from '../../components/auth/PasswordInput';
 import LanguageSelector from '../../components/LanguageSelector';
@@ -39,10 +40,7 @@ const Register = () => {
     serverError,
     setServerError,
     handleChange,
-  } = useAuthForm({
-    name: '', email: '', password: '', confirmPassword: '', phone: '',
-    city: '', addressStreet: '', addressPostalCode: '', addressCountry: '', fiscalCode: '',
-  });
+  } = useAuthForm({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
 
   const [termsAccepted, setTermsAccepted]                 = useState(false);
   const [marketingConsent, setMarketingConsent]           = useState(false);
@@ -79,14 +77,7 @@ const Register = () => {
         // when the user checked these boxes, pinned against their account.
         language: i18n.language,
       };
-      if (activeRole === 'PARENT') {
-        payload.phone = form.phone.trim();
-        payload.city = form.city.trim();
-        payload.addressStreet = form.addressStreet.trim();
-        payload.addressPostalCode = form.addressPostalCode.trim();
-        payload.addressCountry = form.addressCountry.trim();
-        payload.fiscalCode = form.fiscalCode.trim();
-      }
+      if (activeRole === 'PARENT') payload.phone = form.phone.trim();
 
       const data = await registerUser(payload);
 
@@ -100,7 +91,15 @@ const Register = () => {
         err?.response?.data?.error ||
         err?.response?.data?.message ||
         t('register.defaultError');
-      setServerError(message);
+
+      // Cross-role email collision: surface as a toast rather than the
+      // inline banner, since it's an actionable heads-up (log in / use a
+      // different email) rather than a form-field validation error.
+      if (err?.response?.status === 409) {
+        toast.error(message);
+      } else {
+        setServerError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -259,107 +258,6 @@ const Register = () => {
               }`}
             />
             {errors.phone && <p className="mt-1.5 text-xs text-red-500">{t(errors.phone)}</p>}
-          </div>
-        )}
-
-        {/* Address + fiscal code — Parent only. Collected once here so experts have
-            what they need for invoicing without asking again on every booking. */}
-        {activeRole === 'PARENT' && (
-          <div className="space-y-5">
-            <div>
-              <label htmlFor="addressStreet" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                {t('register.addressStreetLabel')}
-              </label>
-              <input
-                id="addressStreet"
-                type="text"
-                name="addressStreet"
-                value={form.addressStreet}
-                onChange={handleChange}
-                placeholder={t('register.addressStreetPlaceholder')}
-                className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
-                  errors.addressStreet ? 'border-red-400' : 'border-[#E4E7E4]'
-                }`}
-              />
-              {errors.addressStreet && <p className="mt-1.5 text-xs text-red-500">{t(errors.addressStreet)}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                  {t('register.cityLabel')}
-                </label>
-                <input
-                  id="city"
-                  type="text"
-                  name="city"
-                  value={form.city}
-                  onChange={handleChange}
-                  placeholder={t('register.cityPlaceholder')}
-                  className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
-                    errors.city ? 'border-red-400' : 'border-[#E4E7E4]'
-                  }`}
-                />
-                {errors.city && <p className="mt-1.5 text-xs text-red-500">{t(errors.city)}</p>}
-              </div>
-              <div>
-                <label htmlFor="addressPostalCode" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                  {t('register.addressPostalCodeLabel')}
-                </label>
-                <input
-                  id="addressPostalCode"
-                  type="text"
-                  name="addressPostalCode"
-                  value={form.addressPostalCode}
-                  onChange={handleChange}
-                  placeholder={t('register.addressPostalCodePlaceholder')}
-                  className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
-                    errors.addressPostalCode ? 'border-red-400' : 'border-[#E4E7E4]'
-                  }`}
-                />
-                {errors.addressPostalCode && <p className="mt-1.5 text-xs text-red-500">{t(errors.addressPostalCode)}</p>}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="addressCountry" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                {t('register.addressCountryLabel')}
-              </label>
-              <input
-                id="addressCountry"
-                type="text"
-                name="addressCountry"
-                value={form.addressCountry}
-                onChange={handleChange}
-                placeholder={t('register.addressCountryPlaceholder')}
-                className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
-                  errors.addressCountry ? 'border-red-400' : 'border-[#E4E7E4]'
-                }`}
-              />
-              {errors.addressCountry && <p className="mt-1.5 text-xs text-red-500">{t(errors.addressCountry)}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="fiscalCode" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                {t('register.fiscalCodeLabel')}
-              </label>
-              <input
-                id="fiscalCode"
-                type="text"
-                name="fiscalCode"
-                value={form.fiscalCode}
-                onChange={handleChange}
-                placeholder={t('register.fiscalCodePlaceholder')}
-                className={`w-full px-4 py-3 rounded-lg border text-sm text-[#1F2933] placeholder-gray-400 bg-white transition focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] ${
-                  errors.fiscalCode ? 'border-red-400' : 'border-[#E4E7E4]'
-                }`}
-              />
-              {errors.fiscalCode ? (
-                <p className="mt-1.5 text-xs text-red-500">{t(errors.fiscalCode)}</p>
-              ) : (
-                <p className="mt-1.5 text-xs text-gray-400">{t('register.fiscalCodeHint')}</p>
-              )}
-            </div>
           </div>
         )}
 

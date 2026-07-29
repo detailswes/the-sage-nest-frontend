@@ -26,6 +26,11 @@
       "cta":   "Imposta la tua disponibilità →"
     }
   },
+  "invoicing": {
+    "heading":         "Dati per la Fatturazione",
+    "fiscalCode":      "Codice Fiscale",
+    "address":         "Indirizzo"
+  },
   "upcomingAppointments": {
     "title":       "Appuntamenti futuri",
     "subtitle":    "Le tue prossime sessioni con i genitori.",

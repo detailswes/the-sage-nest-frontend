@@ -26,6 +26,11 @@
       "cta":   "Set your availability →"
     }
   },
+  "invoicing": {
+    "heading":         "Invoicing Details",
+    "fiscalCode":      "Fiscal Code",
+    "address":         "Address"
+  },
   "upcomingAppointments": {
     "title":       "Upcoming Appointments",
     "subtitle":    "Your next scheduled sessions with parents.",

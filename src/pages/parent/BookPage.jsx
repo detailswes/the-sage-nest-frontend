@@ -403,6 +403,7 @@ const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
     const errs = validateRegisterForm({ ...form, role: 'PARENT' });
     if (!termsAccepted)   errs.termsConditions = t('consentLabels.termsRequired');
     if (Object.keys(errs).length) { setErrors(errs); return; }
+
     setLoading(true); setServerError('');
     try {
       const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; } })();

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useGetBookingDetailQuery, useUpdateBookingNoteMutation } from "../../api/adminApi";
 import { formatBookingTime, formatFormat, formatTransferStatus } from "../../utils/formatBookingTime";
 import AdminActionsPanel from "./AdminActionsPanel";
+import BookingInvoicingInfo from "../booking/BookingInvoicingInfo";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,9 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                 {booking.parent?.phone && (
                   <p className="text-xs text-gray-400 mt-0.5">{booking.parent.phone}</p>
                 )}
+                <div className="mt-2">
+                  <BookingInvoicingInfo booking={booking} />
+                </div>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t("bookingModal.sections.specialist")}</p>
