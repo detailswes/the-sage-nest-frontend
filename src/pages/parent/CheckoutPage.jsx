@@ -23,7 +23,7 @@ const CheckoutPage = () => {
   const {
     bookingId, clientSecret,
     expertName, serviceTitle, amount, currency = 'EUR', scheduledAt, format, sessionLocation,
-    paymentExpiresAt,
+    paymentExpiresAt, billingCountry,
     restore,
   } = state || {};
 
@@ -87,7 +87,12 @@ const CheckoutPage = () => {
       const elements = stripe.elements({ clientSecret });
       elementsRef.current = elements;
 
-      paymentElement = elements.create('payment');
+      // Billing country is authoritative from step 4 (booking flow spec v1.7
+      // §9.2) — Stripe must never infer it from the IP address. No Address
+      // Element or Tax ID Element is used; billing is collected on our side.
+      paymentElement = elements.create('payment', billingCountry ? {
+        defaultValues: { billingDetails: { address: { country: billingCountry.toUpperCase() } } },
+      } : {});
       paymentElementRef.current = paymentElement;
       paymentElement.mount('#payment-element');
       paymentElement.on('ready', () => setStripeReady(true));
@@ -106,7 +111,7 @@ const CheckoutPage = () => {
       }
       mountedRef.current = false;
     };
-  }, [clientSecret]);
+  }, [clientSecret, billingCountry]);
 
   const handleEditBooking = async () => {
     try {

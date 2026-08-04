@@ -21,6 +21,7 @@ import {
   useRejectLanguageMutation,
   useApproveProfileDraftMutation,
   useRejectProfileDraftMutation,
+  useSetHealthClassificationMutation,
 } from "../../../api/adminApi";
 import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
 import { formatBookingTime } from "../../../utils/formatBookingTime";
@@ -170,6 +171,7 @@ const AdminExpertDetailSection = () => {
   const [rejectLanguage,      { isLoading: rejectingLang }]       = useRejectLanguageMutation();
   const [approveProfileDraft, { isLoading: draftApproving }]      = useApproveProfileDraftMutation();
   const [rejectProfileDraft,  { isLoading: draftRejecting }]      = useRejectProfileDraftMutation();
+  const [setHealthClassification, { isLoading: settingHealthClass }] = useSetHealthClassificationMutation();
 
   const actionLoadingKey =
     approving ? 'approve' :
@@ -202,6 +204,18 @@ const AdminExpertDetailSection = () => {
       else if (type === "reactivate") await reactivateExpert(id).unwrap();
       toast.success(t(`expertDetail.statusActions.${type}Success`));
       setAuditNeedsRefetch(true);
+    } catch (e) {
+      toast.error(e?.data?.error || t("expertDetail.genericActionError"));
+    }
+  };
+
+  // ── Professional classification ───────────────────────────────────────────────
+  // Admin-only, no default (booking flow spec v1.7 §7.1) — must remain
+  // changeable after approval, so this is a plain toggle, not a one-time gate.
+  const handleSetHealthClassification = async (value) => {
+    try {
+      await setHealthClassification({ id, is_health_professional: value }).unwrap();
+      toast.success(t("expertDetail.healthClassification.success"));
     } catch (e) {
       toast.error(e?.data?.error || t("expertDetail.genericActionError"));
     }
@@ -424,6 +438,46 @@ const AdminExpertDetailSection = () => {
                     </span>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Professional classification — admin-only, no default, must remain
+                changeable after approval (booking flow spec v1.7 §7.1). */}
+            <div className="mt-4 pt-4 border-t border-[#E4E7E4] flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-sm font-medium text-[#1F2933]">{t("expertDetail.healthClassification.heading")}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{t("expertDetail.healthClassification.helper")}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {expert.is_health_professional === null && (
+                  <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                    {t("expertDetail.healthClassification.unset")}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  disabled={settingHealthClass}
+                  onClick={() => handleSetHealthClassification(true)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:opacity-60 ${
+                    expert.is_health_professional === true
+                      ? "bg-[#445446] text-white border-[#445446]"
+                      : "bg-white text-gray-600 border-[#E4E7E4] hover:border-[#445446] hover:text-[#445446]"
+                  }`}
+                >
+                  {t("expertDetail.healthClassification.yes")}
+                </button>
+                <button
+                  type="button"
+                  disabled={settingHealthClass}
+                  onClick={() => handleSetHealthClassification(false)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:opacity-60 ${
+                    expert.is_health_professional === false
+                      ? "bg-[#445446] text-white border-[#445446]"
+                      : "bg-white text-gray-600 border-[#E4E7E4] hover:border-[#445446] hover:text-[#445446]"
+                  }`}
+                >
+                  {t("expertDetail.healthClassification.no")}
+                </button>
               </div>
             </div>
           </div>

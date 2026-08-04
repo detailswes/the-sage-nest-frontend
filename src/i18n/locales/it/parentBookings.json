@@ -70,10 +70,10 @@
     "rescheduleError":        "Impossibile riprogrammare. Riprova.",
     "refundFull":             "Riceverai un rimborso completo{{amount}}.",
     "refundHalf":             "Riceverai un rimborso del 50%{{amount}} — la cancellazione avviene tra 12 e 24 ore prima della sessione.",
-    "withdrawalLeadIn":       "La tua nuova Sessione potrebbe svolgersi entro i prossimi 14 giorni, quindi ci serve la tua conferma:",
-    "withdrawalLabel":        "Richiedo espressamente che la mia Sessione si svolga prima della scadenza del periodo di recesso di 14 giorni e sono consapevole che il diritto di recesso si perde una volta che la Sessione si è svolta per intero.",
+    "withdrawalLeadIn":       "La tua nuova sessione potrebbe svolgersi entro i prossimi 14 giorni:",
+    "withdrawalLabel":        "La sessione è prenotata entro i prossimi 14 giorni. Chiedo che si svolga alla data scelta, prima della scadenza del periodo di recesso, e accetto di perdere il diritto di recesso una volta che la sessione è stata erogata.",
     "withdrawalWhy":          "Perché mi viene chiesto?",
-    "withdrawalWhyBody":      "La legge europea ti riconosce 14 giorni per cambiare idea sugli acquisti online. Poiché la tua Sessione potrebbe svolgersi entro questi 14 giorni, ti chiediamo di confermare che desideri che abbia luogo — le tue possibilità di cancellazione e modifica previste dalle nostre condizioni restano invariate.",
+    "withdrawalWhyBody":      "Per legge hai 14 giorni dalla conferma per cambiare idea e ottenere il rimborso. La data che hai scelto rientra in questi 14 giorni, quindi ci serve la tua conferma. L'orario della sessione non cambia. Una volta svolta, il diritto di recesso non si applica più.",
     "withdrawalRequiredError": "Conferma il consenso all'esecuzione anticipata per riprogrammare entro i prossimi 14 giorni."
   },
   "pastCard": {
@@ -117,10 +117,6 @@
   },
   "consentBlock": {
     "termsLabel":        "Ho letto e accetto i <0>Termini di Consumo</0> e le <1>Condizioni di Cancellazione e Modifica della Prenotazione</1>.",
-    "withdrawalLeadIn":  "La tua Sessione potrebbe svolgersi entro i prossimi 14 giorni, quindi ci serve la tua conferma:",
-    "withdrawalLabel":   "Richiedo espressamente che la mia Sessione si svolga prima della scadenza del periodo di recesso di 14 giorni e sono consapevole che il diritto di recesso si perde una volta che la Sessione si è svolta per intero.",
-    "withdrawalWhy":     "Perché mi viene chiesto?",
-    "withdrawalWhyBody": "La legge europea ti riconosce 14 giorni per cambiare idea sugli acquisti online. Poiché la tua Sessione potrebbe svolgersi entro questi 14 giorni, ti chiediamo di confermare che desideri che abbia luogo — le tue possibilità di cancellazione e modifica previste dalle nostre condizioni restano invariate.",
     "privacyNotice":     "I tuoi dati personali sono trattati per gestire la tua prenotazione, come descritto nella nostra <0>Informativa sulla Privacy</0>."
   },
   "serviceStep": {
@@ -134,10 +130,66 @@
   "steps": {
     "service": "Servizio",
     "time":    "Orario",
+    "account": "Account",
+    "details": "Dettagli",
     "confirm": "Conferma"
   },
+  "accountStep": {
+    "back":                       "Torna alla selezione dell'orario",
+    "heading":                    "I tuoi dati",
+    "haveAccount":                "Hai già un account?",
+    "signIn":                     "Accedi",
+    "fullName":                   "Nome e cognome",
+    "fullNamePlaceholder":        "Giulia Ferrari",
+    "email":                      "Email",
+    "emailPlaceholder":           "tu@esempio.com",
+    "password":                   "Password",
+    "passwordPlaceholder":        "Crea una password",
+    "confirmPassword":            "Conferma password",
+    "confirmPasswordPlaceholder": "Ripeti la password",
+    "phone":                      "Numero di telefono",
+    "phonePlaceholder":           "+39 12 34 56 78 90",
+    "createAccountBtn":           "Crea account e continua",
+    "creatingAccountBtn":         "Creazione account…",
+    "noChargeYet":                "Nessun addebito finché il pagamento non sarà confermato al passaggio successivo.",
+    "currencyNotice":             "I prezzi sono stabiliti dal professionista nella sua valuta locale ({{currency}}). La tua banca potrebbe applicare una commissione di conversione se diversa dalla valuta della tua carta.",
+    "signInTitle":                "Accedi per continuare",
+    "signInBtn":                  "Accedi e continua",
+    "signingInBtn":               "Accesso in corso…",
+    "noAccount":                  "Non hai un account?",
+    "createOne":                  "Creane uno"
+  },
+  "detailsStep": {
+    "back":             "Indietro",
+    "title":            "Dettagli della prenotazione",
+    "subtitle":          "Aggiungi i dati che il tuo esperto usa per fatturarti.",
+    "billingTitle":      "Dati di fatturazione",
+    "billingSubtitle":   "Utilizzati per la fattura che emetterà il professionista.",
+    "invoiceHolder":     "Intestatario",
+    "address":           "Indirizzo",
+    "postcode":          "CAP",
+    "town":              "Comune",
+    "province":          "Provincia",
+    "country":           "Nazione",
+    "fiscalCode":        "Codice fiscale",
+    "fiscalCodeHelper":  "Obbligatorio per legge sulla fattura che riceverai dal professionista. 16 caratteri.",
+    "noFiscalCode":      "Non ho un codice fiscale italiano",
+    "invoiceNote":       "La fattura è emessa direttamente dal professionista, non da Sage Nest.",
+    "continueBtn":       "Continua"
+  },
+  "healthConsent": {
+    "heading": "Consenso al trattamento",
+    "flowA":   "Acconsento espressamente al trattamento da parte di Sage Nest dei dati sanitari relativi alla mia prenotazione, per gestire l'appuntamento, la programmazione, le comunicazioni relative all'appuntamento e i relativi pagamenti. Ho compreso di poter revocare il consenso in qualsiasi momento.",
+    "flowB":   "Dichiaro di esercitare la responsabilità genitoriale sul minore destinatario di questa prenotazione e acconsento espressamente, per suo conto, al trattamento da parte di Sage Nest dei dati sanitari relativi alla prenotazione del minore, per gestire l'appuntamento, la programmazione, le comunicazioni relative all'appuntamento e i relativi pagamenti. Ho compreso di poter revocare questo consenso in qualsiasi momento.",
+    "helper":  "Puoi revocare il consenso in qualsiasi momento scrivendo a hello@sagenest.org. La revoca prima della sessione comporta la cancellazione della prenotazione. Non elimina i documenti fiscali e contabili che siamo tenuti a conservare."
+  },
+  "withdrawalBlock": {
+    "label":   "La sessione è prenotata entro i prossimi 14 giorni. Chiedo che si svolga alla data scelta, prima della scadenza del periodo di recesso, e accetto di perdere il diritto di recesso una volta che la sessione è stata erogata.",
+    "why":     "Perché mi viene chiesto?",
+    "whyBody": "Per legge hai 14 giorni dalla conferma per cambiare idea e ottenere il rimborso. La data che hai scelto rientra in questi 14 giorni, quindi ci serve la tua conferma. L'orario della sessione non cambia. Una volta svolta, il diritto di recesso non si applica più."
+  },
   "confirmStep": {
-    "back":            "Torna alla selezione dell'orario",
+    "back":            "Torna ai dettagli della prenotazione",
     "title":           "Conferma la tua prenotazione",
     "subtitle":        "Rivedi i dettagli prima di procedere al pagamento.",
     "labelFormat":     "Formato",
@@ -145,16 +197,13 @@
     "labelDuration":   "Durata",
     "labelLocation":   "Luogo",
     "labelTotal":      "Totale",
+    "invoiceTo":       "Fattura intestata a",
+    "edit":            "Modifica",
     "formatOnline":    "Online (videochiamata)",
     "formatInPerson":  "Di persona",
+    "healthcareNotice": "Sage Nest è una piattaforma di prenotazione e non eroga prestazioni sanitarie. I professionisti presenti sulla piattaforma sono indipendenti: il contratto per la sessione si conclude direttamente tra te e il professionista. Se ritieni che tu o il tuo bambino abbiate bisogno di cure mediche urgenti, chiama il 112.",
     "proceedBtn":      "Procedi al pagamento →",
-    "preparingBtn":    "Preparazione pagamento…",
-    "signInTitle":     "Accedi per continuare",
-    "noAccount":       "Non hai un account?",
-    "createOne":       "Creane uno",
-    "yourDetails":     "I tuoi dati",
-    "haveAccount":     "Hai già un account?",
-    "signIn":          "Accedi"
+    "preparingBtn":    "Preparazione pagamento…"
   },
   "slotStep": {
     "backToServices":  "Torna ai servizi",
@@ -190,11 +239,8 @@
       "formatLabel":      "Formato:",
       "locationLabel":    "Luogo:",
       "durationLabel":    "Durata:",
-      "currencyNotice":   "I prezzi sono impostati dall'esperto nella propria valuta locale ({{currency}}). La tua banca potrebbe applicare una commissione di conversione se questa è diversa dalla valuta della tua carta.",
-      "healthDisclaimer": "Sage Nest è una piattaforma di prenotazione, non un fornitore di servizi sanitari. I professionisti elencati su questa piattaforma sono liberi professionisti indipendenti. I consigli forniti durante le sessioni non costituiscono pareri medici, diagnosi o trattamenti e non devono essere considerati sostitutivi di cure mediche professionali. Rivolgiti sempre a un medico qualificato in caso di preoccupazioni per la tua salute o quella del tuo bambino. In caso di emergenza medica, contatta immediatamente i servizi di emergenza.",
       "proceedBtn":       "Procedi al pagamento",
-      "creatingBtn":      "Creazione prenotazione…",
-      "noChargeYet":      "Non ti verrà addebitato nulla fino alla conferma del pagamento nel passo successivo."
+      "creatingBtn":      "Creazione prenotazione…"
     }
   },
   "checkout": {
@@ -269,7 +315,12 @@
     "termsPrefix":         "Ho letto e accetto i",
     "termsLink":           "Termini e Condizioni",
     "marketingOptIn":      "Desidero ricevere suggerimenti, consigli di esperti e aggiornamenti da Sage Nest via email. Puoi annullare l'iscrizione in qualsiasi momento.",
-    "marketingOptInShort": "Desidero ricevere consigli occasionali da Sage Nest (opzionale)",
+    "marketingOptInShort": "Vorrei ricevere ogni tanto consigli sulla genitorialità da Sage Nest (facoltativo)",
     "termsRequired":       "Devi accettare i Termini e Condizioni per continuare."
+  },
+  "errors": {
+    "fiscalCodeRequired": "Inserisci il tuo codice fiscale: è obbligatorio sulla fattura.",
+    "fiscalCodeInvalid":  "Il codice fiscale non è valido. Controlla di averlo inserito correttamente.",
+    "consentRequired":    "Per continuare è necessario il tuo consenso."
   }
 }

@@ -42,6 +42,18 @@ export const adminApi = createApi({
         { type: "Expert", id },
       ],
     }),
+    // arg: { id, is_health_professional }
+    setHealthClassification: builder.mutation({
+      query: ({ id, is_health_professional }) => ({
+        url: `/admin/experts/${id}/health-classification`,
+        method: "PATCH",
+        data: { is_health_professional },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        "Expert",
+        { type: "Expert", id },
+      ],
+    }),
     suspendExpert: builder.mutation({
       query: (id) => ({ url: `/admin/experts/${id}/suspend`, method: "POST" }),
       invalidatesTags: (result, error, id) => [
@@ -421,6 +433,7 @@ export const {
   useExportExpertsXlsxMutation,
   useApproveExpertMutation,
   useRejectExpertMutation,
+  useSetHealthClassificationMutation,
   useSuspendExpertMutation,
   useReactivateExpertMutation,
   useApproveProfileDraftMutation,
