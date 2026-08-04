@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import AuthLayout from '../../components/auth/AuthLayout';
 import PasswordInput from '../../components/auth/PasswordInput';
 import { resetPasswordApi } from '../../api/authApi';
@@ -7,6 +8,7 @@ import { checkPasswordStrength } from '../../utils/validation';
 
 // 'form' | 'submitting' | 'success' | 'expired' | 'invalid'
 const ResetPassword = () => {
+  const { t } = useTranslation('auth');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
@@ -24,13 +26,13 @@ const ResetPassword = () => {
   const validate = () => {
     const e = {};
     if (!password) {
-      e.password = 'New password is required.';
+      e.password = t('validation.passwordRequired');
     } else {
       const unmet = checkPasswordStrength(password).filter((c) => !c.ok);
-      if (unmet.length > 0) e.password = unmet[0].label + ' is required.';
+      if (unmet.length > 0) e.password = t('validation.passwordWeak');
     }
-    if (!confirm) e.confirm = 'Please confirm your new password.';
-    else if (password !== confirm) e.confirm = 'Passwords do not match.';
+    if (!confirm) e.confirm = t('validation.confirmPasswordRequired');
+    else if (password !== confirm) e.confirm = t('validation.passwordsMismatch');
     return e;
   };
 
@@ -63,15 +65,15 @@ const ResetPassword = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">Password updated!</h1>
+          <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">{t('resetPassword.success.title')}</h1>
           <p className="text-sm text-gray-500 mb-8">
-            Your password has been updated successfully! Please Sign-In.
+            {t('resetPassword.success.body')}
           </p>
           <Link
             to="/login"
             className="inline-block w-full bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium py-3 rounded-lg transition-colors"
           >
-            Sign in with new password
+            {t('resetPassword.success.signInBtn')}
           </Link>
         </div>
       </AuthLayout>
@@ -88,15 +90,15 @@ const ResetPassword = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">Link expired</h1>
+          <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">{t('resetPassword.expired.title')}</h1>
           <p className="text-sm text-gray-500 mb-8">
-            This reset link expired after 1 hour. Please request a new one.
+            {t('resetPassword.expired.body')}
           </p>
           <Link
             to="/forgot-password"
             className="inline-block w-full bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium py-3 rounded-lg transition-colors"
           >
-            Request new reset link
+            {t('resetPassword.expired.requestNewBtn')}
           </Link>
         </div>
       </AuthLayout>
@@ -113,15 +115,15 @@ const ResetPassword = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">Invalid link</h1>
+          <h1 className="text-2xl font-semibold text-[#1F2933] mb-2">{t('resetPassword.invalid.title')}</h1>
           <p className="text-sm text-gray-500 mb-8">
-            This reset link is invalid or has already been used. Please request a new one.
+            {t('resetPassword.invalid.body')}
           </p>
           <Link
             to="/forgot-password"
             className="inline-block w-full bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium py-3 rounded-lg transition-colors"
           >
-            Request new reset link
+            {t('resetPassword.invalid.requestNewBtn')}
           </Link>
         </div>
       </AuthLayout>
@@ -137,28 +139,28 @@ const ResetPassword = () => {
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
           </svg>
         </div>
-        <h1 className="text-2xl font-semibold text-[#1F2933] mb-1">Set new password</h1>
-        <p className="text-sm text-gray-500">Choose a strong password for your account.</p>
+        <h1 className="text-2xl font-semibold text-[#1F2933] mb-1">{t('resetPassword.setNewPasswordTitle')}</h1>
+        <p className="text-sm text-gray-500">{t('resetPassword.setNewPasswordSubtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-            New password
+            {t('resetPassword.newPasswordLabel')}
           </label>
           <PasswordInput
             id="password"
             name="password"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: '' })); }}
-            placeholder="At least 8 characters"
+            placeholder={t('resetPassword.newPasswordPlaceholder')}
             hasError={!!errors.password}
           />
           {errors.password && <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>}
           {password && (
             <ul className="mt-2 space-y-1">
-              {checkPasswordStrength(password).map(({ label, ok }) => (
-                <li key={label} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
+              {checkPasswordStrength(password).map(({ key, ok }) => (
+                <li key={key} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
                   {ok ? (
                     <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
@@ -168,7 +170,7 @@ const ResetPassword = () => {
                       <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-.75-4.75a.75.75 0 0 0 1.5 0V8.75a.75.75 0 0 0-1.5 0v4.5Zm.75-7a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
                     </svg>
                   )}
-                  {label}
+                  {t(key)}
                 </li>
               ))}
             </ul>
@@ -177,14 +179,14 @@ const ResetPassword = () => {
 
         <div>
           <label htmlFor="confirm" className="block text-sm font-medium text-[#1F2933] mb-1.5">
-            Confirm new password
+            {t('resetPassword.confirmPasswordLabel')}
           </label>
           <PasswordInput
             id="confirm"
             name="confirm"
             value={confirm}
             onChange={(e) => { setConfirm(e.target.value); setErrors((p) => ({ ...p, confirm: '' })); }}
-            placeholder="Re-enter your password"
+            placeholder={t('resetPassword.confirmPasswordPlaceholder')}
             hasError={!!errors.confirm}
           />
           {errors.confirm && <p className="mt-1.5 text-xs text-red-500">{errors.confirm}</p>}
@@ -195,13 +197,13 @@ const ResetPassword = () => {
           disabled={status === 'submitting'}
           className="w-full bg-[#445446] hover:bg-[#3F4E41] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors text-sm"
         >
-          {status === 'submitting' ? 'Updating password…' : 'Update password'}
+          {status === 'submitting' ? t('resetPassword.submittingBtn') : t('resetPassword.submitBtn')}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-500">
         <Link to="/login" className="text-[#445446] font-medium hover:underline">
-          Back to sign in
+          {t('resetPassword.backToSignIn')}
         </Link>
       </p>
     </AuthLayout>

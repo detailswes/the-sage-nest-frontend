@@ -201,8 +201,31 @@ export const COUNTRIES = [
   { code: 'zw', name: 'Zimbabwe' },
 ];
 
-export function getCountryName(code) {
+// locale-aware — uses Intl.DisplayNames so every country name follows the
+// interface language, not just the ones we'd think to hand-translate.
+// Falls back to the static English list if Intl.DisplayNames is unavailable.
+export function getCountryName(code, locale = 'en') {
   if (!code) return '';
+  try {
+    const displayNames = new Intl.DisplayNames([locale === 'it' ? 'it' : 'en'], { type: 'region' });
+    const name = displayNames.of(code.toUpperCase());
+    if (name && name !== code.toUpperCase()) return name;
+  } catch { /* Intl.DisplayNames unsupported — fall through */ }
   const match = COUNTRIES.find((c) => c.code === code.toLowerCase());
   return match ? match.name : code;
+}
+
+// Localized { code, name } list for populating country <select> dropdowns,
+// sorted by the localized name (so an Italian list reads alphabetically in
+// Italian, not in leftover English order). Falls back to the static list.
+export function getLocalizedCountries(locale = 'en') {
+  try {
+    const lng = locale === 'it' ? 'it' : 'en';
+    const displayNames = new Intl.DisplayNames([lng], { type: 'region' });
+    return COUNTRIES
+      .map((c) => ({ code: c.code, name: displayNames.of(c.code.toUpperCase()) || c.name }))
+      .sort((a, b) => a.name.localeCompare(b.name, lng));
+  } catch {
+    return COUNTRIES;
+  }
 }

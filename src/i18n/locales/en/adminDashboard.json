@@ -401,6 +401,8 @@
       "EARLY_YEARS_SPECIALIST": "Early Years Specialist",
       "POSTNATAL_PHYSIOTHERAPIST": "Postnatal Physiotherapist",
       "PARENTING_COACH": "Parenting Coach",
+      "DIETITIAN": "Dietitian",
+      "PEDAGOGIST": "Pedagogist",
       "OTHER": "Other"
     },
     "badge": {

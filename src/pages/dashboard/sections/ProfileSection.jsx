@@ -31,24 +31,11 @@ const SUMMARY_MAX = 200;
 const BIO_MAX = 700;
 
 const TIMEZONES = [
-  { value: 'Europe/Rome',    label: 'Rome / Italy (CET/CEST)' },
-  { value: 'Europe/London',  label: 'London (GMT/BST)' },
-  { value: 'Europe/Dublin',  label: 'Dublin (GMT/IST)' },
-  { value: 'Europe/Paris',   label: 'Paris (CET/CEST)' },
-  { value: 'Europe/Berlin',  label: 'Berlin (CET/CEST)' },
-  { value: 'Europe/Madrid',  label: 'Madrid (CET/CEST)' },
-  { value: 'Europe/Lisbon',  label: 'Lisbon (WET/WEST)' },
-  { value: 'Europe/Warsaw',  label: 'Warsaw (CET/CEST)' },
-  { value: 'Europe/Zurich',  label: 'Zurich (CET/CEST)' },
-  { value: 'Europe/Amsterdam', label: 'Amsterdam (CET/CEST)' },
-  { value: 'Europe/Brussels', label: 'Brussels (CET/CEST)' },
-  { value: 'Europe/Athens',  label: 'Athens (EET/EEST)' },
-  { value: 'Europe/Helsinki', label: 'Helsinki (EET/EEST)' },
-  { value: 'America/New_York', label: 'New York (ET)' },
-  { value: 'America/Chicago', label: 'Chicago (CT)' },
-  { value: 'America/Los_Angeles', label: 'Los Angeles (PT)' },
-  { value: 'America/Toronto', label: 'Toronto (ET)' },
-  { value: 'Asia/Dubai',     label: 'Dubai (GST)' },
+  'Europe/Rome', 'Europe/London', 'Europe/Dublin', 'Europe/Paris',
+  'Europe/Berlin', 'Europe/Madrid', 'Europe/Lisbon', 'Europe/Warsaw',
+  'Europe/Zurich', 'Europe/Amsterdam', 'Europe/Brussels', 'Europe/Athens',
+  'Europe/Helsinki', 'America/New_York', 'America/Chicago',
+  'America/Los_Angeles', 'America/Toronto', 'Asia/Dubai',
 ];
 
 // ─── Stripe button ────────────────────────────────────────────────────────────
@@ -611,7 +598,7 @@ const ProfileSection = () => {
             <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('profile.details.timezoneLabel')} <PublicBadge /></label>
             <select name="timezone" value={form.timezone} onChange={handleChange} className={inputClass}>
               {TIMEZONES.map((tz) => (
-                <option key={tz.value} value={tz.value}>{tz.label}</option>
+                <option key={tz} value={tz}>{t('profile.details.timezones.' + tz)}</option>
               ))}
             </select>
             <p className="mt-1 text-xs text-gray-400">{t('profile.details.timezoneHint')}</p>
@@ -624,7 +611,7 @@ const ProfileSection = () => {
               {LANGUAGES.map((lang) => (
                 <LangChip
                   key={lang}
-                  label={lang}
+                  label={t('profile.details.languageNames.' + lang)}
                   selected={form.languages.includes(lang)}
                   onToggle={() => handleLanguageToggle(lang)}
                 />
@@ -747,7 +734,7 @@ const ProfileSection = () => {
       </div>
 
       {/* Sub-cards — rendered only after profile is loaded */}
-      {profile && <QualificationsCard initialData={profile.qualifications || []} />}
+      {profile && <QualificationsCard initialData={profile.qualifications || []} country={profile.business_info?.address_country} />}
       {profile && <CertificationsCard initialData={profile.certifications || []} />}
       {profile && <BusinessInfoCard   initialData={profile.business_info || null} />}
       {profile && <InsuranceCard      initialData={profile.insurance || null} />}
