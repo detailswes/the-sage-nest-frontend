@@ -9,7 +9,7 @@ import { getDocumentUrl } from "../../../utils/imageUrl";
 import ConfirmModal from "../../../components/ConfirmModal";
 import { PlusIcon, EditIcon, TrashIcon, PdfFileIcon, ImageFileIcon } from "../../../assets/icons";
 
-const QUAL_TYPES = [
+const QUAL_TYPES_DEFAULT = [
   { value: "LACTATION_CONSULTANT" },
   { value: "BREASTFEEDING_COUNSELLOR" },
   { value: "INFANT_SLEEP_CONSULTANT" },
@@ -19,6 +19,28 @@ const QUAL_TYPES = [
   { value: "PAEDIATRIC_NUTRITIONIST" },
   { value: "EARLY_YEARS_SPECIALIST" },
   { value: "POSTNATAL_PHYSIOTHERAPIST" },
+  { value: "PARENTING_COACH" },
+  { value: "OTHER" },
+];
+
+// Italian profession list (expert profile page spec, 4 Aug 2026) — same
+// underlying QualificationType values as the default list, just a different
+// order/subset reflecting Italian professional titles. Country-gated the
+// same way as the booking flow's billing block. The Danish list will follow;
+// until then, non-Italian experts (and anyone without Business Info yet) see
+// QUAL_TYPES_DEFAULT.
+const QUAL_TYPES_IT = [
+  { value: "LACTATION_CONSULTANT" },
+  { value: "BREASTFEEDING_COUNSELLOR" },
+  { value: "INFANT_SLEEP_CONSULTANT" },
+  { value: "DOULA" },
+  { value: "MIDWIFE" },
+  { value: "BABY_OSTEOPATH" },
+  { value: "POSTNATAL_PHYSIOTHERAPIST" },
+  { value: "PAEDIATRIC_NUTRITIONIST" },
+  { value: "DIETITIAN" },
+  { value: "PEDAGOGIST" },
+  { value: "EARLY_YEARS_SPECIALIST" },
   { value: "PARENTING_COACH" },
   { value: "OTHER" },
 ];
@@ -57,8 +79,9 @@ const DocBadge = ({ url }) => {
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
-const QualificationsCard = ({ initialData = [] }) => {
+const QualificationsCard = ({ initialData = [], country = null }) => {
   const { t } = useTranslation("expertDashboard");
+  const qualTypes = country === "it" ? QUAL_TYPES_IT : QUAL_TYPES_DEFAULT;
   const [items, setItems] = useState(initialData);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -418,7 +441,7 @@ const QualificationsCard = ({ initialData = [] }) => {
               className={inputClass(!form.type && !!formError)}
             >
               <option value="">{t("profile.quals.form.typeSelect")}</option>
-              {QUAL_TYPES.map((qt) => (
+              {qualTypes.map((qt) => (
                 <option key={qt.value} value={qt.value}>
                   {t("profile.quals.types." + qt.value)}
                 </option>

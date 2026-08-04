@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { COUNTRIES } from '../../utils/countries';
+import { getLocalizedCountries } from '../../utils/countries';
 import { normalizeFiscalCode, isValidItalianFiscalCode } from '../../utils/fiscalCode';
 
 // ─── Billing details — booking flow spec v1.7 §5.1 ───────────────────────────
@@ -11,7 +11,7 @@ const inputCls = "w-full px-4 py-3 rounded-lg border border-[#E4E7E4] text-sm fo
 const labelCls = "block text-xs font-medium text-gray-600 mb-1";
 
 const BillingDetailsBlock = ({ isItalianExpert, billing, setBilling, fiscalCodeError, setFiscalCodeError, showErrors }) => {
-  const { t } = useTranslation('parentBookings');
+  const { t, i18n } = useTranslation('parentBookings');
 
   const fiscalCodeMissing = !billing.noFiscalCode && !billing.fiscalCode.trim();
   const displayedFiscalCodeError = fiscalCodeError || (showErrors && fiscalCodeMissing ? t('errors.fiscalCodeRequired') : '');
@@ -74,7 +74,7 @@ const BillingDetailsBlock = ({ isItalianExpert, billing, setBilling, fiscalCodeE
           <label className={labelCls}>{t('detailsStep.country')}</label>
           <select value={billing.country} onChange={handleChange('country')} className={inputCls}>
             <option value="">—</option>
-            {COUNTRIES.map((c) => (
+            {getLocalizedCountries(i18n.language).map((c) => (
               <option key={c.code} value={c.code}>{c.name}</option>
             ))}
           </select>

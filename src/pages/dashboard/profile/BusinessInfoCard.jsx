@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { isValidIBAN, electronicFormatIBAN } from "ibantools";
 import { useSaveBusinessInfoMutation } from "../../../api/expertApi";
-import { COUNTRIES, getCountryName } from "../../../utils/countries";
+import { getCountryName, getLocalizedCountries } from "../../../utils/countries";
 
 const Spinner = () => (
   <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin flex-shrink-0" />
@@ -21,7 +20,6 @@ const EMPTY_FORM = {
   tin: "",
   vat_number: "",
   company_reg_number: "",
-  iban: "",
   business_email: "",
   website: "",
   municipality: "",
@@ -74,7 +72,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
           tin: initialData.tin || "",
           vat_number: initialData.vat_number || "",
           company_reg_number: initialData.company_reg_number || "",
-          iban: initialData.iban || "",
           business_email: initialData.business_email || "",
           website: initialData.website || "",
           municipality: initialData.municipality || "",
@@ -115,11 +112,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
     if (!form.tin.trim()) errs.tin = t("profile.business.errors.tinRequired");
     if (isCompany && !form.vat_number.trim()) errs.vat_number = t("profile.business.errors.vatRequired");
     if (isCompany && !form.company_reg_number.trim()) errs.company_reg_number = t("profile.business.errors.companyRegRequired");
-    if (!form.iban.trim()) {
-      errs.iban = t("profile.business.errors.ibanRequired");
-    } else if (!isValidIBAN(electronicFormatIBAN(form.iban.trim()) ?? "")) {
-      errs.iban = t("profile.business.errors.ibanInvalid");
-    }
     if (!form.business_email.trim()) errs.business_email = t("profile.business.errors.emailRequired");
     if (form.website.trim()) {
       try { new URL(form.website.trim()); } catch {
@@ -144,7 +136,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
         tin: form.tin.trim(),
         vat_number: isCompany ? form.vat_number.trim() : null,
         company_reg_number: isCompany ? form.company_reg_number.trim() : null,
-        iban: form.iban.trim(),
         business_email: form.business_email.trim(),
         website: form.website.trim(),
         municipality: form.municipality.trim() || null,
@@ -221,7 +212,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
             <InfoRow label={t("profile.business.infoRows.street")} value={data.address_street} />
             <InfoRow label={t("profile.business.infoRows.city")} value={data.address_city} />
             <InfoRow label={t("profile.business.infoRows.postalCode")} value={data.address_postal_code} />
-            <InfoRow label={t("profile.business.infoRows.country")} value={getCountryName(data.address_country)} />
+            <InfoRow label={t("profile.business.infoRows.country")} value={getCountryName(data.address_country, i18n.language)} />
             <InfoRow label={t("profile.business.infoRows.tin")} value={data.tin} />
             {data.entity_type === "COMPANY" && (
               <InfoRow label={t("profile.business.infoRows.vatNumber")} value={data.vat_number} />
@@ -232,7 +223,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 value={data.company_reg_number}
               />
             )}
-            <InfoRow label={t("profile.business.infoRows.iban")} value={data.iban} />
             <InfoRow label={t("profile.business.infoRows.email")} value={data.business_email} />
             <InfoRow label={t("profile.business.infoRows.website")} value={data.website} />
             {data.municipality && (
@@ -380,7 +370,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
                   className={inputClass("address_country")}
                 >
                   <option value="">{t("profile.business.form.countryPlaceholder")}</option>
-                  {COUNTRIES.map((c) => (
+                  {getLocalizedCountries(i18n.language).map((c) => (
                     <option key={c.code} value={c.code}>{c.name}</option>
                   ))}
                 </select>
@@ -442,33 +432,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
               {fieldErrors.company_reg_number && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.company_reg_number}</p>}
             </div>
           )}
-
-          {/* IBAN */}
-          <div>
-            <label className={labelClass}>
-              {t("profile.business.form.ibanLabel")} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="iban"
-              value={form.iban}
-              onChange={handleChange}
-              placeholder={t("profile.business.form.ibanPlaceholder")}
-              className={inputClass("iban")}
-            />
-            {fieldErrors.iban && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.iban}</p>}
-            <p className="mt-1.5 text-xs text-gray-400">
-              {t("profile.business.form.ibanNote")}{" "}
-              <a
-                href="/privacy-policy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-gray-200"
-              >
-                {t("profile.business.form.ibanPrivacyLink")}
-              </a>.
-            </p>
-          </div>
 
           {/* Email + website side by side */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
