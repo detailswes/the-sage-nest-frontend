@@ -64,8 +64,13 @@ const CLUSTER_BADGE_CLS = {
 const EMPTY_FORM = {
   title: '', description: '',
   duration_minutes: '', price: '', currency: 'EUR',
-  format: '', cluster: '',
+  format: '', cluster: '', health_service_recipient: '',
 };
+
+// Distinct from CLUSTER_OPTIONS (a Webflow marketing tag) — this gates which
+// health-consent wording a parent sees in the booking flow (booking flow
+// spec v1.7 §7.2), so it's a separate field, not a repurposing of cluster.
+const SERVICE_RECIPIENT_OPTIONS = ['PARENTS', 'BABY'];
 
 const Spinner = ({ className = 'w-4 h-4' }) => (
   <div className={`${className} rounded-full border-2 border-current border-t-transparent animate-spin`} />
@@ -87,6 +92,9 @@ const ServicesSection = () => {
   const services = localOrder ?? serverServices;
 
   const sessionFormat = profile?.session_format || null;
+  // Required only for experts flagged (by admin) as practising a regulated
+  // health profession — booking flow spec v1.7 §7.2.
+  const isHealthProfessional = profile?.is_health_professional === true;
   // Currency is anchored to the expert's confirmed Stripe account currency —
   // never a per-service choice. Until Stripe has reported one (right after
   // onboarding, via a webhook), it's null and services can't be added.
@@ -144,6 +152,8 @@ const ServicesSection = () => {
       errs.format = t('services.validation.formatRequired');
     if (!form.cluster)
       errs.cluster = t('services.validation.categoryRequired');
+    if (isHealthProfessional && !form.health_service_recipient)
+      errs.health_service_recipient = t('services.validation.recipientRequired');
     return errs;
   };
 
@@ -173,6 +183,7 @@ const ServicesSection = () => {
       currency:         expertCurrency,
       format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
+      health_service_recipient: svc.health_service_recipient || '',
     });
     setFormErrors({});
     setShowForm(true);
@@ -190,6 +201,7 @@ const ServicesSection = () => {
       currency:         expertCurrency,
       format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
+      health_service_recipient: svc.health_service_recipient || '',
     });
     setFormErrors({});
     setShowForm(true);
@@ -217,6 +229,7 @@ const ServicesSection = () => {
         currency:         form.currency,
         format:           form.format  || null,
         cluster:          form.cluster || null,
+        health_service_recipient: form.health_service_recipient || null,
       };
       if (editingId) {
         await updateService({ id: editingId, ...payload }).unwrap();
@@ -398,6 +411,28 @@ const ServicesSection = () => {
                 </select>
                 {formErrors.cluster && <p className="mt-1.5 text-xs text-red-500">{formErrors.cluster}</p>}
               </div>
+              {isHealthProfessional && (
+                <div>
+                  <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                    {t('services.form.recipientLabel')} <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    name="health_service_recipient"
+                    value={form.health_service_recipient}
+                    onChange={handleChange}
+                    className={inputClass(!!formErrors.health_service_recipient)}
+                  >
+                    <option value="" disabled>{t('services.form.recipientSelect')}</option>
+                    {SERVICE_RECIPIENT_OPTIONS.map((o) => (
+                      <option key={o} value={o}>{t('services.recipients.' + o)}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-400">{t('services.form.recipientHint')}</p>
+                  {formErrors.health_service_recipient && (
+                    <p className="mt-1.5 text-xs text-red-500">{formErrors.health_service_recipient}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Duration + Currency + Price */}

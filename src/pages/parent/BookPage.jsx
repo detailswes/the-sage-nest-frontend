@@ -15,11 +15,15 @@ import { useGetLegalVersionsQuery } from '../../api/userApi';
 import { loginUser, registerUser, verifyOtpApi } from '../../api/authApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import { resolveDocUrl } from '../../utils/legalDocs';
+import { normalizeFiscalCode, isValidItalianFiscalCode } from '../../utils/fiscalCode';
 import { validateLoginForm, validateRegisterForm, checkPasswordStrength } from '../../utils/validation';
 import PasswordInput from '../../components/auth/PasswordInput';
 import useResendVerification from '../../hooks/useResendVerification';
 import BookingCalendar from '../../components/booking/BookingCalendar';
 import CancellationPolicy from '../../components/booking/CancellationPolicy';
+import BillingDetailsBlock from '../../components/booking/BillingDetailsBlock';
+import HealthConsentBlock from '../../components/booking/HealthConsentBlock';
+import WithdrawalBlock from '../../components/booking/WithdrawalBlock';
 import {
   CheckIcon, EnvelopeIcon,
   CheckCircleFilledIcon, InfoCircleFilledIcon, ChevronLeftIcon,
@@ -30,14 +34,23 @@ const WEBFLOW_EXPERT_BASE_URL = process.env.REACT_APP_WEBFLOW_EXPERT_BASE_URL ||
 const WITHDRAWAL_WINDOW_MS    = 14 * 24 * 60 * 60 * 1000;
 
 // ─── Steps ───────────────────────────────────────────────────────────────────
-const STEPS = { SERVICE: 'service', SLOT: 'slot', CONFIRM: 'confirm' };
+// Booking flow spec v1.7 §2: five steps signed out, four signed in — Account
+// is skipped entirely (and never counted) once the parent is authenticated.
+const STEPS = { SERVICE: 'service', SLOT: 'slot', ACCOUNT: 'account', DETAILS: 'details', CONFIRM: 'confirm' };
+
+const EMPTY_BILLING = {
+  invoiceHolder: '', address: '', postcode: '', town: '', province: '', country: '',
+  fiscalCode: '', noFiscalCode: false,
+};
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
-const StepIndicator = ({ step }) => {
+const StepIndicator = ({ step, signedIn }) => {
   const { t } = useTranslation('parentBookings');
   const steps = [
     { key: STEPS.SERVICE, label: t('steps.service') },
     { key: STEPS.SLOT,    label: t('steps.time') },
+    ...(signedIn ? [] : [{ key: STEPS.ACCOUNT, label: t('steps.account') }]),
+    { key: STEPS.DETAILS, label: t('steps.details') },
     { key: STEPS.CONFIRM, label: t('steps.confirm') },
   ];
   const currentIndex = steps.findIndex((s) => s.key === step);
@@ -75,19 +88,29 @@ const StepIndicator = ({ step }) => {
   );
 };
 
-// ─── Checkout consent block ───────────────────────────────────────────────────
-// Mandatory T&C+cancellation-policy checkbox, conditional 14-day withdrawal
-// checkbox, optional marketing checkbox, and a plain-text privacy notice.
-// Every field starts unchecked on every visit — no prior acceptance is reused.
-const ConsentBlock = ({
-  legalVersions,
-  withdrawalApplicable,
-  tcAccepted, setTcAccepted,
-  withdrawalAccepted, setWithdrawalAccepted,
-  marketingConsent, setMarketingConsent,
-}) => {
-  const { t, i18n } = useTranslation('parentBookings');
-  const [whyOpen, setWhyOpen] = useState(false);
+// ─── Booking summary strip — read-only, used on Account + Details steps ──────
+const BookingSummaryStrip = ({ detail, service, slot, format, lng }) => {
+  const { t } = useTranslation('parentBookings');
+  return (
+    <div className="flex items-center justify-between gap-3 bg-[#F5F7F5] border border-[#E4E7E4] rounded-lg px-4 py-3 mb-5">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-[#1F2933] truncate">{service?.title}</p>
+        <p className="text-xs text-gray-500 truncate">
+          {detail?.user?.name} · {slot?.start ? `${formatSlotDate(slot.start, lng)}, ${formatSlotTime(slot.start, lng)}` : ''} ·{' '}
+          {format === 'ONLINE' ? t('confirmStep.formatOnline') : t('confirmStep.formatInPerson')}
+        </p>
+      </div>
+      <p className="text-sm font-bold text-[#1F2933] flex-shrink-0">{formatPrice(service?.price, service?.currency || 'EUR', lng)}</p>
+    </div>
+  );
+};
+
+// ─── Confirm-and-pay consent block ────────────────────────────────────────────
+// Trimmed to just the mandatory Terms+Cancellation checkbox and the plain-text
+// privacy notice (booking flow spec v1.7 §6) — withdrawal moved to Details,
+// marketing moved to Account-only (InlineRegister).
+const ConsentBlock = ({ legalVersions, tcAccepted, setTcAccepted }) => {
+  const { i18n } = useTranslation('parentBookings');
 
   const termsHref        = resolveDocUrl(legalVersions?.terms_conditions, i18n.language, '/terms-conditions');
   const cancellationHref = resolveDocUrl(legalVersions?.cancellation_policy, i18n.language, '/cancellation-policy');
@@ -97,7 +120,6 @@ const ConsentBlock = ({
 
   return (
     <div className="space-y-2.5">
-      {/* Checkbox A — mandatory */}
       <label className="flex items-start gap-2 cursor-pointer select-none">
         <input
           type="checkbox"
@@ -119,44 +141,6 @@ const ConsentBlock = ({
         </span>
       </label>
 
-      {/* Checkbox B — conditional withdrawal consent */}
-      {withdrawalApplicable && (
-        <div className="space-y-1.5">
-          <p className="text-xs text-gray-500 leading-relaxed">{t('consentBlock.withdrawalLeadIn')}</p>
-          <label className="flex items-start gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={withdrawalAccepted}
-              onChange={(e) => setWithdrawalAccepted(e.target.checked)}
-              className={checkboxCls}
-            />
-            <span className="text-xs text-[#1F2933] leading-relaxed">{t('consentBlock.withdrawalLabel')}</span>
-          </label>
-          <button
-            type="button"
-            onClick={() => setWhyOpen((o) => !o)}
-            className="text-[11px] text-gray-400 hover:text-[#445446] underline ml-[22px]"
-          >
-            {t('consentBlock.withdrawalWhy')}
-          </button>
-          {whyOpen && (
-            <p className="text-[11px] text-gray-400 leading-relaxed ml-[22px]">{t('consentBlock.withdrawalWhyBody')}</p>
-          )}
-        </div>
-      )}
-
-      {/* Checkbox C — optional marketing */}
-      <label className="flex items-start gap-2 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={marketingConsent}
-          onChange={(e) => setMarketingConsent(e.target.checked)}
-          className={checkboxCls}
-        />
-        <span className="text-xs text-gray-500 leading-relaxed">{t('consentLabels.marketingOptIn')}</span>
-      </label>
-
-      {/* Plain-text privacy notice — no checkbox */}
       <p className="text-xs text-gray-400 leading-relaxed">
         <Trans
           i18nKey="consentBlock.privacyNotice"
@@ -283,17 +267,13 @@ const ExpertHeader = ({ expert }) => {
   );
 };
 
-// ─── Inline Login form ────────────────────────────────────────────────────────
-// Consent checkboxes are shown right in this form (below the credentials) so a
-// returning parent ticks them while signing in, then lands straight on the
-// Stripe checkout page — no extra screen just to re-confirm the same checkboxes.
-const InlineLogin = ({
-  onSuccess, onVerificationNeeded,
-  legalVersions, withdrawalApplicable,
-  tcAccepted, setTcAccepted,
-  withdrawalAccepted, setWithdrawalAccepted,
-  marketingConsent, setMarketingConsent,
-}) => {
+// ─── Inline Login form (Account step) ────────────────────────────────────────
+// Plain credentials form — no consent UI. Consent capture happens later in
+// Details/Confirm regardless of whether the parent logged in or registered
+// (booking flow spec v1.7 §4: signing in here returns to the same point in
+// the flow, not the dashboard).
+const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
+  const { t } = useTranslation('parentBookings');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
@@ -304,18 +284,15 @@ const InlineLogin = ({
   const [otpLoading, setOtpLoading] = useState(false);
   const { login } = useAuth();
 
-  const consentValid = tcAccepted && (!withdrawalApplicable || withdrawalAccepted);
-
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!consentValid) return;
     const errs = validateLoginForm({ email, password });
     if (Object.keys(errs).length) { setError(errs.email || errs.password || 'Invalid credentials'); return; }
     setLoading(true); setError('');
     try {
       const data = await loginUser({ email, password });
       if (data.otp_token) { setOtpToken(data.otp_token); }
-      else { login(data); await onSuccess(); }
+      else { login(data); onSuccess(); }
     } catch (err) {
       if (err?.response?.data?.email_not_verified && onVerificationNeeded) {
         onVerificationNeeded(email);
@@ -331,7 +308,7 @@ const InlineLogin = ({
     setOtpLoading(true); setOtpError('');
     try {
       const data = await verifyOtpApi({ otp_token: otpToken, code: otp });
-      login(data); await onSuccess();
+      login(data); onSuccess();
     } catch (err) {
       setOtpError(err?.response?.data?.error || 'Incorrect code. Please try again.');
     } finally { setOtpLoading(false); }
@@ -345,9 +322,9 @@ const InlineLogin = ({
           placeholder="000000" maxLength={6}
           className="w-full px-4 py-3 rounded-lg border border-[#E4E7E4] text-sm text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]" />
         {otpError && <p className="text-xs text-red-600">{otpError}</p>}
-        <button type="submit" disabled={otpLoading || !consentValid}
+        <button type="submit" disabled={otpLoading}
           className="w-full py-3 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-          {otpLoading ? 'Verifying…' : 'Verify & pay'}
+          {otpLoading ? 'Verifying…' : 'Verify'}
         </button>
       </form>
     );
@@ -356,35 +333,26 @@ const InlineLogin = ({
   return (
     <form onSubmit={handleLogin} className="space-y-3">
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('accountStep.email')}</label>
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('accountStep.emailPlaceholder')}
           className="w-full px-4 py-3 rounded-lg border border-[#E4E7E4] text-sm focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]" />
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
-        <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" />
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('accountStep.password')}</label>
+        <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('accountStep.password')} />
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      <div className="pt-1">
-        <ConsentBlock
-          legalVersions={legalVersions}
-          withdrawalApplicable={withdrawalApplicable}
-          tcAccepted={tcAccepted} setTcAccepted={setTcAccepted}
-          withdrawalAccepted={withdrawalAccepted} setWithdrawalAccepted={setWithdrawalAccepted}
-          marketingConsent={marketingConsent} setMarketingConsent={setMarketingConsent}
-        />
-      </div>
-
-      <button type="submit" disabled={loading || !consentValid}
+      <button type="submit" disabled={loading}
         className="w-full py-3 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-        {loading ? 'Signing in…' : 'Sign in & pay'}
+        {loading ? t('accountStep.signingInBtn') : t('accountStep.signInBtn')}
       </button>
     </form>
   );
 };
 
-// ─── Inline Register form ─────────────────────────────────────────────────────
+// ─── Inline Register form (Account step) ─────────────────────────────────────
+// Marketing checkbox's only place in the flow (booking flow spec v1.7 §4).
 const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
   const { t, i18n } = useTranslation('parentBookings');
   const { t: tAuth } = useTranslation('auth');
@@ -435,12 +403,12 @@ const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      {field('name', 'Full name', 'text', 'Jane Smith')}
-      {field('email', 'Email', 'email', 'you@example.com')}
+      {field('name', t('accountStep.fullName'), 'text', t('accountStep.fullNamePlaceholder'))}
+      {field('email', t('accountStep.email'), 'email', t('accountStep.emailPlaceholder'))}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('accountStep.password')}</label>
         <PasswordInput name="password" value={form.password}
-          onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} placeholder="Create a password" hasError={!!errors.password} />
+          onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} placeholder={t('accountStep.passwordPlaceholder')} hasError={!!errors.password} />
         {errors.password && <p className="text-xs text-red-500 mt-0.5">{errors.password}</p>}
         {form.password && (
           <ul className="mt-2 space-y-1">
@@ -458,12 +426,12 @@ const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
         )}
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Confirm password</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('accountStep.confirmPassword')}</label>
         <PasswordInput name="confirmPassword" value={form.confirmPassword}
-          onChange={(e) => setForm((p) => ({ ...p, confirmPassword: e.target.value }))} placeholder="Repeat password" hasError={!!errors.confirmPassword} />
+          onChange={(e) => setForm((p) => ({ ...p, confirmPassword: e.target.value }))} placeholder={t('accountStep.confirmPasswordPlaceholder')} hasError={!!errors.confirmPassword} />
         {errors.confirmPassword && <p className="text-xs text-red-500 mt-0.5">{errors.confirmPassword}</p>}
       </div>
-      {field('phone', 'Phone number', 'tel', '+45 12 34 56 78')}
+      {field('phone', t('accountStep.phone'), 'tel', t('accountStep.phonePlaceholder'))}
 
       <div className="space-y-2 pt-1">
         {[
@@ -483,7 +451,7 @@ const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
       {serverError && <p className="text-xs text-red-600">{serverError}</p>}
       <button type="submit" disabled={loading}
         className="w-full py-3 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60">
-        {loading ? 'Creating account…' : 'Create account & continue'}
+        {loading ? t('accountStep.creatingAccountBtn') : t('accountStep.createAccountBtn')}
       </button>
     </form>
   );
@@ -519,14 +487,21 @@ const BookPage = () => {
   const [monthArgs,       setMonthArgs]       = useState(null);
   const [expandedDesc,    setExpandedDesc]    = useState({});
 
-  // Confirm + payment state
+  // Account step
   const [authTab,              setAuthTab]              = useState('register');
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState(null);
 
-  // Checkout consent — always starts unchecked, never restored/reused across visits.
-  const [tcAccepted,          setTcAccepted]          = useState(false);
+  // Details step — billing, health consent, withdrawal. All start unset/unticked
+  // on every visit — no prior entry/acceptance is reused (spec §1: every
+  // booking collects billing afresh; consent never carries over).
+  const [billing,             setBilling]             = useState(EMPTY_BILLING);
+  const [fiscalCodeError,     setFiscalCodeError]     = useState('');
+  const [healthConsentGiven,  setHealthConsentGiven]  = useState(false);
+  const [showDetailsErrors,   setShowDetailsErrors]   = useState(false);
   const [withdrawalAccepted,  setWithdrawalAccepted]  = useState(false);
-  const [marketingConsent,    setMarketingConsent]    = useState(false);
+
+  // Confirm step
+  const [tcAccepted,          setTcAccepted]          = useState(false);
 
   // Slot lock
   const [lockId,        setLockId]        = useState(null);
@@ -622,7 +597,9 @@ const BookPage = () => {
         if (fmt) setSelectedFormat(fmt);
         if (slotStartParam) {
           setSelectedSlot({ start: slotStartParam });
-          setStep(STEPS.CONFIRM);
+          // Signed in already (e.g. returning from email verification while
+          // logged in) skips Account entirely, straight to Details.
+          setStep(user ? STEPS.DETAILS : STEPS.ACCOUNT);
         }
       }
     }
@@ -633,12 +610,37 @@ const BookPage = () => {
     if (expertIsError) setError('Could not load expert. Please try again.');
   }, [expertIsError]);
 
-  // Reset checkout consent whenever the selected slot changes — never carry
-  // acceptance across a different session date/time.
+  // Reset withdrawal/T&C acceptance whenever the selected slot changes — never
+  // carry acceptance across a different session date/time.
   useEffect(() => {
     setTcAccepted(false);
     setWithdrawalAccepted(false);
+    setShowDetailsErrors(false);
   }, [selectedSlot?.start]);
+
+  // If the service changes, clear the health consent and let it re-evaluate
+  // against the new service's recipient (booking flow spec v1.7 §6, back-nav rules).
+  useEffect(() => {
+    setHealthConsentGiven(false);
+    setShowDetailsErrors(false);
+  }, [selectedService?.id]);
+
+  // If the language changes while a consent is ticked, clear it and require
+  // it again (spec §10) — consent wording is language-specific.
+  useEffect(() => {
+    setTcAccepted(false);
+    setWithdrawalAccepted(false);
+    setHealthConsentGiven(false);
+  }, [i18n.language]);
+
+  // Default the invoice holder to the account name once known — editable,
+  // never re-derived after the parent edits it (spec §5.1: non-Italian
+  // branch defaults to account name and is editable).
+  useEffect(() => {
+    if (user?.name && !billing.invoiceHolder) {
+      setBilling((b) => ({ ...b, invoiceHolder: user.name }));
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Release lock on unmount
   useEffect(() => {
@@ -726,6 +728,23 @@ const BookPage = () => {
   };
 
   // ── Proceed to payment (lock → createBooking → checkout) ─────────────────
+  const detail = expertDetail || selectedExpert;
+  const isItalianExpert = detail?.business_info?.address_country === 'it';
+  const healthConsentRequired = detail?.is_health_professional === true;
+  const healthFlow = selectedService?.health_service_recipient === 'BABY' ? 'B' : 'A';
+
+  const billingValid = billing.invoiceHolder.trim().length > 0 && (
+    !isItalianExpert || (
+      billing.address.trim() && billing.postcode.trim() && billing.town.trim() && billing.province.trim() &&
+      (billing.noFiscalCode || (
+        billing.fiscalCode.trim() && isValidItalianFiscalCode(normalizeFiscalCode(billing.fiscalCode))
+      ))
+    )
+  );
+  const detailsValid = billingValid
+    && (!healthConsentRequired || healthConsentGiven)
+    && (!withdrawalApplicable || withdrawalAccepted);
+
   const doCheckout = async (existingLockId) => {
     try {
       const lid = existingLockId || (await lockSlot());
@@ -736,13 +755,20 @@ const BookPage = () => {
         scheduledAt: selectedSlot.start, format: selectedFormat, lockId: lid,
         tcAccepted,
         withdrawalAccepted: withdrawalApplicable ? withdrawalAccepted : undefined,
-        marketingConsent,
         language: i18n.language,
+        billingInvoiceHolder: billing.invoiceHolder.trim(),
+        billingAddress:   isItalianExpert ? billing.address.trim()   : undefined,
+        billingPostcode:  isItalianExpert ? billing.postcode.trim()  : undefined,
+        billingTown:      isItalianExpert ? billing.town.trim()      : undefined,
+        billingProvince:  isItalianExpert ? billing.province.trim()  : undefined,
+        billingCountry:   isItalianExpert ? billing.country          : undefined,
+        billingFiscalCode: isItalianExpert ? billing.fiscalCode.trim() : undefined,
+        billingNoFiscalCode: isItalianExpert ? billing.noFiscalCode  : undefined,
+        healthConsentGiven: healthConsentRequired ? healthConsentGiven : undefined,
       }).unwrap();
       lockIdRef.current = null;
       setLockId(null); setLockExpiresAt(null);
 
-      const detail = expertDetail || selectedExpert;
       const sessionLocation = selectedFormat === 'IN_PERSON'
         ? [detail?.address_street, detail?.address_city, detail?.address_postcode].filter(Boolean).join(', ')
         : null;
@@ -754,6 +780,7 @@ const BookPage = () => {
           amount: selectedService.price, currency: result.currency || selectedService.currency || 'EUR',
           scheduledAt: selectedSlot.start, format: selectedFormat, sessionLocation,
           paymentExpiresAt: result.paymentExpiresAt,
+          billingCountry: isItalianExpert ? billing.country : undefined,
           restore: { expert: selectedExpert, service: selectedService, format: selectedFormat },
         },
       });
@@ -763,8 +790,7 @@ const BookPage = () => {
   };
 
   const handleProceed = () => {
-    if (!tcAccepted) return;
-    if (withdrawalApplicable && !withdrawalAccepted) return;
+    if (!tcAccepted || !detailsValid) return;
     doCheckout(lockId || null);
   };
 
@@ -785,8 +811,6 @@ const BookPage = () => {
     );
   }
 
-  const detail = expertDetail || selectedExpert;
-
   // ── Step: SERVICE ─────────────────────────────────────────────────────────
   if (step === STEPS.SERVICE) {
     const services = (detail?.services || []).filter((s) => s.is_active !== false);
@@ -799,7 +823,7 @@ const BookPage = () => {
         </a>
 
         <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6">
-          <StepIndicator step={STEPS.SERVICE} />
+          <StepIndicator step={STEPS.SERVICE} signedIn={!!user} />
           <ExpertHeader expert={detail} />
 
           <div className="mb-6">
@@ -901,7 +925,7 @@ const BookPage = () => {
         </button>
 
         <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6">
-        <StepIndicator step={STEPS.SLOT} />
+        <StepIndicator step={STEPS.SLOT} signedIn={!!user} />
 
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-[#445446]">{t('slotStep.title')}</h2>
@@ -981,8 +1005,8 @@ const BookPage = () => {
         {selectedSlot && !locking && (
           <button ref={continueRef} onClick={async () => {
               // Authenticated: lock is already active — no re-fetch needed
-              if (lockId) {
-                setStep(STEPS.CONFIRM);
+              if (user && lockId) {
+                setStep(STEPS.DETAILS);
                 return;
               }
               // Not authenticated: do a quick freshness check before proceeding
@@ -995,7 +1019,7 @@ const BookPage = () => {
                   return;
                 }
               }
-              setStep(STEPS.CONFIRM);
+              setStep(user ? STEPS.DETAILS : STEPS.ACCOUNT);
             }}
             className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors">
             {t('slotStep.continueBtn')} →
@@ -1006,19 +1030,149 @@ const BookPage = () => {
     );
   }
 
+  // ── Step: ACCOUNT (signed-out only) ───────────────────────────────────────
+  if (step === STEPS.ACCOUNT) {
+    const returnTo =
+      `/book?expertId=${expertIdParam || ''}` +
+      ((serviceIdParam || selectedService?.id) ? `&serviceId=${serviceIdParam || selectedService?.id}` : '') +
+      (selectedSlot?.start ? `&slotStart=${selectedSlot.start}` : '') +
+      (selectedFormat ? `&format=${selectedFormat}` : '');
+
+    return (
+      <div>
+        <button onClick={() => setStep(STEPS.SLOT)}
+          className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
+          <ChevronLeftIcon className="w-4 h-4" />
+          {t('accountStep.back')}
+        </button>
+
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+          <div className="px-6 pt-6 pb-4 border-b border-[#c5ceba]">
+            <StepIndicator step={STEPS.ACCOUNT} signedIn={false} />
+            <BookingSummaryStrip detail={detail} service={selectedService} slot={selectedSlot} format={selectedFormat} lng={lng} />
+          </div>
+
+          <div className="p-5">
+            {pendingVerificationEmail ? (
+              <VerificationPendingPanel
+                email={pendingVerificationEmail}
+                returnTo={returnTo}
+                onSwitchToLogin={() => { setPendingVerificationEmail(null); setAuthTab('login'); }}
+              />
+            ) : authTab === 'login' ? (
+              <>
+                <p className="text-base font-semibold text-[#1F2933] mb-4">{t('accountStep.signInTitle')}</p>
+                <InlineLogin
+                  onSuccess={() => setStep(STEPS.DETAILS)}
+                  onVerificationNeeded={setPendingVerificationEmail}
+                />
+                <p className="text-sm text-gray-500 text-center mt-4">
+                  {t('accountStep.noAccount')}{' '}
+                  <button onClick={() => setAuthTab('register')} className="text-[#445446] font-medium hover:underline">
+                    {t('accountStep.createOne')}
+                  </button>
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-base font-semibold text-[#1F2933] mb-1">{t('accountStep.heading')}</p>
+                <p className="text-sm text-gray-500 mb-4">
+                  {t('accountStep.haveAccount')}{' '}
+                  <button onClick={() => setAuthTab('login')} className="text-[#445446] font-medium hover:underline">
+                    {t('accountStep.signIn')}
+                  </button>
+                </p>
+                <InlineRegister
+                  onVerificationSent={setPendingVerificationEmail}
+                  legalVersions={legalVersions}
+                  returnTo={returnTo}
+                />
+              </>
+            )}
+          </div>
+
+          <div className="px-5 pb-5 space-y-3">
+            <p className="text-xs text-gray-400 text-center">{t('accountStep.noChargeYet')}</p>
+            <div className="p-3 bg-[#dfe2d7]/30 border border-[#c5ceba] rounded-lg text-xs text-[#5e6d5b] leading-relaxed">
+              {t('accountStep.currencyNotice', { currency: selectedService?.currency || 'EUR' })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step: DETAILS ─────────────────────────────────────────────────────────
+  if (step === STEPS.DETAILS) {
+    return (
+      <div>
+        <button onClick={() => setStep(user ? STEPS.SLOT : STEPS.ACCOUNT)}
+          className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
+          <ChevronLeftIcon className="w-4 h-4" />
+          {t('detailsStep.back')}
+        </button>
+
+        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
+          <div className="px-6 pt-6 pb-4 border-b border-[#c5ceba]">
+            <StepIndicator step={STEPS.DETAILS} signedIn={!!user} />
+            <h2 className="text-xl font-semibold text-[#445446] mb-1">{t('detailsStep.title')}</h2>
+            <p className="text-sm text-[#5e6d5b] font-medium">{t('detailsStep.subtitle')}</p>
+          </div>
+
+          <div className="p-5 border-b border-[#c5ceba]">
+            <BookingSummaryStrip detail={detail} service={selectedService} slot={selectedSlot} format={selectedFormat} lng={lng} />
+
+            <p className="text-sm font-semibold text-[#1F2933] mb-1">{t('detailsStep.billingTitle')}</p>
+            <p className="text-xs text-gray-500 mb-3">{t('detailsStep.billingSubtitle')}</p>
+            <BillingDetailsBlock
+              isItalianExpert={isItalianExpert}
+              billing={billing}
+              setBilling={setBilling}
+              fiscalCodeError={fiscalCodeError}
+              setFiscalCodeError={setFiscalCodeError}
+              showErrors={showDetailsErrors}
+            />
+
+            <div className="mt-3 p-3 bg-[#dfe2d7]/30 border border-[#c5ceba] rounded-lg text-xs text-[#5e6d5b] leading-relaxed">
+              {t('detailsStep.invoiceNote')}
+            </div>
+          </div>
+
+          <div className="p-5 space-y-4">
+            {healthConsentRequired && (
+              <HealthConsentBlock flow={healthFlow} given={healthConsentGiven} setGiven={setHealthConsentGiven} showError={showDetailsErrors} />
+            )}
+
+            {withdrawalApplicable && (
+              <WithdrawalBlock accepted={withdrawalAccepted} setAccepted={setWithdrawalAccepted} showError={showDetailsErrors} />
+            )}
+
+            <button
+              onClick={() => detailsValid ? setStep(STEPS.CONFIRM) : setShowDetailsErrors(true)}
+              className={`w-full py-3.5 px-4 text-white text-sm font-semibold rounded-xl transition-colors ${
+                detailsValid ? 'bg-[#445446] hover:bg-[#3a4a3b]' : 'bg-[#445446]/60 hover:bg-[#445446]/70'
+              }`}>
+              {t('detailsStep.continueBtn')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Step: CONFIRM ─────────────────────────────────────────────────────────
   return (
     <div>
-      <button onClick={() => { setSelectedSlot(null); setStep(STEPS.SLOT); }}
+      <button onClick={() => setStep(STEPS.DETAILS)}
         className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
         <ChevronLeftIcon className="w-4 h-4" />
         {t('confirmStep.back')}
       </button>
 
-      {/* Single card: step indicator + summary + auth/proceed + footer text */}
+      {/* Single card: step indicator + summary + consent/proceed */}
       <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
         <div className="px-6 pt-6 pb-4 border-b border-[#c5ceba]">
-          <StepIndicator step={STEPS.CONFIRM} />
+          <StepIndicator step={STEPS.CONFIRM} signedIn={!!user} />
           <h2 className="text-xl font-semibold text-[#445446] mb-1">{t('confirmStep.title')}</h2>
           <p className="text-sm text-[#5e6d5b] font-medium">{t('confirmStep.subtitle')}</p>
         </div>
@@ -1063,6 +1217,17 @@ const BookPage = () => {
                 </div>
               ) : null;
             })()}
+            <div className="flex justify-between gap-4">
+              <span className="text-gray-500">{t('confirmStep.invoiceTo')}</span>
+              <span className="text-[#1F2933] font-medium text-right">
+                {billing.invoiceHolder}
+                {isItalianExpert && billing.address ? `, ${[billing.address, billing.postcode, billing.town, billing.province].filter(Boolean).join(', ')}` : ''}
+                {' '}
+                <button type="button" onClick={() => setStep(STEPS.DETAILS)} className="text-[#445446] underline text-xs">
+                  {t('confirmStep.edit')}
+                </button>
+              </span>
+            </div>
             <div className="flex justify-between gap-4 pt-3 border-t border-[#c5ceba] mt-3">
               <span className="font-semibold text-[#1F2933]">{t('confirmStep.labelTotal')}</span>
               <span className="font-bold text-lg text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
@@ -1071,95 +1236,26 @@ const BookPage = () => {
 
         </div>
 
-        {/* Health disclaimer — must appear before the payment button */}
+        {/* Healthcare notice — shortened, no "not medical advice" language
+            (booking flow spec v1.7 §6: contradicts the health consent just given) */}
         <div className="px-5 pt-4 pb-4">
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
-            {t('slotStep.summary.healthDisclaimer')}
+            {t('confirmStep.healthcareNotice')}
           </div>
         </div>
 
-        {/* Auth / proceed */}
+        {/* Terms + Cancellation Policy checkbox, privacy line, Proceed */}
         <div className="p-5 pt-0">
-          {user ? (
-            <>
-              <ConsentBlock
-                legalVersions={legalVersions}
-                withdrawalApplicable={withdrawalApplicable}
-                tcAccepted={tcAccepted} setTcAccepted={setTcAccepted}
-                withdrawalAccepted={withdrawalAccepted} setWithdrawalAccepted={setWithdrawalAccepted}
-                marketingConsent={marketingConsent} setMarketingConsent={setMarketingConsent}
-              />
-              <button onClick={handleProceed}
-                disabled={creating || locking || !tcAccepted || (withdrawalApplicable && !withdrawalAccepted)}
-                className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                {creating || locking ? t('confirmStep.preparingBtn') : t('confirmStep.proceedBtn')}
-              </button>
-            </>
-          ) : pendingVerificationEmail ? (
-            <VerificationPendingPanel
-              email={pendingVerificationEmail}
-              returnTo={
-                `/book?expertId=${expertIdParam || ''}` +
-                ((serviceIdParam || selectedService?.id) ? `&serviceId=${serviceIdParam || selectedService?.id}` : '') +
-                (selectedSlot?.start ? `&slotStart=${selectedSlot.start}` : '') +
-                (selectedFormat ? `&format=${selectedFormat}` : '')
-              }
-              onSwitchToLogin={() => { setPendingVerificationEmail(null); setAuthTab('login'); }}
-            />
-          ) : (
-            <>
-              {authTab === 'login' ? (
-                <>
-                  <p className="text-base font-semibold text-[#1F2933] mb-4">{t('confirmStep.signInTitle')}</p>
-                  <InlineLogin
-                    onSuccess={() => doCheckout(lockId || null)}
-                    onVerificationNeeded={setPendingVerificationEmail}
-                    legalVersions={legalVersions}
-                    withdrawalApplicable={withdrawalApplicable}
-                    tcAccepted={tcAccepted} setTcAccepted={setTcAccepted}
-                    withdrawalAccepted={withdrawalAccepted} setWithdrawalAccepted={setWithdrawalAccepted}
-                    marketingConsent={marketingConsent} setMarketingConsent={setMarketingConsent}
-                  />
-                  <p className="text-sm text-gray-500 text-center mt-4">
-                    {t('confirmStep.noAccount')}{' '}
-                    <button onClick={() => setAuthTab('register')} className="text-[#445446] font-medium hover:underline">
-                      {t('confirmStep.createOne')}
-                    </button>
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-base font-semibold text-[#1F2933] mb-1">{t('confirmStep.yourDetails')}</p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    {t('confirmStep.haveAccount')}{' '}
-                    <button onClick={() => setAuthTab('login')} className="text-[#445446] font-medium hover:underline">
-                      {t('confirmStep.signIn')}
-                    </button>
-                  </p>
-                  <InlineRegister
-                    onVerificationSent={setPendingVerificationEmail}
-                    legalVersions={legalVersions}
-                    returnTo={
-                      `/book?expertId=${expertIdParam || ''}` +
-                      ((serviceIdParam || selectedService?.id) ? `&serviceId=${serviceIdParam || selectedService?.id}` : '') +
-                      (selectedSlot?.start ? `&slotStart=${selectedSlot.start}` : '') +
-                      (selectedFormat ? `&format=${selectedFormat}` : '')
-                    }
-                  />
-                </>
-              )}
-            </>
-          )}
+          <ConsentBlock
+            legalVersions={legalVersions}
+            tcAccepted={tcAccepted} setTcAccepted={setTcAccepted}
+          />
+          <button onClick={handleProceed}
+            disabled={creating || locking || !tcAccepted || !detailsValid}
+            className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            {creating || locking ? t('confirmStep.preparingBtn') : t('confirmStep.proceedBtn')}
+          </button>
         </div>
-
-        {/* Footer text */}
-        <div className="px-5 pb-5 space-y-3">
-          <p className="text-xs text-gray-400 text-center">{t('slotStep.summary.noChargeYet')}</p>
-          <div className="p-3 bg-[#dfe2d7]/30 border border-[#c5ceba] rounded-lg text-xs text-[#5e6d5b] leading-relaxed">
-            {t('slotStep.summary.currencyNotice', { currency: selectedService?.currency || 'EUR' })}
-          </div>
-        </div>
-
       </div>
     </div>
   );

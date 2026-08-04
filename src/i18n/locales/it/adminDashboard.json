@@ -462,6 +462,14 @@
     },
     "loadError": "Esperto non trovato o caricamento fallito.",
     "genericActionError": "Azione fallita. Riprova.",
+    "healthClassification": {
+      "heading": "Classificazione professionale",
+      "helper": "Questo professionista esercita una professione sanitaria regolamentata? Impostato individualmente per ogni professionista — non derivato da un elenco presente nel sistema. L'approvazione è bloccata finché non viene indicato.",
+      "yes": "Sì",
+      "no": "No",
+      "unset": "Non impostato — blocca l'approvazione",
+      "success": "Classificazione professionale aggiornata."
+    },
     "badge": {
       "emailVerified": "Email verificata",
       "unverified": "Non verificato",

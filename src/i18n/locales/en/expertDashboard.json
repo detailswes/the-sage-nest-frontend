@@ -28,7 +28,9 @@
   },
   "invoicing": {
     "heading":         "Invoicing Details",
+    "invoiceHolder":   "Invoice Holder",
     "fiscalCode":      "Fiscal Code",
+    "noFiscalCode":    "No Italian fiscal code provided",
     "address":         "Address"
   },
   "upcomingAppointments": {
@@ -388,6 +390,10 @@
       "GIFT":        "Gift",
       "EVENT":       "Event"
     },
+    "recipients": {
+      "PARENTS": "For the Parents",
+      "BABY":    "For the Baby"
+    },
     "errors": {
       "loadFailed":    "Failed to load services.",
       "deleteFailed":  "Failed to delete service.",
@@ -408,6 +414,9 @@
       "lockedFormatHint":     "Set by your profile session format. Change it in your Profile settings.",
       "categoryLabel":        "Category",
       "categorySelect":       "Select a category…",
+      "recipientLabel":       "Service recipient",
+      "recipientSelect":      "Who is this service for?",
+      "recipientHint":        "Required because your profile is flagged as a regulated health profession — determines which consent wording the parent is shown.",
       "durationLabel":        "Duration (min)",
       "durationSelect":       "Select duration",
       "currencyLabel":        "Currency",
@@ -427,7 +436,8 @@
       "priceMin":            "Minimum price is {{min}}",
       "priceMax":            "Maximum price is {{max}}",
       "formatRequired":      "Please select a format",
-      "categoryRequired":    "Please select a category"
+      "categoryRequired":    "Please select a category",
+      "recipientRequired":   "Please select who this service is for"
     },
     "empty": {
       "title": "No services yet",

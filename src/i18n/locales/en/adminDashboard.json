@@ -462,6 +462,14 @@
     },
     "loadError": "Expert not found or failed to load.",
     "genericActionError": "Action failed. Please try again.",
+    "healthClassification": {
+      "heading": "Professional classification",
+      "helper": "Does this expert practise a regulated health profession? Set individually for each expert — not derived from a list held in the system. Approval is blocked until answered.",
+      "yes": "Yes",
+      "no": "No",
+      "unset": "Not set — blocks approval",
+      "success": "Professional classification updated."
+    },
     "badge": {
       "emailVerified": "Email Verified",
       "unverified": "Unverified",
