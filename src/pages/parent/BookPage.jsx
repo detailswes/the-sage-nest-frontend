@@ -731,7 +731,7 @@ const BookPage = () => {
   const detail = expertDetail || selectedExpert;
   const isItalianExpert = detail?.business_info?.address_country === 'it';
   const healthConsentRequired = detail?.is_health_professional === true;
-  const healthFlow = selectedService?.health_service_recipient === 'BABY' ? 'B' : 'A';
+  const healthFlow = selectedService?.cluster === 'FOR_BABY' ? 'B' : 'A';
 
   const billingValid = billing.invoiceHolder.trim().length > 0 && (
     !isItalianExpert || (

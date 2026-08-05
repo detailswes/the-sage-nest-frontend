@@ -420,10 +420,6 @@
       "GIFT":        "Regalo",
       "EVENT":       "Evento"
     },
-    "recipients": {
-      "PARENTS": "Per i genitori",
-      "BABY":    "Per il bambino"
-    },
     "errors": {
       "loadFailed":    "Impossibile caricare i servizi.",
       "deleteFailed":  "Impossibile eliminare il servizio.",
@@ -444,9 +440,6 @@
       "lockedFormatHint":     "Impostato dal formato di sessione del tuo profilo. Modificalo nelle impostazioni del Profilo.",
       "categoryLabel":        "Categoria",
       "categorySelect":       "Seleziona una categoria…",
-      "recipientLabel":       "Destinatario del servizio",
-      "recipientSelect":      "Per chi è questo servizio?",
-      "recipientHint":        "Obbligatorio perché il tuo profilo è classificato come professione sanitaria regolamentata — determina quale consenso viene mostrato al genitore.",
       "durationLabel":        "Durata (min)",
       "durationSelect":       "Seleziona durata",
       "currencyLabel":        "Valuta",
@@ -466,8 +459,7 @@
       "priceMin":            "Prezzo minimo: {{min}}",
       "priceMax":            "Prezzo massimo: {{max}}",
       "formatRequired":      "Seleziona un formato",
-      "categoryRequired":    "Seleziona una categoria",
-      "recipientRequired":   "Seleziona per chi è questo servizio"
+      "categoryRequired":    "Seleziona una categoria"
     },
     "empty": {
       "title": "Nessun servizio ancora",
