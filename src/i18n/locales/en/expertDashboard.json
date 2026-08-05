@@ -293,7 +293,7 @@
     },
     "insurance": {
       "title":          "Professional Insurance",
-      "subtitle":       "Required before your profile can be approved. Upload proof of Public Liability or Professional Indemnity Insurance.",
+      "subtitle":       "A professional liability insurance policy in force is required before your profile can be approved. Upload the policy document and enter its expiry date.",
       "updateBtn":      "Update",
       "expired":        "Insurance Expired",
       "active":         "Insurance Active",

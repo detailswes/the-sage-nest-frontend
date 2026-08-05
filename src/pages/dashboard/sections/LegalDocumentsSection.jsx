@@ -82,6 +82,25 @@ const DOC_PATH = {
   PRIVACY_POLICY: "/privacy-policy",
   TERMS_CONDITIONS: "/terms-conditions",
   CANCELLATION_POLICY: "/cancellation-policy",
+  // Expert docs have no in-app static fallback page — until a PDF is
+  // published, there's simply nothing to link to yet.
+};
+
+// Type-specific trailing copy appended to the card instructions / confirm
+// modal body. Types with no entry (e.g. CANCELLATION_POLICY) get none.
+const REACCEPT_KEY = {
+  PRIVACY_POLICY: "reacceptPrivacy",
+  TERMS_CONDITIONS: "reacceptTerms",
+  EXPERT_TERMS_CONDITIONS: "reacceptExpertTerms",
+  EXPERT_PRIVACY_NOTICE: "reacceptExpertPrivacy",
+};
+
+const CONFIRM_BODY_KEY = {
+  PRIVACY_POLICY: "bodyPrivacy",
+  TERMS_CONDITIONS: "bodyTerms",
+  CANCELLATION_POLICY: "bodyCancellation",
+  EXPERT_TERMS_CONDITIONS: "bodyExpertTerms",
+  EXPERT_PRIVACY_NOTICE: "bodyExpertPrivacy",
 };
 
 // ─── Doc card ──────────────────────────────────────────────────────────────────
@@ -144,11 +163,7 @@ const DocCard = ({ type, docs }) => {
             </h3>
             <p className="text-sm text-gray-500 text-center mb-6">
               {t("legalDocs.confirmModal.body")}
-              {type === "PRIVACY_POLICY"
-                ? t("legalDocs.confirmModal.bodyPrivacy")
-                : type === "TERMS_CONDITIONS"
-                ? t("legalDocs.confirmModal.bodyTerms")
-                : t("legalDocs.confirmModal.bodyCancellation")}
+              {CONFIRM_BODY_KEY[type] ? t(`legalDocs.confirmModal.${CONFIRM_BODY_KEY[type]}`) : ""}
               {t("legalDocs.confirmModal.cannotUndo")}
             </p>
             <div className="flex gap-3">
@@ -229,7 +244,7 @@ const DocCard = ({ type, docs }) => {
                   </a>
                 )}
               </>
-            ) : (
+            ) : docPath ? (
               <a
                 href={docPath}
                 target="_blank"
@@ -241,7 +256,7 @@ const DocCard = ({ type, docs }) => {
                 </svg>
                 {t("legalDocs.card.viewCurrent")}
               </a>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -249,11 +264,7 @@ const DocCard = ({ type, docs }) => {
         <div className="space-y-3">
           <p className="text-xs text-gray-500 leading-relaxed">
             {t("legalDocs.card.instructions", { path: docPath })}
-            {type === "PRIVACY_POLICY"
-              ? t("legalDocs.card.reacceptPrivacy")
-              : type === "TERMS_CONDITIONS"
-              ? t("legalDocs.card.reacceptTerms")
-              : ""}
+            {REACCEPT_KEY[type] ? t(`legalDocs.card.${REACCEPT_KEY[type]}`) : ""}
           </p>
           <div className="flex gap-2">
             <input
@@ -331,20 +342,48 @@ const DocCard = ({ type, docs }) => {
   );
 };
 
+const AUDIENCES = ["PARENT", "EXPERT"];
+
 // ─── Main section ──────────────────────────────────────────────────────────────
 const LegalDocumentsSection = () => {
   const { t } = useTranslation("adminDashboard");
   const { data, isLoading, isError } = useGetLegalDocumentsQuery();
+  const [audience, setAudience] = useState("PARENT");
 
-  const privacyDocs      = data?.privacy_policy      ?? [];
-  const termsDocs        = data?.terms_conditions    ?? [];
-  const cancellationDocs = data?.cancellation_policy ?? [];
+  const privacyDocs         = data?.privacy_policy            ?? [];
+  const termsDocs           = data?.terms_conditions          ?? [];
+  const cancellationDocs    = data?.cancellation_policy       ?? [];
+  const expertTermsDocs     = data?.expert_terms_conditions   ?? [];
+  const expertPrivacyDocs   = data?.expert_privacy_notice     ?? [];
 
   return (
     <div>
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-[#445446]">{t("legalDocs.pageTitle")}</h2>
         <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t("legalDocs.pageSubtitle")}</p>
+      </div>
+
+      {/* Audience breadcrumb */}
+      <div className="mb-6">
+        <div className="flex items-center gap-1.5">
+          {AUDIENCES.map((key, i) => (
+            <span key={key} className="flex items-center gap-1.5">
+              {i > 0 && <span className="text-[#c5ceba]">/</span>}
+              <button
+                type="button"
+                onClick={() => setAudience(key)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  audience === key
+                    ? "bg-[#445446] text-white"
+                    : "text-[#5e6d5b] hover:bg-[#f0f2ed]"
+                }`}
+              >
+                {t(`legalDocs.audience.${key}`)}
+              </button>
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400 mt-2">{t(`legalDocs.audienceSubtitle.${audience}`)}</p>
       </div>
 
       {isError && (
@@ -358,11 +397,16 @@ const LegalDocumentsSection = () => {
           <div className="w-5 h-5 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
           <span className="text-sm text-gray-400">{t("legalDocs.loading")}</span>
         </div>
-      ) : (
+      ) : audience === "PARENT" ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <DocCard type="PRIVACY_POLICY"      docs={privacyDocs}      />
           <DocCard type="TERMS_CONDITIONS"    docs={termsDocs}        />
           <DocCard type="CANCELLATION_POLICY" docs={cancellationDocs} />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          <DocCard type="EXPERT_TERMS_CONDITIONS" docs={expertTermsDocs}   />
+          <DocCard type="EXPERT_PRIVACY_NOTICE"   docs={expertPrivacyDocs} />
         </div>
       )}
     </div>

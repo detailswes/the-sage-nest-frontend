@@ -293,7 +293,7 @@
     },
     "insurance": {
       "title":          "Assicurazione professionale",
-      "subtitle":       "Richiesta prima che il tuo profilo possa essere approvato. Carica la prova di Responsabilità Civile o Assicurazione di Responsabilità Professionale.",
+      "subtitle":       "Una polizza di responsabilità civile professionale in corso di validità è richiesta prima che il tuo profilo possa essere approvato. Carica il documento della polizza e indica la data di scadenza.",
       "updateBtn":      "Aggiorna",
       "expired":        "Assicurazione scaduta",
       "active":         "Assicurazione attiva",
