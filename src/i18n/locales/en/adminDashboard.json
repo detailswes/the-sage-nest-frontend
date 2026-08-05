@@ -984,10 +984,20 @@
     "pageSubtitle": "Upload a PDF and publish a new version. The live document links used at signup and checkout update automatically.",
     "loadError": "Could not load legal document versions.",
     "loading": "Loading…",
+    "audience": {
+      "PARENT": "Parent",
+      "EXPERT": "Expert"
+    },
+    "audienceSubtitle": {
+      "PARENT": "Documents shown to parents during signup and booking.",
+      "EXPERT": "Documents shown to experts during signup."
+    },
     "docType": {
       "PRIVACY_POLICY": "Privacy Policy",
       "TERMS_CONDITIONS": "Terms & Conditions",
-      "CANCELLATION_POLICY": "Cancellation & Rescheduling Policy"
+      "CANCELLATION_POLICY": "Cancellation & Rescheduling Policy",
+      "EXPERT_TERMS_CONDITIONS": "Expert Account Terms",
+      "EXPERT_PRIVACY_NOTICE": "Expert Privacy Notice"
     },
     "card": {
       "version": "Version {{v}}",
@@ -1005,6 +1015,8 @@
       "instructions": "Attach both the English and Italian PDF below before publishing.",
       "reacceptPrivacy": " Users will see a non-blocking notice of the update — no forced re-acceptance.",
       "reacceptTerms": " All parents will be asked to confirm this version at their next booking.",
+      "reacceptExpertTerms": " Experts will see this version linked from the signup page going forward.",
+      "reacceptExpertPrivacy": " Shown to experts as an information notice at signup — no acceptance is recorded.",
       "versionPlaceholder": "e.g. 1.1 or 2.0.1",
       "publishBtn": "Publish",
       "publishing": "Publishing…",
@@ -1019,6 +1031,8 @@
       "bodyPrivacy": " Users will see a non-blocking notice of the update — no forced re-acceptance.",
       "bodyTerms": " All parents will be asked to confirm this version at their next booking.",
       "bodyCancellation": " This version will immediately become the one linked from checkout.",
+      "bodyExpertTerms": " Experts will see this version linked from the signup page going forward.",
+      "bodyExpertPrivacy": " Shown to experts as an information notice at signup — no acceptance is recorded.",
       "cannotUndo": " This cannot be undone.",
       "cancel": "Cancel",
       "confirm": "Yes, publish"

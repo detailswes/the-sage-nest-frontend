@@ -984,10 +984,20 @@
     "pageSubtitle": "Carica un PDF e pubblica una nuova versione. I link ai documenti live usati in registrazione e checkout si aggiornano automaticamente.",
     "loadError": "Impossibile caricare le versioni dei documenti legali.",
     "loading": "Caricamento…",
+    "audience": {
+      "PARENT": "Genitore",
+      "EXPERT": "Professionista"
+    },
+    "audienceSubtitle": {
+      "PARENT": "Documenti mostrati ai genitori in fase di registrazione e prenotazione.",
+      "EXPERT": "Documenti mostrati ai professionisti in fase di registrazione."
+    },
     "docType": {
       "PRIVACY_POLICY": "Informativa sulla Privacy",
       "TERMS_CONDITIONS": "Termini e Condizioni",
-      "CANCELLATION_POLICY": "Condizioni di Cancellazione e Modifica"
+      "CANCELLATION_POLICY": "Condizioni di Cancellazione e Modifica",
+      "EXPERT_TERMS_CONDITIONS": "Termini di Utilizzo dell'Account Professionista",
+      "EXPERT_PRIVACY_NOTICE": "Informativa Privacy Professionisti"
     },
     "card": {
       "version": "Versione {{v}}",
@@ -1005,6 +1015,8 @@
       "instructions": "Allega sia il PDF in inglese che quello in italiano prima di pubblicare.",
       "reacceptPrivacy": " Gli utenti vedranno una notifica non bloccante dell'aggiornamento — nessuna nuova accettazione forzata.",
       "reacceptTerms": " Tutti i genitori dovranno confermare questa versione alla prossima prenotazione.",
+      "reacceptExpertTerms": " I professionisti vedranno questa versione collegata dalla pagina di registrazione d'ora in poi.",
+      "reacceptExpertPrivacy": " Mostrato ai professionisti come avviso informativo in fase di registrazione — nessuna accettazione viene registrata.",
       "versionPlaceholder": "es. 1.1 o 2.0.1",
       "publishBtn": "Pubblica",
       "publishing": "Pubblicazione…",
@@ -1019,6 +1031,8 @@
       "bodyPrivacy": " Gli utenti vedranno una notifica non bloccante dell'aggiornamento — nessuna nuova accettazione forzata.",
       "bodyTerms": " Tutti i genitori dovranno confermare questa versione alla prossima prenotazione.",
       "bodyCancellation": " Questa versione diventerà immediatamente quella collegata dal checkout.",
+      "bodyExpertTerms": " I professionisti vedranno questa versione collegata dalla pagina di registrazione d'ora in poi.",
+      "bodyExpertPrivacy": " Mostrato ai professionisti come avviso informativo in fase di registrazione — nessuna accettazione viene registrata.",
       "cannotUndo": " Questa operazione non può essere annullata.",
       "cancel": "Annulla",
       "confirm": "Sì, pubblica"

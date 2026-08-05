@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import AuthLayout from '../../components/auth/AuthLayout';
 import PasswordInput from '../../components/auth/PasswordInput';
@@ -25,6 +25,8 @@ const Register = () => {
   const { resend, status: resendStatus, countdown } = useResendVerification();
   const { data: legalVersions } = useGetLegalVersionsQuery();
   const termsHref = resolveDocUrl(legalVersions?.terms_conditions, i18n.language, '/terms-conditions');
+  const expertTermsHref = resolveDocUrl(legalVersions?.expert_terms_conditions, i18n.language, '/terms-conditions');
+  const expertPrivacyHref = resolveDocUrl(legalVersions?.expert_privacy_notice, i18n.language, '/privacy-policy');
 
   const roleParam = searchParams.get('user')?.toUpperCase();
   const activeRole = ROLE_KEYS.includes(roleParam) ? roleParam : 'EXPERT';
@@ -55,7 +57,10 @@ const Register = () => {
     }
 
     if (!termsAccepted) {
-      setErrors((prev) => ({ ...prev, termsConditions: 'consentErrors.termsRequired' }));
+      setErrors((prev) => ({
+        ...prev,
+        termsConditions: activeRole === 'EXPERT' ? 'expertConsent.termsRequired' : 'consentErrors.termsRequired',
+      }));
       return;
     }
 
@@ -320,41 +325,86 @@ const Register = () => {
 
         {/* Required consent + optional marketing */}
         <div className="space-y-3 pt-1">
-          {/* Terms & Conditions — required */}
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={termsAccepted}
-              onChange={(e) => {
-                setTermsAccepted(e.target.checked);
-                if (e.target.checked) setErrors((prev) => { const { termsConditions: _, ...rest } = prev; return rest; });
-              }}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
-            />
-            <span className="text-sm text-[#1F2933] leading-snug">
-              {tConsent('consentLabels.termsPrefix')}{' '}
-              <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
-                {tConsent('consentLabels.termsLink')}
-              </a>
-              <span className="text-red-500 ml-0.5">*</span>
-            </span>
-          </label>
-          {errors.termsConditions && (
-            <p className="text-xs text-red-500 -mt-1 ml-7">{t(errors.termsConditions)}</p>
-          )}
+          {activeRole === 'EXPERT' ? (
+            <>
+              {/* Expert Account Terms — required */}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => {
+                    setTermsAccepted(e.target.checked);
+                    if (e.target.checked) setErrors((prev) => { const { termsConditions: _, ...rest } = prev; return rest; });
+                  }}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+                />
+                <span className="text-sm text-[#1F2933] leading-snug">
+                  <Trans
+                    i18nKey="expertConsent.termsLabel"
+                    ns="auth"
+                    components={[
+                      // eslint-disable-next-line jsx-a11y/anchor-has-content
+                      <a href={expertTermsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+                    ]}
+                  />
+                  <span className="text-red-500 ml-0.5">*</span>
+                </span>
+              </label>
+              {errors.termsConditions && (
+                <p className="text-xs text-red-500 -mt-1 ml-7">{t(errors.termsConditions)}</p>
+              )}
 
-          {/* Marketing consent — optional */}
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={marketingConsent}
-              onChange={(e) => setMarketingConsent(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
-            />
-            <span className="text-sm text-gray-500 leading-snug">
-              {tConsent('consentLabels.marketingOptIn')}
-            </span>
-          </label>
+              {/* Expert Privacy Notice — informational only, not a consent checkbox */}
+              <p className="text-sm text-gray-500 leading-snug">
+                <Trans
+                  i18nKey="expertConsent.privacyNotice"
+                  ns="auth"
+                  components={[
+                    // eslint-disable-next-line jsx-a11y/anchor-has-content
+                    <a href={expertPrivacyHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+                  ]}
+                />
+              </p>
+            </>
+          ) : (
+            <>
+              {/* Terms & Conditions — required */}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => {
+                    setTermsAccepted(e.target.checked);
+                    if (e.target.checked) setErrors((prev) => { const { termsConditions: _, ...rest } = prev; return rest; });
+                  }}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+                />
+                <span className="text-sm text-[#1F2933] leading-snug">
+                  {tConsent('consentLabels.termsPrefix')}{' '}
+                  <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline">
+                    {tConsent('consentLabels.termsLink')}
+                  </a>
+                  <span className="text-red-500 ml-0.5">*</span>
+                </span>
+              </label>
+              {errors.termsConditions && (
+                <p className="text-xs text-red-500 -mt-1 ml-7">{t(errors.termsConditions)}</p>
+              )}
+
+              {/* Marketing consent — optional */}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={marketingConsent}
+                  onChange={(e) => setMarketingConsent(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-[#445446] focus:ring-[#445446]/30"
+                />
+                <span className="text-sm text-gray-500 leading-snug">
+                  {tConsent('consentLabels.marketingOptIn')}
+                </span>
+              </label>
+            </>
+          )}
         </div>
 
         <button
