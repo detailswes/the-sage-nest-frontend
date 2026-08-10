@@ -113,7 +113,7 @@ const Register = () => {
   // ── Email sent state ────────────────────────────────────────────────────────
   if (emailSent) {
     return (
-      <AuthLayout>
+      <AuthLayout noTranslate>
         <div className="text-center">
           <div className="w-16 h-16 rounded-full bg-[#445446]/10 flex items-center justify-center mx-auto mb-5">
             <EnvelopeIcon className="w-8 h-8 text-[#445446]" />
@@ -166,7 +166,7 @@ const Register = () => {
       });
 
   return (
-    <AuthLayout>
+    <AuthLayout noTranslate>
       <h1 className="text-2xl font-semibold text-[#1F2933] text-center mb-2">
         {t('register.title')}
       </h1>
