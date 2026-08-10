@@ -5,6 +5,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import GuestRoute from "./components/GuestRoute";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import RegisterErrorBoundary from "./components/auth/RegisterErrorBoundary";
 import Dashboard from "./pages/dashboard/Dashboard";
 import ExpertDashboard from "./pages/dashboard/ExpertDashboard";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
@@ -80,7 +81,9 @@ function App() {
             path="/register"
             element={
               <GuestRoute>
-                <Register />
+                <RegisterErrorBoundary>
+                  <Register />
+                </RegisterErrorBoundary>
               </GuestRoute>
             }
           />

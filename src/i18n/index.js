@@ -34,6 +34,29 @@ if (_urlLang && ['en', 'it'].includes(_urlLang)) {
     } catch (_) {}
   }
   localStorage.setItem(STORAGE_KEY, _detectedLang);
+} else if (window.location.pathname === '/register' && !localStorage.getItem(STORAGE_KEY)) {
+  // Experts land here directly (no Webflow referrer, no ?lang= param), so
+  // fall back to the browser's own PRIMARY language instead of defaulting
+  // to English — this is also what keeps Chrome's translate prompt (and
+  // the reconciliation crash it can trigger, see RegisterErrorBoundary)
+  // from showing up for Italian-language browsers in the first place.
+  //
+  // Two safeguards keep this precise:
+  // 1. Only the primary language (navigator.language / languages[0]) is
+  //    checked, not the full navigator.languages list — a browser where
+  //    Italian is merely a lower-priority secondary entry still gets
+  //    English if that's the actual preference.
+  // 2. This whole branch only runs when nothing is stored yet
+  //    (!localStorage.getItem(STORAGE_KEY)) — i.e. a genuine first visit.
+  //    Once a preference exists (from this detection, or from the
+  //    on-page language tabs), it is never silently overwritten on a
+  //    later visit — matching the original behavior for every other
+  //    returning-user case.
+  const _primaryLang = navigator.language || (navigator.languages && navigator.languages[0]) || '';
+  const _detectedLang = _primaryLang.toLowerCase().startsWith('it') ? 'it' : 'en';
+  localStorage.setItem(STORAGE_KEY, _detectedLang);
+  // TEMP DEBUG — remove once verified.
+  console.log('[i18n] /register language detection:', { primaryLang: _primaryLang, detectedLang: _detectedLang });
 }
 
 i18n
