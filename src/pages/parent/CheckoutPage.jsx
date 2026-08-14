@@ -189,9 +189,15 @@ const CheckoutPage = () => {
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
               format === 'ONLINE'
                 ? 'bg-blue-50 text-blue-600'
-                : 'bg-[#445446]/10 text-[#445446]'
+                : format === 'HOME_VISIT'
+                  ? 'bg-amber-50 text-amber-700'
+                  : 'bg-[#445446]/10 text-[#445446]'
             }`}>
-              {format === 'ONLINE' ? t('checkout.formatOnline') : t('checkout.formatInPerson')}
+              {format === 'ONLINE'
+                ? t('checkout.formatOnline')
+                : format === 'HOME_VISIT'
+                  ? t('checkout.formatHomeVisit')
+                  : t('checkout.formatInPerson')}
             </span>
             <span className="text-xl font-bold text-[#1F2933]">{formatPrice(amount, currency, lng)}</span>
           </div>

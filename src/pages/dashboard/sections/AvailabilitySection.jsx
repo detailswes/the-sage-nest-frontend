@@ -273,8 +273,12 @@ const eventStyleGetter = (event) => {
     return { style: { ...base, backgroundColor: "#f97316", color: "#fff" } };
   if (event.type === "blockout")
     return { style: { ...base, backgroundColor: "#ef4444", color: "#fff" } };
-  if (event.type === "booking")
-    return { style: { ...base, backgroundColor: event.format === "ONLINE" ? "#2563eb" : "#445446", color: "#fff" } };
+  if (event.type === "booking") {
+    // Lookup rather than a two-way ternary — a home visit previously fell
+    // through to the in-person colour and was indistinguishable on the calendar.
+    const bookingColour = { ONLINE: "#2563eb", HOME_VISIT: "#b45309" }[event.format] || "#445446";
+    return { style: { ...base, backgroundColor: bookingColour, color: "#fff" } };
+  }
   return { style: base };
 };
 

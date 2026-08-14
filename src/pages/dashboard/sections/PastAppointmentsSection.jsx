@@ -125,6 +125,7 @@ const Row = ({ booking }) => {
   const status = resolveStatus(booking);
 
   const isOnline = booking.format === 'ONLINE';
+  const isHomeVisit = booking.format === 'HOME_VISIT';
   const duration = booking.duration_minutes || booking.service?.duration_minutes || 0;
 
   return (
@@ -161,9 +162,15 @@ const Row = ({ booking }) => {
           <span className={`text-xs font-medium px-2 py-1 rounded-full ${
             isOnline
               ? 'bg-blue-50 text-blue-600 border border-blue-100'
-              : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
+              : isHomeVisit
+                ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
           }`}>
-            {isOnline ? t('history.formats.ONLINE') : t('history.formats.IN_PERSON')}
+            {isOnline
+              ? t('history.formats.ONLINE')
+              : isHomeVisit
+                ? t('history.formats.HOME_VISIT')
+                : t('history.formats.IN_PERSON')}
           </span>
         </td>
 
@@ -226,6 +233,7 @@ const MobileCard = ({ booking }) => {
   const [note,     setNote]     = useState(booking.expert_note || '');
   const status   = resolveStatus(booking);
   const isOnline = booking.format === 'ONLINE';
+  const isHomeVisit = booking.format === 'HOME_VISIT';
   const duration = booking.duration_minutes || booking.service?.duration_minutes || 0;
 
   return (
@@ -260,9 +268,15 @@ const MobileCard = ({ booking }) => {
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
           isOnline
             ? 'bg-blue-50 text-blue-600 border border-blue-100'
-            : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
+            : isHomeVisit
+              ? 'bg-amber-50 text-amber-700 border border-amber-100'
+              : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
         }`}>
-          {isOnline ? t('history.formats.ONLINE') : t('history.formats.IN_PERSON')}
+          {isOnline
+            ? t('history.formats.ONLINE')
+            : isHomeVisit
+              ? t('history.formats.HOME_VISIT')
+              : t('history.formats.IN_PERSON')}
         </span>
       </div>
 

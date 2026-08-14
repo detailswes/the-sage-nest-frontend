@@ -139,9 +139,17 @@ const AppointmentCard = ({ booking, onCancelRequest }) => {
   const [markSent,        { isLoading: marking }]    = useMarkSessionLinkSentMutation();
   const [completeBooking, { isLoading: completing }] = useMarkBookingCompleteMutation();
 
-  const isOnline  = booking.format === 'ONLINE';
+  const isOnline    = booking.format === 'ONLINE';
+  const isHomeVisit = booking.format === 'HOME_VISIT';
   const isPast    = new Date(booking.scheduled_at) < new Date();
+  // Link reminder stays online-only — there is no session link to send for an
+  // in-person session or a home visit.
   const needsLinkReminder = isOnline && !booking.session_link_sent;
+  const formatLabel = isOnline
+    ? t('upcomingAppointments.card.online')
+    : isHomeVisit
+      ? t('upcomingAppointments.card.homeVisit')
+      : t('upcomingAppointments.card.inPerson');
 
   const handleMark = async () => {
     try {
@@ -175,10 +183,12 @@ const AppointmentCard = ({ booking, onCancelRequest }) => {
           className={`text-xs font-medium px-2.5 py-1 rounded-full ${
             isOnline
               ? 'bg-blue-50 text-blue-600 border border-blue-100'
-              : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
+              : isHomeVisit
+                ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
           }`}
         >
-          {isOnline ? t('upcomingAppointments.card.online') : t('upcomingAppointments.card.inPerson')}
+          {formatLabel}
         </span>
       </div>
 

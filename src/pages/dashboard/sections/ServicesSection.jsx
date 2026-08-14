@@ -17,6 +17,7 @@ import {
 const FORMAT_OPTIONS  = [
   { value: 'ONLINE' },
   { value: 'IN_PERSON' },
+  { value: 'HOME_VISIT' },
 ];
 // Display labels only — which currency actually applies to an expert is
 // locked server-side to their account currency (see profile.currency), not
@@ -49,8 +50,9 @@ const CLUSTER_OPTIONS = [
 ];
 
 const FORMAT_BADGE_CLS = {
-  ONLINE:    'bg-blue-100 text-blue-700',
-  IN_PERSON: 'bg-purple-100 text-purple-700',
+  ONLINE:     'bg-blue-100 text-blue-700',
+  IN_PERSON:  'bg-purple-100 text-purple-700',
+  HOME_VISIT: 'bg-amber-100 text-amber-700',
 };
 const CLUSTER_BADGE_CLS = {
   FOR_PARENTS: 'bg-pink-100 text-pink-700',
@@ -112,10 +114,10 @@ const ServicesSection = () => {
   const formLoading = editingId ? updating : creating;
   const isReordering = reordering;
 
-  // Derives the locked format value when the expert has a single-mode session_format.
-  const lockedFormat = sessionFormat === 'ONLINE' ? 'ONLINE'
-    : sessionFormat === 'IN_PERSON' ? 'IN_PERSON'
-    : null; // null means BOTH — dropdown is free
+  // Derives the locked format value when the expert has a single-mode
+  // session_format. Anything other than BOTH locks the dropdown to that mode,
+  // so a new mode is covered automatically rather than falling through to null.
+  const lockedFormat = sessionFormat && sessionFormat !== 'BOTH' ? sessionFormat : null;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const handleChange = (e) => {

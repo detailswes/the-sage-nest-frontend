@@ -651,7 +651,8 @@
     },
     "formatBadge": {
       "ONLINE": "Online",
-      "IN_PERSON": "In presenza"
+      "IN_PERSON": "In presenza",
+      "HOME_VISIT": "Visita a domicilio"
     },
     "clusterBadge": {
       "FOR_PARENTS": "Per genitori",
@@ -1055,7 +1056,8 @@
   "sessionFormat": {
     "ONLINE": "Online",
     "IN_PERSON": "In presenza",
-    "BOTH": "Online e in presenza"
+    "HOME_VISIT": "Visita a domicilio",
+    "BOTH": "Più modalità"
   },
 
   "transferStatus": {

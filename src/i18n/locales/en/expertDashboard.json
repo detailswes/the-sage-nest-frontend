@@ -62,6 +62,7 @@
     "card": {
       "online":          "Online",
       "inPerson":        "In-Person",
+      "homeVisit":       "Home Visit",
       "linkReminder":    "Session link not yet sent to parent",
       "markSent":        "Mark sent",
       "markSentSaving":  "Saving…",
@@ -117,7 +118,8 @@
       "label":    "How do you deliver your sessions?",
       "online":   "Online only",
       "inPerson": "In-person only",
-      "both":     "Both online and in-person",
+      "homeVisit": "Home visits only",
+      "both":     "Multiple formats (choose per service)",
       "hint":     "This controls the format options available when creating services and the filter shown on the expert directory."
     },
     "details": {
@@ -410,7 +412,8 @@
     "addServiceBtn": "Add Service",
     "formats": {
       "ONLINE":    "Online",
-      "IN_PERSON": "In-Person"
+      "IN_PERSON": "In-Person",
+      "HOME_VISIT": "Home Visit"
     },
     "clusters": {
       "FOR_PARENTS": "For Parents",
@@ -507,7 +510,8 @@
       "dayOff":         "Day Off",
       "blocked":        "Blocked",
       "bookedOnline":   "Booked (Online)",
-      "bookedInPerson": "Booked (In-Person)"
+      "bookedInPerson": "Booked (In-Person)",
+      "bookedHomeVisit": "Booked (Home Visit)"
     },
 
     "timezone": {
@@ -628,13 +632,15 @@
     "legend": {
       "available":      "Available",
       "bookedOnline":   "Booked (Online)",
-      "bookedInPerson": "Booked (In-Person)"
+      "bookedInPerson": "Booked (In-Person)",
+      "bookedHomeVisit": "Booked (Home Visit)"
     },
 
     "modal": {
       "title":           "Appointment Details",
       "onlineSession":   "Online Session",
       "inPersonSession": "In-Person Session",
+      "homeVisitSession": "Home Visit Session",
       "parentLabel":     "Parent",
       "serviceLabel":    "Service",
       "timeSlotLabel":   "Time slot",
@@ -675,7 +681,8 @@
 
     "formats": {
       "ONLINE":    "Online",
-      "IN_PERSON": "In-Person"
+      "IN_PERSON": "In-Person",
+      "HOME_VISIT": "Home Visit"
     },
 
     "notes": {

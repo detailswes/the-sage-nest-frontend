@@ -49,7 +49,11 @@ const SuccessBanner = ({ booking }) => {
     ? t('bookingStatus.success.deletedSpecialist')
     : booking.expert?.user?.name;
   const location    = formatLocation(booking.expert);
-  const formatLabel = booking.format === 'ONLINE' ? t('slotStep.formatOnline') : t('slotStep.formatInPerson');
+  const formatLabel = booking.format === 'ONLINE'
+    ? t('slotStep.formatOnline')
+    : booking.format === 'HOME_VISIT'
+      ? t('slotStep.formatHomeVisit')
+      : t('slotStep.formatInPerson');
   const duration    = formatDuration(booking.duration_minutes, t);
 
   return (
