@@ -262,7 +262,9 @@ const Register = () => {
                 errors.phone ? 'border-red-400' : 'border-[#E4E7E4]'
               }`}
             />
-            {errors.phone && <p className="mt-1.5 text-xs text-red-500">{t(errors.phone)}</p>}
+            {errors.phone
+              ? <p className="mt-1.5 text-xs text-red-500">{t(errors.phone)}</p>
+              : <p className="mt-1.5 text-xs text-gray-400">{t('register.phoneHint')}</p>}
           </div>
         )}
 

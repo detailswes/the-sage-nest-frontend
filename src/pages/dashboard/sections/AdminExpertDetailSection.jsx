@@ -30,8 +30,17 @@ import BookingDetailModal from "../../../components/admin/BookingDetailModal";
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
 const FORMAT_BADGE_CLS = {
-  ONLINE:    "bg-blue-100 text-blue-700",
-  IN_PERSON: "bg-purple-100 text-purple-700",
+  ONLINE:     "bg-blue-100 text-blue-700",
+  IN_PERSON:  "bg-purple-100 text-purple-700",
+  HOME_VISIT: "bg-amber-100 text-amber-700",
+};
+
+// Expert-level session_format badge colours. BOTH keeps the existing teal.
+const SESSION_FORMAT_BADGE_CLS = {
+  ONLINE:     "bg-blue-100 text-blue-700",
+  IN_PERSON:  "bg-purple-100 text-purple-700",
+  HOME_VISIT: "bg-amber-100 text-amber-700",
+  BOTH:       "bg-teal-100 text-teal-700",
 };
 
 const CLUSTER_BADGE_CLS = {
@@ -506,10 +515,10 @@ const AdminExpertDetailSection = () => {
                 <>
                   {/* Pending draft review card */}
                   {expert.profile_draft?.status === "PENDING_REVIEW" && (() => {
-                    const fmtSessionFormat = (val) => {
-                      if (!val) return null;
-                      return { ONLINE: "Online", IN_PERSON: "In-Person", BOTH: "Online & In-Person" }[val] || val;
-                    };
+                    // Translated rather than hardcoded English, so the draft
+                    // diff reads correctly for Italian admins too.
+                    const fmtSessionFormat = (val) =>
+                      val ? t(`sessionFormat.${val}`, { defaultValue: val }) : null;
                     const draftFields = [
                       { key: "Summary",            live: expert.summary,       proposed: expert.profile_draft.summary },
                       { key: "Bio",                live: expert.bio,           proposed: expert.profile_draft.bio },
@@ -634,11 +643,9 @@ const AdminExpertDetailSection = () => {
                     <SectionLabel>{t("expertDetail.profile.sessionFormat")}</SectionLabel>
                     {expert.session_format ? (
                       <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
-                        expert.session_format === "ONLINE"    ? "bg-blue-100 text-blue-700"   :
-                        expert.session_format === "IN_PERSON" ? "bg-purple-100 text-purple-700" :
-                        "bg-teal-100 text-teal-700"
+                        SESSION_FORMAT_BADGE_CLS[expert.session_format] || "bg-teal-100 text-teal-700"
                       }`}>
-                        {{ ONLINE: "Online", IN_PERSON: "In-Person", BOTH: "Online & In-Person" }[expert.session_format]}
+                        {t(`sessionFormat.${expert.session_format}`, { defaultValue: expert.session_format })}
                       </span>
                     ) : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noSessionFormat")}</p>}
                   </div>

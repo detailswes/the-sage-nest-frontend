@@ -13,7 +13,7 @@ const AuthLayout = ({ children, noTranslate }) => {
     <div className="min-h-screen bg-[#f4eee5] bg-sage-stripes bg-stripe-size bg-repeat-x flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-[#E4E7E4] px-8 py-5">
         <div className="mb-4 text-center">
-          <a href="https://the-sage-nest.webflow.io/">
+          <a href="https://sagenest.org/">
             <img
               src={LOGO_SVG}
               alt="Sage Nest"

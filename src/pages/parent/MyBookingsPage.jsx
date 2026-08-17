@@ -219,7 +219,7 @@ const BookingDetailSheet = ({ booking, onClose }) => {
               {duration && <DetailRow label={t('detailSheet.durationLabel')} value={duration} />}
               <DetailRow
                 label={t('detailSheet.formatLabel')}
-                value={booking.format === 'ONLINE' ? t('detailSheet.formatOnline') : t('detailSheet.formatInPerson')}
+                value={booking.format === 'ONLINE' ? t('detailSheet.formatOnline') : booking.format === 'HOME_VISIT' ? t('detailSheet.formatHomeVisit') : t('detailSheet.formatInPerson')}
               />
               {booking.format === 'IN_PERSON' && location && (
                 <DetailRow label={t('detailSheet.locationLabel')} value={location} />
@@ -466,9 +466,11 @@ const BookingCard = ({ booking, onViewDetails }) => {
               <span className={`text-xs px-2 py-0.5 rounded-full ${
                 booking.format === 'ONLINE'
                   ? 'bg-blue-50 text-blue-600'
-                  : 'bg-[#445446]/10 text-[#445446]'
+                  : booking.format === 'HOME_VISIT'
+                    ? 'bg-amber-50 text-amber-700'
+                    : 'bg-[#445446]/10 text-[#445446]'
               }`}>
-                {booking.format === 'ONLINE' ? t('detailSheet.formatOnline') : t('detailSheet.formatInPerson')}
+                {booking.format === 'ONLINE' ? t('detailSheet.formatOnline') : booking.format === 'HOME_VISIT' ? t('detailSheet.formatHomeVisit') : t('detailSheet.formatInPerson')}
               </span>
             </div>
           </div>
@@ -883,7 +885,7 @@ const PastBookingCard = ({ booking, onViewDetails }) => {
                 </span>
               )}
               <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                {booking.format === 'ONLINE' ? t('detailSheet.formatOnline') : t('detailSheet.formatInPerson')}
+                {booking.format === 'ONLINE' ? t('detailSheet.formatOnline') : booking.format === 'HOME_VISIT' ? t('detailSheet.formatHomeVisit') : t('detailSheet.formatInPerson')}
               </span>
 
               {/* Amount paid chip */}

@@ -198,6 +198,8 @@ const eventPropGetter = (event) => {
     return { style: { ...base, backgroundColor: '#445446', opacity: 0.5, color: '#fff', cursor: 'default' } };
   if (event.resource?.format === 'ONLINE')
     return { style: { ...base, backgroundColor: '#2563eb', color: '#fff' } };
+  if (event.resource?.format === 'HOME_VISIT')
+    return { style: { ...base, backgroundColor: '#b45309', color: '#fff' } };
   return { style: { ...base, backgroundColor: '#445446', color: '#fff' } };
 };
 
@@ -233,7 +235,11 @@ const TimeGridEvent = ({ event }) => {
       <p className="font-semibold truncate">{b?.parent?.name || event.title}</p>
       <p className="truncate opacity-90">{b?.service?.title}</p>
       <p className="truncate opacity-75">
-        {b?.format === 'ONLINE' ? t('calendar.legend.bookedOnline').replace(' (Online)', '') : t('calendar.legend.bookedInPerson').replace(' (In-Person)', '')}
+        {b?.format === 'ONLINE'
+          ? t('calendar.legend.bookedOnline').replace(' (Online)', '')
+          : b?.format === 'HOME_VISIT'
+            ? t('calendar.legend.bookedHomeVisit').replace(' (Home Visit)', '')
+            : t('calendar.legend.bookedInPerson').replace(' (In-Person)', '')}
       </p>
     </div>
   );
@@ -246,6 +252,7 @@ const AppointmentModal = ({ event, onClose }) => {
   if (!event) return null;
   const b = event.resource;
   const isOnline = b.format === 'ONLINE';
+  const isHomeVisit = b.format === 'HOME_VISIT';
 
   return (
     <div
@@ -259,9 +266,15 @@ const AppointmentModal = ({ event, onClose }) => {
             <span className={`mt-1 inline-block text-xs font-medium px-2.5 py-1 rounded-full ${
               isOnline
                 ? 'bg-blue-50 text-blue-600 border border-blue-100'
-                : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
+                : isHomeVisit
+                  ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                  : 'bg-[#445446]/10 text-[#445446] border border-[#445446]/20'
             }`}>
-              {isOnline ? t('calendar.modal.onlineSession') : t('calendar.modal.inPersonSession')}
+              {isOnline
+                ? t('calendar.modal.onlineSession')
+                : isHomeVisit
+                  ? t('calendar.modal.homeVisitSession')
+                  : t('calendar.modal.inPersonSession')}
             </span>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">

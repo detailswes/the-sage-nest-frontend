@@ -62,6 +62,7 @@
     "card": {
       "online":          "Online",
       "inPerson":        "Di persona",
+      "homeVisit":       "Visita a domicilio",
       "linkReminder":    "Link di sessione non ancora inviato al genitore",
       "markSent":        "Segna inviato",
       "markSentSaving":  "Salvataggio…",
@@ -117,7 +118,8 @@
       "label":    "Come eroghi le tue sessioni?",
       "online":   "Solo online",
       "inPerson": "Solo di persona",
-      "both":     "Sia online che di persona",
+      "homeVisit": "Solo visite a domicilio",
+      "both":     "Più modalità (scegli per servizio)",
       "hint":     "Controlla le opzioni di formato disponibili nella creazione dei servizi e il filtro mostrato nella directory degli esperti."
     },
     "details": {
@@ -410,7 +412,8 @@
     "addServiceBtn": "Aggiungi servizio",
     "formats": {
       "ONLINE":    "Online",
-      "IN_PERSON": "Di persona"
+      "IN_PERSON": "Di persona",
+      "HOME_VISIT": "Visita a domicilio"
     },
     "clusters": {
       "FOR_PARENTS": "Per genitori",
@@ -507,7 +510,8 @@
       "dayOff":         "Giorno libero",
       "blocked":        "Bloccato",
       "bookedOnline":   "Prenotato (Online)",
-      "bookedInPerson": "Prenotato (Di persona)"
+      "bookedInPerson": "Prenotato (Di persona)",
+      "bookedHomeVisit": "Prenotato (Visita a domicilio)"
     },
 
     "timezone": {
@@ -628,13 +632,15 @@
     "legend": {
       "available":      "Disponibile",
       "bookedOnline":   "Prenotato (Online)",
-      "bookedInPerson": "Prenotato (Di persona)"
+      "bookedInPerson": "Prenotato (Di persona)",
+      "bookedHomeVisit": "Prenotato (Visita a domicilio)"
     },
 
     "modal": {
       "title":           "Dettagli appuntamento",
       "onlineSession":   "Sessione online",
       "inPersonSession": "Sessione di persona",
+      "homeVisitSession": "Sessione a domicilio",
       "parentLabel":     "Genitore",
       "serviceLabel":    "Servizio",
       "timeSlotLabel":   "Orario",
@@ -675,7 +681,8 @@
 
     "formats": {
       "ONLINE":    "Online",
-      "IN_PERSON": "Di persona"
+      "IN_PERSON": "Di persona",
+      "HOME_VISIT": "Visita a domicilio"
     },
 
     "notes": {

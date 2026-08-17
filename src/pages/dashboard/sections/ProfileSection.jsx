@@ -106,9 +106,10 @@ const LangChip = ({ label, selected, onToggle }) => (
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const SESSION_FORMAT_OPTIONS = [
-  { value: 'ONLINE',    tKey: 'profile.sessionFormat.online' },
-  { value: 'IN_PERSON', tKey: 'profile.sessionFormat.inPerson' },
-  { value: 'BOTH',      tKey: 'profile.sessionFormat.both' },
+  { value: 'ONLINE',     tKey: 'profile.sessionFormat.online' },
+  { value: 'IN_PERSON',  tKey: 'profile.sessionFormat.inPerson' },
+  { value: 'HOME_VISIT', tKey: 'profile.sessionFormat.homeVisit' },
+  { value: 'BOTH',       tKey: 'profile.sessionFormat.both' },
 ];
 
 const EMPTY_FORM = {

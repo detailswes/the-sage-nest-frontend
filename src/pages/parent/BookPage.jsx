@@ -38,6 +38,21 @@ const WITHDRAWAL_WINDOW_MS    = 14 * 24 * 60 * 60 * 1000;
 // is skipped entirely (and never counted) once the parent is authenticated.
 const STEPS = { SERVICE: 'service', SLOT: 'slot', ACCOUNT: 'account', DETAILS: 'details', CONFIRM: 'confirm' };
 
+// Every delivery format the parent can book. Kept as one list so the selector,
+// the badges and the summary all stay in step with each other.
+const BOOKABLE_FORMATS = ['ONLINE', 'IN_PERSON', 'HOME_VISIT'];
+
+// Maps a format onto the translation-key suffix shared by the confirmStep /
+// slotStep / detailSheet / checkout namespaces. A lookup rather than a
+// two-way ternary, so a new mode cannot fall through to "in-person".
+const FORMAT_LABEL_SUFFIX = {
+  ONLINE:     'formatOnline',
+  IN_PERSON:  'formatInPerson',
+  HOME_VISIT: 'formatHomeVisit',
+};
+const formatLabelKey = (prefix, format) =>
+  `${prefix}.${FORMAT_LABEL_SUFFIX[format] || FORMAT_LABEL_SUFFIX.IN_PERSON}`;
+
 const EMPTY_BILLING = {
   invoiceHolder: '', address: '', postcode: '', town: '', province: '', country: '',
   fiscalCode: '', noFiscalCode: false,
@@ -97,7 +112,7 @@ const BookingSummaryStrip = ({ detail, service, slot, format, lng }) => {
         <p className="text-sm font-semibold text-[#1F2933] truncate">{service?.title}</p>
         <p className="text-xs text-gray-500 truncate">
           {detail?.user?.name} · {slot?.start ? `${formatSlotDate(slot.start, lng)}, ${formatSlotTime(slot.start, lng)}` : ''} ·{' '}
-          {format === 'ONLINE' ? t('confirmStep.formatOnline') : t('confirmStep.formatInPerson')}
+          {t(formatLabelKey('confirmStep', format))}
         </p>
       </div>
       <p className="text-sm font-bold text-[#1F2933] flex-shrink-0">{formatPrice(service?.price, service?.currency || 'EUR', lng)}</p>
@@ -871,8 +886,12 @@ const BookPage = () => {
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{formatDuration(service.duration_minutes)}</span>
                         {service.format && (
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${service.format === 'ONLINE' ? 'bg-blue-50 text-blue-600' : 'bg-[#445446]/10 text-[#445446]'}`}>
-                            {service.format === 'ONLINE' ? 'Online' : 'In-Person'}
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                            service.format === 'ONLINE' ? 'bg-blue-50 text-blue-600'
+                            : service.format === 'HOME_VISIT' ? 'bg-amber-50 text-amber-700'
+                            : 'bg-[#445446]/10 text-[#445446]'
+                          }`}>
+                            {t(formatLabelKey('slotStep', service.format))}
                           </span>
                         )}
                         {service.cluster && CLUSTER_BADGE[service.cluster] && (
@@ -938,12 +957,12 @@ const BookPage = () => {
         {/* Format selector — only if service supports both */}
         {!selectedService?.format && (
           <div className="mb-5 flex gap-3">
-            {['ONLINE', 'IN_PERSON'].map((f) => (
+            {BOOKABLE_FORMATS.map((f) => (
               <button key={f} onClick={() => setSelectedFormat(f)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
                   selectedFormat === f ? 'bg-[#445446] text-white border-[#445446]' : 'bg-[#dfe2d7]/20 text-[#5e6d5b] border-[#c5ceba] hover:border-[#445446] hover:text-[#445446]'
                 }`}>
-                {f === 'ONLINE' ? t('slotStep.formatOnline') : t('slotStep.formatInPerson')}
+                {t(formatLabelKey('slotStep', f))}
               </button>
             ))}
           </div>
@@ -1199,7 +1218,7 @@ const BookPage = () => {
 
           <div className="space-y-2 text-sm">
             {[
-              { label: t('confirmStep.labelFormat'),   value: selectedFormat === 'ONLINE' ? t('confirmStep.formatOnline') : t('confirmStep.formatInPerson') },
+              { label: t('confirmStep.labelFormat'),   value: t(formatLabelKey('confirmStep', selectedFormat)) },
               { label: t('confirmStep.labelWhen'),     value: `${formatSlotDate(selectedSlot?.start, lng)}, ${formatSlotTime(selectedSlot?.start, lng)}` },
               { label: t('confirmStep.labelDuration'), value: formatDuration(selectedService?.duration_minutes, t) },
             ].map(({ label, value }) => (
