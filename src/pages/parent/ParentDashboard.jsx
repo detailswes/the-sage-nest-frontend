@@ -54,7 +54,7 @@ const ParentDashboard = () => {
         >
           <MenuIcon />
         </button>
-        <a href="https://the-sage-nest.webflow.io/" className="flex items-center gap-2" onClick={closeSidebar}>
+        <a href="https://sagenest.org/" className="flex items-center gap-2" onClick={closeSidebar}>
           <img
             src={LOGO_SVG}
             alt="Sage Nest"
@@ -84,7 +84,7 @@ const ParentDashboard = () => {
         {/* Logo + mobile close button */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-[#c5ceba]">
           <a
-            href="https://the-sage-nest.webflow.io/"
+            href="https://sagenest.org/"
             className="flex items-center gap-2.5"
             onClick={closeSidebar}
           >
