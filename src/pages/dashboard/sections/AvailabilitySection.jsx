@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import ConfirmModal from '../../../components/ConfirmModal';
 import CenteredDateInput from '../../../components/CenteredDateInput';
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
@@ -1075,8 +1076,11 @@ const AvailabilitySection = () => {
     setSlotError("");
     try {
       await addAvailabilitySlot(data).unwrap();
+      toast.success(t('availability.weekly.addSuccess'));
     } catch (err) {
-      setSlotError(err?.data?.error || t('availability.weekly.addFailed'));
+      const message = err?.data?.error || t('availability.weekly.addFailed');
+      setSlotError(message);
+      toast.error(message);
     }
   };
 
@@ -1098,19 +1102,22 @@ const AvailabilitySection = () => {
     try {
       const { blockouts: newBlockouts, removedCount, skipped } = await createBlockoutMut(data).unwrap();
       if (newBlockouts.length === 0) {
-        setBlockError(
-          skipped > 0
-            ? t('availability.blockout.info.noneCreatedSkipped', { count: skipped })
-            : t('availability.blockout.info.noneCreated')
-        );
+        const message = skipped > 0
+          ? t('availability.blockout.info.noneCreatedSkipped', { count: skipped })
+          : t('availability.blockout.info.noneCreated');
+        setBlockError(message);
+        toast.error(message);
       } else {
         const parts = [];
         if (removedCount > 0) parts.push(t('availability.blockout.info.removedBlocks', { count: removedCount }));
         if (skipped > 0) parts.push(t('availability.blockout.info.skippedDays', { count: skipped }));
         if (parts.length) setBlockInfo(parts.join(" · ") + ".");
+        toast.success(t('availability.blockout.createSuccess'));
       }
     } catch (err) {
-      setBlockError(err?.data?.error || t('availability.blockout.errors.createFailed'));
+      const message = err?.data?.error || t('availability.blockout.errors.createFailed');
+      setBlockError(message);
+      toast.error(message);
     }
   };
 

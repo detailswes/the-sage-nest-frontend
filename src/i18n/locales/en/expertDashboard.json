@@ -569,6 +569,7 @@
       "conflicts_one":   "Removing this slot affects {{count}} confirmed booking:",
       "conflicts_other": "Removing this slot affects {{count}} confirmed bookings:",
       "conflictNote":    "These bookings will not be cancelled automatically — you must manage them separately.",
+      "addSuccess":   "Slot added to your weekly schedule.",
       "addFailed":    "Failed to add slot.",
       "removeFailed": "Failed to remove slot."
     },
@@ -597,6 +598,7 @@
         "createFailed":   "Failed to create block-out.",
         "restoreFailed":  "Failed to restore slot."
       },
+      "createSuccess": "Dates blocked successfully.",
       "info": {
         "noneCreated":              "No new blocks were created.",
         "noneCreatedSkipped_one":   "No new blocks were created — all {{count}} day in the range is already blocked or has no availability.",
