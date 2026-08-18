@@ -569,6 +569,7 @@
       "conflicts_one":   "La rimozione di questo slot influisce su {{count}} prenotazione confermata:",
       "conflicts_other": "La rimozione di questo slot influisce su {{count}} prenotazioni confermate:",
       "conflictNote":    "Queste prenotazioni non verranno cancellate automaticamente — devi gestirle separatamente.",
+      "addSuccess":   "Slot aggiunto al tuo orario settimanale.",
       "addFailed":    "Impossibile aggiungere lo slot.",
       "removeFailed": "Impossibile rimuovere lo slot."
     },
@@ -597,6 +598,7 @@
         "createFailed":   "Impossibile creare il blocco.",
         "restoreFailed":  "Impossibile ripristinare lo slot."
       },
+      "createSuccess": "Date bloccate con successo.",
       "info": {
         "noneCreated":              "Nessun nuovo blocco è stato creato.",
         "noneCreatedSkipped_one":   "Nessun nuovo blocco creato — il {{count}} giorno nell'intervallo è già bloccato o non ha disponibilità.",
