@@ -33,6 +33,21 @@ const WEBFLOW_DIRECTORY_URL   = process.env.REACT_APP_WEBFLOW_DIRECTORY_URL   ||
 const WEBFLOW_EXPERT_BASE_URL = process.env.REACT_APP_WEBFLOW_EXPERT_BASE_URL || 'https://www.sagenest.org/experts';
 const WITHDRAWAL_WINDOW_MS    = 14 * 24 * 60 * 60 * 1000;
 
+// Webflow serves the Italian site under a /it path prefix; English has no
+// prefix (see the referrer-detection comment in src/i18n/index.js). Links
+// built back out to Webflow need the same prefix or Webflow 404s them to
+// the homepage instead of the intended page.
+const withWebflowLocale = (url, lng) => {
+  if (lng !== 'it') return url;
+  try {
+    const u = new URL(url);
+    if (!/^\/it(\/|$)/.test(u.pathname)) u.pathname = `/it${u.pathname}`;
+    return u.toString();
+  } catch {
+    return url;
+  }
+};
+
 // ─── Steps ───────────────────────────────────────────────────────────────────
 // Booking flow spec v1.7 §2: five steps signed out, four signed in — Account
 // is skipped entirely (and never counted) once the parent is authenticated.
@@ -289,6 +304,7 @@ const ExpertHeader = ({ expert }) => {
 // the flow, not the dashboard).
 const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
   const { t } = useTranslation('parentBookings');
+  const { t: tAuth } = useTranslation('auth');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
@@ -302,7 +318,7 @@ const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     const errs = validateLoginForm({ email, password });
-    if (Object.keys(errs).length) { setError(errs.email || errs.password || 'Invalid credentials'); return; }
+    if (Object.keys(errs).length) { setError(tAuth(errs.email || errs.password) || 'Invalid credentials'); return; }
     setLoading(true); setError('');
     try {
       const data = await loginUser({ email, password });
@@ -383,7 +399,8 @@ const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errs = validateRegisterForm({ ...form, role: 'PARENT' });
+    const rawErrs = validateRegisterForm({ ...form, role: 'PARENT' });
+    const errs = Object.fromEntries(Object.entries(rawErrs).map(([field, key]) => [field, tAuth(key)]));
     if (!termsAccepted)   errs.termsConditions = t('consentLabels.termsRequired');
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
@@ -487,7 +504,7 @@ const BookPage = () => {
   const slotStartParam = searchParams.get('slotStart');
   const formatParam    = searchParams.get('format');
 
-  const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(returnUrlParam || WEBFLOW_DIRECTORY_URL);
+  const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(returnUrlParam || withWebflowLocale(WEBFLOW_DIRECTORY_URL, i18n.language));
   const fromPastBookings = !!locationState?.restore?.fromPastBookings;
 
   const [step,            setStep]           = useState(STEPS.SERVICE);
@@ -600,7 +617,7 @@ const BookPage = () => {
     setExpertDetail(fetchedExpert);
 
     if (!returnUrlParam && fetchedExpert.webflow_slug) {
-      setEffectiveReturnUrl(`${WEBFLOW_EXPERT_BASE_URL}/${fetchedExpert.webflow_slug}`);
+      setEffectiveReturnUrl(withWebflowLocale(`${WEBFLOW_EXPERT_BASE_URL}/${fetchedExpert.webflow_slug}`, lng));
     }
     if (serviceIdParam) {
       const svc = (fetchedExpert.services || []).find(
@@ -821,7 +838,7 @@ const BookPage = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <p className="text-sm text-red-600 mb-4">{error}</p>
-        <a href={WEBFLOW_DIRECTORY_URL} className="text-sm text-[#445446] underline">Browse experts</a>
+        <a href={withWebflowLocale(WEBFLOW_DIRECTORY_URL, lng)} className="text-sm text-[#445446] underline">Browse experts</a>
       </div>
     );
   }
