@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import AuthLayout from "../../components/auth/AuthLayout";
 import PasswordInput from "../../components/auth/PasswordInput";
 import LanguageSelector from "../../components/LanguageSelector";
@@ -155,8 +156,6 @@ const Login = () => {
     setErrors,
     loading,
     setLoading,
-    serverError,
-    setServerError,
     handleChange,
   } = useAuthForm({ email: "", password: "" });
 
@@ -183,17 +182,16 @@ const Login = () => {
         setOtpPending({ otp_token: data.otp_token, email: form.email });
         return;
       }
+      toast.success(t("login.successToast"));
       login(data);
     } catch (err) {
       const errData = err?.response?.data;
       if (errData?.email_not_verified) {
         setUnverifiedEmail(errData.email || form.email);
-        setServerError("");
       } else if (errData?.locked) {
         setLockedMessage(errData.error);
-        setServerError("");
       } else {
-        setServerError(errData?.error || errData?.message || t("login.defaultError"));
+        toast.error(errData?.error || errData?.message || t("login.defaultError"));
       }
     } finally {
       setLoading(false);
@@ -207,7 +205,7 @@ const Login = () => {
         <OtpStep
           otpToken={otpPending.otp_token}
           userEmail={otpPending.email}
-          onSuccess={(data) => login(data)}
+          onSuccess={(data) => { toast.success(t("login.successToast")); login(data); }}
         />
         <p className="mt-5 text-center">
           <button
@@ -239,13 +237,6 @@ const Login = () => {
             <p className="text-sm font-medium text-amber-800">{t("locked.title")}</p>
             <p className="text-xs text-amber-700 mt-0.5">{lockedMessage}</p>
           </div>
-        </div>
-      )}
-
-      {/* Generic error */}
-      {serverError && (
-        <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {serverError}
         </div>
       )}
 
