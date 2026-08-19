@@ -39,8 +39,6 @@ const Register = () => {
     setErrors,
     loading,
     setLoading,
-    serverError,
-    setServerError,
     handleChange,
   } = useAuthForm({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
 
@@ -87,8 +85,10 @@ const Register = () => {
       const data = await registerUser(payload);
 
       if (data.verification_email_sent) {
+        toast.success(t('register.verificationSentToast'));
         setEmailSent({ email: data.email });
       } else {
+        toast.success(t('register.successToast'));
         login(data);
       }
     } catch (err) {
@@ -97,14 +97,7 @@ const Register = () => {
         err?.response?.data?.message ||
         t('register.defaultError');
 
-      // Cross-role email collision: surface as a toast rather than the
-      // inline banner, since it's an actionable heads-up (log in / use a
-      // different email) rather than a form-field validation error.
-      if (err?.response?.status === 409) {
-        toast.error(message);
-      } else {
-        setServerError(message);
-      }
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -199,12 +192,6 @@ const Register = () => {
           {t(`register.roles.${activeRole}.description`)}
         </p>
       </div>
-
-      {serverError && (
-        <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {serverError}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Full name */}

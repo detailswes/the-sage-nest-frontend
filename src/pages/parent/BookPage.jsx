@@ -504,7 +504,9 @@ const BookPage = () => {
   const slotStartParam = searchParams.get('slotStart');
   const formatParam    = searchParams.get('format');
 
-  const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(returnUrlParam || withWebflowLocale(WEBFLOW_DIRECTORY_URL, i18n.language));
+  const [effectiveReturnUrl, setEffectiveReturnUrl] = useState(
+    returnUrlParam || locationState?.restore?.returnUrl || withWebflowLocale(WEBFLOW_DIRECTORY_URL, i18n.language)
+  );
   const fromPastBookings = !!locationState?.restore?.fromPastBookings;
 
   const [step,            setStep]           = useState(STEPS.SERVICE);
@@ -813,7 +815,7 @@ const BookPage = () => {
           scheduledAt: selectedSlot.start, format: selectedFormat, sessionLocation,
           paymentExpiresAt: result.paymentExpiresAt,
           billingCountry: isItalianExpert ? billing.country : undefined,
-          restore: { expert: selectedExpert, service: selectedService, format: selectedFormat },
+          restore: { expert: selectedExpert, service: selectedService, format: selectedFormat, returnUrl: effectiveReturnUrl },
         },
       });
     } catch (err) {
