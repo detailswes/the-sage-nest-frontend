@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { useSaveInsuranceMutation, useDeleteInsuranceMutation } from '../../../api/expertApi';
 import { getDocumentUrl } from '../../../utils/imageUrl';
 import ConfirmModal from '../../../components/ConfirmModal';
@@ -76,8 +77,9 @@ const InsuranceCard = ({ initialData = null }) => {
       setDocName('');
       setDateWarning('');
       setShowForm(false);
+      toast.success(t('profile.insurance.saveSuccess'));
     } catch (err) {
-      setFormError(err?.data?.error || t('profile.insurance.errors.saveFailed'));
+      toast.error(err?.data?.error || t('profile.insurance.errors.saveFailed'));
     }
   };
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import { useSaveBusinessInfoMutation } from "../../../api/expertApi";
 import { getCountryName, getLocalizedCountries } from "../../../utils/countries";
 
@@ -54,8 +55,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
   const [fieldErrors, setFieldErrors] = useState({});
 
   const [saveBusinessInfo, { isLoading: saving }] = useSaveBusinessInfoMutation();
-  const [serverError, setServerError] = useState("");
-  const [saved, setSaved]         = useState(false);
 
   const [form, setForm] = useState(
     initialData
@@ -93,13 +92,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
     setFieldErrors((prev) => ({ ...prev, [name]: "" }));
-    setServerError("");
-    setSaved(false);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    setServerError("");
 
     const errs = {};
     if (!form.entity_type) errs.entity_type = t("profile.business.errors.entityTypeRequired");
@@ -144,11 +140,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
       const updated = await saveBusinessInfo(payload).unwrap();
       setData(updated);
       setShowForm(false);
-      setSaved(true);
       setFieldErrors({});
-      setTimeout(() => setSaved(false), 5000);
+      toast.success(t("profile.business.savedMsg"));
     } catch (err) {
-      setServerError(
+      toast.error(
         err?.data?.error || t("profile.business.errors.saveFailed")
       );
     }
@@ -172,8 +167,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
             onClick={() => {
               setShowForm(true);
               setFieldErrors({});
-              setServerError("");
-              setSaved(false);
             }}
             className="flex-shrink-0 ml-4 text-xs font-medium text-[#445446] border border-[#445446]/30 hover:bg-[#445446]/5 px-3 py-1.5 rounded-lg transition-colors"
           >
@@ -181,18 +174,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
           </button>
         )}
       </div>
-
-      {/* Saved success banner */}
-      {saved && (
-        <div className="mt-3 flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl">
-          <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
-          </svg>
-          <p className="text-sm font-medium text-green-800">
-            {t("profile.business.savedMsg")}
-          </p>
-        </div>
-      )}
 
       {/* Read-only view */}
       {data && !showForm && (
@@ -260,12 +241,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
           onSubmit={handleSave}
           className="mt-4 border border-[#E4E7E4] rounded-xl p-4 space-y-4"
         >
-          {serverError && (
-            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {serverError}
-            </p>
-          )}
-
           {/* Entity type */}
           <div>
             <label className={labelClass}>
@@ -509,7 +484,6 @@ const BusinessInfoCard = ({ initialData = null }) => {
                 onClick={() => {
                   setShowForm(false);
                   setFieldErrors({});
-                  setServerError("");
                 }}
                 className="text-sm text-gray-500 hover:text-[#1F2933] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
               >

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import {
   useAddCertificationMutation,
   useUpdateCertificationMutation,
@@ -105,8 +106,9 @@ const CertificationsCard = ({ initialData = [] }) => {
       setForm(EMPTY_FORM);
       setDocName("");
       setShowForm(false);
+      toast.success(t("profile.certs.addSuccess"));
     } catch (err) {
-      setFormError(
+      toast.error(
         err?.data?.error || t("profile.certs.errors.addFailed")
       );
     }
@@ -166,8 +168,9 @@ const CertificationsCard = ({ initialData = [] }) => {
         prev.map((item) => (item.id === c.id ? updated : item))
       );
       cancelEdit();
+      toast.success(t("profile.certs.updateSuccess"));
     } catch (err) {
-      setEditError(
+      toast.error(
         err?.data?.error || t("profile.certs.errors.updateFailed")
       );
     }

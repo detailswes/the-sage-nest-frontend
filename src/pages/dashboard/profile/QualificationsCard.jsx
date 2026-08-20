@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import {
   useAddQualificationMutation,
   useUpdateQualificationMutation,
@@ -149,8 +150,9 @@ const QualificationsCard = ({ initialData = [], country = null }) => {
       setForm(EMPTY_FORM);
       setDocName("");
       setShowForm(false);
+      toast.success(t("profile.quals.addSuccess"));
     } catch (err) {
-      setFormError(
+      toast.error(
         err?.data?.error || t("profile.quals.errors.addFailed")
       );
     }
@@ -211,8 +213,9 @@ const QualificationsCard = ({ initialData = [], country = null }) => {
         prev.map((item) => (item.id === q.id ? updated : item))
       );
       cancelEdit();
+      toast.success(t("profile.quals.updateSuccess"));
     } catch (err) {
-      setEditError(
+      toast.error(
         err?.data?.error || t("profile.quals.errors.updateFailed")
       );
     }

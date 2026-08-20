@@ -219,6 +219,8 @@
       "chooseFile":   "Choose file",
       "noFile":       "No file chosen",
       "docUploadHint":"Adding a supporting document helps admins verify this entry faster.",
+      "addSuccess":   "Qualification added.",
+      "updateSuccess":"Qualification updated.",
       "form": {
         "typeLabel":         "Qualification type",
         "typeSelect":        "Select type…",
@@ -272,6 +274,8 @@
       "docUploadHint":"Adding a supporting document helps admins verify this entry faster.",
       "chooseFile":   "Choose file",
       "noFile":       "No file chosen",
+      "addSuccess":   "Certification added.",
+      "updateSuccess":"Certification updated.",
       "form": {
         "nameLabel":       "Certification name",
         "namePlaceholder": "e.g. First Aid Certificate",
@@ -307,6 +311,7 @@
       "keepBtn":        "Keep",
       "removingBtn":    "Removing…",
       "removeBtn":      "Remove",
+      "saveSuccess":    "Insurance record saved.",
       "form": {
         "expiryLabel":          "Policy expiry date",
         "expiryWarning_one":    "This policy expires in {{count}} day — consider uploading a renewed policy soon.",
