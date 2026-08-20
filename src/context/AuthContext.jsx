@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { setAuthHeader, refreshAccessToken, logoutUser } from '../api/authApi';
-import i18n, { STORAGE_KEY as LANG_STORAGE_KEY } from '../i18n';
+import i18n, { STORAGE_KEY as LANG_STORAGE_KEY, WEBFLOW_LANG_PINNED } from '../i18n';
 
 const AuthContext = createContext(null);
 
@@ -8,7 +8,12 @@ const AuthContext = createContext(null);
 // Once a user is known (login, session restore, token refresh), their saved
 // language preference wins over whatever localStorage/browser detection had
 // guessed — it's an explicit, durable choice, not a changeable default.
+// Exception: if Webflow pinned this page load's language (?lang= or the
+// referrer path on /book — see i18n/index.js), that wins instead. Otherwise
+// a parent whose account language is 'en' logs in mid-booking on an Italian
+// expert's page and the UI silently flips to English underneath them.
 const syncLanguageFromUser = (user) => {
+  if (WEBFLOW_LANG_PINNED) return;
   if (user?.language && ['en', 'it'].includes(user.language) && user.language !== i18n.language) {
     i18n.changeLanguage(user.language);
     localStorage.setItem(LANG_STORAGE_KEY, user.language);

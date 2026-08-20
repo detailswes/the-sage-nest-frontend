@@ -18,9 +18,19 @@ const STORAGE_KEY = 'sageNestLang';
 
 // Apply ?lang= URL param on any entry page so Webflow can pre-set the language.
 // This runs before React mounts, locking the language for the entire session.
+//
+// WEBFLOW_LANG_PINNED marks that Webflow itself (via ?lang= or the referrer
+// path) determined this page load's language. It must win over a logged-in
+// parent's stored account language — otherwise AuthContext's post-login
+// syncLanguageFromUser() silently flips the booking flow back to whatever
+// language happens to be saved on the account (see login()/initAuth() in
+// AuthContext.jsx), even though Webflow just told us which expert page
+// (/it/... or not) the parent actually came from.
+let _webflowLangPinned = false;
 const _urlLang = new URLSearchParams(window.location.search).get('lang');
 if (_urlLang && ['en', 'it'].includes(_urlLang)) {
   localStorage.setItem(STORAGE_KEY, _urlLang);
+  _webflowLangPinned = true;
 } else if (window.location.pathname === '/book') {
   // No explicit ?lang= param. Detect from the Webflow referrer path:
   // Italian Webflow uses a /it/ path prefix; English has no prefix.
@@ -34,6 +44,7 @@ if (_urlLang && ['en', 'it'].includes(_urlLang)) {
     } catch (_) {}
   }
   localStorage.setItem(STORAGE_KEY, _detectedLang);
+  _webflowLangPinned = true;
 } else if (window.location.pathname === '/register' && !localStorage.getItem(STORAGE_KEY)) {
   // Experts land here directly (no Webflow referrer, no ?lang= param), so
   // fall back to the browser's own PRIMARY language instead of defaulting
@@ -73,4 +84,5 @@ i18n
   });
 
 export { STORAGE_KEY };
+export const WEBFLOW_LANG_PINNED = _webflowLangPinned;
 export default i18n;

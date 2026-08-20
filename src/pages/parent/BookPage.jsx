@@ -275,6 +275,12 @@ function truncateWords(text, limit) {
 // ─── Expert header (SERVICE step only) ───────────────────────────────────────
 const ExpertHeader = ({ expert }) => {
   const [imgSrc, setImgSrc] = useState(getProfileImageUrl(expert?.profile_image));
+  // `expert` arrives one render late (see the fetchedExpert useEffect below),
+  // so the useState initializer above sees `expert=null` on this component's
+  // first mount and never re-runs — re-sync whenever the actual URL changes.
+  useEffect(() => {
+    setImgSrc(getProfileImageUrl(expert?.profile_image));
+  }, [expert?.profile_image]);
   const initials = expert?.user?.name
     ? expert.user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?';
@@ -412,6 +418,7 @@ const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
         role: 'PARENT', phone: form.phone.trim(),
         termsAccepted: true,
         marketingConsent: marketing, timezone: tz,
+        language: i18n.language,
         returnTo,
       });
       onVerificationSent(form.email);

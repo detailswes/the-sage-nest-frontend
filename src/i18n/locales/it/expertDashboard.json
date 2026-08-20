@@ -219,6 +219,8 @@
       "chooseFile":   "Scegli file",
       "noFile":       "Nessun file selezionato",
       "docUploadHint":"L'aggiunta di un documento di supporto aiuta gli admin a verificare questa voce più rapidamente.",
+      "addSuccess":   "Qualifica aggiunta.",
+      "updateSuccess":"Qualifica aggiornata.",
       "form": {
         "typeLabel":         "Tipo di qualifica",
         "typeSelect":        "Seleziona tipo…",
@@ -272,6 +274,8 @@
       "docUploadHint":"L'aggiunta di un documento di supporto aiuta gli admin a verificare questa voce più rapidamente.",
       "chooseFile":   "Scegli file",
       "noFile":       "Nessun file selezionato",
+      "addSuccess":   "Certificazione aggiunta.",
+      "updateSuccess":"Certificazione aggiornata.",
       "form": {
         "nameLabel":       "Nome della certificazione",
         "namePlaceholder": "es. Certificato di primo soccorso",
@@ -307,6 +311,7 @@
       "keepBtn":        "Mantieni",
       "removingBtn":    "Rimozione…",
       "removeBtn":      "Rimuovi",
+      "saveSuccess":    "Registro assicurativo salvato.",
       "form": {
         "expiryLabel":         "Data di scadenza della polizza",
         "expiryWarning_one":   "Questa polizza scade tra {{count}} giorno — considera di caricare presto una polizza rinnovata.",
