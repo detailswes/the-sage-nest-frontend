@@ -68,7 +68,8 @@
       "markSentSaving":  "Saving…",
       "markComplete":    "Mark as complete",
       "markingComplete": "Marking…",
-      "cancelBtn":       "Cancel appointment"
+      "cancelBtn":       "Cancel appointment",
+      "viewDetailsHint": "View details"
     },
     "duration": {
       "minutes":      "{{count}} min",
@@ -708,6 +709,8 @@
       "privateLabel": "Private notes",
       "privateSub":   "(not visible to parents)"
     },
+
+    "viewDetailsBtn": "Details",
 
     "pagination": {
       "pageOf": "Page <bold>{{page}}</bold> of {{pages}}"

@@ -3,6 +3,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { useGetPastAppointmentsQuery, useSaveExpertNoteMutation } from '../../../api/bookingApi';
 import { HistoryIcon } from '../../../assets/icons';
 import BookingInvoicingInfo from '../../../components/booking/BookingInvoicingInfo';
+import BookingDetailSheet from '../../../components/booking/BookingDetailSheet';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(iso, lng = 'en') {
@@ -117,7 +118,7 @@ const InlineNoteEditor = ({ bookingId, initialNote, onSaved }) => {
 };
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
-const Row = ({ booking }) => {
+const Row = ({ booking, onViewDetails }) => {
   const { t, i18n } = useTranslation('expertDashboard');
   const lng = i18n.language;
   const [expanded, setExpanded] = useState(false);
@@ -185,6 +186,16 @@ const Row = ({ booking }) => {
         <td className="px-4 py-3 whitespace-nowrap">
           <div className="flex items-center gap-2">
             <button
+              onClick={() => onViewDetails(booking)}
+              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              {t('history.viewDetailsBtn')}
+            </button>
+            <button
               onClick={() => setExpanded((v) => !v)}
               title={note ? t('history.notes.hasNoteBtn') : t('history.notes.addNoteBtn')}
               className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border transition-colors ${
@@ -226,7 +237,7 @@ const Row = ({ booking }) => {
 };
 
 // ─── Mobile card ─────────────────────────────────────────────────────────────
-const MobileCard = ({ booking }) => {
+const MobileCard = ({ booking, onViewDetails }) => {
   const { t, i18n } = useTranslation('expertDashboard');
   const lng = i18n.language;
   const [expanded, setExpanded] = useState(false);
@@ -280,20 +291,32 @@ const MobileCard = ({ booking }) => {
         </span>
       </div>
 
-      {/* Note toggle */}
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border transition-colors ${
-          note
-            ? 'text-[#445446] border-[#445446]/30 bg-[#445446]/5 hover:bg-[#445446]/10'
-            : 'text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
-        }`}
-      >
-        <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
-        </svg>
-        {note ? t('history.notes.hasNoteBtn') : t('history.notes.addNoteBtn')}
-      </button>
+      {/* Note toggle + details */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onViewDetails(booking)}
+          className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600 transition-colors"
+        >
+          <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          {t('history.viewDetailsBtn')}
+        </button>
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border transition-colors ${
+            note
+              ? 'text-[#445446] border-[#445446]/30 bg-[#445446]/5 hover:bg-[#445446]/10'
+              : 'text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
+          }`}
+        >
+          <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+          </svg>
+          {note ? t('history.notes.hasNoteBtn') : t('history.notes.addNoteBtn')}
+        </button>
+      </div>
 
       {/* Expanded inline note */}
       {expanded && (
@@ -320,6 +343,7 @@ const MobileCard = ({ booking }) => {
 const PastAppointmentsSection = () => {
   const { t } = useTranslation('expertDashboard');
   const [page, setPage] = useState(1);
+  const [detailBooking, setDetailBooking] = useState(null);
 
   const {
     data = { bookings: [], total: 0, page: 1, pages: 1 },
@@ -378,7 +402,7 @@ const PastAppointmentsSection = () => {
                 </thead>
                 <tbody>
                   {bookings.map((b) => (
-                    <Row key={b.id} booking={b} />
+                    <Row key={b.id} booking={b} onViewDetails={setDetailBooking} />
                   ))}
                 </tbody>
               </table>
@@ -388,12 +412,20 @@ const PastAppointmentsSection = () => {
           {/* Mobile cards */}
           <div className="lg:hidden space-y-3">
             {bookings.map((b) => (
-              <MobileCard key={b.id} booking={b} />
+              <MobileCard key={b.id} booking={b} onViewDetails={setDetailBooking} />
             ))}
           </div>
 
           <Pagination page={page} pages={pages} onChange={setPage} />
         </>
+      )}
+
+      {detailBooking && (
+        <BookingDetailSheet
+          booking={detailBooking}
+          onClose={() => setDetailBooking(null)}
+          role="expert"
+        />
       )}
     </div>
   );

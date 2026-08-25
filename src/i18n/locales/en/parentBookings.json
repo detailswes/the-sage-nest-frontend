@@ -22,6 +22,7 @@
     "copy":                "Copy",
     "copied":              "Copied",
     "specialistSection":   "Specialist",
+    "clientSection":       "Parent",
     "sessionSection":      "Session",
     "serviceLabel":        "Service",
     "dateLabel":           "Date",
