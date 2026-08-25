@@ -446,6 +446,10 @@
       "formatLabel":          "Formato",
       "formatSelect":         "Seleziona un formato…",
       "lockedFormatHint":     "Impostato dal formato di sessione del tuo profilo. Modificalo nelle impostazioni del Profilo.",
+      "homeVisitAreasLabel":       "CAP / zone coperte",
+      "homeVisitAreasPlaceholder": "es. 10121 o Centro",
+      "homeVisitAreasAddBtn":      "Aggiungi",
+      "homeVisitAreasHint":        "Aggiungi ogni CAP o zona in cui sei disponibile per questo servizio. Premi Invio o virgola per aggiungere ciascuno.",
       "categoryLabel":        "Categoria",
       "categorySelect":       "Seleziona una categoria…",
       "durationLabel":        "Durata (min)",
@@ -467,6 +471,7 @@
       "priceMin":            "Prezzo minimo: {{min}}",
       "priceMax":            "Prezzo massimo: {{max}}",
       "formatRequired":      "Seleziona un formato",
+      "homeVisitAreasRequired": "Aggiungi almeno un CAP o zona per la visita a domicilio",
       "categoryRequired":    "Seleziona una categoria"
     },
     "empty": {
@@ -477,6 +482,7 @@
       "active":        "Attivo",
       "inactive":      "Inattivo",
       "needsReview":   "Prezzo da rivedere",
+      "homeVisitAreasLabel": "Zone per visita a domicilio:",
       "deleteConfirm": "Eliminare?",
       "cancelBtn":     "Annulla",
       "deleteBtn":     "Elimina"

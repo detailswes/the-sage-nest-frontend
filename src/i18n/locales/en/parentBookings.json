@@ -126,7 +126,8 @@
     "subtitle":        "Select a service to continue.",
     "checkAvailability": "Check Availability →",
     "readMore":        "Read more",
-    "showLess":        "Show less"
+    "showLess":        "Show less",
+    "homeVisitAreas":  "Home visit available in: {{areas}}"
   },
   "steps": {
     "service": "Service",

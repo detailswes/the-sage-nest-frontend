@@ -126,7 +126,8 @@
     "subtitle":        "Seleziona un servizio per continuare.",
     "checkAvailability": "Verifica disponibilità →",
     "readMore":        "Leggi di più",
-    "showLess":        "Mostra meno"
+    "showLess":        "Mostra meno",
+    "homeVisitAreas":  "Visita a domicilio disponibile in: {{areas}}"
   },
   "steps": {
     "service": "Servizio",

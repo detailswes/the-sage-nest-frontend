@@ -926,6 +926,11 @@ const BookPage = () => {
                           </span>
                         )}
                       </div>
+                      {service.format === 'HOME_VISIT' && service.home_visit_areas?.length > 0 && (
+                        <p className="text-[10px] text-gray-400 mt-1.5">
+                          {t('serviceStep.homeVisitAreas', { areas: service.home_visit_areas.join(', ') })}
+                        </p>
+                      )}
                     </div>
                     <div className="flex-shrink-0 text-right">
                       <p className="text-sm font-bold text-[#1F2933]">{formatPrice(service.price, service.currency || 'EUR')}</p>
