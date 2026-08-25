@@ -11,6 +11,7 @@ import {
   CalendarCheckIcon, UserIcon, EnvelopeIcon, BriefcaseIcon, LinkIcon,
 } from '../../../assets/icons';
 import BookingInvoicingInfo from '../../../components/booking/BookingInvoicingInfo';
+import BookingDetailSheet from '../../../components/booking/BookingDetailSheet';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatAppointmentDate(isoString, lng = 'en') {
@@ -132,7 +133,7 @@ const NoteEditor = ({ bookingId, initialNote, onSaved }) => {
 };
 
 // ─── Appointment card ─────────────────────────────────────────────────────────
-const AppointmentCard = ({ booking, onCancelRequest }) => {
+const AppointmentCard = ({ booking, onCancelRequest, onViewDetails }) => {
   const { t, i18n } = useTranslation('expertDashboard');
   const lng = i18n.language;
   const [note, setNote] = useState(booking.expert_note || '');
@@ -192,8 +193,11 @@ const AppointmentCard = ({ booking, onCancelRequest }) => {
         </span>
       </div>
 
-      {/* Details */}
-      <div className="px-4 py-3 space-y-2">
+      {/* Details — clickable to open the full booking overview */}
+      <div
+        onClick={() => onViewDetails(booking)}
+        className="px-4 py-3 space-y-2 cursor-pointer hover:bg-[#F5F7F5] transition-colors"
+      >
         <div className="flex items-center gap-2">
           <UserIcon />
           <span className="text-sm font-medium text-[#1F2933]">
@@ -205,6 +209,7 @@ const AppointmentCard = ({ booking, onCancelRequest }) => {
             <EnvelopeIcon />
             <a
               href={`mailto:${booking.parent.email}`}
+              onClick={(e) => e.stopPropagation()}
               className="text-sm text-[#445446] hover:underline truncate"
             >
               {booking.parent.email}
@@ -221,6 +226,12 @@ const AppointmentCard = ({ booking, onCancelRequest }) => {
           </span>
         </div>
         <BookingInvoicingInfo booking={booking} />
+        <div className="flex items-center justify-end gap-1 text-xs text-gray-400 pt-1">
+          <span>{t('upcomingAppointments.card.viewDetailsHint')}</span>
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+        </div>
       </div>
 
       {/* Amber reminder banner */}
@@ -286,6 +297,7 @@ const UpcomingAppointmentsSection = () => {
   const [cancelBooking, { isLoading: cancelling, isError: cancelError }] =
     useExpertCancelBookingMutation();
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [detailBooking, setDetailBooking] = useState(null);
 
   const handleCancelConfirm = async () => {
     if (!cancelTarget) return;
@@ -351,9 +363,18 @@ const UpcomingAppointmentsSection = () => {
               key={booking.id}
               booking={booking}
               onCancelRequest={setCancelTarget}
+              onViewDetails={setDetailBooking}
             />
           ))}
         </div>
+      )}
+
+      {detailBooking && (
+        <BookingDetailSheet
+          booking={detailBooking}
+          onClose={() => setDetailBooking(null)}
+          role="expert"
+        />
       )}
     </div>
   );
