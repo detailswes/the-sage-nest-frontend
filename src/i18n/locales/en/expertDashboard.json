@@ -446,6 +446,10 @@
       "formatLabel":          "Format",
       "formatSelect":         "Select a format…",
       "lockedFormatHint":     "Set by your profile session format. Change it in your Profile settings.",
+      "homeVisitAreasLabel":       "Postal codes / areas covered",
+      "homeVisitAreasPlaceholder": "e.g. 10121 or Downtown",
+      "homeVisitAreasAddBtn":      "Add",
+      "homeVisitAreasHint":        "Add every postal code or area you're willing to travel to for this service. Press Enter or comma to add each one.",
       "categoryLabel":        "Category",
       "categorySelect":       "Select a category…",
       "durationLabel":        "Duration (min)",
@@ -467,6 +471,7 @@
       "priceMin":            "Minimum price is {{min}}",
       "priceMax":            "Maximum price is {{max}}",
       "formatRequired":      "Please select a format",
+      "homeVisitAreasRequired": "Add at least one postal code or area for home visit",
       "categoryRequired":    "Please select a category"
     },
     "empty": {
@@ -477,6 +482,7 @@
       "active":        "Active",
       "inactive":      "Inactive",
       "needsReview":   "Needs price review",
+      "homeVisitAreasLabel": "Home visit areas:",
       "deleteConfirm": "Delete?",
       "cancelBtn":     "Cancel",
       "deleteBtn":     "Delete"

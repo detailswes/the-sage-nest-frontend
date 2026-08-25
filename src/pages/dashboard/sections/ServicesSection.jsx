@@ -66,8 +66,10 @@ const CLUSTER_BADGE_CLS = {
 const EMPTY_FORM = {
   title: '', description: '',
   duration_minutes: '', price: '', currency: 'EUR',
-  format: '', cluster: '',
+  format: '', cluster: '', home_visit_areas: [],
 };
+
+const MAX_AREA_LENGTH = 20;
 
 const Spinner = ({ className = 'w-4 h-4' }) => (
   <div className={`${className} rounded-full border-2 border-current border-t-transparent animate-spin`} />
@@ -106,6 +108,7 @@ const ServicesSection = () => {
   const [originalCurrency, setOriginalCurrency] = useState(null);
 
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [areaInput, setAreaInput]         = useState('');
 
   const [deletingId, setDeletingId]     = useState(null);
   const [togglingId, setTogglingId]     = useState(null);
@@ -126,6 +129,29 @@ const ServicesSection = () => {
     setFormErrors((fe) => ({ ...fe, [name]: '' }));
   };
 
+  const addArea = () => {
+    const trimmed = areaInput.trim().slice(0, MAX_AREA_LENGTH);
+    if (!trimmed) return;
+    setForm((f) => (
+      f.home_visit_areas.some((a) => a.toLowerCase() === trimmed.toLowerCase())
+        ? f
+        : { ...f, home_visit_areas: [...f.home_visit_areas, trimmed] }
+    ));
+    setAreaInput('');
+    setFormErrors((fe) => ({ ...fe, home_visit_areas: '' }));
+  };
+
+  const removeArea = (area) => {
+    setForm((f) => ({ ...f, home_visit_areas: f.home_visit_areas.filter((a) => a !== area) }));
+  };
+
+  const handleAreaInputKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addArea();
+    }
+  };
+
   const validate = () => {
     const errs = {};
     if (!form.title.trim())
@@ -144,6 +170,8 @@ const ServicesSection = () => {
       errs.price = t('services.validation.priceMax', { max: formatPrice(limits.max, form.currency || 'EUR', lng) });
     if (!form.format)
       errs.format = t('services.validation.formatRequired');
+    if (form.format === 'HOME_VISIT' && form.home_visit_areas.length === 0)
+      errs.home_visit_areas = t('services.validation.homeVisitAreasRequired');
     if (!form.cluster)
       errs.cluster = t('services.validation.categoryRequired');
     return errs;
@@ -156,6 +184,7 @@ const ServicesSection = () => {
     setOriginalCurrency(null);
     setForm({ ...EMPTY_FORM, currency: expertCurrency, format: lockedFormat || '' });
     setFormErrors({});
+    setAreaInput('');
     setShowForm(true);
   };
 
@@ -175,8 +204,10 @@ const ServicesSection = () => {
       currency:         expertCurrency,
       format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
+      home_visit_areas: svc.home_visit_areas || [],
     });
     setFormErrors({});
+    setAreaInput('');
     setShowForm(true);
   };
 
@@ -192,8 +223,10 @@ const ServicesSection = () => {
       currency:         expertCurrency,
       format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
+      home_visit_areas: svc.home_visit_areas || [],
     });
     setFormErrors({});
+    setAreaInput('');
     setShowForm(true);
   };
 
@@ -204,6 +237,7 @@ const ServicesSection = () => {
     setOriginalCurrency(null);
     setForm(EMPTY_FORM);
     setFormErrors({});
+    setAreaInput('');
   };
 
   const handleSubmit = async (e) => {
@@ -219,6 +253,7 @@ const ServicesSection = () => {
         currency:         form.currency,
         format:           form.format  || null,
         cluster:          form.cluster || null,
+        home_visit_areas: form.format === 'HOME_VISIT' ? form.home_visit_areas : [],
       };
       if (editingId) {
         await updateService({ id: editingId, ...payload }).unwrap();
@@ -402,6 +437,47 @@ const ServicesSection = () => {
               </div>
             </div>
 
+            {/* Home visit postal codes / areas — required once format is HOME_VISIT */}
+            {form.format === 'HOME_VISIT' && (
+              <div>
+                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                  {t('services.form.homeVisitAreasLabel')} <span className="text-red-400">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={areaInput}
+                    onChange={(e) => setAreaInput(e.target.value)}
+                    onKeyDown={handleAreaInputKeyDown}
+                    maxLength={MAX_AREA_LENGTH}
+                    placeholder={t('services.form.homeVisitAreasPlaceholder')}
+                    className={inputClass(!!formErrors.home_visit_areas)}
+                  />
+                  <button
+                    type="button"
+                    onClick={addArea}
+                    className="flex-shrink-0 px-4 py-2 text-sm font-medium text-[#445446] border border-[#c5ceba] rounded-lg hover:bg-[#445446]/10 transition-colors"
+                  >
+                    {t('services.form.homeVisitAreasAddBtn')}
+                  </button>
+                </div>
+                {form.home_visit_areas.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {form.home_visit_areas.map((area) => (
+                      <span key={area} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                        {area}
+                        <button type="button" onClick={() => removeArea(area)} className="hover:text-amber-900" aria-label={`Remove ${area}`}>
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-1.5 text-xs text-gray-400">{t('services.form.homeVisitAreasHint')}</p>
+                {formErrors.home_visit_areas && <p className="mt-1.5 text-xs text-red-500">{formErrors.home_visit_areas}</p>}
+              </div>
+            )}
+
             {/* Duration + Currency + Price */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div>
@@ -498,6 +574,11 @@ const ServicesSection = () => {
                   <p className="text-xs text-gray-400">
                     {svc.duration_minutes} min &middot; {formatPrice(svc.price, svc.currency || 'EUR', lng)}
                   </p>
+                  {svc.format === 'HOME_VISIT' && svc.home_visit_areas?.length > 0 && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      {t('services.card.homeVisitAreasLabel')} {svc.home_visit_areas.join(', ')}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-0.5 flex-shrink-0">
