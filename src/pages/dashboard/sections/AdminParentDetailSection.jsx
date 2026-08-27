@@ -392,7 +392,7 @@ const AdminParentDetailSection = () => {
                             <p className="text-xs text-gray-500 mt-0.5 truncate">
                               {b.expert?.user?.name ? `${b.expert.user.name} · ` : ""}
                               {primary}
-                              {b.amount ? ` · £${parseFloat(b.amount).toFixed(2)}` : ""}
+                              {b.amount ? ` · ${new Intl.NumberFormat('en', { style: 'currency', currency: b.currency || 'EUR' }).format(Number(b.amount))}` : ""}
                             </p>
                             {utc && <p className="text-xs text-gray-400">{utc}</p>}
                           </div>

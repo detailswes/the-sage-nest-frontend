@@ -28,8 +28,10 @@ export const formatDate = (iso) =>
       })
     : "—";
 
-export const formatCurrency = (amount) =>
-  amount != null ? `£${parseFloat(amount).toFixed(2)}` : "—";
+export const formatCurrency = (amount, currency = "EUR") =>
+  amount != null
+    ? new Intl.NumberFormat("en", { style: "currency", currency }).format(parseFloat(amount))
+    : "—";
 
 // ─── Shared badges ────────────────────────────────────────────────────────────
 
@@ -206,11 +208,11 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t("bookingModal.labels.amountCharged")}</span>
-                  <span className="font-medium text-[#1F2933]">{formatCurrency(booking.amount)}</span>
+                  <span className="font-medium text-[#1F2933]">{formatCurrency(booking.amount, booking.currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t("bookingModal.labels.platformFee")}</span>
-                  <span className="font-medium text-[#1F2933]">{formatCurrency(booking.platform_fee)}</span>
+                  <span className="font-medium text-[#1F2933]">{formatCurrency(booking.platform_fee, booking.currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t("bookingModal.labels.paymentStatus")}</span>
@@ -236,10 +238,18 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500">{t("bookingModal.labels.refundStatus")}</span>
                     {booking.refund_status === "succeeded" ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
-                        {t("bookingModal.refundStatus.refunded")}
-                      </span>
+                      (booking.refund_amount != null && booking.amount != null &&
+                        parseFloat(booking.refund_amount) < parseFloat(booking.amount)) ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                          {t("bookingModal.refundStatus.partiallyRefunded")}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                          {t("bookingModal.refundStatus.refunded")}
+                        </span>
+                      )
                     ) : booking.refund_status === "pending" ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
@@ -266,7 +276,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                     <div className="flex justify-between">
                       <span className="text-gray-500">{t("bookingModal.labels.amountRefunded")}</span>
                       <span className="font-medium text-[#1F2933]">
-                        {formatCurrency(booking.refund_amount)}
+                        {formatCurrency(booking.refund_amount, booking.currency)}
                         {parseFloat(booking.refund_amount) < parseFloat(booking.amount) && (
                           <span className="ml-1.5 text-xs text-amber-600 font-normal">{t("bookingModal.labels.partial")}</span>
                         )}

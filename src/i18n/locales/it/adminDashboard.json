@@ -792,6 +792,7 @@
     },
     "refundStatus": {
       "refunded": "Rimborsato",
+      "partiallyRefunded": "Rimborsato parzialmente",
       "pending": "Rimborso in sospeso",
       "detailsNotRecorded": "(dettagli non registrati)",
       "notRefunded": "Non rimborsato"
@@ -836,8 +837,8 @@
     },
     "refund": {
       "policyLabel": "Politica:",
-      "amountLabel": "Importo rimborso (£)",
-      "amountHint": "— lascia vuoto per rimborso completo (£{{amount}})",
+      "amountLabel": "Importo rimborso",
+      "amountHint": "— lascia vuoto per rimborso completo ({{amount}})",
       "reasonPlaceholder": "Motivo (opzionale)…",
       "overrideWarning": "Questo importo si discosta dalla politica di cancellazione. È richiesto un motivo di deroga.",
       "overridePlaceholder": "Spiega perché si deroga alla politica…",
@@ -847,10 +848,10 @@
       "tierFull": "rimborso completo (>24 ore)",
       "tierHalf": "rimborso 50% (12–24 ore)",
       "tierNone": "nessun rimborso (<12 ore)",
-      "errGtZero": "L'importo deve essere maggiore di £0,00.",
-      "errExceedsTotal": "L'importo non può superare il totale della prenotazione (£{{amount}}).",
+      "errGtZero": "L'importo deve essere maggiore di 0.",
+      "errExceedsTotal": "L'importo non può superare il totale della prenotazione ({{amount}}).",
       "errOverrideRequired": "È richiesto un motivo di deroga quando l'importo si discosta dalla politica di cancellazione.",
-      "successPartial": "Rimborso parziale di £{{amount}} emesso con successo.",
+      "successPartial": "Rimborso parziale di {{amount}} emesso con successo.",
       "successFull": "Rimborso completo emesso con successo."
     },
     "dispute": {
@@ -882,8 +883,8 @@
       "titleOverride": "Conferma deroga alla politica",
       "titlePartial": "Conferma rimborso parziale",
       "titleFull": "Conferma rimborso completo",
-      "bodyPartial": "Emettere un rimborso parziale di £{{amount}} per la prenotazione #{{id}}?",
-      "bodyFull": "Emettere un rimborso completo di £{{amount}} per la prenotazione #{{id}}?",
+      "bodyPartial": "Emettere un rimborso parziale di {{amount}} per la prenotazione #{{id}}?",
+      "bodyFull": "Emettere un rimborso completo di {{amount}} per la prenotazione #{{id}}?",
       "cannotUndo": "Questa azione non può essere annullata.",
       "overrideLabel": "Motivo deroga:",
       "cancel": "Annulla",
