@@ -794,7 +794,7 @@ const AdminExpertDetailSection = () => {
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-amber-800">{t("expertDetail.bizInfo.dac7Title", { year: expert.dac7.year })}</p>
                           <p className="text-xs text-amber-700 mt-0.5">
-                            {expert.dac7.transaction_count} {t("expertDetail.bizInfo.dac7Transaction", { count: expert.dac7.transaction_count })} &middot; £{expert.dac7.gross_earnings.toFixed(2)} {t("expertDetail.bizInfo.dac7Gross")}
+                            {expert.dac7.transaction_count} {t("expertDetail.bizInfo.dac7Transaction", { count: expert.dac7.transaction_count })} &middot; {new Intl.NumberFormat("en", { style: "currency", currency: expert.dac7.currency || expert.currency || "EUR" }).format(expert.dac7.gross_earnings)} {t("expertDetail.bizInfo.dac7Gross")}
                             {expert.dac7.threshold_reason === "both"
                               ? t("expertDetail.bizInfo.dac7Suffix_both")
                               : expert.dac7.threshold_reason === "transactions"
@@ -813,7 +813,7 @@ const AdminExpertDetailSection = () => {
                     ) : summary ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
                         {(() => {
-                          const cur = expert.services?.find(s => s.currency)?.currency || 'EUR';
+                          const cur = summary.currency || expert.currency || expert.services?.find(s => s.currency)?.currency || 'EUR';
                           const fmt = (n) => new Intl.NumberFormat('en', { style: 'currency', currency: cur }).format(n);
                           return [
                             { key: "gross",       value: fmt(summary.total_gross) },
