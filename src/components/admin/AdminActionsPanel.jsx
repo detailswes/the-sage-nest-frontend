@@ -35,6 +35,14 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
 
   const loading = cancelling || refunding || disputing || retrying || resolving;
 
+  // Format money in the booking's own currency (payments are charged in the
+  // expert's currency, not always GBP).
+  const fmtAmount = (n) =>
+    new Intl.NumberFormat("en", {
+      style: "currency",
+      currency: booking.currency || "EUR",
+    }).format(Number(n));
+
   const [activeForm, setActiveForm] = useState(null);
 
   const [cancelReason,          setCancelReason]          = useState("");
@@ -92,7 +100,7 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
         return;
       }
       if (parsedAmount > total) {
-        setRefundAmountError(t("adminActions.refund.errExceedsTotal", { amount: total.toFixed(2) }));
+        setRefundAmountError(t("adminActions.refund.errExceedsTotal", { amount: fmtAmount(total) }));
         return;
       }
     }
@@ -120,7 +128,7 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
       }).unwrap();
       const isPartial = pendingRefundAmount != null && pendingRefundAmount < total;
       toast.success(isPartial
-        ? t("adminActions.refund.successPartial", { amount: pendingRefundAmount.toFixed(2) })
+        ? t("adminActions.refund.successPartial", { amount: fmtAmount(pendingRefundAmount) })
         : t("adminActions.refund.successFull"));
       dismissForm();
       onActionComplete();
@@ -250,13 +258,13 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
         return (
           <div className="space-y-2.5">
             <div className="px-2.5 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-              <span className="font-semibold">{t("adminActions.refund.policyLabel")}</span> £{policyAmount.toFixed(2)} ({policyPercent}% — {t(`adminActions.refund.${tierKey}`)})
+              <span className="font-semibold">{t("adminActions.refund.policyLabel")}</span> {fmtAmount(policyAmount)} ({policyPercent}% — {t(`adminActions.refund.${tierKey}`)})
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">
                 {t("adminActions.refund.amountLabel")}{" "}
                 <span className="font-normal text-gray-400">
-                  {t("adminActions.refund.amountHint", { amount: parseFloat(booking.amount).toFixed(2) })}
+                  {t("adminActions.refund.amountHint", { amount: fmtAmount(booking.amount) })}
                 </span>
               </label>
               <input type="number" min="0.01" step="0.01" max={parseFloat(booking.amount)}
@@ -366,8 +374,8 @@ export default function AdminActionsPanel({ booking, onActionComplete }) {
             </h3>
             <p className="text-sm text-gray-500 text-center mb-2">
               {pendingRefundAmount != null
-                ? t("adminActions.refundConfirm.bodyPartial", { amount: pendingRefundAmount.toFixed(2), id: booking.id })
-                : t("adminActions.refundConfirm.bodyFull", { amount: parseFloat(booking.amount).toFixed(2), id: booking.id })}
+                ? t("adminActions.refundConfirm.bodyPartial", { amount: fmtAmount(pendingRefundAmount), id: booking.id })
+                : t("adminActions.refundConfirm.bodyFull", { amount: fmtAmount(booking.amount), id: booking.id })}
               {" "}{t("adminActions.refundConfirm.cannotUndo")}
             </p>
             {pendingOverrideReason && (

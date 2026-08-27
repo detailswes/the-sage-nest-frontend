@@ -792,6 +792,7 @@
     },
     "refundStatus": {
       "refunded": "Refunded",
+      "partiallyRefunded": "Partially refunded",
       "pending": "Refund pending",
       "detailsNotRecorded": "(details not recorded)",
       "notRefunded": "Not refunded"
@@ -836,8 +837,8 @@
     },
     "refund": {
       "policyLabel": "Policy:",
-      "amountLabel": "Refund amount (£)",
-      "amountHint": "— leave blank for full refund (£{{amount}})",
+      "amountLabel": "Refund amount",
+      "amountHint": "— leave blank for full refund ({{amount}})",
       "reasonPlaceholder": "Reason (optional)…",
       "overrideWarning": "This amount deviates from the cancellation policy. An override reason is required.",
       "overridePlaceholder": "Explain why the policy is being overridden…",
@@ -847,10 +848,10 @@
       "tierFull": "full refund (>24 h)",
       "tierHalf": "50% refund (12–24 h)",
       "tierNone": "no refund (<12 h)",
-      "errGtZero": "Amount must be greater than £0.00.",
-      "errExceedsTotal": "Amount cannot exceed the booking total (£{{amount}}).",
+      "errGtZero": "Amount must be greater than 0.",
+      "errExceedsTotal": "Amount cannot exceed the booking total ({{amount}}).",
       "errOverrideRequired": "An override reason is required when the amount deviates from the cancellation policy.",
-      "successPartial": "Partial refund of £{{amount}} issued successfully.",
+      "successPartial": "Partial refund of {{amount}} issued successfully.",
       "successFull": "Full refund issued successfully."
     },
     "dispute": {
@@ -882,8 +883,8 @@
       "titleOverride": "Confirm Policy Override",
       "titlePartial": "Confirm Partial Refund",
       "titleFull": "Confirm Full Refund",
-      "bodyPartial": "Issue a partial refund of £{{amount}} for booking #{{id}}?",
-      "bodyFull": "Issue a full refund of £{{amount}} for booking #{{id}}?",
+      "bodyPartial": "Issue a partial refund of {{amount}} for booking #{{id}}?",
+      "bodyFull": "Issue a full refund of {{amount}} for booking #{{id}}?",
       "cannotUndo": "This action cannot be undone.",
       "overrideLabel": "Override reason:",
       "cancel": "Cancel",

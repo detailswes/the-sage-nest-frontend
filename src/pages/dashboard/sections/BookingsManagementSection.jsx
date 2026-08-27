@@ -239,7 +239,7 @@ const BookingsManagementSection = () => {
                     );
                   })()}
                 </span>
-                <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(b.amount)}</span>
+                <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(b.amount, b.currency)}</span>
                 <div className="flex flex-col items-start gap-1">
                   <BookingStatusBadge status={b.status} />
                   {b.is_disputed && <DisputedBadge />}
@@ -296,7 +296,7 @@ const BookingsManagementSection = () => {
                     <BookingStatusBadge status={b.status} />
                     {b.is_disputed && <DisputedBadge />}
                     {b.amount && (
-                      <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(b.amount)}</span>
+                      <span className="text-sm font-medium text-[#1F2933]">{formatCurrency(b.amount, b.currency)}</span>
                     )}
                   </div>
                 </button>
