@@ -307,7 +307,7 @@ const ExpertCard = ({ expert, isActioning, onAction, onNavigate, t }) => {
             )}
             {expert.dac7?.threshold_reached && (
               <span
-                title={`DAC7 threshold reached (${expert.dac7.year}): ${expert.dac7.transaction_count} transactions · £${expert.dac7.gross_earnings.toFixed(2)} gross`}
+                title={`DAC7 threshold reached (${expert.dac7.year}): ${expert.dac7.transaction_count} transactions · ${new Intl.NumberFormat("en", { style: "currency", currency: expert.dac7.currency || expert.currency || "EUR" }).format(expert.dac7.gross_earnings)} gross`}
                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300"
               >
                 <WarningTriangleIcon className="w-2.5 h-2.5" />
@@ -755,7 +755,7 @@ const ExpertManagementSection = () => {
                   <div>
                     {expert.dac7?.threshold_reached ? (
                       <span
-                        title={`DAC7 threshold reached (${expert.dac7.year}): ${expert.dac7.transaction_count} transactions · £${expert.dac7.gross_earnings.toFixed(2)} gross`}
+                        title={`DAC7 threshold reached (${expert.dac7.year}): ${expert.dac7.transaction_count} transactions · ${new Intl.NumberFormat("en", { style: "currency", currency: expert.dac7.currency || expert.currency || "EUR" }).format(expert.dac7.gross_earnings)} gross`}
                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300 cursor-default"
                       >
                         <WarningTriangleIcon className="w-2.5 h-2.5" />
