@@ -504,16 +504,22 @@ function RefundLogView() {
                       <span className="text-gray-400">{t("paymentsMgmt.refundLog.col.parent")}:</span> {b.parent.name}
                     </p>
                   )}
-                  <div className="flex items-center justify-between gap-2 pt-0.5">
-                    <span className="text-xs text-gray-400">
-                      {b ? formatCurrency(b.amount, b.currency) : "—"} →{" "}
-                      <span className="text-red-500 font-medium">−{b ? formatCurrency(b.refund_amount, b.currency) : "—"}</span>
-                      {isPartial && <span className="text-gray-400"> ({t("paymentsMgmt.partial")})</span>}
-                    </span>
-                    {b?.stripe_refund_id && (
-                      <span className="text-xs font-mono text-gray-400 truncate max-w-[120px]">{b.stripe_refund_id}</span>
-                    )}
-                  </div>
+                  {b ? (
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <span className="text-xs text-gray-400">
+                        {formatCurrency(b.amount, b.currency)} →{" "}
+                        <span className="text-red-500 font-medium">−{formatCurrency(b.refund_amount, b.currency)}</span>
+                        {isPartial && <span className="text-gray-400"> ({t("paymentsMgmt.partial")})</span>}
+                      </span>
+                      {b.stripe_refund_id && (
+                        <span className="text-xs font-mono text-gray-400 truncate max-w-[120px]">{b.stripe_refund_id}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 leading-snug pt-0.5">
+                      {e.note || t("paymentsMgmt.refundLog.bookingUnavailable")}
+                    </p>
+                  )}
                 </div>
               );
             })}
@@ -596,25 +602,33 @@ function RefundLogView() {
                   <span className="text-sm font-mono text-gray-500">
                     #{e.booking_id}
                   </span>
-                  <span className="text-sm text-[#1F2933] truncate">
-                    {b?.parent?.name || "—"}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {b ? formatCurrency(b.amount, b.currency) : "—"}
-                  </span>
-                  <span className="flex flex-col gap-0.5 leading-tight">
-                    <span className="text-sm font-medium text-red-500">
-                      −{b ? formatCurrency(b.refund_amount, b.currency) : "—"}
-                    </span>
-                    {isPartial && (
-                      <span className="text-xs text-gray-400">
-                        {t("paymentsMgmt.partial")}
+                  {b ? (
+                    <>
+                      <span className="text-sm text-[#1F2933] truncate">
+                        {b.parent?.name || "—"}
                       </span>
-                    )}
-                  </span>
-                  <span className="text-xs font-mono text-gray-400 truncate">
-                    {b?.stripe_refund_id || "—"}
-                  </span>
+                      <span className="text-sm text-gray-500">
+                        {formatCurrency(b.amount, b.currency)}
+                      </span>
+                      <span className="flex flex-col gap-0.5 leading-tight">
+                        <span className="text-sm font-medium text-red-500">
+                          −{formatCurrency(b.refund_amount, b.currency)}
+                        </span>
+                        {isPartial && (
+                          <span className="text-xs text-gray-400">
+                            {t("paymentsMgmt.partial")}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs font-mono text-gray-400 truncate">
+                        {b.stripe_refund_id || "—"}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="col-span-4 text-xs text-gray-500 leading-snug">
+                      {e.note || t("paymentsMgmt.refundLog.bookingUnavailable")}
+                    </span>
+                  )}
                 </div>
               );
             })}

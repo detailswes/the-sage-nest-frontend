@@ -339,6 +339,7 @@
     },
     "refundLog": {
       "noRefunds": "Nessun rimborso emesso finora.",
+      "bookingUnavailable": "Record della prenotazione non più disponibile",
       "note_one": "{{count}} rimborso registrato. L'ID rimborso Stripe può essere utilizzato per verificare nel dashboard Stripe.",
       "note_other": "{{count}} rimborsi registrati. L'ID rimborso Stripe può essere utilizzato per verificare nel dashboard Stripe.",
       "showing": "Visualizzazione",

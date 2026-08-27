@@ -339,6 +339,7 @@
     },
     "refundLog": {
       "noRefunds": "No refunds have been issued yet.",
+      "bookingUnavailable": "Booking record no longer available",
       "note_one": "{{count}} refund recorded. Stripe Refund ID can be used to verify in the Stripe dashboard.",
       "note_other": "{{count}} refunds recorded. Stripe Refund ID can be used to verify in the Stripe dashboard.",
       "showing": "Showing",
