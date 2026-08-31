@@ -57,18 +57,29 @@ const specialistPayout = (transaction) => {
 
 // ─── Payment status helpers ───────────────────────────────────────────────────
 
+const isPartialRefund = (tx) =>
+  !!tx &&
+  tx.refund_status === "succeeded" &&
+  tx.refund_amount != null &&
+  tx.amount != null &&
+  parseFloat(tx.refund_amount) > 0 &&
+  parseFloat(tx.refund_amount) < parseFloat(tx.amount);
+
 function getPaymentStatus(tx) {
   if (
     ["CONFIRMED", "COMPLETED"].includes(tx.status) &&
     tx.transfer_status === "failed"
   )
     return "transfer_failed";
+  if (tx.status === "REFUNDED") return "refunded";
+  // A partial refund leaves the booking CONFIRMED/COMPLETED/CANCELLED — flag it
+  // rather than letting it read as a plain "Succeeded" or "Refunded".
+  if (isPartialRefund(tx)) return "partially_refunded";
   if (
     ["CONFIRMED", "COMPLETED"].includes(tx.status) &&
     tx.stripe_payment_intent_id
   )
     return "succeeded";
-  if (tx.status === "REFUNDED") return "refunded";
   if (tx.status === "PENDING_PAYMENT") return "pending";
   if (tx.status === "CANCELLED") {
     if (tx.stripe_payment_intent_id) {
@@ -84,6 +95,7 @@ function getPaymentStatus(tx) {
 const PAYMENT_STATUS_CLS = {
   succeeded: "bg-green-100 text-green-700",
   refunded: "bg-gray-100 text-gray-600",
+  partially_refunded: "bg-amber-100 text-amber-700",
   refund_pending: "bg-amber-100 text-amber-700",
   captured_cancelled: "bg-orange-100 text-orange-700",
   transfer_failed: "bg-red-100 text-red-600",
@@ -338,21 +350,25 @@ function TransactionDetailModal({ bookingId, onClose }) {
                     </span>
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        booking.refund_status === "succeeded"
+                        isPartialRefund(booking)
+                          ? "bg-amber-100 text-amber-700"
+                          : booking.refund_status === "succeeded"
                           ? "bg-green-100 text-green-700"
                           : booking.refund_status === "pending"
                           ? "bg-amber-100 text-amber-700"
                           : "bg-red-100 text-red-600"
                       }`}
                     >
-                      {t(
-                        `paymentsMgmt.paymentStatus.${booking.refund_status}`,
-                        {
-                          defaultValue:
-                            booking.refund_status.charAt(0).toUpperCase() +
-                            booking.refund_status.slice(1),
-                        }
-                      )}
+                      {isPartialRefund(booking)
+                        ? t("paymentsMgmt.paymentStatus.partially_refunded")
+                        : t(
+                            `paymentsMgmt.paymentStatus.${booking.refund_status}`,
+                            {
+                              defaultValue:
+                                booking.refund_status.charAt(0).toUpperCase() +
+                                booking.refund_status.slice(1),
+                            }
+                          )}
                     </span>
                   </div>
                 )}

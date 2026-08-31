@@ -104,18 +104,29 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const BookingStatusBadge = ({ status }) => {
+const isPartialRefund = (b) =>
+  !!b &&
+  b.refund_status === "succeeded" &&
+  b.refund_amount != null &&
+  b.amount != null &&
+  parseFloat(b.refund_amount) > 0 &&
+  parseFloat(b.refund_amount) < parseFloat(b.amount);
+
+const BookingStatusBadge = ({ status, booking }) => {
   const { t } = useTranslation("adminDashboard");
+  const effectiveStatus =
+    status !== "REFUNDED" && isPartialRefund(booking) ? "PARTIALLY_REFUNDED" : status;
   const cls = {
-    CONFIRMED:       "bg-green-100 text-green-700",
-    COMPLETED:       "bg-blue-100 text-blue-700",
-    CANCELLED:       "bg-red-100 text-red-600",
-    REFUNDED:        "bg-gray-100 text-gray-600",
-    PENDING_PAYMENT: "bg-amber-100 text-amber-700",
-  }[status] || "bg-gray-100 text-gray-500";
+    CONFIRMED:          "bg-green-100 text-green-700",
+    COMPLETED:          "bg-blue-100 text-blue-700",
+    CANCELLED:          "bg-red-100 text-red-600",
+    REFUNDED:           "bg-gray-100 text-gray-600",
+    PARTIALLY_REFUNDED: "bg-amber-100 text-amber-700",
+    PENDING_PAYMENT:    "bg-amber-100 text-amber-700",
+  }[effectiveStatus] || "bg-gray-100 text-gray-500";
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
-      {t(`expertDetail.bookingStatusBadge.${status}`, { defaultValue: status })}
+      {t(`expertDetail.bookingStatusBadge.${effectiveStatus}`, { defaultValue: effectiveStatus })}
     </span>
   );
 };
@@ -1005,7 +1016,7 @@ const AdminExpertDetailSection = () => {
                             </span>
                           </p>
                         </div>
-                        <BookingStatusBadge status={b.status} />
+                        <BookingStatusBadge status={b.status} booking={b} />
                       </button>
                     ))}
                   </div>

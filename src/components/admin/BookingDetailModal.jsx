@@ -35,19 +35,34 @@ export const formatCurrency = (amount, currency = "EUR") =>
 
 // ─── Shared badges ────────────────────────────────────────────────────────────
 
-export const BookingStatusBadge = ({ status }) => {
+// True when a booking has a succeeded refund for less than the full amount.
+// A full REFUNDED status is not "partial"; neither is a zero / missing refund.
+export const isPartialRefund = (b) =>
+  !!b &&
+  b.refund_status === "succeeded" &&
+  b.refund_amount != null &&
+  b.amount != null &&
+  parseFloat(b.refund_amount) > 0 &&
+  parseFloat(b.refund_amount) < parseFloat(b.amount);
+
+export const BookingStatusBadge = ({ status, booking }) => {
   const { t } = useTranslation("adminDashboard");
+  // A partial refund keeps the booking CONFIRMED/COMPLETED/CANCELLED on the
+  // backend — surface it here so tables don't read as a plain "Refunded".
+  const effectiveStatus =
+    status !== "REFUNDED" && isPartialRefund(booking) ? "PARTIALLY_REFUNDED" : status;
   const cls = {
-    CONFIRMED:       "bg-green-100 text-green-700",
-    COMPLETED:       "bg-blue-100 text-blue-700",
-    CANCELLED:       "bg-red-100 text-red-600",
-    REFUNDED:        "bg-gray-100 text-gray-600",
-    PENDING_PAYMENT: "bg-amber-100 text-amber-700",
-    PENDING:         "bg-amber-100 text-amber-700",
-  }[status] || "bg-gray-100 text-gray-500";
+    CONFIRMED:          "bg-green-100 text-green-700",
+    COMPLETED:          "bg-blue-100 text-blue-700",
+    CANCELLED:          "bg-red-100 text-red-600",
+    REFUNDED:           "bg-gray-100 text-gray-600",
+    PARTIALLY_REFUNDED: "bg-amber-100 text-amber-700",
+    PENDING_PAYMENT:    "bg-amber-100 text-amber-700",
+    PENDING:            "bg-amber-100 text-amber-700",
+  }[effectiveStatus] || "bg-gray-100 text-gray-500";
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${cls}`}>
-      {t(`bookingModal.bookingStatus.${status}`, { defaultValue: status })}
+      {t(`bookingModal.bookingStatus.${effectiveStatus}`, { defaultValue: effectiveStatus })}
     </span>
   );
 };
@@ -116,7 +131,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
             <h2 className="text-base font-semibold text-[#1F2933]">
               {t("bookingModal.title", { id: bookingId })}
             </h2>
-            {booking && <BookingStatusBadge status={booking.status} />}
+            {booking && <BookingStatusBadge status={booking.status} booking={booking} />}
             {booking?.is_disputed && <DisputedBadge />}
           </div>
           <button
@@ -238,8 +253,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500">{t("bookingModal.labels.refundStatus")}</span>
                     {booking.refund_status === "succeeded" ? (
-                      (booking.refund_amount != null && booking.amount != null &&
-                        parseFloat(booking.refund_amount) < parseFloat(booking.amount)) ? (
+                      isPartialRefund(booking) ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
                           {t("bookingModal.refundStatus.partiallyRefunded")}

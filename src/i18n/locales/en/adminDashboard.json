@@ -294,6 +294,7 @@
     "paymentStatus": {
       "succeeded": "Succeeded",
       "refunded": "Refunded",
+      "partially_refunded": "Partially Refunded",
       "refund_pending": "Refund Pending",
       "captured_cancelled": "No Refund",
       "transfer_failed": "Transfer Failed",
@@ -301,7 +302,8 @@
       "failed": "Failed",
       "verbose": {
         "captured_cancelled": "Captured — No Refund",
-        "transfer_failed": "Captured — Transfer Failed"
+        "transfer_failed": "Captured — Transfer Failed",
+        "partially_refunded": "Captured — Partially Refunded"
       }
     },
     "pagination": {
@@ -648,6 +650,7 @@
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
       "REFUNDED": "Refunded",
+      "PARTIALLY_REFUNDED": "Partially refunded",
       "PENDING_PAYMENT": "Pending Payment"
     },
     "formatBadge": {
@@ -811,6 +814,7 @@
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
       "REFUNDED": "Refunded",
+      "PARTIALLY_REFUNDED": "Partially refunded",
       "PENDING_PAYMENT": "Pending Payment",
       "PENDING": "Pending"
     },

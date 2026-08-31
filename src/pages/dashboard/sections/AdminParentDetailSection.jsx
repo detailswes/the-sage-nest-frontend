@@ -397,7 +397,7 @@ const AdminParentDetailSection = () => {
                             {utc && <p className="text-xs text-gray-400">{utc}</p>}
                           </div>
                           <div className="flex-shrink-0">
-                            <BookingStatusBadge status={b.status} />
+                            <BookingStatusBadge status={b.status} booking={b} />
                           </div>
                         </button>
                       );
