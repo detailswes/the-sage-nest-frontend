@@ -110,12 +110,11 @@ const isPartialRefund = (b) =>
   b.refund_amount != null &&
   b.amount != null &&
   parseFloat(b.refund_amount) > 0 &&
-  parseFloat(b.refund_amount) < parseFloat(b.amount);
+  parseFloat(b.amount) - parseFloat(b.refund_amount) > 0.005;
 
 const BookingStatusBadge = ({ status, booking }) => {
   const { t } = useTranslation("adminDashboard");
-  const effectiveStatus =
-    status !== "REFUNDED" && isPartialRefund(booking) ? "PARTIALLY_REFUNDED" : status;
+  const effectiveStatus = isPartialRefund(booking) ? "PARTIALLY_REFUNDED" : status;
   const cls = {
     CONFIRMED:          "bg-green-100 text-green-700",
     COMPLETED:          "bg-blue-100 text-blue-700",
