@@ -791,6 +791,7 @@
       "capturedTransferFailed": "Captured — transfer failed",
       "captured": "Payment captured",
       "capturedRefunded": "Captured — refunded",
+      "capturedPartiallyRefunded": "Captured — partially refunded",
       "capturedRefundPending": "Captured — refund pending",
       "capturedCancelled": "Captured — cancelled"
     },

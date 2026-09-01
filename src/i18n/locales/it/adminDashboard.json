@@ -791,6 +791,7 @@
       "capturedTransferFailed": "Acquisito — trasferimento fallito",
       "captured": "Pagamento acquisito",
       "capturedRefunded": "Acquisito — rimborsato",
+      "capturedPartiallyRefunded": "Acquisito — rimborsato parzialmente",
       "capturedRefundPending": "Acquisito — rimborso in sospeso",
       "capturedCancelled": "Acquisito — annullato"
     },

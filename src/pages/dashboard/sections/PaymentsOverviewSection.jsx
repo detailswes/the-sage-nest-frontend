@@ -63,7 +63,7 @@ const isPartialRefund = (tx) =>
   tx.refund_amount != null &&
   tx.amount != null &&
   parseFloat(tx.refund_amount) > 0 &&
-  parseFloat(tx.refund_amount) < parseFloat(tx.amount);
+  parseFloat(tx.amount) - parseFloat(tx.refund_amount) > 0.005;
 
 function getPaymentStatus(tx) {
   if (
@@ -71,10 +71,11 @@ function getPaymentStatus(tx) {
     tx.transfer_status === "failed"
   )
     return "transfer_failed";
-  if (tx.status === "REFUNDED") return "refunded";
-  // A partial refund leaves the booking CONFIRMED/COMPLETED/CANCELLED — flag it
-  // rather than letting it read as a plain "Succeeded" or "Refunded".
+  // A partial refund can sit on any status (CONFIRMED / CANCELLED / even
+  // REFUNDED) — check it before the plain "refunded"/"succeeded" outcomes so
+  // it never reads as a full refund.
   if (isPartialRefund(tx)) return "partially_refunded";
+  if (tx.status === "REFUNDED") return "refunded";
   if (
     ["CONFIRMED", "COMPLETED"].includes(tx.status) &&
     tx.stripe_payment_intent_id

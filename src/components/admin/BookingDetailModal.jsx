@@ -35,22 +35,23 @@ export const formatCurrency = (amount, currency = "EUR") =>
 
 // ─── Shared badges ────────────────────────────────────────────────────────────
 
-// True when a booking has a succeeded refund for less than the full amount.
-// A full REFUNDED status is not "partial"; neither is a zero / missing refund.
+// True when a booking has a succeeded refund for meaningfully less than the full
+// amount. Driven purely by refund_amount vs amount — a booking can carry
+// status REFUNDED and still only have had part of the charge returned.
+// The 0.005 epsilon absorbs decimal-rounding noise on an effectively-full refund.
 export const isPartialRefund = (b) =>
   !!b &&
   b.refund_status === "succeeded" &&
   b.refund_amount != null &&
   b.amount != null &&
   parseFloat(b.refund_amount) > 0 &&
-  parseFloat(b.refund_amount) < parseFloat(b.amount);
+  parseFloat(b.amount) - parseFloat(b.refund_amount) > 0.005;
 
 export const BookingStatusBadge = ({ status, booking }) => {
   const { t } = useTranslation("adminDashboard");
-  // A partial refund keeps the booking CONFIRMED/COMPLETED/CANCELLED on the
-  // backend — surface it here so tables don't read as a plain "Refunded".
-  const effectiveStatus =
-    status !== "REFUNDED" && isPartialRefund(booking) ? "PARTIALLY_REFUNDED" : status;
+  // Show "Partially refunded" whenever only part of the charge came back —
+  // regardless of whether the row's status is CONFIRMED, CANCELLED or REFUNDED.
+  const effectiveStatus = isPartialRefund(booking) ? "PARTIALLY_REFUNDED" : status;
   const cls = {
     CONFIRMED:          "bg-green-100 text-green-700",
     COMPLETED:          "bg-blue-100 text-blue-700",
@@ -107,6 +108,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
 
   const getPaymentStatusLabel = () => {
     if (!booking?.stripe_payment_intent_id) return t("bookingModal.paymentStatus.noPayment");
+    if (isPartialRefund(booking)) return t("bookingModal.paymentStatus.capturedPartiallyRefunded");
     if (["CONFIRMED", "COMPLETED"].includes(booking.status)) {
       if (booking.transfer_status === "failed") return t("bookingModal.paymentStatus.capturedTransferFailed");
       return t("bookingModal.paymentStatus.captured");
@@ -246,7 +248,7 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
             </div>
 
             {/* Refund details */}
-            {(booking.status === "CANCELLED" || booking.status === "REFUNDED") && booking.stripe_payment_intent_id && (
+            {(booking.status === "CANCELLED" || booking.status === "REFUNDED" || booking.refund_status || booking.refund_amount != null) && booking.stripe_payment_intent_id && (
               <div className="px-6 py-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{t("bookingModal.sections.refund")}</p>
                 <div className="space-y-2 text-sm">
