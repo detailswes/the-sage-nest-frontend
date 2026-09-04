@@ -49,8 +49,10 @@ const withWebflowLocale = (url, lng) => {
 };
 
 // ─── Steps ───────────────────────────────────────────────────────────────────
-// Booking flow spec v1.7 §2: five steps signed out, four signed in — Account
-// is skipped entirely (and never counted) once the parent is authenticated.
+// Service selection happens on Webflow now, so the in-app flow starts at Slot:
+// four steps signed out, three signed in — Account is skipped entirely (and
+// never counted) once the parent is authenticated. SERVICE is retained only so
+// existing links/returnTo URLs that still carry it don't break.
 const STEPS = { SERVICE: 'service', SLOT: 'slot', ACCOUNT: 'account', DETAILS: 'details', CONFIRM: 'confirm' };
 
 // Every delivery format the parent can book. Kept as one list so the selector,
@@ -77,7 +79,6 @@ const EMPTY_BILLING = {
 const StepIndicator = ({ step, signedIn }) => {
   const { t } = useTranslation('parentBookings');
   const steps = [
-    { key: STEPS.SERVICE, label: t('steps.service') },
     { key: STEPS.SLOT,    label: t('steps.time') },
     ...(signedIn ? [] : [{ key: STEPS.ACCOUNT, label: t('steps.account') }]),
     { key: STEPS.DETAILS, label: t('steps.details') },
@@ -222,16 +223,6 @@ const VerificationPendingPanel = ({ email, returnTo, onSwitchToLogin }) => {
   );
 };
 
-// ─── Cluster badges ───────────────────────────────────────────────────────────
-const CLUSTER_BADGE = {
-  FOR_PARENTS: { label: 'For the Parents', cls: 'bg-pink-100 text-pink-700' },
-  FOR_BABY:    { label: 'For the Baby',    cls: 'bg-cyan-100 text-cyan-700' },
-  FOR_FAMILY:  { label: 'For the Family',  cls: 'bg-teal-100 text-teal-700' },
-  PACKAGE:     { label: 'Package',         cls: 'bg-amber-100 text-amber-700' },
-  GIFT:        { label: 'Gift',            cls: 'bg-green-100 text-green-700' },
-  EVENT:       { label: 'Event',           cls: 'bg-violet-100 text-violet-700' },
-};
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatPrice(price, currency = 'EUR', lng = 'en') {
   return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', { style: 'currency', currency }).format(Number(price));
@@ -264,44 +255,6 @@ function maxDate(days) {
   const d = new Date(); d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
 }
-
-const DESCRIPTION_WORD_LIMIT = 20;
-function truncateWords(text, limit) {
-  const words = text.split(' ');
-  if (words.length <= limit) return { short: text, truncated: false };
-  return { short: words.slice(0, limit).join(' ') + '…', truncated: true };
-}
-
-// ─── Expert header (SERVICE step only) ───────────────────────────────────────
-const ExpertHeader = ({ expert }) => {
-  const [imgSrc, setImgSrc] = useState(getProfileImageUrl(expert?.profile_image));
-  // `expert` arrives one render late (see the fetchedExpert useEffect below),
-  // so the useState initializer above sees `expert=null` on this component's
-  // first mount and never re-runs — re-sync whenever the actual URL changes.
-  useEffect(() => {
-    setImgSrc(getProfileImageUrl(expert?.profile_image));
-  }, [expert?.profile_image]);
-  const initials = expert?.user?.name
-    ? expert.user.name.trim().split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-    : '?';
-
-  return (
-    <div className="flex items-center gap-3 mb-6">
-      {imgSrc ? (
-        <img src={imgSrc} alt={expert?.user?.name} onError={() => setImgSrc(null)}
-          className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
-      ) : (
-        <div className="w-12 h-12 rounded-full bg-[#445446] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 select-none">
-          {initials}
-        </div>
-      )}
-      <div className="min-w-0">
-        <p className="font-semibold text-[#1F2933]">{expert?.user?.name}</p>
-        {expert?.position && <p className="text-sm text-[#445446]">{expert.position}</p>}
-      </div>
-    </div>
-  );
-};
 
 // ─── Inline Login form (Account step) ────────────────────────────────────────
 // Plain credentials form — no consent UI. Consent capture happens later in
@@ -516,7 +469,9 @@ const BookPage = () => {
   );
   const fromPastBookings = !!locationState?.restore?.fromPastBookings;
 
-  const [step,            setStep]           = useState(STEPS.SERVICE);
+  // Service selection screen removed — the parent arrives from Webflow with the
+  // service already chosen (serviceId in the URL), so the flow starts on SLOT.
+  const [step,            setStep]           = useState(STEPS.SLOT);
   const [error,           setError]          = useState('');
 
   const [selectedExpert,  setSelectedExpert]  = useState(() => locationState?.restore?.expert || null);
@@ -526,7 +481,6 @@ const BookPage = () => {
   const [selectedSlot,    setSelectedSlot]    = useState(null);
   const [selectedFormat,  setSelectedFormat]  = useState(() => locationState?.restore?.format || 'ONLINE');
   const [monthArgs,       setMonthArgs]       = useState(null);
-  const [expandedDesc,    setExpandedDesc]    = useState({});
 
   // Account step
   const [authTab,              setAuthTab]              = useState('register');
@@ -599,7 +553,12 @@ const BookPage = () => {
   );
 
   // ── Derive loading/error from query state ─────────────────────────────────
-  const loading = !locationState?.restore && !!expertIdParam && expertLoading;
+  // Keep the spinner up until the URL's service has resolved against the expert
+  // (no service selection screen to fall back on) — unless it failed, in which
+  // case the error view below takes over.
+  const loading = !locationState?.restore && !!expertIdParam && (
+    expertLoading || (!!serviceIdParam && !selectedService && !error)
+  );
 
   // ── Init effects ──────────────────────────────────────────────────────────
 
@@ -628,21 +587,27 @@ const BookPage = () => {
     if (!returnUrlParam && fetchedExpert.webflow_slug) {
       setEffectiveReturnUrl(withWebflowLocale(`${WEBFLOW_EXPERT_BASE_URL}/${fetchedExpert.webflow_slug}`, lng));
     }
-    if (serviceIdParam) {
-      const svc = (fetchedExpert.services || []).find(
-        (s) => String(s.id) === String(serviceIdParam),
-      );
-      if (svc) {
-        setSelectedService(svc);
-        const fmt = formatParam || svc.format;
-        if (fmt) setSelectedFormat(fmt);
-        if (slotStartParam) {
-          setSelectedSlot({ start: slotStartParam });
-          // Signed in already (e.g. returning from email verification while
-          // logged in) skips Account entirely, straight to Details.
-          setStep(user ? STEPS.DETAILS : STEPS.ACCOUNT);
-        }
-      }
+    // Service selection screen removed — the service must arrive in the URL and
+    // resolve against this expert, otherwise there is nothing to book.
+    if (!serviceIdParam) {
+      setError('No service specified. Please start from the expert’s page.');
+      return;
+    }
+    const svc = (fetchedExpert.services || []).find(
+      (s) => String(s.id) === String(serviceIdParam),
+    );
+    if (!svc) {
+      setError('That service is no longer available. Please start from the expert’s page.');
+      return;
+    }
+    setSelectedService(svc);
+    const fmt = formatParam || svc.format;
+    if (fmt) setSelectedFormat(fmt);
+    if (slotStartParam) {
+      setSelectedSlot({ start: slotStartParam });
+      // Signed in already (e.g. returning from email verification while
+      // logged in) skips Account entirely, straight to Details.
+      setStep(user ? STEPS.DETAILS : STEPS.ACCOUNT);
     }
   }, [fetchedExpert]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -852,126 +817,15 @@ const BookPage = () => {
     );
   }
 
-  // ── Step: SERVICE ─────────────────────────────────────────────────────────
-  if (step === STEPS.SERVICE) {
-    const services = (detail?.services || []).filter((s) => s.is_active !== false);
-    return (
-      <div>
-        <a href={effectiveReturnUrl}
-          className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
-          <ChevronLeftIcon className="w-4 h-4" />
-          {t('serviceStep.back')}
-        </a>
-
-        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6">
-          <StepIndicator step={STEPS.SERVICE} signedIn={!!user} />
-          <ExpertHeader expert={detail} />
-
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-[#445446]">{t('serviceStep.title', { name: selectedExpert?.user?.name })}</h2>
-            <p className="text-sm text-[#5e6d5b] font-medium mt-1">{t('serviceStep.subtitle')}</p>
-          </div>
-
-          {services.length === 0 ? (
-            <p className="text-sm text-gray-500">This expert has no active services yet.</p>
-          ) : (
-          <div className="space-y-3">
-            {services.map((service) => {
-              const isSelected = selectedService?.id === service.id;
-              return (
-                <div key={service.id}
-                  onClick={() => {
-                    setSelectedService(service);
-                    if (service.format) setSelectedFormat(service.format);
-                  }}
-                  className={`rounded-xl border p-4 cursor-pointer transition-all duration-150 ${
-                    isSelected
-                      ? 'bg-[#dfe2d7]/20 border-[#445446] ring-1 ring-[#445446]/20 shadow-sm'
-                      : 'bg-[#dfe2d7]/10 border-[#c5ceba] hover:border-[#445446]/50 hover:shadow-sm'
-                  }`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-[#1F2933]">{service.title}</p>
-                      {service.description && (() => {
-                        const { short, truncated } = truncateWords(service.description, DESCRIPTION_WORD_LIMIT);
-                        const isExpanded = !!expandedDesc[service.id];
-                        return (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {isExpanded ? service.description : short}
-                            {truncated && (
-                              <span role="button" tabIndex={0}
-                                onClick={(e) => { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setExpandedDesc((p) => ({ ...p, [service.id]: !isExpanded })); }}}
-                                className="ml-1 text-[#445446] font-medium cursor-pointer hover:underline">
-                                {isExpanded ? t('serviceStep.showLess') : t('serviceStep.readMore')}
-                              </span>
-                            )}
-                          </p>
-                        );
-                      })()}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{formatDuration(service.duration_minutes)}</span>
-                        {service.format && (
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                            service.format === 'ONLINE' ? 'bg-blue-50 text-blue-600'
-                            : service.format === 'HOME_VISIT' ? 'bg-amber-50 text-amber-700'
-                            : 'bg-[#445446]/10 text-[#445446]'
-                          }`}>
-                            {t(formatLabelKey('slotStep', service.format))}
-                          </span>
-                        )}
-                        {service.cluster && CLUSTER_BADGE[service.cluster] && (
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${CLUSTER_BADGE[service.cluster].cls}`}>
-                            {CLUSTER_BADGE[service.cluster].label}
-                          </span>
-                        )}
-                      </div>
-                      {service.format === 'HOME_VISIT' && service.home_visit_areas?.length > 0 && (
-                        <p className="text-[10px] text-gray-400 mt-1.5">
-                          {t('serviceStep.homeVisitAreas', { areas: service.home_visit_areas.join(', ') })}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="text-sm font-bold text-[#1F2933]">{formatPrice(service.price, service.currency || 'EUR')}</p>
-                    </div>
-                  </div>
-
-                  {/* Check Availability button — always visible */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedService(service);
-                      if (service.format) setSelectedFormat(service.format);
-                      setMonthArgs(null);
-                      setStep(STEPS.SLOT);
-                    }}
-                    className={`mt-3 w-full py-2 px-4 text-xs font-semibold rounded-lg transition-colors ${
-                      isSelected
-                        ? 'bg-[#445446] hover:bg-[#3a4a3b] text-white'
-                        : 'bg-white hover:bg-[#dfe2d7]/50 text-[#445446] border border-[#c5ceba]'
-                    }`}>
-                    {t('serviceStep.checkAvailability')}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   // ── Step: SLOT ────────────────────────────────────────────────────────────
   if (step === STEPS.SLOT) {
     return (
       <div>
         <button
-          onClick={() => fromPastBookings ? navigate('/dashboard/parent/past') : setStep(STEPS.SERVICE)}
+          onClick={() => fromPastBookings ? navigate('/dashboard/parent/past') : window.location.assign(effectiveReturnUrl)}
           className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
           <ChevronLeftIcon className="w-4 h-4" />
-          {fromPastBookings ? t('slotStep.backToBookings') : t('slotStep.backToServices')}
+          {fromPastBookings ? t('slotStep.backToBookings') : t('serviceStep.back')}
         </button>
 
         <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-6">
