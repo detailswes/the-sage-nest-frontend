@@ -17,6 +17,7 @@ import PersonAvatar from '../../components/booking/PersonAvatar';
 import {
   formatDate, formatTime, formatDuration, hoursUntil, fmtCurrency, statusKey, STATUS_STYLES,
 } from '../../utils/bookingDisplay';
+import { formatPracticeAddress } from '../../utils/countries';
 
 const WITHDRAWAL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -234,7 +235,7 @@ const BookingCard = ({ booking, onViewDetails }) => {
 
         {/* In-person address */}
         {booking.status === 'CONFIRMED' && booking.format === 'IN_PERSON' && isFuture && (() => {
-          const address = [booking.expert?.address_street, booking.expert?.address_city, booking.expert?.address_postcode].filter(Boolean).join(', ');
+          const address = formatPracticeAddress(booking.expert, lng);
           return address ? (
             <div className="mt-4 px-3 py-2.5 bg-[#445446]/5 border border-[#445446]/20 rounded-xl text-xs text-[#445446] flex items-start gap-2">
               <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

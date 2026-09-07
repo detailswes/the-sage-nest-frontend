@@ -13,6 +13,10 @@ import ConfirmModal from '../../../components/ConfirmModal';
 import {
   EditIcon, TrashIcon, PowerIcon, ChevronUpIcon, ChevronDownIcon, CopyIcon,
 } from '../../../assets/icons';
+import {
+  countryKeyFromIso, isHomeVisitCountrySupported,
+  getRegions, getSubregions, getSubLevel, formatArea, isValidArea,
+} from '../../../data/homeVisitAreas';
 
 const FORMAT_OPTIONS  = [
   { value: 'ONLINE' },
@@ -69,8 +73,6 @@ const EMPTY_FORM = {
   format: '', cluster: '', home_visit_areas: [],
 };
 
-const MAX_AREA_LENGTH = 20;
-
 const Spinner = ({ className = 'w-4 h-4' }) => (
   <div className={`${className} rounded-full border-2 border-current border-t-transparent animate-spin`} />
 );
@@ -97,6 +99,15 @@ const ServicesSection = () => {
   const expertCurrency = profile?.currency || null;
   const currencyConfirmed = !!expertCurrency;
 
+  // Home-visit coverage areas are picked from a fixed region → province/landsdel
+  // dataset scoped to the expert's practice-address country. Home visit is only
+  // offered where that dataset exists (currently Italy and Denmark).
+  const practiceCountry   = profile?.address_country || null;
+  const homeVisitSupported = isHomeVisitCountrySupported(practiceCountry);
+  const countryKey        = countryKeyFromIso(practiceCountry);
+  const homeVisitSubLevel = getSubLevel(countryKey); // 'province' | 'landsdel' | null
+  const regionOptions     = getRegions(countryKey);
+
   const [showForm, setShowForm]       = useState(false);
   const [editingId, setEditingId]     = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
@@ -108,7 +119,10 @@ const ServicesSection = () => {
   const [originalCurrency, setOriginalCurrency] = useState(null);
 
   const [isDuplicating, setIsDuplicating] = useState(false);
-  const [areaInput, setAreaInput]         = useState('');
+  // Working state for the two-step area picker (not part of `form` — only the
+  // committed "Region — Sub" pairs in form.home_visit_areas are).
+  const [regionSelect, setRegionSelect]       = useState('');
+  const [subregionSelect, setSubregionSelect] = useState('');
 
   const [deletingId, setDeletingId]     = useState(null);
   const [togglingId, setTogglingId]     = useState(null);
@@ -129,27 +143,22 @@ const ServicesSection = () => {
     setFormErrors((fe) => ({ ...fe, [name]: '' }));
   };
 
-  const addArea = () => {
-    const trimmed = areaInput.trim().slice(0, MAX_AREA_LENGTH);
-    if (!trimmed) return;
+  const subregionOptions = getSubregions(countryKey, regionSelect);
+
+  const addAreaPair = () => {
+    if (!regionSelect || !subregionSelect) return;
+    const value = formatArea(regionSelect, subregionSelect);
     setForm((f) => (
-      f.home_visit_areas.some((a) => a.toLowerCase() === trimmed.toLowerCase())
+      f.home_visit_areas.includes(value)
         ? f
-        : { ...f, home_visit_areas: [...f.home_visit_areas, trimmed] }
+        : { ...f, home_visit_areas: [...f.home_visit_areas, value] }
     ));
-    setAreaInput('');
+    setSubregionSelect('');
     setFormErrors((fe) => ({ ...fe, home_visit_areas: '' }));
   };
 
   const removeArea = (area) => {
     setForm((f) => ({ ...f, home_visit_areas: f.home_visit_areas.filter((a) => a !== area) }));
-  };
-
-  const handleAreaInputKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      addArea();
-    }
   };
 
   const validate = () => {
@@ -170,8 +179,12 @@ const ServicesSection = () => {
       errs.price = t('services.validation.priceMax', { max: formatPrice(limits.max, form.currency || 'EUR', lng) });
     if (!form.format)
       errs.format = t('services.validation.formatRequired');
-    if (form.format === 'HOME_VISIT' && form.home_visit_areas.length === 0)
-      errs.home_visit_areas = t('services.validation.homeVisitAreasRequired');
+    if (form.format === 'HOME_VISIT') {
+      if (!homeVisitSupported)
+        errs.format = t('services.validation.homeVisitCountryUnsupported');
+      else if (form.home_visit_areas.length === 0)
+        errs.home_visit_areas = t('services.validation.homeVisitAreasRequired');
+    }
     if (!form.cluster)
       errs.cluster = t('services.validation.categoryRequired');
     return errs;
@@ -184,7 +197,8 @@ const ServicesSection = () => {
     setOriginalCurrency(null);
     setForm({ ...EMPTY_FORM, currency: expertCurrency, format: lockedFormat || '' });
     setFormErrors({});
-    setAreaInput('');
+    setRegionSelect('');
+    setSubregionSelect('');
     setShowForm(true);
   };
 
@@ -207,7 +221,8 @@ const ServicesSection = () => {
       home_visit_areas: svc.home_visit_areas || [],
     });
     setFormErrors({});
-    setAreaInput('');
+    setRegionSelect('');
+    setSubregionSelect('');
     setShowForm(true);
   };
 
@@ -226,7 +241,8 @@ const ServicesSection = () => {
       home_visit_areas: svc.home_visit_areas || [],
     });
     setFormErrors({});
-    setAreaInput('');
+    setRegionSelect('');
+    setSubregionSelect('');
     setShowForm(true);
   };
 
@@ -237,7 +253,8 @@ const ServicesSection = () => {
     setOriginalCurrency(null);
     setForm(EMPTY_FORM);
     setFormErrors({});
-    setAreaInput('');
+    setRegionSelect('');
+    setSubregionSelect('');
   };
 
   const handleSubmit = async (e) => {
@@ -416,11 +433,23 @@ const ServicesSection = () => {
                   className={`${inputClass(!!formErrors.format)} ${lockedFormat ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''}`}
                 >
                   <option value="" disabled>{t('services.form.formatSelect')}</option>
-                  {FORMAT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t('services.formats.' + o.value)}</option>)}
+                  {FORMAT_OPTIONS.map((o) => (
+                    <option
+                      key={o.value}
+                      value={o.value}
+                      disabled={o.value === 'HOME_VISIT' && !homeVisitSupported}
+                    >
+                      {t('services.formats.' + o.value)}
+                    </option>
+                  ))}
                 </select>
-                {lockedFormat && (
+                {lockedFormat ? (
                   <p className="mt-1 text-xs text-gray-400">
                     {t('services.form.lockedFormatHint')}
+                  </p>
+                ) : !homeVisitSupported && (
+                  <p className="mt-1 text-xs text-gray-400">
+                    {t('services.form.homeVisitCountryHint')}
                   </p>
                 )}
                 {formErrors.format && <p className="mt-1.5 text-xs text-red-500">{formErrors.format}</p>}
@@ -437,43 +466,77 @@ const ServicesSection = () => {
               </div>
             </div>
 
-            {/* Home visit postal codes / areas — required once format is HOME_VISIT */}
+            {/* Home visit coverage — region → province/landsdel pairs, required once format is HOME_VISIT */}
             {form.format === 'HOME_VISIT' && (
               <div>
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
                   {t('services.form.homeVisitAreasLabel')} <span className="text-red-400">*</span>
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={areaInput}
-                    onChange={(e) => setAreaInput(e.target.value)}
-                    onKeyDown={handleAreaInputKeyDown}
-                    maxLength={MAX_AREA_LENGTH}
-                    placeholder={t('services.form.homeVisitAreasPlaceholder')}
-                    className={inputClass(!!formErrors.home_visit_areas)}
-                  />
-                  <button
-                    type="button"
-                    onClick={addArea}
-                    className="flex-shrink-0 px-4 py-2 text-sm font-medium text-[#445446] border border-[#c5ceba] rounded-lg hover:bg-[#445446]/10 transition-colors"
-                  >
-                    {t('services.form.homeVisitAreasAddBtn')}
-                  </button>
-                </div>
-                {form.home_visit_areas.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {form.home_visit_areas.map((area) => (
-                      <span key={area} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                        {area}
-                        <button type="button" onClick={() => removeArea(area)} className="hover:text-amber-900" aria-label={`Remove ${area}`}>
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
+
+                {!homeVisitSupported ? (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                    {t('services.form.homeVisitCountryUnsupported')}
+                  </p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
+                      <select
+                        value={regionSelect}
+                        onChange={(e) => { setRegionSelect(e.target.value); setSubregionSelect(''); }}
+                        className={inputClass(!!formErrors.home_visit_areas)}
+                      >
+                        <option value="">{t('services.form.homeVisitRegionSelect')}</option>
+                        {regionOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+                      </select>
+
+                      <select
+                        value={subregionSelect}
+                        onChange={(e) => setSubregionSelect(e.target.value)}
+                        disabled={!regionSelect}
+                        className={`${inputClass(!!formErrors.home_visit_areas)} ${!regionSelect ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''}`}
+                      >
+                        <option value="">
+                          {homeVisitSubLevel === 'landsdel'
+                            ? t('services.form.homeVisitLandsdelSelect')
+                            : t('services.form.homeVisitProvinceSelect')}
+                        </option>
+                        {subregionOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={addAreaPair}
+                        disabled={!regionSelect || !subregionSelect}
+                        className="flex-shrink-0 px-4 py-2 text-sm font-medium text-[#445446] border border-[#c5ceba] rounded-lg hover:bg-[#445446]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {t('services.form.homeVisitAreasAddBtn')}
+                      </button>
+                    </div>
+
+                    {form.home_visit_areas.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {form.home_visit_areas.map((area) => {
+                          const invalid = !isValidArea(countryKey, area);
+                          return (
+                            <span
+                              key={area}
+                              title={invalid ? t('services.form.homeVisitAreaInvalid') : undefined}
+                              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                invalid ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                              }`}
+                            >
+                              {area}
+                              <button type="button" onClick={() => removeArea(area)} className={invalid ? 'hover:text-red-900' : 'hover:text-amber-900'} aria-label={`Remove ${area}`}>
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="mt-1.5 text-xs text-gray-400">{t('services.form.homeVisitAreasHint')}</p>
+                  </>
                 )}
-                <p className="mt-1.5 text-xs text-gray-400">{t('services.form.homeVisitAreasHint')}</p>
                 {formErrors.home_visit_areas && <p className="mt-1.5 text-xs text-red-500">{formErrors.home_visit_areas}</p>}
               </div>
             )}

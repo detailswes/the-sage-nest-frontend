@@ -215,6 +215,21 @@ export function getCountryName(code, locale = 'en') {
   return match ? match.name : code;
 }
 
+// Expert practice-address line shown to parents for in-person sessions
+// (street, city, postcode, country). The country falls back to the expert's
+// registered/DAC7 country when the practice country has not been set yet —
+// rows created before the practice-address form gained the country field.
+export function formatPracticeAddress(expert, locale = 'en') {
+  if (!expert) return '';
+  const countryCode = expert.address_country || expert.business_info?.address_country || null;
+  return [
+    expert.address_street,
+    expert.address_city,
+    expert.address_postcode,
+    getCountryName(countryCode, locale),
+  ].filter(Boolean).join(', ');
+}
+
 // Localized { code, name } list for populating country <select> dropdowns,
 // sorted by the localized name (so an Italian list reads alphabetically in
 // Italian, not in leftover English order). Falls back to the static list.

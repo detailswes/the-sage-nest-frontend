@@ -16,6 +16,7 @@ import { loginUser, registerUser, verifyOtpApi } from '../../api/authApi';
 import { getProfileImageUrl } from '../../utils/imageUrl';
 import { resolveDocUrl } from '../../utils/legalDocs';
 import { normalizeFiscalCode, isValidItalianFiscalCode } from '../../utils/fiscalCode';
+import { formatPracticeAddress } from '../../utils/countries';
 import { validateLoginForm, validateRegisterForm, checkPasswordStrength } from '../../utils/validation';
 import PasswordInput from '../../components/auth/PasswordInput';
 import useResendVerification from '../../hooks/useResendVerification';
@@ -776,7 +777,7 @@ const BookPage = () => {
       setLockId(null); setLockExpiresAt(null);
 
       const sessionLocation = selectedFormat === 'IN_PERSON'
-        ? [detail?.address_street, detail?.address_city, detail?.address_postcode].filter(Boolean).join(', ')
+        ? (formatPracticeAddress(detail, lng) || null)
         : null;
 
       navigate('/checkout', {
@@ -1113,7 +1114,7 @@ const BookPage = () => {
               </div>
             ))}
             {selectedFormat === 'IN_PERSON' && (() => {
-              const loc = [detail?.address_street, detail?.address_city, detail?.address_postcode].filter(Boolean).join(', ');
+              const loc = formatPracticeAddress(detail, lng);
               return loc ? (
                 <div className="flex justify-between gap-4">
                   <span className="text-gray-500">{t('confirmStep.labelLocation')}</span>
