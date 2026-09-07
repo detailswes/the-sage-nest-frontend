@@ -2,14 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useGetBookingByIdQuery, useVerifyPaymentMutation } from '../../api/bookingApi';
+import { formatPracticeAddress } from '../../utils/countries';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS        = 40; // ~2 minutes total
-
-function formatLocation(expert) {
-  return [expert?.address_street, expert?.address_city, expert?.address_postcode]
-    .filter(Boolean).join(', ');
-}
 
 function formatDate(isoStr, lng = 'en') {
   return new Date(isoStr).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', {
@@ -48,7 +44,7 @@ const SuccessBanner = ({ booking }) => {
   const expertName = booking.expert?.user?.account_deleted
     ? t('bookingStatus.success.deletedSpecialist')
     : booking.expert?.user?.name;
-  const location    = formatLocation(booking.expert);
+  const location    = formatPracticeAddress(booking.expert, lng);
   const formatLabel = booking.format === 'ONLINE'
     ? t('slotStep.formatOnline')
     : booking.format === 'HOME_VISIT'

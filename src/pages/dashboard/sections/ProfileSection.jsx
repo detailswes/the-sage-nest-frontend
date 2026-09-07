@@ -11,6 +11,7 @@ import {
   useLazyExportMyDataQuery,
 } from '../../../api/expertApi';
 import { getProfileImageUrl } from '../../../utils/imageUrl';
+import { getLocalizedCountries } from '../../../utils/countries';
 import { useCreateConnectLinkMutation, useVerifyStripeReturnQuery } from '../../../api/stripeApi';
 import QualificationsCard from '../profile/QualificationsCard';
 import CertificationsCard from '../profile/CertificationsCard';
@@ -117,7 +118,7 @@ const EMPTY_FORM = {
   summary: '', position: '',
   session_format: '',
   timezone: 'Europe/Rome',
-  address_street: '', address_city: '', address_postcode: '',
+  address_street: '', address_city: '', address_postcode: '', address_country: '',
   languages: [],
   pending_languages: [],
   instagram: '', facebook: '', linkedin: '',
@@ -185,6 +186,9 @@ const ProfileSection = () => {
       address_street:   profile.address_street   || '',
       address_city:     profile.address_city     || '',
       address_postcode: profile.address_postcode || '',
+      // Falls back to the registered/DAC7 country for experts onboarded before
+      // the practice address collected a country of its own.
+      address_country:  profile.address_country || profile.business_info?.address_country || '',
       languages:         Array.isArray(profile.languages)         ? profile.languages         : [],
       pending_languages: Array.isArray(profile.pending_languages) ? profile.pending_languages : [],
       instagram:        profile.instagram || '',
@@ -280,6 +284,9 @@ const ProfileSection = () => {
     if (!form.address_postcode?.trim()) {
       toast.error(t('profile.validation.postcodeRequired')); return;
     }
+    if (!form.address_country?.trim()) {
+      toast.error(t('profile.validation.countryRequired', { defaultValue: 'Please select the country of your practice address.' })); return;
+    }
     if (!form.session_format) {
       toast.error(t('profile.validation.formatRequired', { defaultValue: 'Please select how you deliver your sessions.' })); return;
     }
@@ -295,6 +302,7 @@ const ProfileSection = () => {
         address_street:   form.address_street   || null,
         address_city:     form.address_city     || null,
         address_postcode: form.address_postcode || null,
+        address_country:  form.address_country  || null,
         languages:         form.languages,
         pending_languages: form.pending_languages,
         instagram:        form.instagram || null,
@@ -590,6 +598,19 @@ const ProfileSection = () => {
                   className={inputClass}
                 />
               </div>
+              <select
+                name="address_country"
+                value={form.address_country}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="">
+                  {t('profile.details.countryPlaceholder', { defaultValue: 'Select country' })}
+                </option>
+                {getLocalizedCountries(i18n.language).map((c) => (
+                  <option key={c.code} value={c.code}>{c.name}</option>
+                ))}
+              </select>
               <p className="text-xs text-gray-400">{t('profile.details.addressHint')}</p>
             </div>
           )}

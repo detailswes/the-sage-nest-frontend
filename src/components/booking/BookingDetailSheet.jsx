@@ -6,6 +6,7 @@ import {
 import PersonAvatar from './PersonAvatar';
 import CancellationPolicy from './CancellationPolicy';
 import BookingInvoicingInfo from './BookingInvoicingInfo';
+import { formatPracticeAddress } from '../../utils/countries';
 
 const DetailRow = ({ label, value, valueClass }) => (
   <div className="flex items-start justify-between gap-4">
@@ -40,11 +41,7 @@ const BookingDetailSheet = ({ booking, onClose, role = 'parent' }) => {
   const isUpcoming = booking.status === 'CONFIRMED' && hrs > 0;
   const sk         = statusKey(booking);
   const location   = !isExpertView
-    ? [
-        booking.expert?.address_street,
-        booking.expert?.address_city,
-        booking.expert?.address_postcode,
-      ].filter(Boolean).join(', ')
+    ? formatPracticeAddress(booking.expert, lng)
     : '';
 
   const paymentStatusLabel =

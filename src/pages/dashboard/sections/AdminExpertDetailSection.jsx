@@ -25,6 +25,7 @@ import {
 } from "../../../api/adminApi";
 import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
 import { formatBookingTime } from "../../../utils/formatBookingTime";
+import { getCountryName } from "../../../utils/countries";
 import BookingDetailModal from "../../../components/admin/BookingDetailModal";
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -135,7 +136,7 @@ const BookingStatusBadge = ({ status, booking }) => {
 const AdminExpertDetailSection = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation("adminDashboard");
+  const { t, i18n } = useTranslation("adminDashboard");
 
   // ── Tabs ──────────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("profile");
@@ -387,7 +388,11 @@ const AdminExpertDetailSection = () => {
   const name     = expert.user?.name || "—";
   const email    = expert.user?.email || "—";
   const photoUrl = getProfileImageUrl(expert.profile_image);
-  const hasAddress = expert.address_street || expert.address_city || expert.address_postcode;
+  const hasAddress = expert.address_street || expert.address_city || expert.address_postcode || expert.address_country;
+  const practiceCountryName = getCountryName(
+    expert.address_country || expert.business_info?.address_country || "",
+    i18n.language,
+  );
   const insurance  = expert.insurance;
   const expired    = insurance ? isInsuranceExpired(insurance.policy_expires_at) : false;
 
@@ -534,7 +539,7 @@ const AdminExpertDetailSection = () => {
                       { key: "Bio",                live: expert.bio,           proposed: expert.profile_draft.bio },
                       { key: "Professional title", live: expert.position,      proposed: expert.profile_draft.position },
                       { key: "Session format",     live: fmtSessionFormat(expert.session_format), proposed: fmtSessionFormat(expert.profile_draft.session_format) },
-                      { key: "Location",           live: [expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ") || null, proposed: [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode].filter(Boolean).join(", ") || null },
+                      { key: "Location",           live: [expert.address_street, expert.address_city, expert.address_postcode, getCountryName(expert.address_country || "", i18n.language)].filter(Boolean).join(", ") || null, proposed: [expert.profile_draft.address_street, expert.profile_draft.address_city, expert.profile_draft.address_postcode, getCountryName(expert.profile_draft.address_country || "", i18n.language)].filter(Boolean).join(", ") || null },
                       { key: "Timezone",           live: expert.timezone,      proposed: expert.profile_draft.timezone },
                       { key: "Languages",          live: expert.languages?.join(", ") || null, proposed: expert.profile_draft.languages?.join(", ") || null },
                       { key: "Instagram",          live: expert.instagram,     proposed: expert.profile_draft.instagram },
@@ -738,7 +743,7 @@ const AdminExpertDetailSection = () => {
                   <div>
                     <SectionLabel>{t("expertDetail.profile.location")}</SectionLabel>
                     {hasAddress
-                      ? <p className="text-sm text-[#1F2933]">{[expert.address_street, expert.address_city, expert.address_postcode].filter(Boolean).join(", ")}</p>
+                      ? <p className="text-sm text-[#1F2933]">{[expert.address_street, expert.address_city, expert.address_postcode, practiceCountryName].filter(Boolean).join(", ")}</p>
                       : <p className="text-sm text-gray-400 italic">{t("expertDetail.profile.noLocation")}</p>}
                   </div>
 
@@ -865,7 +870,7 @@ const AdminExpertDetailSection = () => {
                         [t("expertDetail.bizInfo.rows.street"), bi.address_street],
                         [t("expertDetail.bizInfo.rows.city"), bi.address_city],
                         [t("expertDetail.bizInfo.rows.postalCode"), bi.address_postal_code],
-                        [t("expertDetail.bizInfo.rows.country"), bi.address_country],
+                        [t("expertDetail.bizInfo.rows.country"), getCountryName(bi.address_country, i18n.language)],
                         [t("expertDetail.bizInfo.rows.tin"), bi.tin],
                         ...(bi.vat_number ? [[t("expertDetail.bizInfo.rows.vat"), bi.vat_number]] : []),
                         ...(bi.entity_type === "COMPANY" && bi.company_reg_number ? [[t("expertDetail.bizInfo.rows.companyReg"), bi.company_reg_number]] : []),
