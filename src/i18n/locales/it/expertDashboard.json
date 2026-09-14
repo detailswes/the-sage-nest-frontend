@@ -418,6 +418,11 @@
     "heading":       "Servizi",
     "subheading":    "Gestisci i servizi che offri ai genitori.",
     "addServiceBtn": "Aggiungi servizio",
+    "tabs": {
+      "inReview":     "In revisione",
+      "approved":     "Approvati",
+      "inReviewHint": "Servizi nuovi o modificati in attesa dell'approvazione dell'amministratore."
+    },
     "formats": {
       "ONLINE":    "Online",
       "IN_PERSON": "Di persona",
@@ -449,15 +454,16 @@
       "formatLabel":          "Formato",
       "formatSelect":         "Seleziona un formato…",
       "lockedFormatHint":     "Impostato dal formato di sessione del tuo profilo. Modificalo nelle impostazioni del Profilo.",
-      "homeVisitCountryHint":       "Disponibile solo per i professionisti con indirizzo dello studio in Italia o Danimarca.",
+      "homeVisitCountryHint":       "Disponibile solo per i professionisti con indirizzo dello studio in Italia, Danimarca o Regno Unito.",
       "homeVisitAreasLabel":        "Zone coperte per le visite a domicilio",
       "homeVisitAreasAddBtn":       "Aggiungi",
       "homeVisitAreasHint":         "Aggiungi ogni regione e provincia in cui sei disponibile a recarti per questo servizio.",
       "homeVisitRegionSelect":      "Seleziona una regione…",
       "homeVisitProvinceSelect":    "Seleziona una provincia…",
       "homeVisitLandsdelSelect":    "Seleziona un landsdel…",
+      "homeVisitCountySelect":      "Seleziona una contea…",
       "homeVisitAreaInvalid":       "Questa zona non è più selezionabile: rimuovila e scegli di nuovo.",
-      "homeVisitCountryUnsupported": "Le visite a domicilio non sono ancora disponibili per i professionisti con indirizzo dello studio fuori da Italia e Danimarca.",
+      "homeVisitCountryUnsupported": "Le visite a domicilio non sono ancora disponibili per i professionisti con indirizzo dello studio fuori da Italia, Danimarca e Regno Unito.",
       "categoryLabel":        "Categoria",
       "categorySelect":       "Seleziona una categoria…",
       "durationLabel":        "Durata (min)",
@@ -469,7 +475,9 @@
       "savingBtn":            "Salvataggio…",
       "saveChangesBtn":       "Salva modifiche",
       "duplicateBtn":         "Duplica servizio",
-      "addBtn":               "Aggiungi servizio"
+      "addBtn":               "Aggiungi servizio",
+      "editProposalTitle":    "Modifica le modifiche proposte",
+      "saveSuccess":          "Servizio salvato."
     },
     "validation": {
       "titleRequired":       "Il titolo è obbligatorio",
@@ -485,16 +493,33 @@
     },
     "empty": {
       "title": "Nessun servizio ancora",
-      "body":  "Aggiungi il tuo primo servizio per iniziare."
+      "body":  "Aggiungi il tuo primo servizio per iniziare.",
+      "inReview": "Niente in revisione",
+      "approved": "Nessun servizio approvato ancora"
     },
     "card": {
       "active":        "Attivo",
       "inactive":      "Inattivo",
-      "needsReview":   "Prezzo da rivedere",
+      "activateHint":   "Attiva questo servizio",
+      "deactivateHint": "Disattiva questo servizio",
+      "currencyMismatch": "Valuta non corrispondente",
+      "pendingReview":  "In revisione",
+      "pendingReviewTooltip": "Un amministratore deve approvare questo servizio prima che possa andare online.",
+      "rejected":       "Rifiutato",
+      "editRejected":   "Modifica rifiutata",
+      "rejectionNoteLabel": "Feedback dell'amministratore:",
+      "editToResubmit": "Modifica e reinvia",
+      "changesPending": "Modifiche in revisione",
+      "changesPendingTooltip": "Le tue modifiche sono in attesa di approvazione: i genitori vedono ancora la versione attuale fino ad allora.",
+      "editProposalBtn": "Modifica proposta",
       "homeVisitAreasLabel": "Zone per visita a domicilio:",
       "deleteConfirm": "Eliminare?",
       "cancelBtn":     "Annulla",
       "deleteBtn":     "Elimina"
+    },
+    "savedAsDraft": {
+      "title": "Inviato in revisione",
+      "body":  "Un amministratore esaminerà le tue modifiche prima che vengano pubblicate."
     },
     "currencyUnconfirmed": {
       "title": "Collega Stripe per confermare la tua valuta di pagamento prima di aggiungere servizi",

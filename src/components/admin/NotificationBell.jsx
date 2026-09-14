@@ -37,6 +37,14 @@ const TYPE_CONFIG = {
     color: 'bg-blue-100 text-blue-600',
     icon: <GlobeLanguageIcon className="w-3.5 h-3.5" />,
   },
+  SERVICE_PENDING: {
+    color: 'bg-amber-100 text-amber-600',
+    icon: <PencilDocumentIcon className="w-3.5 h-3.5" />,
+  },
+  SERVICE_DRAFT_PENDING: {
+    color: 'bg-amber-100 text-amber-600',
+    icon: <PencilDocumentIcon className="w-3.5 h-3.5" />,
+  },
 };
 
 const DEFAULT_CONFIG = {

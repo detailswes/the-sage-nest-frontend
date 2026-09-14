@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import {
@@ -21,6 +21,8 @@ import {
   useRejectLanguageMutation,
   useApproveProfileDraftMutation,
   useRejectProfileDraftMutation,
+  useApproveServiceMutation,
+  useRejectServiceMutation,
   useSetHealthClassificationMutation,
 } from "../../../api/adminApi";
 import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
@@ -139,7 +141,11 @@ const AdminExpertDetailSection = () => {
   const { t, i18n } = useTranslation("adminDashboard");
 
   // ── Tabs ──────────────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState("profile");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get("tab");
+    return ["profile", "bookings", "activity", "services"].includes(tab) ? tab : "profile";
+  });
 
   // ── Action UI state ───────────────────────────────────────────────────────────
   const [confirmAction,  setConfirmAction]  = useState(null);
@@ -156,6 +162,8 @@ const AdminExpertDetailSection = () => {
   const [gdprEmail,     setGdprEmail]     = useState("");
   const [draftRejectNote, setDraftRejectNote] = useState("");
   const [showDraftReject, setShowDraftReject] = useState(false);
+  // Which service card currently has its reject-note input open — { id, note }.
+  const [serviceReject, setServiceReject] = useState(null);
   const [exportYear,    setExportYear]    = useState(new Date().getFullYear());
   const [summaryStatus, setSummaryStatus] = useState("ALL");
 
@@ -191,6 +199,8 @@ const AdminExpertDetailSection = () => {
   const [rejectLanguage,      { isLoading: rejectingLang }]       = useRejectLanguageMutation();
   const [approveProfileDraft, { isLoading: draftApproving }]      = useApproveProfileDraftMutation();
   const [rejectProfileDraft,  { isLoading: draftRejecting }]      = useRejectProfileDraftMutation();
+  const [approveService,      { isLoading: serviceApproving }]    = useApproveServiceMutation();
+  const [rejectService,       { isLoading: serviceRejecting }]    = useRejectServiceMutation();
   const [setHealthClassification, { isLoading: settingHealthClass }] = useSetHealthClassificationMutation();
 
   const actionLoadingKey =
@@ -314,6 +324,31 @@ const AdminExpertDetailSection = () => {
       setAuditNeedsRefetch(true);
     } catch (e) {
       toast.error(e?.data?.error || t("expertDetail.draft.rejectError"));
+    }
+  };
+
+  // ── Service review actions ─────────────────────────────────────────────────────
+  // Both handlers work the same regardless of whether the service is a
+  // brand-new PENDING_REVIEW row or an APPROVED one with a pending edit
+  // draft — the backend figures out which case applies.
+
+  const handleApproveService = async (serviceId) => {
+    try {
+      await approveService(serviceId).unwrap();
+      setServiceReject(null);
+      setAuditNeedsRefetch(true);
+    } catch (e) {
+      toast.error(e?.data?.error || t("expertDetail.services.approveError"));
+    }
+  };
+
+  const handleRejectService = async (serviceId) => {
+    try {
+      await rejectService({ id: serviceId, note: serviceReject?.note.trim() || undefined }).unwrap();
+      setServiceReject(null);
+      setAuditNeedsRefetch(true);
+    } catch (e) {
+      toast.error(e?.data?.error || t("expertDetail.services.rejectError"));
     }
   };
 
@@ -511,6 +546,7 @@ const AdminExpertDetailSection = () => {
             <div className="flex border-b border-[#c5ceba]">
               {[
                 { key: "profile",  label: t("expertDetail.tabs.profile") },
+                { key: "services", label: `${t("expertDetail.tabs.services")}${expert.services?.length ? ` (${expert.services.length})` : ""}` },
                 { key: "bookings", label: `${t("expertDetail.tabs.bookings")}${expert._count?.bookings ? ` (${expert._count.bookings})` : ""}` },
                 { key: "activity", label: t("expertDetail.tabs.activity") },
               ].map(({ key, label }) => (
@@ -921,38 +957,6 @@ const AdminExpertDetailSection = () => {
                   </div>
 
                   <div>
-                    <SectionLabel>{t("expertDetail.services.title", { count: expert.services?.length ?? 0 })}</SectionLabel>
-                    {expert.services?.length > 0 ? (
-                      <div className="space-y-2">
-                        {expert.services.map((svc) => (
-                          <div key={svc.id} className="px-4 py-3 bg-[#dfe2d7]/30 rounded-xl border border-[#c5ceba]">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
-                              <div className="flex items-center gap-1.5 flex-shrink-0">
-                                {svc.format && FORMAT_BADGE_CLS[svc.format] && (
-                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${FORMAT_BADGE_CLS[svc.format]}`}>
-                                    {t(`expertDetail.formatBadge.${svc.format}`, { defaultValue: svc.format })}
-                                  </span>
-                                )}
-                                {svc.cluster && CLUSTER_BADGE_CLS[svc.cluster] && (
-                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CLUSTER_BADGE_CLS[svc.cluster]}`}>
-                                    {t(`expertDetail.clusterBadge.${svc.cluster}`, { defaultValue: svc.cluster })}
-                                  </span>
-                                )}
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${svc.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
-                                  {svc.is_active ? t("expertDetail.services.active") : t("expertDetail.services.inactive")}
-                                </span>
-                              </div>
-                            </div>
-                            {svc.description && <p className="text-xs text-gray-500 mb-1">{svc.description}</p>}
-                            <p className="text-xs text-gray-400">{svc.duration_minutes} min · {new Intl.NumberFormat('en', { style: 'currency', currency: svc.currency || 'EUR' }).format(parseFloat(svc.price))}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : <p className="text-sm text-gray-400 italic">{t("expertDetail.services.noServices")}</p>}
-                  </div>
-
-                  <div>
                     <SectionLabel>{t("expertDetail.stripe.title")}</SectionLabel>
                     {expert.stripe_account_id ? (
                       <div className="flex flex-wrap items-center gap-3">
@@ -988,6 +992,186 @@ const AdminExpertDetailSection = () => {
                     )}
                   </div>
                 </>
+              )}
+
+              {/* ── Services tab ── */}
+              {activeTab === "services" && (
+                <div className="space-y-4">
+                  {expert.services?.length > 0 ? (
+                    expert.services.map((svc) => {
+                      const priceFmt = (v) => new Intl.NumberFormat('en', { style: 'currency', currency: svc.currency || 'EUR' }).format(parseFloat(v));
+                      const isRejecting = serviceReject?.id === svc.id;
+                      const reviewHeader = (title, dateIso) => (
+                        <div className="flex items-center justify-between gap-4 px-5 py-3.5 bg-amber-100 border-b border-amber-200">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-sm font-semibold text-amber-800">{title}</span>
+                            <span className="text-xs text-amber-600 ml-1">
+                              {t("expertDetail.services.submitted", { date: new Date(dateIso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {isRejecting ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={serviceReject.note}
+                                  onChange={(e) => setServiceReject({ id: svc.id, note: e.target.value })}
+                                  placeholder={t("expertDetail.services.rejectionPlaceholder")}
+                                  className="text-xs px-3 py-1.5 border border-amber-300 rounded-lg bg-white text-[#1F2933] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 w-52"
+                                />
+                                <button
+                                  onClick={() => handleRejectService(svc.id)}
+                                  disabled={serviceRejecting}
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 transition-colors"
+                                >
+                                  {serviceRejecting ? t("expertDetail.services.rejecting") : t("expertDetail.services.confirmReject")}
+                                </button>
+                                <button
+                                  onClick={() => setServiceReject(null)}
+                                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+                                >
+                                  {t("expertDetail.services.cancel")}
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleApproveService(svc.id)}
+                                  disabled={serviceApproving || serviceRejecting}
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white disabled:opacity-50 transition-colors"
+                                >
+                                  {serviceApproving ? t("expertDetail.services.approving") : t("expertDetail.services.approveBtn")}
+                                </button>
+                                <button
+                                  onClick={() => setServiceReject({ id: svc.id, note: "" })}
+                                  disabled={serviceApproving || serviceRejecting}
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                                >
+                                  {t("expertDetail.services.rejectBtn")}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+
+                      // Brand-new service, first-ever review — nothing live to diff against.
+                      if (svc.review_status === "PENDING_REVIEW" && !svc.draft) {
+                        return (
+                          <div key={svc.id} className="rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden">
+                            {reviewHeader(t("expertDetail.services.pendingTitle"), svc.submitted_at)}
+                            <div className="px-5 py-4 space-y-1">
+                              <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
+                              {svc.description && <p className="text-sm text-gray-600">{svc.description}</p>}
+                              <p className="text-xs text-gray-500">
+                                {svc.duration_minutes} min &middot; {priceFmt(svc.price)}
+                                {svc.format && ` · ${t(`expertDetail.formatBadge.${svc.format}`, { defaultValue: svc.format })}`}
+                                {svc.cluster && ` · ${t(`expertDetail.clusterBadge.${svc.cluster}`, { defaultValue: svc.cluster })}`}
+                              </p>
+                              {svc.format === "HOME_VISIT" && svc.home_visit_areas?.length > 0 && (
+                                <p className="text-xs text-gray-500">{svc.home_visit_areas.join(", ")}</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Rejected, never approved — expert's turn to fix and resubmit.
+                      if (svc.review_status === "REJECTED" && !svc.draft) {
+                        return (
+                          <div key={svc.id} className="rounded-2xl border-2 border-red-300 bg-red-50 overflow-hidden">
+                            <div className="px-5 py-3.5 bg-red-100 border-b border-red-200">
+                              <span className="text-sm font-semibold text-red-800">{t("expertDetail.services.rejectedLabel")}</span>
+                              {svc.rejection_note && <p className="text-xs text-red-600 mt-0.5">{svc.rejection_note}</p>}
+                            </div>
+                            <div className="px-5 py-4 space-y-1">
+                              <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
+                              {svc.description && <p className="text-sm text-gray-600">{svc.description}</p>}
+                              <p className="text-xs text-gray-500">{svc.duration_minutes} min &middot; {priceFmt(svc.price)}</p>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Approved and live, but with a pending edit — full diff.
+                      if (svc.draft && svc.draft.status === "PENDING_REVIEW") {
+                        const draftFields = [
+                          { key: "Title",       live: svc.title,       proposed: svc.draft.title },
+                          { key: "Description", live: svc.description, proposed: svc.draft.description },
+                          { key: "Duration",    live: `${svc.duration_minutes} min`, proposed: svc.draft.duration_minutes != null ? `${svc.draft.duration_minutes} min` : null },
+                          { key: "Price",       live: priceFmt(svc.price), proposed: svc.draft.price != null ? priceFmt(svc.draft.price) : null },
+                          { key: "Format",      live: svc.format ? t(`expertDetail.formatBadge.${svc.format}`, { defaultValue: svc.format }) : null, proposed: svc.draft.format ? t(`expertDetail.formatBadge.${svc.draft.format}`, { defaultValue: svc.draft.format }) : null },
+                          { key: "Cluster",     live: svc.cluster ? t(`expertDetail.clusterBadge.${svc.cluster}`, { defaultValue: svc.cluster }) : null, proposed: svc.draft.cluster ? t(`expertDetail.clusterBadge.${svc.draft.cluster}`, { defaultValue: svc.draft.cluster }) : null },
+                          { key: "HomeVisitAreas", live: svc.home_visit_areas?.join(", ") || null, proposed: svc.draft.home_visit_areas?.join(", ") || null },
+                        ];
+                        return (
+                          <div key={svc.id} className="rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden">
+                            {reviewHeader(t("expertDetail.services.editPendingTitle"), svc.draft.submitted_at)}
+                            <div className="grid grid-cols-2 divide-x divide-amber-200">
+                              <div className="px-5 py-4 space-y-4">
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t("expertDetail.draft.liveCol")}</p>
+                                {draftFields.map(({ key, live, proposed }) => {
+                                  const changed = (live || "") !== (proposed || "");
+                                  return (
+                                    <div key={key}>
+                                      <p className="text-xs font-medium text-gray-400 mb-0.5">{t(`expertDetail.services.diffFields.${key}`)}</p>
+                                      <p className={`text-sm leading-relaxed ${changed ? "text-[#1F2933]" : "text-gray-400"}`}>
+                                        {live || <span className="italic text-gray-300">—</span>}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <div className="px-5 py-4 space-y-4 bg-white">
+                                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-3">{t("expertDetail.draft.proposedCol")}</p>
+                                {draftFields.map(({ key, live, proposed }) => {
+                                  const changed = (live || "") !== (proposed || "");
+                                  return (
+                                    <div key={key}>
+                                      <p className="text-xs font-medium text-gray-400 mb-0.5">{t(`expertDetail.services.diffFields.${key}`)}</p>
+                                      <p className={`text-sm leading-relaxed ${changed ? "font-medium text-amber-800 bg-amber-100/60 px-1.5 py-0.5 rounded" : "text-gray-400"}`}>
+                                        {proposed || <span className="italic text-gray-300">—</span>}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Plain approved, no pending changes — unchanged read-only card.
+                      return (
+                        <div key={svc.id} className="px-4 py-3 bg-[#dfe2d7]/30 rounded-xl border border-[#c5ceba]">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {svc.format && FORMAT_BADGE_CLS[svc.format] && (
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${FORMAT_BADGE_CLS[svc.format]}`}>
+                                  {t(`expertDetail.formatBadge.${svc.format}`, { defaultValue: svc.format })}
+                                </span>
+                              )}
+                              {svc.cluster && CLUSTER_BADGE_CLS[svc.cluster] && (
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CLUSTER_BADGE_CLS[svc.cluster]}`}>
+                                  {t(`expertDetail.clusterBadge.${svc.cluster}`, { defaultValue: svc.cluster })}
+                                </span>
+                              )}
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${svc.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
+                                {svc.is_active ? t("expertDetail.services.active") : t("expertDetail.services.inactive")}
+                              </span>
+                            </div>
+                          </div>
+                          {svc.description && <p className="text-xs text-gray-500 mb-1">{svc.description}</p>}
+                          <p className="text-xs text-gray-400">{svc.duration_minutes} min &middot; {priceFmt(svc.price)}</p>
+                        </div>
+                      );
+                    })
+                  ) : <p className="text-sm text-gray-400 italic">{t("expertDetail.services.noServices")}</p>}
+                </div>
               )}
 
               {/* ── Bookings tab ── */}

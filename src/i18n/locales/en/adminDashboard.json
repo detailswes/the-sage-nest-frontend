@@ -462,6 +462,7 @@
     "backToList": "← Back to expert list",
     "tabs": {
       "profile": "Profile",
+      "services": "Services",
       "bookings": "Bookings",
       "activity": "Activity"
     },
@@ -597,7 +598,29 @@
       "title": "Services ({{count}})",
       "noServices": "No services added yet.",
       "active": "Active",
-      "inactive": "Inactive"
+      "inactive": "Inactive",
+      "pendingTitle": "New service awaiting review",
+      "editPendingTitle": "Service edit awaiting review",
+      "rejectedLabel": "Rejected",
+      "submitted": "· submitted {{date}}",
+      "approveBtn": "Approve",
+      "approving": "Approving…",
+      "rejectBtn": "Reject",
+      "rejectionPlaceholder": "Rejection note (optional)…",
+      "confirmReject": "Confirm reject",
+      "rejecting": "…",
+      "cancel": "Cancel",
+      "approveError": "Failed to approve service.",
+      "rejectError": "Failed to reject service.",
+      "diffFields": {
+        "Title": "Title",
+        "Description": "Description",
+        "Duration": "Duration",
+        "Price": "Price",
+        "Format": "Format",
+        "Cluster": "Category",
+        "HomeVisitAreas": "Home visit areas"
+      }
     },
     "stripe": {
       "title": "Stripe Account",

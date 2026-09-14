@@ -1,15 +1,17 @@
 import data from './location-data.json';
 
-// Region → province (Italy) / region → landsdel (Denmark) cascade used by the
-// home-visit area picker in the services form. The dataset keeps the two
-// second-level concepts under different keys ("provinces" vs "landsdele") on
-// purpose — they are not equivalent — so the helpers below read whichever one
-// a country's region entry carries rather than normalising them into one.
+// Region → province (Italy) / region → landsdel (Denmark) / region → county (UK)
+// cascade used by the home-visit area picker in the services form. The dataset
+// keeps these second-level concepts under different keys ("provinces" vs
+// "landsdele" vs "counties") on purpose — they are not equivalent — so the
+// helpers below read whichever one a country's region entry carries rather
+// than normalising them into one.
 
 // Expert.address_country is stored as a lowercase ISO 3166-1 alpha-2 code.
 const ISO_TO_COUNTRY_KEY = {
   it: 'italy',
   dk: 'denmark',
+  gb: 'united_kingdom',
 };
 
 // Chip / stored value shape: "Region — Province". The separator is a spaced
@@ -31,10 +33,10 @@ function countryData(countryKey) {
 }
 
 function subLevelList(regionEntry) {
-  return regionEntry.provinces || regionEntry.landsdele || [];
+  return regionEntry.provinces || regionEntry.landsdele || regionEntry.counties || [];
 }
 
-// Second-level field name for a country: 'province' (Italy) | 'landsdel' (Denmark).
+// Second-level field name for a country: 'province' (Italy) | 'landsdel' (Denmark) | 'county' (UK).
 export function getSubLevel(countryKey) {
   const c = countryData(countryKey);
   return c ? c.levels[1] : null;

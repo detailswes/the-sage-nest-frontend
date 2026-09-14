@@ -418,6 +418,11 @@
     "heading":       "Services",
     "subheading":    "Manage the services you offer to parents.",
     "addServiceBtn": "Add Service",
+    "tabs": {
+      "inReview":     "In Review",
+      "approved":     "Approved",
+      "inReviewHint": "New or edited services waiting on admin approval."
+    },
     "formats": {
       "ONLINE":    "Online",
       "IN_PERSON": "In-Person",
@@ -449,15 +454,16 @@
       "formatLabel":          "Format",
       "formatSelect":         "Select a format…",
       "lockedFormatHint":     "Set by your profile session format. Change it in your Profile settings.",
-      "homeVisitCountryHint":       "Only available for experts whose practice address is in Italy or Denmark.",
+      "homeVisitCountryHint":       "Only available for experts whose practice address is in Italy, Denmark, or the United Kingdom.",
       "homeVisitAreasLabel":        "Areas covered for home visits",
       "homeVisitAreasAddBtn":       "Add",
       "homeVisitAreasHint":         "Add every region and province you're willing to travel to for this service.",
       "homeVisitRegionSelect":      "Select a region…",
       "homeVisitProvinceSelect":    "Select a province…",
       "homeVisitLandsdelSelect":    "Select a landsdel…",
+      "homeVisitCountySelect":      "Select a county…",
       "homeVisitAreaInvalid":       "This area is no longer selectable — remove it and pick again.",
-      "homeVisitCountryUnsupported": "Home visit services aren't available yet for experts whose practice address is outside Italy and Denmark.",
+      "homeVisitCountryUnsupported": "Home visit services aren't available yet for experts whose practice address is outside Italy, Denmark, and the United Kingdom.",
       "categoryLabel":        "Category",
       "categorySelect":       "Select a category…",
       "durationLabel":        "Duration (min)",
@@ -469,7 +475,9 @@
       "savingBtn":            "Saving…",
       "saveChangesBtn":       "Save Changes",
       "duplicateBtn":         "Duplicate Service",
-      "addBtn":               "Add Service"
+      "addBtn":               "Add Service",
+      "editProposalTitle":    "Edit Proposed Changes",
+      "saveSuccess":          "Service saved."
     },
     "validation": {
       "titleRequired":       "Title is required",
@@ -485,16 +493,33 @@
     },
     "empty": {
       "title": "No services yet",
-      "body":  "Add your first service to get started."
+      "body":  "Add your first service to get started.",
+      "inReview": "Nothing in review",
+      "approved": "No approved services yet"
     },
     "card": {
       "active":        "Active",
       "inactive":      "Inactive",
-      "needsReview":   "Needs price review",
+      "activateHint":   "Activate this service",
+      "deactivateHint": "Deactivate this service",
+      "currencyMismatch": "Currency mismatch",
+      "pendingReview":  "Pending review",
+      "pendingReviewTooltip": "An admin needs to approve this before it can go live.",
+      "rejected":       "Rejected",
+      "editRejected":   "Edit rejected",
+      "rejectionNoteLabel": "Admin feedback:",
+      "editToResubmit": "Edit & resubmit",
+      "changesPending": "Changes pending",
+      "changesPendingTooltip": "Your edits are awaiting approval — parents still see the current version until then.",
+      "editProposalBtn": "Edit proposal",
       "homeVisitAreasLabel": "Home visit areas:",
       "deleteConfirm": "Delete?",
       "cancelBtn":     "Cancel",
       "deleteBtn":     "Delete"
+    },
+    "savedAsDraft": {
+      "title": "Submitted for review",
+      "body":  "An admin will review your changes before they go live."
     },
     "currencyUnconfirmed": {
       "title": "Connect Stripe to confirm your payout currency before adding services",
