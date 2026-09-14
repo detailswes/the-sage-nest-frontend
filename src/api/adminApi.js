@@ -96,6 +96,24 @@ export const adminApi = createApi({
       ],
     }),
 
+    // ── Service review ────────────────────────────────────────────────────────
+    approveService: builder.mutation({
+      query: (id) => ({
+        url: `/admin/services/${id}/approve`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, id) => ["Expert"],
+    }),
+    // arg: { id, note }
+    rejectService: builder.mutation({
+      query: ({ id, note }) => ({
+        url: `/admin/services/${id}/reject`,
+        method: "POST",
+        data: { note },
+      }),
+      invalidatesTags: (result, error, { id }) => ["Expert"],
+    }),
+
     // ── Moderation actions ────────────────────────────────────────────────────
     // arg: { id, note }
     requestChanges: builder.mutation({
@@ -438,6 +456,8 @@ export const {
   useReactivateExpertMutation,
   useApproveProfileDraftMutation,
   useRejectProfileDraftMutation,
+  useApproveServiceMutation,
+  useRejectServiceMutation,
   useRequestChangesMutation,
   useSendPasswordResetMutation,
   useResendVerificationMutation,

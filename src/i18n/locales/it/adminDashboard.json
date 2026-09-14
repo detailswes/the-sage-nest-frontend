@@ -462,6 +462,7 @@
     "backToList": "← Torna alla lista esperti",
     "tabs": {
       "profile": "Profilo",
+      "services": "Servizi",
       "bookings": "Prenotazioni",
       "activity": "Attività"
     },
@@ -597,7 +598,29 @@
       "title": "Servizi ({{count}})",
       "noServices": "Nessun servizio aggiunto.",
       "active": "Attivo",
-      "inactive": "Inattivo"
+      "inactive": "Inattivo",
+      "pendingTitle": "Nuovo servizio in attesa di revisione",
+      "editPendingTitle": "Modifica del servizio in attesa di revisione",
+      "rejectedLabel": "Rifiutato",
+      "submitted": "· inviato il {{date}}",
+      "approveBtn": "Approva",
+      "approving": "Approvazione…",
+      "rejectBtn": "Rifiuta",
+      "rejectionPlaceholder": "Nota di rifiuto (opzionale)…",
+      "confirmReject": "Conferma rifiuto",
+      "rejecting": "…",
+      "cancel": "Annulla",
+      "approveError": "Impossibile approvare il servizio.",
+      "rejectError": "Impossibile rifiutare il servizio.",
+      "diffFields": {
+        "Title": "Titolo",
+        "Description": "Descrizione",
+        "Duration": "Durata",
+        "Price": "Prezzo",
+        "Format": "Formato",
+        "Cluster": "Categoria",
+        "HomeVisitAreas": "Zone per visita a domicilio"
+      }
     },
     "stripe": {
       "title": "Account Stripe",

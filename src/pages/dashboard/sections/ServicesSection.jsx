@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
@@ -77,6 +77,24 @@ const Spinner = ({ className = 'w-4 h-4' }) => (
   <div className={`${className} rounded-full border-2 border-current border-t-transparent animate-spin`} />
 );
 
+// Merges a pending edit draft's proposed content over a service's live
+// values — used so editing a service that already has changes awaiting
+// review starts from the current proposal rather than the stale live copy.
+function withDraft(svc) {
+  const d = svc.draft;
+  if (!d) return svc;
+  return {
+    ...svc,
+    title:            d.title            ?? svc.title,
+    description:      d.description      ?? svc.description,
+    duration_minutes: d.duration_minutes ?? svc.duration_minutes,
+    price:            d.price            ?? svc.price,
+    format:           d.format           ?? svc.format,
+    cluster:          d.cluster          ?? svc.cluster,
+    home_visit_areas: d.home_visit_areas?.length ? d.home_visit_areas : svc.home_visit_areas,
+  };
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 const ServicesSection = () => {
   const { t, i18n } = useTranslation('expertDashboard');
@@ -99,13 +117,13 @@ const ServicesSection = () => {
   const expertCurrency = profile?.currency || null;
   const currencyConfirmed = !!expertCurrency;
 
-  // Home-visit coverage areas are picked from a fixed region → province/landsdel
+  // Home-visit coverage areas are picked from a fixed region → province/landsdel/county
   // dataset scoped to the expert's practice-address country. Home visit is only
-  // offered where that dataset exists (currently Italy and Denmark).
+  // offered where that dataset exists (currently Italy, Denmark, and the UK).
   const practiceCountry   = profile?.address_country || null;
   const homeVisitSupported = isHomeVisitCountrySupported(practiceCountry);
   const countryKey        = countryKeyFromIso(practiceCountry);
-  const homeVisitSubLevel = getSubLevel(countryKey); // 'province' | 'landsdel' | null
+  const homeVisitSubLevel = getSubLevel(countryKey); // 'province' | 'landsdel' | 'county' | null
   const regionOptions     = getRegions(countryKey);
 
   const [showForm, setShowForm]       = useState(false);
@@ -128,8 +146,29 @@ const ServicesSection = () => {
   const [togglingId, setTogglingId]     = useState(null);
   const [deleteModal, setDeleteModal]   = useState({ open: false, id: null });
 
+  // "In Review" default: a new expert's first-ever service always starts
+  // there, so it's the more useful landing tab.
+  const [activeTab, setActiveTab]       = useState('inReview');
+  const [savedAsDraft, setSavedAsDraft] = useState(false);
+
+  useEffect(() => {
+    if (!savedAsDraft) return;
+    const timer = setTimeout(() => setSavedAsDraft(false), 5000);
+    return () => clearTimeout(timer);
+  }, [savedAsDraft]);
+
   const formLoading = editingId ? updating : creating;
   const isReordering = reordering;
+
+  // Approved tab: everything currently live/approved (a service here may
+  // still carry a pending edit draft — shown as a "Changes pending" chip,
+  // not moved out of this list, since it's still the bookable version).
+  // In Review tab: services that have never been approved yet (or were
+  // rejected), plus a lightweight summary card for each approved service
+  // that has a pending edit draft.
+  const approvedServices = services.filter((s) => s.review_status === 'APPROVED');
+  const needsFirstReview = services.filter((s) => s.review_status === 'PENDING_REVIEW' || s.review_status === 'REJECTED');
+  const pendingEditDrafts = services.filter((s) => s.review_status === 'APPROVED' && s.draft?.status === 'PENDING_REVIEW');
 
   // Derives the locked format value when the expert has a single-mode
   // session_format. Anything other than BOTH locks the dropdown to that mode,
@@ -228,17 +267,21 @@ const ServicesSection = () => {
 
   const openEdit = (svc) => {
     if (!currencyConfirmed) return;
+    // If this service already has a pending edit awaiting review, start from
+    // that proposal rather than the (stale, from the expert's point of view)
+    // live values.
+    const effective = withDraft(svc);
     setEditingId(svc.id);
     setOriginalCurrency(svc.currency || null);
     setForm({
-      title:            svc.title,
-      description:      svc.description  || '',
-      duration_minutes: String(svc.duration_minutes),
-      price:            String(svc.price),
+      title:            effective.title,
+      description:      effective.description  || '',
+      duration_minutes: String(effective.duration_minutes),
+      price:            String(effective.price),
       currency:         expertCurrency,
-      format:           lockedFormat     || svc.format || '',
-      cluster:          svc.cluster      || '',
-      home_visit_areas: svc.home_visit_areas || [],
+      format:           lockedFormat     || effective.format || '',
+      cluster:          effective.cluster      || '',
+      home_visit_areas: effective.home_visit_areas || [],
     });
     setFormErrors({});
     setRegionSelect('');
@@ -272,12 +315,15 @@ const ServicesSection = () => {
         cluster:          form.cluster || null,
         home_visit_areas: form.format === 'HOME_VISIT' ? form.home_visit_areas : [],
       };
-      if (editingId) {
-        await updateService({ id: editingId, ...payload }).unwrap();
-      } else {
-        await createService(payload).unwrap();
-      }
+      const result = editingId
+        ? await updateService({ id: editingId, ...payload }).unwrap()
+        : await createService(payload).unwrap();
       cancelForm();
+      if (result?.pending) {
+        setSavedAsDraft(true);
+      } else {
+        toast.success(t('services.form.saveSuccess'));
+      }
     } catch (err) {
       toast.error(err?.data?.error || t('services.errors.saveFailed'));
     }
@@ -310,6 +356,7 @@ const ServicesSection = () => {
   };
 
   const handleToggle = async (svc) => {
+    if (svc.review_status !== 'APPROVED') return;
     setTogglingId(svc.id);
     try {
       await updateService({ id: svc.id, is_active: !svc.is_active }).unwrap();
@@ -368,11 +415,51 @@ const ServicesSection = () => {
         </div>
       )}
 
+      {savedAsDraft && (
+        <div className="mb-4 px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+          <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-px" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+          </svg>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-800">{t('services.savedAsDraft.title')}</p>
+            <p className="text-xs text-amber-600 mt-0.5">{t('services.savedAsDraft.body')}</p>
+          </div>
+          <button type="button" onClick={() => setSavedAsDraft(false)} className="p-0.5 text-amber-400 hover:text-amber-600 transition-colors flex-shrink-0">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
+
+      {/* Review-status tabs */}
+      <div className="flex items-center gap-2 mb-4">
+        {[
+          { key: 'inReview', label: t('services.tabs.inReview'), count: needsFirstReview.length + pendingEditDrafts.length },
+          { key: 'approved', label: t('services.tabs.approved'), count: approvedServices.length },
+        ].map(({ key, label, count }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              activeTab === key
+                ? 'bg-[#445446] text-white'
+                : 'bg-[#dfe2d7]/50 text-[#5e6d5b] hover:bg-[#dfe2d7]'
+            }`}
+          >
+            {label}{count > 0 ? ` (${count})` : ''}
+          </button>
+        ))}
+      </div>
+      {activeTab === 'inReview' && (
+        <p className="text-xs text-gray-400 mb-4 -mt-2">{t('services.tabs.inReviewHint')}</p>
+      )}
+
       {/* Add / Edit form */}
       {showForm && (
         <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-4 sm:p-6 mb-5">
           <h3 className="text-base font-semibold text-[#1F2933] mb-5">
-            {editingId ? t('services.form.editTitle') : isDuplicating ? t('services.form.duplicateTitle') : t('services.form.addTitle')}
+            {editingId
+              ? (services.find((s) => s.id === editingId)?.draft?.status === 'PENDING_REVIEW' ? t('services.form.editProposalTitle') : t('services.form.editTitle'))
+              : isDuplicating ? t('services.form.duplicateTitle') : t('services.form.addTitle')}
           </h3>
           {originalCurrency && originalCurrency !== form.currency && (
             <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
@@ -498,6 +585,8 @@ const ServicesSection = () => {
                         <option value="">
                           {homeVisitSubLevel === 'landsdel'
                             ? t('services.form.homeVisitLandsdelSelect')
+                            : homeVisitSubLevel === 'county'
+                            ? t('services.form.homeVisitCountySelect')
                             : t('services.form.homeVisitProvinceSelect')}
                         </option>
                         {subregionOptions.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -593,96 +682,185 @@ const ServicesSection = () => {
       )}
 
       {/* Service list */}
-      {services.length === 0 ? (
-        <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-14 text-center">
-          <svg className="w-12 h-12 mx-auto text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-          </svg>
-          <p className="text-sm font-medium text-gray-500">{t('services.empty.title')}</p>
-          <p className="text-xs text-gray-400 mt-1">{t('services.empty.body')}</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {services.map((svc) => (
-            <div key={svc.id} className="bg-white rounded-2xl border-2 border-[#c5ceba] px-5 py-4 hover:border-[#445446]/30 transition-colors">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  {/* Badges row */}
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
-                    {!svc.is_active && currencyConfirmed && svc.currency !== expertCurrency ? (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-amber-100 text-amber-700"
-                        title={t('services.currencyMismatch.badgeHint', { currency: svc.currency })}>
-                        {t('services.card.needsReview')}
-                      </span>
-                    ) : (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${svc.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
-                        {svc.is_active ? t('services.card.active') : t('services.card.inactive')}
-                      </span>
-                    )}
-                    {svc.format && FORMAT_BADGE_CLS[svc.format] && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${FORMAT_BADGE_CLS[svc.format]}`}>
-                        {t('services.formats.' + svc.format)}
-                      </span>
-                    )}
-                    {svc.cluster && CLUSTER_BADGE_CLS[svc.cluster] && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${CLUSTER_BADGE_CLS[svc.cluster]}`}>
-                        {t('services.clusters.' + svc.cluster)}
-                      </span>
-                    )}
-                  </div>
-                  {svc.description && (
-                    <p className="text-xs text-gray-500 mb-1 line-clamp-2">{svc.description}</p>
-                  )}
-                  <p className="text-xs text-gray-400">
-                    {svc.duration_minutes} min &middot; {formatPrice(svc.price, svc.currency || 'EUR', lng)}
-                  </p>
-                  {svc.format === 'HOME_VISIT' && svc.home_visit_areas?.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {t('services.card.homeVisitAreasLabel')} {svc.home_visit_areas.join(', ')}
-                    </p>
-                  )}
-                </div>
+      {(() => {
+        const displayed = activeTab === 'approved' ? approvedServices : needsFirstReview;
+        const isEmpty = displayed.length === 0 && (activeTab === 'approved' || pendingEditDrafts.length === 0);
+        if (isEmpty) {
+          return (
+            <div className="bg-white rounded-2xl border-2 border-[#c5ceba] p-14 text-center">
+              <svg className="w-12 h-12 mx-auto text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+              </svg>
+              <p className="text-sm font-medium text-gray-500">
+                {activeTab === 'approved' ? t('services.empty.approved') : t('services.empty.inReview')}
+              </p>
+              {services.length === 0 && <p className="text-xs text-gray-400 mt-1">{t('services.empty.body')}</p>}
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-3">
+            {displayed.map((svc) => {
+              const currencyMismatch = !svc.is_active && currencyConfirmed && svc.currency !== expertCurrency && svc.review_status === 'APPROVED';
+              return (
+                <div key={svc.id} className="bg-white rounded-2xl border-2 border-[#c5ceba] px-5 py-4 hover:border-[#445446]/30 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      {/* Badges row */}
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
 
-                <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <button onClick={() => handleReorder(services.indexOf(svc), -1)}
-                    disabled={isReordering || services.indexOf(svc) === 0}
-                    title="Move up"
-                    className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                    <ChevronUpIcon />
-                  </button>
-                  <button onClick={() => handleReorder(services.indexOf(svc), 1)}
-                    disabled={isReordering || services.indexOf(svc) === services.length - 1}
-                    title="Move down"
-                    className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                    <ChevronDownIcon />
-                  </button>
-                  <button onClick={() => handleToggle(svc)} disabled={togglingId === svc.id}
-                    title={svc.is_active ? 'Deactivate' : 'Activate'}
-                    className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-40">
-                    {togglingId === svc.id ? <Spinner /> : <PowerIcon />}
-                  </button>
-                  <button onClick={() => openDuplicate(svc)} title="Duplicate"
-                    className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors">
-                    <CopyIcon />
-                  </button>
-                  <button onClick={() => openEdit(svc)} title="Edit"
-                    className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors">
-                    <EditIcon />
-                  </button>
-                  <button
-                    onClick={() => setDeleteModal({ open: true, id: svc.id })}
-                    title="Delete"
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <TrashIcon />
+                        {currencyMismatch ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-amber-100 text-amber-700"
+                            title={t('services.currencyMismatch.badgeHint', { currency: svc.currency })}>
+                            {t('services.card.currencyMismatch')}
+                          </span>
+                        ) : svc.review_status === 'APPROVED' ? (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${svc.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                            {svc.is_active ? t('services.card.active') : t('services.card.inactive')}
+                          </span>
+                        ) : svc.review_status === 'PENDING_REVIEW' ? (
+                          <span
+                            title={t('services.card.pendingReviewTooltip')}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-amber-100 text-amber-700"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
+                            </svg>
+                            {t('services.card.pendingReview')}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-red-100 text-red-700">
+                            {t('services.card.rejected')}
+                          </span>
+                        )}
+
+                        {svc.review_status === 'APPROVED' && svc.draft?.status === 'PENDING_REVIEW' && (
+                          <span
+                            title={t('services.card.changesPendingTooltip')}
+                            className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-amber-100 text-amber-700"
+                          >
+                            {t('services.card.changesPending')}
+                          </span>
+                        )}
+                        {svc.review_status === 'APPROVED' && svc.draft?.status === 'REJECTED' && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-red-100 text-red-700">
+                            {t('services.card.editRejected')}
+                          </span>
+                        )}
+
+                        {svc.format && FORMAT_BADGE_CLS[svc.format] && (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${FORMAT_BADGE_CLS[svc.format]}`}>
+                            {t('services.formats.' + svc.format)}
+                          </span>
+                        )}
+                        {svc.cluster && CLUSTER_BADGE_CLS[svc.cluster] && (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${CLUSTER_BADGE_CLS[svc.cluster]}`}>
+                            {t('services.clusters.' + svc.cluster)}
+                          </span>
+                        )}
+                      </div>
+                      {svc.description && (
+                        <p className="text-xs text-gray-500 mb-1 line-clamp-2">{svc.description}</p>
+                      )}
+                      <p className="text-xs text-gray-400">
+                        {svc.duration_minutes} min &middot; {formatPrice(svc.price, svc.currency || 'EUR', lng)}
+                      </p>
+                      {svc.format === 'HOME_VISIT' && svc.home_visit_areas?.length > 0 && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {t('services.card.homeVisitAreasLabel')} {svc.home_visit_areas.join(', ')}
+                        </p>
+                      )}
+                      {(svc.review_status === 'REJECTED' || svc.draft?.status === 'REJECTED') && (
+                        <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                          {(() => {
+                            const note = svc.review_status === 'REJECTED' ? svc.rejection_note : svc.draft?.rejection_note;
+                            return note && (
+                              <p className="text-xs text-red-600">
+                                <span className="font-medium">{t('services.card.rejectionNoteLabel')}</span> {note}
+                              </p>
+                            );
+                          })()}
+                          <button type="button" onClick={() => openEdit(svc)}
+                            className="mt-1 text-xs font-medium text-red-700 hover:text-red-800 underline underline-offset-2">
+                            {t('services.card.editToResubmit')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      {activeTab === 'approved' && (
+                        <>
+                          <button onClick={() => handleReorder(services.indexOf(svc), -1)}
+                            disabled={isReordering || services.indexOf(svc) === 0}
+                            title="Move up"
+                            className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            <ChevronUpIcon />
+                          </button>
+                          <button onClick={() => handleReorder(services.indexOf(svc), 1)}
+                            disabled={isReordering || services.indexOf(svc) === services.length - 1}
+                            title="Move down"
+                            className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            <ChevronDownIcon />
+                          </button>
+                        </>
+                      )}
+                      <button onClick={() => handleToggle(svc)}
+                        disabled={togglingId === svc.id || svc.review_status !== 'APPROVED'}
+                        title={svc.review_status !== 'APPROVED' ? t('services.card.pendingReviewTooltip') : (svc.is_active ? t('services.card.deactivateHint') : t('services.card.activateHint'))}
+                        className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-40 disabled:hover:text-gray-400 disabled:hover:bg-transparent">
+                        {togglingId === svc.id ? <Spinner /> : <PowerIcon />}
+                      </button>
+                      <button onClick={() => openDuplicate(svc)} title="Duplicate"
+                        className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors">
+                        <CopyIcon />
+                      </button>
+                      <button onClick={() => openEdit(svc)} title="Edit"
+                        className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors">
+                        <EditIcon />
+                      </button>
+                      <button
+                        onClick={() => setDeleteModal({ open: true, id: svc.id })}
+                        title="Delete"
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Approved services with a pending edit — shown here too as a
+                lightweight proposal summary, since the change itself is what
+                needs review even though the service stays live/bookable. */}
+            {activeTab === 'inReview' && pendingEditDrafts.map((svc) => (
+              <div key={`draft-${svc.id}`} className="bg-white/60 rounded-2xl border-2 border-dashed border-amber-300 px-5 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="text-sm font-semibold text-[#1F2933]">{svc.draft.title ?? svc.title}</p>
+                      <span title={t('services.card.changesPendingTooltip')}
+                        className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-amber-100 text-amber-700">
+                        {t('services.card.changesPending')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      {svc.draft.duration_minutes ?? svc.duration_minutes} min &middot; {formatPrice(svc.draft.price ?? svc.price, svc.currency || 'EUR', lng)}
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => openEdit(svc)}
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-[#445446] border border-[#c5ceba] rounded-lg hover:bg-[#445446]/10 transition-colors">
+                    {t('services.card.editProposalBtn')}
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+      })()}
 
       <ConfirmModal
         open={deleteModal.open}
