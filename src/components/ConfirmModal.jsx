@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { XIcon, WarningTriangleFilledIcon } from '../assets/icons';
 
 const ConfirmModal = ({
@@ -5,12 +6,13 @@ const ConfirmModal = ({
   title,
   message,
   warning,
-  confirmLabel = 'Delete',
+  confirmLabel,
   loading = false,
   checking = false,
   onConfirm,
   onClose,
 }) => {
+  const { t } = useTranslation('common');
   if (!open) return null;
   return (
     <div
@@ -31,7 +33,7 @@ const ConfirmModal = ({
         {checking ? (
           <div className="flex items-center justify-center gap-2 py-2">
             <div className="w-4 h-4 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
-            <p className="text-sm text-gray-500">Checking for conflicts…</p>
+            <p className="text-sm text-gray-500">{t('checkingForConflicts')}</p>
           </div>
         ) : (
           <>
@@ -56,7 +58,7 @@ const ConfirmModal = ({
               disabled={loading}
               className="flex-1 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="button"
@@ -67,7 +69,7 @@ const ConfirmModal = ({
               {loading && (
                 <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
               )}
-              {confirmLabel}
+              {confirmLabel ?? t('delete')}
             </button>
           </div>
         )}

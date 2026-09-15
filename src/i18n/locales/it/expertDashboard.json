@@ -918,5 +918,41 @@
         "confirmBtn":          "Sì, elimina il mio account"
       }
     }
+  },
+  "stripeConnect": {
+    "verifying": {
+      "title": "Verifica del tuo account Stripe…",
+      "body":  "Attendi mentre confermiamo la tua configurazione."
+    },
+    "success": {
+      "title":       "Account Stripe collegato!",
+      "body":        "Il tuo account di pagamento è pronto. Ora puoi ricevere i pagamenti delle prenotazioni.",
+      "backToProfile": "Torna al profilo",
+      "redirecting": "Reindirizzamento automatico tra {{count}}s…"
+    },
+    "pending": {
+      "title":      "Attivazione del tuo account…",
+      "body":       "I tuoi dati sono stati inviati. Stripe sta attivando il tuo account di pagamento: di solito richiede pochi secondi. Verificheremo di nuovo automaticamente.",
+      "checkAgain": "Verifica ora"
+    },
+    "incomplete": {
+      "title":        "Configurazione non completata",
+      "body":         "Non hai completato la configurazione del tuo account Stripe. Torna al tuo profilo e clicca",
+      "cta":          "\"Completa configurazione Stripe\"",
+      "bodyEnd":      "per continuare.",
+      "backToProfile": "Torna al profilo"
+    },
+    "error": {
+      "title":        "Qualcosa è andato storto",
+      "body":         "Non siamo riusciti a verificare il tuo account Stripe. Riprova dal tuo profilo.",
+      "backToProfile": "Torna al profilo"
+    },
+    "refresh": {
+      "reconnecting":      "Riconnessione a Stripe…",
+      "reconnectingBody":  "La tua sessione precedente è scaduta. Stiamo generando un nuovo link di configurazione.",
+      "errorTitle":        "Impossibile riconnettersi a Stripe",
+      "errorBody":         "Si è verificato un problema nella generazione di un nuovo link di configurazione. Riprova dal tuo profilo.",
+      "backToProfile":     "Torna al profilo"
+    }
   }
 }

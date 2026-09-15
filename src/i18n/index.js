@@ -1,6 +1,8 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
+import enCommon from './locales/en/common.json';
+import itCommon from './locales/it/common.json';
 import enAuth from './locales/en/auth.json';
 import itAuth from './locales/it/auth.json';
 import enParentDashboard from './locales/en/parentDashboard.json';
@@ -74,8 +76,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      en: { auth: enAuth, parentDashboard: enParentDashboard, parentBookings: enParentBookings, expertDashboard: enExpertDashboard, adminDashboard: enAdminDashboard, legal: enLegal },
-      it: { auth: itAuth, parentDashboard: itParentDashboard, parentBookings: itParentBookings, expertDashboard: itExpertDashboard, adminDashboard: itAdminDashboard, legal: itLegal },
+      en: { common: enCommon, auth: enAuth, parentDashboard: enParentDashboard, parentBookings: enParentBookings, expertDashboard: enExpertDashboard, adminDashboard: enAdminDashboard, legal: enLegal },
+      it: { common: itCommon, auth: itAuth, parentDashboard: itParentDashboard, parentBookings: itParentBookings, expertDashboard: itExpertDashboard, adminDashboard: itAdminDashboard, legal: itLegal },
     },
     lng: localStorage.getItem(STORAGE_KEY) || 'en',
     fallbackLng: 'en',

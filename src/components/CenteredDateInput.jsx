@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const CenteredDateInput = ({ value, onChange, className }) => {
   const [open, setOpen] = useState(false);
+  const { t, i18n } = useTranslation("common");
 
   const display = value
-    ? new Date(value + "T00:00:00").toLocaleDateString("en-GB", {
+    ? new Date(value + "T00:00:00").toLocaleDateString(i18n.language === "it" ? "it-IT" : "en-GB", {
         day: "numeric", month: "short", year: "numeric",
       })
     : null;
@@ -16,7 +18,7 @@ const CenteredDateInput = ({ value, onChange, className }) => {
         onClick={() => setOpen(true)}
         className={`${className} text-left ${!display ? "text-gray-400" : "text-[#1F2933]"}`}
       >
-        {display ?? "DD/MM/YYYY"}
+        {display ?? t("datePlaceholder")}
       </button>
 
       {open && (
@@ -39,7 +41,7 @@ const CenteredDateInput = ({ value, onChange, className }) => {
               onClick={() => setOpen(false)}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
-              Cancel
+              {t("cancel")}
             </button>
           </div>
         </div>
