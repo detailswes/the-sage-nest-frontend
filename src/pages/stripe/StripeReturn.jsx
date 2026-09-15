@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLazyVerifyStripeReturnQuery } from '../../api/stripeApi';
 import {
   StripeSuccessIcon as SuccessIcon,
@@ -10,6 +11,7 @@ import { LOGO_SVG } from '../../assets/images';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const StripeReturn = () => {
+  const { t } = useTranslation('expertDashboard');
   const navigate = useNavigate();
   // 'verifying' | 'success' | 'pending' | 'incomplete' | 'error'
   const [status, setStatus] = useState('verifying');
@@ -79,8 +81,8 @@ const StripeReturn = () => {
         {status === 'verifying' && (
           <>
             <div className="w-16 h-16 rounded-full border-4 border-[#445446]/20 border-t-[#445446] animate-spin mx-auto mb-5" />
-            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">Verifying your Stripe account…</h2>
-            <p className="text-sm text-gray-500">Please wait while we confirm your setup.</p>
+            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">{t('stripeConnect.verifying.title')}</h2>
+            <p className="text-sm text-gray-500">{t('stripeConnect.verifying.body')}</p>
           </>
         )}
 
@@ -88,18 +90,18 @@ const StripeReturn = () => {
         {status === 'success' && (
           <>
             <SuccessIcon />
-            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">Stripe account connected!</h2>
+            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">{t('stripeConnect.success.title')}</h2>
             <p className="text-sm text-gray-500 mb-6">
-              Your payment account is ready. You can now receive payouts from bookings.
+              {t('stripeConnect.success.body')}
             </p>
             <button
               onClick={goToProfileSuccess}
               className="w-full py-2.5 px-4 rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium transition-colors"
             >
-              Back to Profile
+              {t('stripeConnect.success.backToProfile')}
             </button>
             <p className="text-xs text-gray-400 mt-3">
-              Redirecting automatically in {countdown}s…
+              {t('stripeConnect.success.redirecting', { count: countdown })}
             </p>
           </>
         )}
@@ -108,16 +110,15 @@ const StripeReturn = () => {
         {status === 'pending' && (
           <>
             <div className="w-16 h-16 rounded-full border-4 border-[#445446]/20 border-t-[#445446] animate-spin mx-auto mb-5" />
-            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">Activating your account…</h2>
+            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">{t('stripeConnect.pending.title')}</h2>
             <p className="text-sm text-gray-500 mb-6">
-              Your details have been submitted. Stripe is activating your payment account — this usually takes a few seconds.
-              We'll check again automatically.
+              {t('stripeConnect.pending.body')}
             </p>
             <button
               onClick={() => { setRetrying(false); verify(); }}
               className="w-full py-2.5 px-4 rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium transition-colors"
             >
-              Check again now
+              {t('stripeConnect.pending.checkAgain')}
             </button>
           </>
         )}
@@ -126,16 +127,16 @@ const StripeReturn = () => {
         {status === 'incomplete' && (
           <>
             <WarningIcon />
-            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">Setup not complete</h2>
+            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">{t('stripeConnect.incomplete.title')}</h2>
             <p className="text-sm text-gray-500 mb-6">
-              You haven't finished setting up your Stripe account. Go back to your profile and click
-              <span className="font-medium text-[#1F2933]"> "Complete Stripe Setup"</span> to continue.
+              {t('stripeConnect.incomplete.body')}
+              <span className="font-medium text-[#1F2933]"> {t('stripeConnect.incomplete.cta')}</span> {t('stripeConnect.incomplete.bodyEnd')}
             </p>
             <button
               onClick={goToProfile}
               className="w-full py-2.5 px-4 rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium transition-colors"
             >
-              Back to Profile
+              {t('stripeConnect.incomplete.backToProfile')}
             </button>
           </>
         )}
@@ -144,15 +145,15 @@ const StripeReturn = () => {
         {status === 'error' && (
           <>
             <ErrorIcon />
-            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">Something went wrong</h2>
+            <h2 className="text-lg font-semibold text-[#1F2933] mb-2">{t('stripeConnect.error.title')}</h2>
             <p className="text-sm text-gray-500 mb-6">
-              We couldn't verify your Stripe account. Please try again from your profile.
+              {t('stripeConnect.error.body')}
             </p>
             <button
               onClick={goToProfile}
               className="w-full py-2.5 px-4 rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium transition-colors"
             >
-              Back to Profile
+              {t('stripeConnect.error.backToProfile')}
             </button>
           </>
         )}

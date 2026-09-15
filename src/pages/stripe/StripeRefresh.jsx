@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCreateConnectLinkMutation } from '../../api/stripeApi';
 import { LOGO_SVG } from '../../assets/images';
 
@@ -8,6 +9,7 @@ import { LOGO_SVG } from '../../assets/images';
  * Automatically generates a fresh link and redirects back to Stripe.
  */
 const StripeRefresh = () => {
+  const { t } = useTranslation('expertDashboard');
   const navigate = useNavigate();
   const [error, setError] = useState(false);
   const [createConnectLink] = useCreateConnectLinkMutation();
@@ -39,15 +41,15 @@ const StripeRefresh = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-[#1F2933] mb-2">Couldn't reconnect to Stripe</h2>
+          <h2 className="text-lg font-semibold text-[#1F2933] mb-2">{t('stripeConnect.refresh.errorTitle')}</h2>
           <p className="text-sm text-gray-500 mb-6">
-            We had trouble generating a new setup link. Please try again from your profile.
+            {t('stripeConnect.refresh.errorBody')}
           </p>
           <button
             onClick={() => navigate('/dashboard/expert/profile', { replace: true })}
             className="w-full py-2.5 px-4 rounded-lg bg-[#445446] hover:bg-[#3F4E41] text-white text-sm font-medium transition-colors"
           >
-            Back to Profile
+            {t('stripeConnect.refresh.backToProfile')}
           </button>
         </div>
       </div>
@@ -67,8 +69,8 @@ const StripeRefresh = () => {
           <span className="font-bold text-[#1F2933] text-base tracking-tight">Sage Nest</span>
         </div>
         <div className="w-16 h-16 rounded-full border-4 border-[#445446]/20 border-t-[#445446] animate-spin mx-auto mb-5" />
-        <h2 className="text-lg font-semibold text-[#1F2933] mb-2">Reconnecting to Stripe…</h2>
-        <p className="text-sm text-gray-500">Your previous session expired. Generating a fresh setup link.</p>
+        <h2 className="text-lg font-semibold text-[#1F2933] mb-2">{t('stripeConnect.refresh.reconnecting')}</h2>
+        <p className="text-sm text-gray-500">{t('stripeConnect.refresh.reconnectingBody')}</p>
       </div>
     </div>
   );

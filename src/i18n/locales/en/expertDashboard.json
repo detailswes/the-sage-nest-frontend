@@ -918,5 +918,41 @@
         "confirmBtn":          "Yes, delete my account"
       }
     }
+  },
+  "stripeConnect": {
+    "verifying": {
+      "title": "Verifying your Stripe account…",
+      "body":  "Please wait while we confirm your setup."
+    },
+    "success": {
+      "title":       "Stripe account connected!",
+      "body":        "Your payment account is ready. You can now receive payouts from bookings.",
+      "backToProfile": "Back to Profile",
+      "redirecting": "Redirecting automatically in {{count}}s…"
+    },
+    "pending": {
+      "title":      "Activating your account…",
+      "body":       "Your details have been submitted. Stripe is activating your payment account — this usually takes a few seconds. We'll check again automatically.",
+      "checkAgain": "Check again now"
+    },
+    "incomplete": {
+      "title":        "Setup not complete",
+      "body":         "You haven't finished setting up your Stripe account. Go back to your profile and click",
+      "cta":          "\"Complete Stripe Setup\"",
+      "bodyEnd":      "to continue.",
+      "backToProfile": "Back to Profile"
+    },
+    "error": {
+      "title":        "Something went wrong",
+      "body":         "We couldn't verify your Stripe account. Please try again from your profile.",
+      "backToProfile": "Back to Profile"
+    },
+    "refresh": {
+      "reconnecting":      "Reconnecting to Stripe…",
+      "reconnectingBody":  "Your previous session expired. Generating a fresh setup link.",
+      "errorTitle":        "Couldn't reconnect to Stripe",
+      "errorBody":         "We had trouble generating a new setup link. Please try again from your profile.",
+      "backToProfile":     "Back to Profile"
+    }
   }
 }
