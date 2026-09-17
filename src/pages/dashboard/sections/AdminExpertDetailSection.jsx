@@ -147,6 +147,11 @@ const AdminExpertDetailSection = () => {
     return ["profile", "bookings", "activity", "services"].includes(tab) ? tab : "profile";
   });
 
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (["profile", "bookings", "activity", "services"].includes(tab)) setActiveTab(tab);
+  }, [searchParams]);
+
   // ── Action UI state ───────────────────────────────────────────────────────────
   const [confirmAction,  setConfirmAction]  = useState(null);
   const [langConfirm,    setLangConfirm]    = useState(null);
