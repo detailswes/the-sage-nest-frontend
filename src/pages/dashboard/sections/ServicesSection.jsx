@@ -536,7 +536,9 @@ const ServicesSection = () => {
                   </p>
                 ) : !homeVisitSupported && (
                   <p className="mt-1 text-xs text-gray-400">
-                    {t('services.form.homeVisitCountryHint')}
+                    {practiceCountry
+                      ? t('services.form.homeVisitCountryHint')
+                      : t('services.form.homeVisitCountryMissingHint')}
                   </p>
                 )}
                 {formErrors.format && <p className="mt-1.5 text-xs text-red-500">{formErrors.format}</p>}

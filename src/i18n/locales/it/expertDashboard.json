@@ -455,6 +455,7 @@
       "formatSelect":         "Seleziona un formato…",
       "lockedFormatHint":     "Impostato dal formato di sessione del tuo profilo. Modificalo nelle impostazioni del Profilo.",
       "homeVisitCountryHint":       "Disponibile solo per i professionisti con indirizzo dello studio in Italia, Danimarca o Regno Unito.",
+      "homeVisitCountryMissingHint": "Imposta il paese dell'indirizzo del tuo studio nel Profilo per abilitare le visite a domicilio.",
       "homeVisitAreasLabel":        "Zone coperte per le visite a domicilio",
       "homeVisitAreasAddBtn":       "Aggiungi",
       "homeVisitAreasHint":         "Aggiungi ogni regione e provincia in cui sei disponibile a recarti per questo servizio.",

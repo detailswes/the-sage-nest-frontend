@@ -455,6 +455,7 @@
       "formatSelect":         "Select a format…",
       "lockedFormatHint":     "Set by your profile session format. Change it in your Profile settings.",
       "homeVisitCountryHint":       "Only available for experts whose practice address is in Italy, Denmark, or the United Kingdom.",
+      "homeVisitCountryMissingHint": "Set your practice address country in your Profile to enable home visits.",
       "homeVisitAreasLabel":        "Areas covered for home visits",
       "homeVisitAreasAddBtn":       "Add",
       "homeVisitAreasHint":         "Add every region and province you're willing to travel to for this service.",
