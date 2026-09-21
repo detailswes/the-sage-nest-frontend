@@ -186,9 +186,7 @@ const ProfileSection = () => {
       address_street:   profile.address_street   || '',
       address_city:     profile.address_city     || '',
       address_postcode: profile.address_postcode || '',
-      // Falls back to the registered/DAC7 country for experts onboarded before
-      // the practice address collected a country of its own.
-      address_country:  profile.address_country || profile.business_info?.address_country || '',
+      address_country:  profile.address_country || '',
       languages:         Array.isArray(profile.languages)         ? profile.languages         : [],
       pending_languages: Array.isArray(profile.pending_languages) ? profile.pending_languages : [],
       instagram:        profile.instagram || '',
