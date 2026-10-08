@@ -4,7 +4,7 @@ import axiosBaseQuery from '../store/baseQuery';
 export const bookingApi = createApi({
   reducerPath: 'bookingApi',
   baseQuery: axiosBaseQuery,
-  tagTypes: ['Booking', 'UpcomingAppointment', 'PastAppointment', 'CalendarBooking', 'SlotLock'],
+  tagTypes: ['Booking', 'UpcomingAppointment', 'PastAppointment', 'CalendarBooking', 'SlotLock', 'EventAttendees'],
   endpoints: (builder) => ({
 
     // ─── Parent booking flow ───────────────────────────────────────────────────
@@ -102,14 +102,27 @@ export const bookingApi = createApi({
     }),
 
     // ─── Slot locking ──────────────────────────────────────────────────────────
-    // arg: { expertId, slotStart }
+    // arg: { expertId, slotStart, serviceId? } — serviceId lets the backend
+    // apply an event's capacity instead of the default "one booking at a time" rule.
     lockSlot: builder.mutation({
-      query: ({ expertId, slotStart }) => ({ url: '/availability/lock-slot', method: 'POST', data: { expertId, slotStart } }),
+      query: ({ expertId, slotStart, serviceId }) => ({ url: '/availability/lock-slot', method: 'POST', data: { expertId, slotStart, serviceId } }),
       providesTags: ['SlotLock'],
     }),
     releaseLock: builder.mutation({
       query: (lockId) => ({ url: `/availability/lock-slot/${lockId}`, method: 'DELETE' }),
       invalidatesTags: ['SlotLock'],
+    }),
+
+    // ─── Events ─────────────────────────────────────────────────────────────────
+    getEventAttendees: builder.query({
+      query: (serviceId) => ({ url: `/bookings/events/${serviceId}/attendees` }),
+      providesTags: (result, error, serviceId) => [{ type: 'EventAttendees', id: serviceId }],
+    }),
+    cancelEvent: builder.mutation({
+      query: (serviceId) => ({ url: `/bookings/events/${serviceId}/cancel`, method: 'POST' }),
+      invalidatesTags: (result, error, serviceId) => [
+        'Booking', 'UpcomingAppointment', 'CalendarBooking', { type: 'EventAttendees', id: serviceId },
+      ],
     }),
   }),
 });
@@ -134,4 +147,6 @@ export const {
   useLockSlotMutation,
   useReleaseLockMutation,
   useNotifyImLateMutation,
+  useGetEventAttendeesQuery,
+  useCancelEventMutation,
 } = bookingApi;

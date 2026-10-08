@@ -612,6 +612,8 @@
       "cancel": "Annulla",
       "approveError": "Impossibile approvare il servizio.",
       "rejectError": "Impossibile rifiutare il servizio.",
+      "eventSpots_one": "{{count}} posto",
+      "eventSpots_other": "{{count}} posti",
       "diffFields": {
         "Title": "Titolo",
         "Description": "Descrizione",
@@ -619,7 +621,9 @@
         "Price": "Prezzo",
         "Format": "Formato",
         "Cluster": "Categoria",
-        "HomeVisitAreas": "Zone per visita a domicilio"
+        "HomeVisitAreas": "Zone per visita a domicilio",
+        "EventDate": "Data dell'evento",
+        "Capacity": "Numero di posti"
       }
     },
     "stripe": {

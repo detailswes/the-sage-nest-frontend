@@ -132,7 +132,28 @@ const BookingSummaryStrip = ({ detail, service, slot, format, lng }) => {
           {t(formatLabelKey('confirmStep', format))}
         </p>
       </div>
-      <p className="text-sm font-bold text-[#1F2933] flex-shrink-0">{formatPrice(service?.price, service?.currency || 'EUR', lng)}</p>
+      <p className="text-sm font-bold text-[#1F2933] flex-shrink-0">
+        {Number(service?.price) === 0 ? t('detailsStep.freePrice') : formatPrice(service?.price, service?.currency || 'EUR', lng)}
+      </p>
+    </div>
+  );
+};
+
+// ─── Live spots-left — events have no slot-picking step, so this is the ─────
+// only place the parent sees how many spots remain before committing. The
+// venue itself (for in-person events) shows later, same place and same way
+// as any other in-person service: the address on the Confirm step.
+const EventSpotsNotice = ({ service, t }) => {
+  if (!service) return null;
+  const spotsLeft = service.spots_left;
+  const isFull = typeof spotsLeft === 'number' && spotsLeft <= 0;
+  return (
+    <div className="mb-5 -mt-2 space-y-2">
+      {typeof spotsLeft === 'number' && (
+        <p className={`text-xs font-medium ${isFull ? 'text-red-600' : spotsLeft <= 3 ? 'text-amber-600' : 'text-gray-500'}`}>
+          {isFull ? t('detailsStep.eventFull') : t('detailsStep.spotsLeft', { count: spotsLeft })}
+        </p>
+      )}
     </div>
   );
 };
@@ -547,9 +568,11 @@ const BookPage = () => {
   const { data: legalVersions } = useGetLegalVersionsQuery();
 
   // 14-day cooling-off period, measured from now (the moment of booking creation) —
-  // mirrors the server-side check in createBooking().
+  // mirrors the server-side check in createBooking(). Never applies to a free
+  // event: there's no payment to withdraw from.
   const withdrawalApplicable = !!(
     selectedSlot &&
+    !(selectedService?.cluster === 'EVENT' && Number(selectedService?.price) === 0) &&
     new Date(selectedSlot.start).getTime() - Date.now() <= WITHDRAWAL_WINDOW_MS
   );
 
@@ -604,7 +627,12 @@ const BookPage = () => {
     setSelectedService(svc);
     const fmt = formatParam || svc.format;
     if (fmt) setSelectedFormat(fmt);
-    if (slotStartParam) {
+    if (svc.cluster === 'EVENT') {
+      // An event has one fixed date/time set by the expert — there's nothing
+      // to pick, so skip the SLOT step entirely.
+      setSelectedSlot({ start: svc.event_starts_at });
+      setStep(user ? STEPS.DETAILS : STEPS.ACCOUNT);
+    } else if (slotStartParam) {
       setSelectedSlot({ start: slotStartParam });
       // Signed in already (e.g. returning from email verification while
       // logged in) skips Account entirely, straight to Details.
@@ -718,15 +746,18 @@ const BookPage = () => {
     if (!slot) return null;
     try {
       const { lockId: id, expiresAt } = await lockSlotFn({
-        expertId: selectedExpert.id, slotStart: slot.start,
+        expertId: selectedExpert.id, slotStart: slot.start, serviceId: selectedService?.id,
       }).unwrap();
       lockIdRef.current = id;
       setLockId(id); setLockExpiresAt(new Date(expiresAt));
       return id;
     } catch (err) {
       if (err?.status === 409) {
-        toast.error(t('slotStep.slotUnavailable'));
-        setSelectedSlot(null);
+        toast.error(err?.data?.error || t('slotStep.slotUnavailable'));
+        // An event's date is fixed — there's no other slot to fall back to,
+        // so leave it selected (the summary stays informative) and let the
+        // parent retry or give up, rather than blanking the booking out.
+        if (!isEventBooking) setSelectedSlot(null);
       } else {
         toast.error(t('slotStep.lockError'));
       }
@@ -739,15 +770,19 @@ const BookPage = () => {
   const isItalianExpert = detail?.business_info?.address_country === 'it';
   const healthConsentRequired = detail?.is_health_professional === true;
   const healthFlow = selectedService?.cluster === 'FOR_BABY' ? 'B' : 'A';
+  const isEventBooking = selectedService?.cluster === 'EVENT';
+  // A free event has nothing to invoice and nothing to withdraw from — the
+  // backend skips both entirely for a $0 booking, so the UI does too.
+  const isFreeEvent = isEventBooking && Number(selectedService?.price) === 0;
 
-  const billingValid = billing.invoiceHolder.trim().length > 0 && (
+  const billingValid = isFreeEvent || (billing.invoiceHolder.trim().length > 0 && (
     !isItalianExpert || (
       billing.address.trim() && billing.postcode.trim() && billing.town.trim() && billing.province.trim() &&
       (billing.noFiscalCode || (
         billing.fiscalCode.trim() && isValidItalianFiscalCode(normalizeFiscalCode(billing.fiscalCode))
       ))
     )
-  );
+  ));
   const detailsValid = billingValid
     && (!healthConsentRequired || healthConsentGiven)
     && (!withdrawalApplicable || withdrawalAccepted);
@@ -763,21 +798,29 @@ const BookPage = () => {
         tcAccepted,
         withdrawalAccepted: withdrawalApplicable ? withdrawalAccepted : undefined,
         language: i18n.language,
-        billingInvoiceHolder: billing.invoiceHolder.trim(),
-        billingAddress:   isItalianExpert ? billing.address.trim()   : undefined,
-        billingPostcode:  isItalianExpert ? billing.postcode.trim()  : undefined,
-        billingTown:      isItalianExpert ? billing.town.trim()      : undefined,
-        billingProvince:  isItalianExpert ? billing.province.trim()  : undefined,
-        billingCountry:   isItalianExpert ? billing.country          : undefined,
-        billingFiscalCode: isItalianExpert ? billing.fiscalCode.trim() : undefined,
-        billingNoFiscalCode: isItalianExpert ? billing.noFiscalCode  : undefined,
+        billingInvoiceHolder: isFreeEvent ? undefined : billing.invoiceHolder.trim(),
+        billingAddress:   !isFreeEvent && isItalianExpert ? billing.address.trim()   : undefined,
+        billingPostcode:  !isFreeEvent && isItalianExpert ? billing.postcode.trim()  : undefined,
+        billingTown:      !isFreeEvent && isItalianExpert ? billing.town.trim()      : undefined,
+        billingProvince:  !isFreeEvent && isItalianExpert ? billing.province.trim()  : undefined,
+        billingCountry:   !isFreeEvent && isItalianExpert ? billing.country          : undefined,
+        billingFiscalCode: !isFreeEvent && isItalianExpert ? billing.fiscalCode.trim() : undefined,
+        billingNoFiscalCode: !isFreeEvent && isItalianExpert ? billing.noFiscalCode  : undefined,
         healthConsentGiven: healthConsentRequired ? healthConsentGiven : undefined,
       }).unwrap();
       lockIdRef.current = null;
       setLockId(null); setLockExpiresAt(null);
 
+      // Free booking: the backend confirms it synchronously and returns no
+      // clientSecret — there's no payment step, so go straight to the same
+      // success page Stripe would otherwise redirect to.
+      if (!result.clientSecret) {
+        navigate(`/booking-confirmed?bookingId=${result.bookingId}`);
+        return;
+      }
+
       const sessionLocation = selectedFormat === 'IN_PERSON'
-        ? (formatPracticeAddress(detail, lng) || null)
+        ? formatPracticeAddress(detail, lng) || null
         : null;
 
       navigate('/checkout', {
@@ -955,6 +998,7 @@ const BookPage = () => {
           <div className="px-6 pt-6 pb-4 border-b border-[#c5ceba]">
             <StepIndicator step={STEPS.ACCOUNT} signedIn={false} />
             <BookingSummaryStrip detail={detail} service={selectedService} slot={selectedSlot} format={selectedFormat} lng={lng} />
+            {isEventBooking && <EventSpotsNotice service={selectedService} t={t} />}
           </div>
 
           <div className="p-5">
@@ -1011,11 +1055,13 @@ const BookPage = () => {
   if (step === STEPS.DETAILS) {
     return (
       <div>
-        <button onClick={() => setStep(user ? STEPS.SLOT : STEPS.ACCOUNT)}
-          className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
-          <ChevronLeftIcon className="w-4 h-4" />
-          {t('detailsStep.back')}
-        </button>
+        {!(isEventBooking && user) && (
+          <button onClick={() => setStep(user ? STEPS.SLOT : STEPS.ACCOUNT)}
+            className="flex items-center gap-1 text-sm text-[#5e6d5b] hover:text-[#445446] mb-4 transition-colors font-medium">
+            <ChevronLeftIcon className="w-4 h-4" />
+            {t('detailsStep.back')}
+          </button>
+        )}
 
         <div className="bg-white rounded-2xl border-2 border-[#c5ceba] overflow-hidden">
           <div className="px-6 pt-6 pb-4 border-b border-[#c5ceba]">
@@ -1026,21 +1072,28 @@ const BookPage = () => {
 
           <div className="p-5 border-b border-[#c5ceba]">
             <BookingSummaryStrip detail={detail} service={selectedService} slot={selectedSlot} format={selectedFormat} lng={lng} />
+            {isEventBooking && (
+              <EventSpotsNotice service={selectedService} t={t} />
+            )}
 
-            <p className="text-sm font-semibold text-[#1F2933] mb-1">{t('detailsStep.billingTitle')}</p>
-            <p className="text-xs text-gray-500 mb-3">{t('detailsStep.billingSubtitle')}</p>
-            <BillingDetailsBlock
-              isItalianExpert={isItalianExpert}
-              billing={billing}
-              setBilling={setBilling}
-              fiscalCodeError={fiscalCodeError}
-              setFiscalCodeError={setFiscalCodeError}
-              showErrors={showDetailsErrors}
-            />
+            {!isFreeEvent && (
+              <>
+                <p className="text-sm font-semibold text-[#1F2933] mb-1">{t('detailsStep.billingTitle')}</p>
+                <p className="text-xs text-gray-500 mb-3">{t('detailsStep.billingSubtitle')}</p>
+                <BillingDetailsBlock
+                  isItalianExpert={isItalianExpert}
+                  billing={billing}
+                  setBilling={setBilling}
+                  fiscalCodeError={fiscalCodeError}
+                  setFiscalCodeError={setFiscalCodeError}
+                  showErrors={showDetailsErrors}
+                />
 
-            <div className="mt-3 p-3 bg-[#dfe2d7]/30 border border-[#c5ceba] rounded-lg text-xs text-[#5e6d5b] leading-relaxed">
-              {t('detailsStep.invoiceNote')}
-            </div>
+                <div className="mt-3 p-3 bg-[#dfe2d7]/30 border border-[#c5ceba] rounded-lg text-xs text-[#5e6d5b] leading-relaxed">
+                  {t('detailsStep.invoiceNote')}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="p-5 space-y-4">
@@ -1122,20 +1175,24 @@ const BookPage = () => {
                 </div>
               ) : null;
             })()}
-            <div className="flex justify-between gap-4">
-              <span className="text-gray-500">{t('confirmStep.invoiceTo')}</span>
-              <span className="text-[#1F2933] font-medium text-right">
-                {billing.invoiceHolder}
-                {isItalianExpert && billing.address ? `, ${[billing.address, billing.postcode, billing.town, billing.province].filter(Boolean).join(', ')}` : ''}
-                {' '}
-                <button type="button" onClick={() => setStep(STEPS.DETAILS)} className="text-[#445446] underline text-xs">
-                  {t('confirmStep.edit')}
-                </button>
-              </span>
-            </div>
+            {!isFreeEvent && (
+              <div className="flex justify-between gap-4">
+                <span className="text-gray-500">{t('confirmStep.invoiceTo')}</span>
+                <span className="text-[#1F2933] font-medium text-right">
+                  {billing.invoiceHolder}
+                  {isItalianExpert && billing.address ? `, ${[billing.address, billing.postcode, billing.town, billing.province].filter(Boolean).join(', ')}` : ''}
+                  {' '}
+                  <button type="button" onClick={() => setStep(STEPS.DETAILS)} className="text-[#445446] underline text-xs">
+                    {t('confirmStep.edit')}
+                  </button>
+                </span>
+              </div>
+            )}
             <div className="flex justify-between gap-4 pt-3 border-t border-[#c5ceba] mt-3">
               <span className="font-semibold text-[#1F2933]">{t('confirmStep.labelTotal')}</span>
-              <span className="font-bold text-lg text-[#1F2933]">{formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}</span>
+              <span className="font-bold text-lg text-[#1F2933]">
+                {isFreeEvent ? t('detailsStep.freePrice') : formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng)}
+              </span>
             </div>
           </div>
 

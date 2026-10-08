@@ -178,7 +178,11 @@
     "fiscalCodeHelper":  "Required by law on the invoice you will receive from your expert. 16 characters.",
     "noFiscalCode":      "I do not have an Italian fiscal code",
     "invoiceNote":       "The invoice is issued directly by your expert, not by Sage Nest.",
-    "continueBtn":       "Continue"
+    "continueBtn":       "Continue",
+    "spotsLeft_one":     "Only {{count}} spot left",
+    "spotsLeft_other":   "{{count}} spots left",
+    "eventFull":         "This event is fully booked",
+    "freePrice":         "Free"
   },
   "healthConsent": {
     "heading": "Consent to processing",

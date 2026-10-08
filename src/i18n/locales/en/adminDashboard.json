@@ -612,6 +612,8 @@
       "cancel": "Cancel",
       "approveError": "Failed to approve service.",
       "rejectError": "Failed to reject service.",
+      "eventSpots_one": "{{count}} spot",
+      "eventSpots_other": "{{count}} spots",
       "diffFields": {
         "Title": "Title",
         "Description": "Description",
@@ -619,7 +621,9 @@
         "Price": "Price",
         "Format": "Format",
         "Cluster": "Category",
-        "HomeVisitAreas": "Home visit areas"
+        "HomeVisitAreas": "Home visit areas",
+        "EventDate": "Event date",
+        "Capacity": "Number of spots"
       }
     },
     "stripe": {

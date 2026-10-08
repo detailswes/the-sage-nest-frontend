@@ -12,7 +12,9 @@ import {
 import ConfirmModal from '../../../components/ConfirmModal';
 import {
   EditIcon, TrashIcon, PowerIcon, ChevronUpIcon, ChevronDownIcon, CopyIcon,
+  NavUsersIcon, XCircleFilledIcon,
 } from '../../../assets/icons';
+import { useGetEventAttendeesQuery, useCancelEventMutation } from '../../../api/bookingApi';
 import {
   countryKeyFromIso, isHomeVisitCountrySupported,
   getRegions, getSubregions, getSubLevel, formatArea, isValidArea,
@@ -46,12 +48,34 @@ const PRICE_LIMITS = {
 function formatPrice(price, currency = 'EUR', lng = 'en') {
   return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', { style: 'currency', currency }).format(Number(price));
 }
+
+// An event's date/time is set once, directly, by the expert creating it —
+// unlike recurring weekly availability, there's no need to reinterpret it
+// against their profile timezone later, so we just use the browser's own
+// local time (which is virtually always where the expert actually is).
+function toDatetimeLocalValue(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fromDatetimeLocalValue(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
 const CLUSTER_OPTIONS = [
   { value: 'FOR_PARENTS' },
   { value: 'FOR_BABY' },
   { value: 'FOR_FAMILY' },
   { value: 'PACKAGE' },
+  { value: 'EVENT' },
 ];
+
+// Events are always a single scheduled occurrence, delivered online or
+// in-person — "home visit" has no meaning for a one-off group gathering.
+const EVENT_FORMAT_OPTIONS = FORMAT_OPTIONS.filter((o) => o.value !== 'HOME_VISIT');
 
 const FORMAT_BADGE_CLS = {
   ONLINE:     'bg-blue-100 text-blue-700',
@@ -71,6 +95,7 @@ const EMPTY_FORM = {
   title: '', description: '',
   duration_minutes: '', price: '', currency: 'EUR',
   format: '', cluster: '', home_visit_areas: [],
+  event_starts_at: '', capacity: '',
 };
 
 const Spinner = ({ className = 'w-4 h-4' }) => (
@@ -92,6 +117,8 @@ function withDraft(svc) {
     format:           d.format           ?? svc.format,
     cluster:          d.cluster          ?? svc.cluster,
     home_visit_areas: d.home_visit_areas?.length ? d.home_visit_areas : svc.home_visit_areas,
+    event_starts_at:  d.event_starts_at  ?? svc.event_starts_at,
+    capacity:         d.capacity         ?? svc.capacity,
   };
 }
 
@@ -145,6 +172,9 @@ const ServicesSection = () => {
   const [deletingId, setDeletingId]     = useState(null);
   const [togglingId, setTogglingId]     = useState(null);
   const [deleteModal, setDeleteModal]   = useState({ open: false, id: null });
+  const [attendeesModalId, setAttendeesModalId] = useState(null);
+  const [cancelEventModal, setCancelEventModal] = useState({ open: false, id: null });
+  const [cancelEventMutation, { isLoading: cancellingEvent }] = useCancelEventMutation();
 
   // "In Review" default: a new expert's first-ever service always starts
   // there, so it's the more useful landing tab.
@@ -178,7 +208,18 @@ const ServicesSection = () => {
   // ── Helpers ───────────────────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => {
+      const next = { ...f, [name]: value };
+      // Home visit has no meaning for an event — if the expert picked it
+      // before switching category to Event, the format dropdown's options
+      // narrow to Online/In-person, so the stale HOME_VISIT value (and its
+      // areas) must be cleared or the home-visit-areas block keeps showing.
+      if (name === 'cluster' && value === 'EVENT' && f.format === 'HOME_VISIT') {
+        next.format = '';
+        next.home_visit_areas = [];
+      }
+      return next;
+    });
     setFormErrors((fe) => ({ ...fe, [name]: '' }));
   };
 
@@ -200,6 +241,8 @@ const ServicesSection = () => {
     setForm((f) => ({ ...f, home_visit_areas: f.home_visit_areas.filter((a) => a !== area) }));
   };
 
+  const isEventForm = form.cluster === 'EVENT';
+
   const validate = () => {
     const errs = {};
     if (!form.title.trim())
@@ -210,10 +253,13 @@ const ServicesSection = () => {
       errs.duration_minutes = t('services.validation.durationRequired');
     const price  = parseFloat(form.price);
     const limits = PRICE_LIMITS[form.currency] || PRICE_LIMITS.EUR;
+    const minPrice = isEventForm ? 0 : limits.min;
     if (!form.currency)
       errs.currency = t('services.validation.currencyRequired');
-    if (!form.price || isNaN(price) || price < limits.min)
-      errs.price = t('services.validation.priceMin', { min: formatPrice(limits.min, form.currency || 'EUR', lng) });
+    if (form.price === '' || isNaN(price) || price < minPrice)
+      errs.price = isEventForm
+        ? t('services.validation.priceMinEvent')
+        : t('services.validation.priceMin', { min: formatPrice(limits.min, form.currency || 'EUR', lng) });
     else if (price > limits.max)
       errs.price = t('services.validation.priceMax', { max: formatPrice(limits.max, form.currency || 'EUR', lng) });
     if (!form.format)
@@ -226,6 +272,18 @@ const ServicesSection = () => {
     }
     if (!form.cluster)
       errs.cluster = t('services.validation.categoryRequired');
+    if (isEventForm) {
+      if (form.format === 'HOME_VISIT')
+        errs.format = t('services.validation.eventFormatInvalid');
+      const eventDate = form.event_starts_at ? new Date(form.event_starts_at) : null;
+      if (!eventDate || isNaN(eventDate.getTime()))
+        errs.event_starts_at = t('services.validation.eventDateRequired');
+      else if (eventDate <= new Date())
+        errs.event_starts_at = t('services.validation.eventDateFuture');
+      const capacity = parseInt(form.capacity);
+      if (isNaN(capacity) || capacity < 1 || capacity > 1000)
+        errs.capacity = t('services.validation.capacityRequired');
+    }
     return errs;
   };
 
@@ -258,6 +316,10 @@ const ServicesSection = () => {
       format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
       home_visit_areas: svc.home_visit_areas || [],
+      // An event is one-time — duplicating carries over everything except the
+      // date, which the expert sets fresh for the new occurrence.
+      event_starts_at:  '',
+      capacity:         svc.capacity != null ? String(svc.capacity) : '',
     });
     setFormErrors({});
     setRegionSelect('');
@@ -282,6 +344,8 @@ const ServicesSection = () => {
       format:           lockedFormat     || effective.format || '',
       cluster:          effective.cluster      || '',
       home_visit_areas: effective.home_visit_areas || [],
+      event_starts_at:  toDatetimeLocalValue(effective.event_starts_at),
+      capacity:         effective.capacity != null ? String(effective.capacity) : '',
     });
     setFormErrors({});
     setRegionSelect('');
@@ -314,6 +378,10 @@ const ServicesSection = () => {
         format:           form.format  || null,
         cluster:          form.cluster || null,
         home_visit_areas: form.format === 'HOME_VISIT' ? form.home_visit_areas : [],
+        ...(isEventForm && {
+          event_starts_at: fromDatetimeLocalValue(form.event_starts_at),
+          capacity:        parseInt(form.capacity),
+        }),
       };
       const result = editingId
         ? await updateService({ id: editingId, ...payload }).unwrap()
@@ -337,6 +405,15 @@ const ServicesSection = () => {
       toast.error(t('services.errors.deleteFailed'));
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleCancelEvent = async (id) => {
+    try {
+      await cancelEventMutation(id).unwrap();
+      toast.success(t('services.card.cancelEventSuccess'));
+    } catch (err) {
+      toast.error(err?.data?.error || t('services.errors.cancelEventFailed'));
     }
   };
 
@@ -520,7 +597,7 @@ const ServicesSection = () => {
                   className={`${inputClass(!!formErrors.format)} ${lockedFormat ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''}`}
                 >
                   <option value="" disabled>{t('services.form.formatSelect')}</option>
-                  {FORMAT_OPTIONS.map((o) => (
+                  {(isEventForm ? EVENT_FORMAT_OPTIONS : FORMAT_OPTIONS).map((o) => (
                     <option
                       key={o.value}
                       value={o.value}
@@ -549,11 +626,58 @@ const ServicesSection = () => {
                 </label>
                 <select name="cluster" value={form.cluster} onChange={handleChange} className={inputClass(!!formErrors.cluster)}>
                   <option value="" disabled>{t('services.form.categorySelect')}</option>
-                  {CLUSTER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t('services.clusters.' + o.value)}</option>)}
+                  {CLUSTER_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value} disabled={o.value === 'EVENT' && lockedFormat === 'HOME_VISIT'}>
+                      {t('services.clusters.' + o.value)}
+                    </option>
+                  ))}
                 </select>
                 {formErrors.cluster && <p className="mt-1.5 text-xs text-red-500">{formErrors.cluster}</p>}
+                {lockedFormat === 'HOME_VISIT' && (
+                  <p className="mt-1 text-xs text-gray-400">{t('services.form.eventUnavailableHomeVisitHint')}</p>
+                )}
               </div>
             </div>
+
+            {/* Event details — one-time date/time, spots, and (for in-person) a venue */}
+            {isEventForm && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                    {t('services.form.eventDateLabel')} <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="event_starts_at"
+                    value={form.event_starts_at}
+                    onChange={handleChange}
+                    className={inputClass(!!formErrors.event_starts_at)}
+                  />
+                  {formErrors.event_starts_at && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_starts_at}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                    {t('services.form.capacityLabel')} <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="capacity"
+                    value={form.capacity}
+                    onChange={handleChange}
+                    min="1"
+                    max="1000"
+                    step="1"
+                    placeholder={t('services.form.capacityPlaceholder')}
+                    className={inputClass(!!formErrors.capacity)}
+                  />
+                  {formErrors.capacity && <p className="mt-1.5 text-xs text-red-500">{formErrors.capacity}</p>}
+                </div>
+                {form.format === 'IN_PERSON' && (
+                  <p className="sm:col-span-2 text-xs text-gray-400">{t('services.form.eventInPersonHint')}</p>
+                )}
+                <p className="sm:col-span-2 text-xs text-gray-400">{t('services.form.eventHint')}</p>
+              </div>
+            )}
 
             {/* Home visit coverage — region → province/landsdel pairs, required once format is HOME_VISIT */}
             {form.format === 'HOME_VISIT' && (
@@ -658,7 +782,8 @@ const ServicesSection = () => {
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.priceLabel')}</label>
                 <input type="number" name="price" value={form.price} onChange={handleChange}
-                  placeholder="75.00" min="1.00" step="0.01" className={inputClass(!!formErrors.price)} />
+                  placeholder={isEventForm ? '0.00' : '75.00'} min={isEventForm ? '0' : '1.00'} step="0.01" className={inputClass(!!formErrors.price)} />
+                {isEventForm && <p className="mt-1 text-xs text-gray-400">{t('services.form.eventFreePriceHint')}</p>}
                 {formErrors.price && <p className="mt-1.5 text-xs text-red-500">{formErrors.price}</p>}
               </div>
             </div>
@@ -773,6 +898,12 @@ const ServicesSection = () => {
                           {t('services.card.homeVisitAreasLabel')} {svc.home_visit_areas.join(', ')}
                         </p>
                       )}
+                      {svc.cluster === 'EVENT' && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                          {svc.capacity ? ` · ${t('services.card.capacityLabel', { count: svc.capacity })}` : ''}
+                        </p>
+                      )}
                       {(svc.review_status === 'REJECTED' || svc.draft?.status === 'REJECTED') && (
                         <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
                           {(() => {
@@ -814,6 +945,18 @@ const ServicesSection = () => {
                         className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-40 disabled:hover:text-gray-400 disabled:hover:bg-transparent">
                         {togglingId === svc.id ? <Spinner /> : <PowerIcon />}
                       </button>
+                      {svc.cluster === 'EVENT' && svc.review_status === 'APPROVED' && (
+                        <>
+                          <button onClick={() => setAttendeesModalId(svc.id)} title={t('services.card.attendeesBtn')}
+                            className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors">
+                            <NavUsersIcon />
+                          </button>
+                          <button onClick={() => setCancelEventModal({ open: true, id: svc.id })} title={t('services.card.cancelEventBtn')}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                            <XCircleFilledIcon className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                       <button onClick={() => openDuplicate(svc)} title="Duplicate"
                         className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors">
                         <CopyIcon />
@@ -873,6 +1016,98 @@ const ServicesSection = () => {
         onClose={() => setDeleteModal({ open: false, id: null })}
         onConfirm={() => { handleDelete(deleteModal.id); setDeleteModal({ open: false, id: null }); }}
       />
+
+      <ConfirmModal
+        open={cancelEventModal.open}
+        title={t('services.card.cancelEventConfirm')}
+        message={t('services.card.cancelEventMessage')}
+        confirmLabel={t('services.card.cancelEventBtn')}
+        loading={cancellingEvent}
+        onClose={() => setCancelEventModal({ open: false, id: null })}
+        onConfirm={() => { handleCancelEvent(cancelEventModal.id); setCancelEventModal({ open: false, id: null }); }}
+      />
+
+      {attendeesModalId && (
+        <EventAttendeesModal
+          serviceId={attendeesModalId}
+          lng={lng}
+          t={t}
+          onClose={() => setAttendeesModalId(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Expert-only attendee list for one event — attendees never see each other,
+// so this is deliberately not reachable from anywhere a parent can view.
+const STATUS_BADGE_CLS = {
+  CONFIRMED: 'bg-green-100 text-green-700',
+  PENDING_PAYMENT: 'bg-amber-100 text-amber-700',
+  CANCELLED: 'bg-gray-100 text-gray-500',
+  REFUNDED: 'bg-gray-100 text-gray-500',
+};
+const EventAttendeesModal = ({ serviceId, lng, t, onClose }) => {
+  const { data, isLoading, isError } = useGetEventAttendeesQuery(serviceId);
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-[#1F2933]">{t('services.card.attendeesTitle')}</h3>
+            {data?.service?.title && <p className="text-xs text-gray-400 mt-0.5">{data.service.title}</p>}
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-10">
+            <div className="w-6 h-6 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+          </div>
+        )}
+        {isError && (
+          <p className="text-sm text-red-500 py-6 text-center">{t('services.errors.loadFailed')}</p>
+        )}
+        {data && (
+          <>
+            <p className="text-xs text-gray-400 mb-3">
+              {t('services.card.attendeesCount', {
+                count: data.attendees.filter((a) => ['CONFIRMED', 'PENDING_PAYMENT'].includes(a.status)).length,
+                capacity: data.service.capacity,
+              })}
+            </p>
+            <div className="overflow-y-auto flex-1 -mx-2">
+              {data.attendees.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">{t('services.card.attendeesEmpty')}</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <tbody>
+                    {data.attendees.map((a) => (
+                      <tr key={a.id} className="border-b border-gray-100 last:border-0">
+                        <td className="px-2 py-2.5">
+                          <p className="font-medium text-[#1F2933]">{a.parent.name}</p>
+                          <p className="text-xs text-gray-400">{a.parent.email}</p>
+                        </td>
+                        <td className="px-2 py-2.5 text-right">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE_CLS[a.status] || 'bg-gray-100 text-gray-500'}`}>
+                            {t('services.card.attendeeStatus.' + a.status, a.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

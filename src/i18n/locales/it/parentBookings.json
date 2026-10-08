@@ -178,7 +178,11 @@
     "fiscalCodeHelper":  "Obbligatorio per legge sulla fattura che riceverai dal professionista. 16 caratteri.",
     "noFiscalCode":      "Non ho un codice fiscale italiano",
     "invoiceNote":       "La fattura è emessa direttamente dal professionista, non da Sage Nest.",
-    "continueBtn":       "Continua"
+    "continueBtn":       "Continua",
+    "spotsLeft_one":     "Solo {{count}} posto disponibile",
+    "spotsLeft_other":   "{{count}} posti disponibili",
+    "eventFull":         "Questo evento è al completo",
+    "freePrice":         "Gratis"
   },
   "healthConsent": {
     "heading": "Consenso al trattamento",

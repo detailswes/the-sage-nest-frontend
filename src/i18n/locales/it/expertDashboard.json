@@ -441,7 +441,8 @@
       "deleteFailed":  "Impossibile eliminare il servizio.",
       "reorderFailed": "Impossibile salvare il nuovo ordine.",
       "updateFailed":  "Impossibile aggiornare il servizio.",
-      "saveFailed":    "Impossibile salvare il servizio."
+      "saveFailed":    "Impossibile salvare il servizio.",
+      "cancelEventFailed": "Impossibile cancellare l'evento."
     },
     "form": {
       "addTitle":             "Aggiungi nuovo servizio",
@@ -478,7 +479,14 @@
       "duplicateBtn":         "Duplica servizio",
       "addBtn":               "Aggiungi servizio",
       "editProposalTitle":    "Modifica le modifiche proposte",
-      "saveSuccess":          "Servizio salvato."
+      "saveSuccess":          "Servizio salvato.",
+      "eventDateLabel":       "Data e ora dell'evento",
+      "capacityLabel":        "Numero di posti",
+      "capacityPlaceholder":  "es. 10",
+      "eventHint":            "Gli eventi sono singoli. Per ripeterlo, duplica questo servizio e imposta una nuova data.",
+      "eventInPersonHint":    "Gli eventi in presenza si svolgono presso il tuo indirizzo di studio, come per qualsiasi altro servizio in presenza.",
+      "eventFreePriceHint":   "Gli eventi possono essere gratuiti: imposta 0 per un evento gratuito.",
+      "eventUnavailableHomeVisitHint": "Gli eventi non sono disponibili perché il tuo profilo è impostato solo su Visita a domicilio."
     },
     "validation": {
       "titleRequired":       "Il titolo è obbligatorio",
@@ -486,11 +494,16 @@
       "durationRequired":    "Seleziona una durata",
       "currencyRequired":    "Seleziona una valuta",
       "priceMin":            "Prezzo minimo: {{min}}",
+      "priceMinEvent":       "Il prezzo non può essere negativo",
       "priceMax":            "Prezzo massimo: {{max}}",
       "formatRequired":      "Seleziona un formato",
       "homeVisitAreasRequired": "Aggiungi almeno una regione e provincia per la visita a domicilio",
       "homeVisitCountryUnsupported": "Le visite a domicilio non sono ancora disponibili per il paese del tuo studio",
-      "categoryRequired":    "Seleziona una categoria"
+      "categoryRequired":    "Seleziona una categoria",
+      "eventFormatInvalid":  "Gli eventi devono essere Online o Di persona — la Visita a domicilio non è disponibile per gli eventi",
+      "eventDateRequired":   "È richiesta una data e ora dell'evento valida",
+      "eventDateFuture":     "La data e ora dell'evento devono essere nel futuro",
+      "capacityRequired":    "Il numero di posti deve essere tra 1 e 1000"
     },
     "empty": {
       "title": "Nessun servizio ancora",
@@ -516,7 +529,23 @@
       "homeVisitAreasLabel": "Zone per visita a domicilio:",
       "deleteConfirm": "Eliminare?",
       "cancelBtn":     "Annulla",
-      "deleteBtn":     "Elimina"
+      "deleteBtn":     "Elimina",
+      "capacityLabel_one":  "{{count}} posto",
+      "capacityLabel_other": "{{count}} posti",
+      "attendeesBtn":   "Visualizza partecipanti",
+      "cancelEventBtn": "Cancella evento",
+      "attendeesTitle": "Partecipanti",
+      "attendeesCount": "{{count}} di {{capacity}} posti prenotati",
+      "attendeesEmpty": "Nessuno ha ancora prenotato.",
+      "attendeeStatus": {
+        "CONFIRMED": "Confermato",
+        "PENDING_PAYMENT": "Pagamento in attesa",
+        "CANCELLED": "Cancellato",
+        "REFUNDED": "Rimborsato"
+      },
+      "cancelEventConfirm": "Cancellare questo evento?",
+      "cancelEventMessage": "Ogni partecipante verrà rimborsato e notificato. Questa azione non può essere annullata.",
+      "cancelEventSuccess": "Evento cancellato e partecipanti rimborsati."
     },
     "savedAsDraft": {
       "title": "Inviato in revisione",

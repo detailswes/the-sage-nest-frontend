@@ -1079,6 +1079,12 @@ const AdminExpertDetailSection = () => {
                               {svc.format === "HOME_VISIT" && svc.home_visit_areas?.length > 0 && (
                                 <p className="text-xs text-gray-500">{svc.home_visit_areas.join(", ")}</p>
                               )}
+                              {svc.cluster === "EVENT" && (
+                                <p className="text-xs text-gray-500">
+                                  {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                                  {svc.capacity ? ` · ${t("expertDetail.services.eventSpots", { count: svc.capacity })}` : ""}
+                                </p>
+                              )}
                             </div>
                           </div>
                         );
@@ -1096,6 +1102,12 @@ const AdminExpertDetailSection = () => {
                               <p className="text-sm font-semibold text-[#1F2933]">{svc.title}</p>
                               {svc.description && <p className="text-sm text-gray-600">{svc.description}</p>}
                               <p className="text-xs text-gray-500">{svc.duration_minutes} min &middot; {priceFmt(svc.price)}</p>
+                              {svc.cluster === "EVENT" && (
+                                <p className="text-xs text-gray-500">
+                                  {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                                  {svc.capacity ? ` · ${t("expertDetail.services.eventSpots", { count: svc.capacity })}` : ""}
+                                </p>
+                              )}
                             </div>
                           </div>
                         );
@@ -1111,6 +1123,10 @@ const AdminExpertDetailSection = () => {
                           { key: "Format",      live: svc.format ? t(`expertDetail.formatBadge.${svc.format}`, { defaultValue: svc.format }) : null, proposed: svc.draft.format ? t(`expertDetail.formatBadge.${svc.draft.format}`, { defaultValue: svc.draft.format }) : null },
                           { key: "Cluster",     live: svc.cluster ? t(`expertDetail.clusterBadge.${svc.cluster}`, { defaultValue: svc.cluster }) : null, proposed: svc.draft.cluster ? t(`expertDetail.clusterBadge.${svc.draft.cluster}`, { defaultValue: svc.draft.cluster }) : null },
                           { key: "HomeVisitAreas", live: svc.home_visit_areas?.join(", ") || null, proposed: svc.draft.home_visit_areas?.join(", ") || null },
+                          ...(svc.cluster === "EVENT" || svc.draft.cluster === "EVENT" ? [
+                            { key: "EventDate", live: svc.event_starts_at ? new Date(svc.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : null, proposed: svc.draft.event_starts_at ? new Date(svc.draft.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : null },
+                            { key: "Capacity", live: svc.capacity != null ? String(svc.capacity) : null, proposed: svc.draft.capacity != null ? String(svc.draft.capacity) : null },
+                          ] : []),
                         ];
                         return (
                           <div key={svc.id} className="rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden">
@@ -1172,6 +1188,12 @@ const AdminExpertDetailSection = () => {
                           </div>
                           {svc.description && <p className="text-xs text-gray-500 mb-1">{svc.description}</p>}
                           <p className="text-xs text-gray-400">{svc.duration_minutes} min &middot; {priceFmt(svc.price)}</p>
+                          {svc.cluster === "EVENT" && (
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                              {svc.capacity ? ` · ${t("expertDetail.services.eventSpots", { count: svc.capacity })}` : ""}
+                            </p>
+                          )}
                         </div>
                       );
                     })
