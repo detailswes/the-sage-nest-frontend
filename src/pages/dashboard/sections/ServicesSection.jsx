@@ -15,6 +15,8 @@ import {
   NavUsersIcon, XCircleFilledIcon,
 } from '../../../assets/icons';
 import { useGetEventAttendeesQuery, useCancelEventMutation } from '../../../api/bookingApi';
+import CenteredDateInput from '../../../components/CenteredDateInput';
+import TimeSelect from '../../../components/calendar/TimeSelect';
 import {
   countryKeyFromIso, isHomeVisitCountrySupported,
   getRegions, getSubregions, getSubLevel, formatArea, isValidArea,
@@ -242,6 +244,11 @@ const ServicesSection = () => {
   };
 
   const isEventForm = form.cluster === 'EVENT';
+  // Local "today", for the event date picker's lower bound and as a
+  // fallback date when the expert picks a time before picking a date.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const todayLocalStr = toDatetimeLocalValue(new Date()).split('T')[0];
 
   const validate = () => {
     const errs = {};
@@ -642,17 +649,29 @@ const ServicesSection = () => {
             {/* Event details — one-time date/time, spots, and (for in-person) a venue */}
             {isEventForm && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
                     {t('services.form.eventDateLabel')} <span className="text-red-400">*</span>
                   </label>
-                  <input
-                    type="datetime-local"
-                    name="event_starts_at"
-                    value={form.event_starts_at}
-                    onChange={handleChange}
-                    className={inputClass(!!formErrors.event_starts_at)}
-                  />
+                  <div className="grid grid-cols-2 gap-2 max-w-sm">
+                    <CenteredDateInput
+                      value={form.event_starts_at ? form.event_starts_at.split('T')[0] : ''}
+                      onChange={(e) => {
+                        const timePart = form.event_starts_at ? form.event_starts_at.split('T')[1] : '00:00';
+                        handleChange({ target: { name: 'event_starts_at', value: `${e.target.value}T${timePart}` } });
+                      }}
+                      min={startOfToday}
+                      className={inputClass(!!formErrors.event_starts_at)}
+                    />
+                    <TimeSelect
+                      value={form.event_starts_at ? form.event_starts_at.split('T')[1] : ''}
+                      onChange={(val) => {
+                        const datePart = form.event_starts_at ? form.event_starts_at.split('T')[0] : todayLocalStr;
+                        handleChange({ target: { name: 'event_starts_at', value: `${datePart}T${val}` } });
+                      }}
+                      hasError={!!formErrors.event_starts_at}
+                    />
+                  </div>
                   {formErrors.event_starts_at && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_starts_at}</p>}
                 </div>
                 <div>

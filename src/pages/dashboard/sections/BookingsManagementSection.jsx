@@ -168,13 +168,13 @@ const BookingsManagementSection = () => {
           )}
         </div>
 
-        {/* Date range — desktop: native date inputs */}
+        {/* Date range — desktop */}
         <div className="hidden lg:flex items-center gap-2 border border-[#c5ceba] rounded-xl px-3 py-2">
           <span className="text-xs text-[#5e6d5b]">{t("bookingsMgmt.from")}</span>
-          <input type="date" value={fromDate} onChange={handleFromChange}
+          <CenteredDateInput value={fromDate} onChange={handleFromChange}
             className="text-sm outline-none bg-transparent text-[#1F2933] uppercase" />
           <span className="text-xs text-[#5e6d5b]">{t("bookingsMgmt.to")}</span>
-          <input type="date" value={toDate} onChange={handleToChange}
+          <CenteredDateInput value={toDate} onChange={handleToChange}
             className="text-sm outline-none bg-transparent text-[#1F2933] uppercase" />
           {(fromDate || toDate) && (
             <button

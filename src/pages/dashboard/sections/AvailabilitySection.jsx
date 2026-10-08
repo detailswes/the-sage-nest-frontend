@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../../components/ConfirmModal';
 import CenteredDateInput from '../../../components/CenteredDateInput';
+import TimeSelect from '../../../components/calendar/TimeSelect';
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import {
   format,
@@ -352,35 +353,6 @@ for (let h = 6; h < 22; h++) {
 }
 TIME_OPTIONS.push("22:00");
 
-const TimeSelect = ({ value, onChange, hasError }) => {
-  const { t } = useTranslation('expertDashboard');
-  return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full px-3 py-2 rounded-lg border text-sm text-[#1F2933] bg-white focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446] appearance-none pr-7 ${
-          hasError ? "border-red-400" : "border-[#E4E7E4]"
-        }`}
-      >
-        <option value="">{t('availability.weekly.selectTime')}</option>
-        {TIME_OPTIONS.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
-      <svg
-        className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
-      </svg>
-    </div>
-  );
-};
-
 // ─── Weekly schedule panel ────────────────────────────────────────────────────
 
 function fmtBookingDate(isoStr, lng = 'en') {
@@ -509,6 +481,8 @@ const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formE
                 setFormErrors((fe) => ({ ...fe, start_time: "" }));
               }}
               hasError={!!formErrors.start_time}
+              options={TIME_OPTIONS}
+              placeholder={t('availability.weekly.selectTime')}
             />
             {formErrors.start_time && (
               <p className="mt-0.5 text-xs text-red-500">{formErrors.start_time}</p>
@@ -525,6 +499,8 @@ const WeeklySchedulePanel = ({ slots, onAdd, onRemove, removingId, adding, formE
                 setFormErrors((fe) => ({ ...fe, end_time: "" }));
               }}
               hasError={!!formErrors.end_time}
+              options={TIME_OPTIONS}
+              placeholder={t('availability.weekly.selectTime')}
             />
             {formErrors.end_time && (
               <p className="mt-0.5 text-xs text-red-500">{formErrors.end_time}</p>
@@ -658,6 +634,8 @@ const BlockoutPanel = ({
   const [form, setForm] = useState(EMPTY_BLOCK_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [deleteBlockoutModal, setDeleteBlockoutModal] = useState({ open: false, id: null });
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
 
   const noAvailabilityWarning = useMemo(() => {
     if (form.block_type !== "time_slot" || !form.date_from || form.date_from !== form.date_to) return "";
@@ -744,40 +722,20 @@ const BlockoutPanel = ({
             <label className="block text-xs font-medium text-gray-600 mb-1">
               {t('availability.blockout.fromLabel')}
             </label>
-            {/* Mobile */}
-            <div className="lg:hidden">
-              <CenteredDateInput
-                value={form.date_from}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setForm((f) => ({
-                    ...f,
-                    date_from: val,
-                    date_to: f.date_to && f.date_to < val ? val : f.date_to,
-                  }));
-                  setFormErrors((fe) => ({ ...fe, date_from: "", date_to: "" }));
-                }}
-                className={inputClass(!!formErrors.date_from)}
-              />
-            </div>
-            {/* Desktop */}
-            <div className="hidden lg:block">
-              <input
-                type="date"
-                value={form.date_from}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setForm((f) => ({
-                    ...f,
-                    date_from: val,
-                    date_to: f.date_to && f.date_to < val ? val : f.date_to,
-                  }));
-                  setFormErrors((fe) => ({ ...fe, date_from: "", date_to: "" }));
-                }}
-                className={`${inputClass(!!formErrors.date_from)} uppercase`}
-                min={new Date().toISOString().split("T")[0]}
-              />
-            </div>
+            <CenteredDateInput
+              value={form.date_from}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm((f) => ({
+                  ...f,
+                  date_from: val,
+                  date_to: f.date_to && f.date_to < val ? val : f.date_to,
+                }));
+                setFormErrors((fe) => ({ ...fe, date_from: "", date_to: "" }));
+              }}
+              min={startOfToday}
+              className={`${inputClass(!!formErrors.date_from)} uppercase`}
+            />
             {formErrors.date_from && (
               <p className="mt-0.5 text-xs text-red-500">{formErrors.date_from}</p>
             )}
@@ -786,30 +744,15 @@ const BlockoutPanel = ({
             <label className="block text-xs font-medium text-gray-600 mb-1">
               {t('availability.blockout.toLabel')}
             </label>
-            {/* Mobile */}
-            <div className="lg:hidden">
-              <CenteredDateInput
-                value={form.date_to}
-                onChange={(e) => {
-                  setForm((f) => ({ ...f, date_to: e.target.value }));
-                  setFormErrors((fe) => ({ ...fe, date_to: "" }));
-                }}
-                className={inputClass(!!formErrors.date_to)}
-              />
-            </div>
-            {/* Desktop */}
-            <div className="hidden lg:block">
-              <input
-                type="date"
-                value={form.date_to}
-                onChange={(e) => {
-                  setForm((f) => ({ ...f, date_to: e.target.value }));
-                  setFormErrors((fe) => ({ ...fe, date_to: "" }));
-                }}
-                className={`${inputClass(!!formErrors.date_to)} uppercase`}
-                min={form.date_from || new Date().toISOString().split("T")[0]}
-              />
-            </div>
+            <CenteredDateInput
+              value={form.date_to}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, date_to: e.target.value }));
+                setFormErrors((fe) => ({ ...fe, date_to: "" }));
+              }}
+              min={form.date_from ? new Date(form.date_from + "T00:00:00") : startOfToday}
+              className={`${inputClass(!!formErrors.date_to)} uppercase`}
+            />
             {formErrors.date_to && (
               <p className="mt-0.5 text-xs text-red-500">{formErrors.date_to}</p>
             )}
@@ -860,6 +803,8 @@ const BlockoutPanel = ({
                   setFormErrors((fe) => ({ ...fe, start_time: "" }));
                 }}
                 hasError={!!formErrors.start_time}
+                options={TIME_OPTIONS}
+                placeholder={t('availability.weekly.selectTime')}
               />
               {formErrors.start_time && (
                 <p className="mt-0.5 text-xs text-red-500">{formErrors.start_time}</p>
@@ -876,6 +821,8 @@ const BlockoutPanel = ({
                   setFormErrors((fe) => ({ ...fe, end_time: "" }));
                 }}
                 hasError={!!formErrors.end_time}
+                options={TIME_OPTIONS}
+                placeholder={t('availability.weekly.selectTime')}
               />
               {formErrors.end_time && (
                 <p className="mt-0.5 text-xs text-red-500">{formErrors.end_time}</p>

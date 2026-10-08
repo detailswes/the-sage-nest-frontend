@@ -2,5 +2,13 @@
   "cancel": "Annulla",
   "delete": "Elimina",
   "checkingForConflicts": "Verifica dei conflitti in corso…",
-  "datePlaceholder": "GG/MM/AAAA"
+  "datePlaceholder": "GG/MM/AAAA",
+  "done": "Fatto",
+  "calendar": {
+    "weekdays": ["Do", "Lu", "Ma", "Me", "Gi", "Ve", "Sa"]
+  },
+  "timePlaceholder": "Seleziona un orario",
+  "hourLabel": "Ora",
+  "minuteLabel": "Minuto",
+  "dateTimePlaceholder": "Seleziona data e ora"
 }

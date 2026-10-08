@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { useSaveBusinessInfoMutation } from "../../../api/expertApi";
 import { getCountryName, getLocalizedCountries } from "../../../utils/countries";
+import CenteredDateInput from "../../../components/CenteredDateInput";
 
 const Spinner = () => (
   <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin flex-shrink-0" />
@@ -284,12 +285,10 @@ const BusinessInfoCard = ({ initialData = null }) => {
               <label className={labelClass}>
                 {t("profile.business.form.dobLabel")} <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                name="date_of_birth"
+              <CenteredDateInput
                 value={form.date_of_birth}
-                onChange={handleChange}
-                max={new Date().toISOString().split("T")[0]}
+                onChange={(e) => handleChange({ target: { name: "date_of_birth", value: e.target.value } })}
+                max={new Date()}
                 className={`${inputClass("date_of_birth")} uppercase`}
               />
               {fieldErrors.date_of_birth && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.date_of_birth}</p>}

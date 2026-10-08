@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import { startOfDay } from 'date-fns';
 import { useSaveInsuranceMutation, useDeleteInsuranceMutation } from '../../../api/expertApi';
 import { getDocumentUrl } from '../../../utils/imageUrl';
 import ConfirmModal from '../../../components/ConfirmModal';
+import CenteredDateInput from '../../../components/CenteredDateInput';
 import { LockFilledIcon, AttachmentLinkIcon, TrashIcon, WarningTriangleFilledIcon } from '../../../assets/icons';
 
 const DOC_TYPES = 'application/pdf,image/jpeg,image/jpg,image/png';
@@ -181,10 +183,9 @@ const InsuranceCard = ({ initialData = null }) => {
 
           <div>
             <label className="block text-xs font-medium text-[#1F2933] mb-1">{t('profile.insurance.form.expiryLabel')}</label>
-            <input
-              type="date"
+            <CenteredDateInput
               value={form.policy_expires_at}
-              min={new Date().toISOString().split('T')[0]}
+              min={startOfDay(new Date())}
               onChange={(e) => {
                 const val = e.target.value;
                 setForm((f) => ({ ...f, policy_expires_at: val }));

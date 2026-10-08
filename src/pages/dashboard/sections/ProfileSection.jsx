@@ -754,9 +754,9 @@ const ProfileSection = () => {
       </div>
 
       {/* Sub-cards — rendered only after profile is loaded */}
+      {profile && <BusinessInfoCard   initialData={profile.business_info || null} />}
       {profile && <QualificationsCard initialData={profile.qualifications || []} country={profile.business_info?.address_country} />}
       {profile && <CertificationsCard initialData={profile.certifications || []} />}
-      {profile && <BusinessInfoCard   initialData={profile.business_info || null} />}
       {profile && <InsuranceCard      initialData={profile.insurance || null} />}
 
       {/* GDPR Data Export */}
