@@ -12,7 +12,11 @@ import {
 import ConfirmModal from '../../../components/ConfirmModal';
 import {
   EditIcon, TrashIcon, PowerIcon, ChevronUpIcon, ChevronDownIcon, CopyIcon,
+  NavUsersIcon, XCircleFilledIcon,
 } from '../../../assets/icons';
+import { useGetEventAttendeesQuery, useCancelEventMutation } from '../../../api/bookingApi';
+import CenteredDateInput from '../../../components/CenteredDateInput';
+import TimeSelect from '../../../components/calendar/TimeSelect';
 import {
   countryKeyFromIso, isHomeVisitCountrySupported,
   getRegions, getSubregions, getSubLevel, formatArea, isValidArea,
@@ -46,12 +50,72 @@ const PRICE_LIMITS = {
 function formatPrice(price, currency = 'EUR', lng = 'en') {
   return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', { style: 'currency', currency }).format(Number(price));
 }
+
+// An event's date/time is stored and interpreted in the expert's registered
+// profile timezone (not the browser's — an expert travelling with their
+// laptop set to a different zone must still see and set the event in the
+// same timezone parents and emails will see it in). This renders a stored
+// UTC instant back into a "YYYY-MM-DDTHH:mm" wall-clock string as it reads
+// in `timezone`, for the date/time picker's own controlled value.
+// Mirrors the backend's zonedToUTC (service.controller.js / utils/timezone.js)
+// — converts a "YYYY-MM-DDTHH:mm" wall-clock string, read in the given IANA
+// timezone, into the UTC instant it represents. Used so the frontend's own
+// lead-time check agrees with the backend's, even when the browser's own
+// timezone differs from the expert's registered one.
+function zonedToUTC(year, month, day, hours, minutes, timezone) {
+  const guess = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0));
+  const parts = {};
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric', hour12: false,
+  }).formatToParts(guess).forEach(({ type, value }) => { parts[type] = parseInt(value, 10); });
+  const zonedHour = parts.hour === 24 ? 0 : (parts.hour || 0);
+  const diffMinutes = (hours * 60 + minutes) - (zonedHour * 60 + (parts.minute || 0));
+  return new Date(guess.getTime() + diffMinutes * 60 * 1000);
+}
+function wallClockToUTC(value, timezone) {
+  if (!value) return null;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const [, y, mo, d, h, mi] = match.map(Number);
+  return zonedToUTC(y, mo, d, h, mi, timezone);
+}
+
+function toDatetimeLocalValue(value, timezone = 'UTC') {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  const parts = {};
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d).forEach(({ type, value: v }) => { parts[type] = v; });
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}`;
+}
 const CLUSTER_OPTIONS = [
   { value: 'FOR_PARENTS' },
   { value: 'FOR_BABY' },
   { value: 'FOR_FAMILY' },
   { value: 'PACKAGE' },
+  { value: 'EVENT' },
 ];
+
+// Events are always a single scheduled occurrence, delivered online or
+// in-person — "home visit" has no meaning for a one-off group gathering.
+const EVENT_FORMAT_OPTIONS = FORMAT_OPTIONS.filter((o) => o.value !== 'HOME_VISIT');
+
+const DURATION_OPTIONS = [30, 45, 60, 90, 120];
+// Workshops and courses routinely run longer than a 1:1 session — extend
+// the options for events rather than capping them at the same 120 min.
+const EVENT_DURATION_OPTIONS = [...DURATION_OPTIONS, 180, 240];
+
+// Matches the backend's minimum lead time (service.controller.js) — an event
+// must start at least this far in the future, so there's always real time
+// for parents to see and book it.
+const EVENT_MIN_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 
 const FORMAT_BADGE_CLS = {
   ONLINE:     'bg-blue-100 text-blue-700',
@@ -71,6 +135,7 @@ const EMPTY_FORM = {
   title: '', description: '',
   duration_minutes: '', price: '', currency: 'EUR',
   format: '', cluster: '', home_visit_areas: [],
+  event_starts_at: '', capacity: '', event_location: '', event_city: '',
 };
 
 const Spinner = ({ className = 'w-4 h-4' }) => (
@@ -92,6 +157,10 @@ function withDraft(svc) {
     format:           d.format           ?? svc.format,
     cluster:          d.cluster          ?? svc.cluster,
     home_visit_areas: d.home_visit_areas?.length ? d.home_visit_areas : svc.home_visit_areas,
+    event_starts_at:  d.event_starts_at  ?? svc.event_starts_at,
+    capacity:         d.capacity         ?? svc.capacity,
+    event_location:   d.event_location   ?? svc.event_location,
+    event_city:       d.event_city       ?? svc.event_city,
   };
 }
 
@@ -116,6 +185,10 @@ const ServicesSection = () => {
   // onboarding, via a webhook), it's null and services can't be added.
   const expertCurrency = profile?.currency || null;
   const currencyConfirmed = !!expertCurrency;
+  // Events are set and stored in the expert's own registered timezone (not
+  // the browser's) — this is what the date/time field is shown and read
+  // against, and what's displayed as the "named local time" in emails.
+  const expertTimezone = profile?.timezone || 'UTC';
 
   // Home-visit coverage areas are picked from a fixed region → province/landsdel/county
   // dataset scoped to the expert's practice-address country. Home visit is only
@@ -145,6 +218,9 @@ const ServicesSection = () => {
   const [deletingId, setDeletingId]     = useState(null);
   const [togglingId, setTogglingId]     = useState(null);
   const [deleteModal, setDeleteModal]   = useState({ open: false, id: null });
+  const [attendeesModalId, setAttendeesModalId] = useState(null);
+  const [cancelEventModal, setCancelEventModal] = useState({ open: false, id: null });
+  const [cancelEventMutation, { isLoading: cancellingEvent }] = useCancelEventMutation();
 
   // "In Review" default: a new expert's first-ever service always starts
   // there, so it's the more useful landing tab.
@@ -178,7 +254,24 @@ const ServicesSection = () => {
   // ── Helpers ───────────────────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => {
+      const next = { ...f, [name]: value };
+      // Home visit has no meaning for an event — if the expert picked it
+      // before switching category to Event, the format dropdown's options
+      // narrow to Online/In-person, so the stale HOME_VISIT value (and its
+      // areas) must be cleared or the home-visit-areas block keeps showing.
+      if (name === 'cluster' && value === 'EVENT' && f.format === 'HOME_VISIT') {
+        next.format = '';
+        next.home_visit_areas = [];
+      }
+      // A duration only valid for events (180/240 min) has no home in the
+      // normal duration list — clear it so a stale value isn't silently
+      // carried into a non-event service.
+      if (name === 'cluster' && value !== 'EVENT' && !DURATION_OPTIONS.includes(parseInt(f.duration_minutes))) {
+        next.duration_minutes = '';
+      }
+      return next;
+    });
     setFormErrors((fe) => ({ ...fe, [name]: '' }));
   };
 
@@ -200,20 +293,32 @@ const ServicesSection = () => {
     setForm((f) => ({ ...f, home_visit_areas: f.home_visit_areas.filter((a) => a !== area) }));
   };
 
+  const isEventForm = form.cluster === 'EVENT';
+  // Lower bound for the event date picker. With a 24h minimum lead time,
+  // "today" can never actually satisfy validate() — a calendar day only
+  // holds 24 hours total, and some of today has already elapsed — so the
+  // earliest pickable day is tomorrow, not today.
+  const minEventDate = new Date(Date.now() + EVENT_MIN_LEAD_TIME_MS);
+  minEventDate.setHours(0, 0, 0, 0);
+  const minEventDateStr = toDatetimeLocalValue(new Date(Date.now() + EVENT_MIN_LEAD_TIME_MS), expertTimezone).split('T')[0];
+
   const validate = () => {
     const errs = {};
     if (!form.title.trim())
       errs.title = t('services.validation.titleRequired');
     if (!form.description.trim())
       errs.description = t('services.validation.descriptionRequired');
-    if (![30, 45, 60, 90, 120].includes(parseInt(form.duration_minutes)))
+    if (!(isEventForm ? EVENT_DURATION_OPTIONS : DURATION_OPTIONS).includes(parseInt(form.duration_minutes)))
       errs.duration_minutes = t('services.validation.durationRequired');
     const price  = parseFloat(form.price);
     const limits = PRICE_LIMITS[form.currency] || PRICE_LIMITS.EUR;
+    const minPrice = isEventForm ? 0 : limits.min;
     if (!form.currency)
       errs.currency = t('services.validation.currencyRequired');
-    if (!form.price || isNaN(price) || price < limits.min)
-      errs.price = t('services.validation.priceMin', { min: formatPrice(limits.min, form.currency || 'EUR', lng) });
+    if (form.price === '' || isNaN(price) || price < minPrice)
+      errs.price = isEventForm
+        ? t('services.validation.priceMinEvent')
+        : t('services.validation.priceMin', { min: formatPrice(limits.min, form.currency || 'EUR', lng) });
     else if (price > limits.max)
       errs.price = t('services.validation.priceMax', { max: formatPrice(limits.max, form.currency || 'EUR', lng) });
     if (!form.format)
@@ -226,6 +331,24 @@ const ServicesSection = () => {
     }
     if (!form.cluster)
       errs.cluster = t('services.validation.categoryRequired');
+    if (isEventForm) {
+      if (form.format === 'HOME_VISIT')
+        errs.format = t('services.validation.eventFormatInvalid');
+      const eventDateUTC = form.event_starts_at ? wallClockToUTC(form.event_starts_at, expertTimezone) : null;
+      if (!eventDateUTC || isNaN(eventDateUTC.getTime()))
+        errs.event_starts_at = t('services.validation.eventDateRequired');
+      else if (eventDateUTC.getTime() < Date.now() + EVENT_MIN_LEAD_TIME_MS)
+        errs.event_starts_at = t('services.validation.eventDateFuture');
+      const capacity = parseInt(form.capacity);
+      if (isNaN(capacity) || capacity < 1 || capacity > 1000)
+        errs.capacity = t('services.validation.capacityRequired');
+      if (form.format === 'IN_PERSON') {
+        if (!form.event_location.trim())
+          errs.event_location = t('services.validation.eventLocationRequired');
+        if (!form.event_city.trim())
+          errs.event_city = t('services.validation.eventCityRequired');
+      }
+    }
     return errs;
   };
 
@@ -258,6 +381,12 @@ const ServicesSection = () => {
       format:           lockedFormat     || svc.format || '',
       cluster:          svc.cluster      || '',
       home_visit_areas: svc.home_visit_areas || [],
+      // An event is one-time — duplicating carries over everything except the
+      // date, which the expert sets fresh for the new occurrence.
+      event_starts_at:  '',
+      capacity:         svc.capacity != null ? String(svc.capacity) : '',
+      event_location:   svc.event_location || '',
+      event_city:       svc.event_city || '',
     });
     setFormErrors({});
     setRegionSelect('');
@@ -282,6 +411,10 @@ const ServicesSection = () => {
       format:           lockedFormat     || effective.format || '',
       cluster:          effective.cluster      || '',
       home_visit_areas: effective.home_visit_areas || [],
+      event_starts_at:  toDatetimeLocalValue(effective.event_starts_at, expertTimezone),
+      capacity:         effective.capacity != null ? String(effective.capacity) : '',
+      event_location:   effective.event_location || '',
+      event_city:       effective.event_city || '',
     });
     setFormErrors({});
     setRegionSelect('');
@@ -314,6 +447,15 @@ const ServicesSection = () => {
         format:           form.format  || null,
         cluster:          form.cluster || null,
         home_visit_areas: form.format === 'HOME_VISIT' ? form.home_visit_areas : [],
+        ...(isEventForm && {
+          // Sent as a plain wall-clock string ("YYYY-MM-DDTHH:mm"), no
+          // timezone conversion here — the backend interprets it against the
+          // expert's registered timezone (see services.form.eventTimezoneHint).
+          event_starts_at: form.event_starts_at || null,
+          capacity:        parseInt(form.capacity),
+          event_location:  form.format === 'IN_PERSON' ? form.event_location.trim() : null,
+          event_city:      form.format === 'IN_PERSON' ? form.event_city.trim() : null,
+        }),
       };
       const result = editingId
         ? await updateService({ id: editingId, ...payload }).unwrap()
@@ -337,6 +479,15 @@ const ServicesSection = () => {
       toast.error(t('services.errors.deleteFailed'));
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleCancelEvent = async (id) => {
+    try {
+      await cancelEventMutation(id).unwrap();
+      toast.success(t('services.card.cancelEventSuccess'));
+    } catch (err) {
+      toast.error(err?.data?.error || t('services.errors.cancelEventFailed'));
     }
   };
 
@@ -471,7 +622,7 @@ const ServicesSection = () => {
             <div>
               <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.titleLabel')}</label>
               <input type="text" name="title" value={form.title} onChange={handleChange}
-                placeholder={t('services.form.titlePlaceholder')} maxLength={80}
+                placeholder={t(isEventForm ? 'services.form.eventTitlePlaceholder' : 'services.form.titlePlaceholder')} maxLength={80}
                 className={inputClass(!!formErrors.title)} />
               <div className="flex items-center justify-between mt-1.5">
                 {formErrors.title
@@ -520,7 +671,7 @@ const ServicesSection = () => {
                   className={`${inputClass(!!formErrors.format)} ${lockedFormat ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''}`}
                 >
                   <option value="" disabled>{t('services.form.formatSelect')}</option>
-                  {FORMAT_OPTIONS.map((o) => (
+                  {(isEventForm ? EVENT_FORMAT_OPTIONS : FORMAT_OPTIONS).map((o) => (
                     <option
                       key={o.value}
                       value={o.value}
@@ -549,11 +700,102 @@ const ServicesSection = () => {
                 </label>
                 <select name="cluster" value={form.cluster} onChange={handleChange} className={inputClass(!!formErrors.cluster)}>
                   <option value="" disabled>{t('services.form.categorySelect')}</option>
-                  {CLUSTER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t('services.clusters.' + o.value)}</option>)}
+                  {CLUSTER_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value} disabled={o.value === 'EVENT' && lockedFormat === 'HOME_VISIT'}>
+                      {t('services.clusters.' + o.value)}
+                    </option>
+                  ))}
                 </select>
                 {formErrors.cluster && <p className="mt-1.5 text-xs text-red-500">{formErrors.cluster}</p>}
+                {lockedFormat === 'HOME_VISIT' && (
+                  <p className="mt-1 text-xs text-gray-400">{t('services.form.eventUnavailableHomeVisitHint')}</p>
+                )}
               </div>
             </div>
+
+            {/* Event details — one-time date/time, spots, and (for in-person) a venue */}
+            {isEventForm && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                    {t('services.form.eventDateLabel')} <span className="text-red-400">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 max-w-sm">
+                    <CenteredDateInput
+                      value={form.event_starts_at ? form.event_starts_at.split('T')[0] : ''}
+                      onChange={(e) => {
+                        const timePart = form.event_starts_at ? form.event_starts_at.split('T')[1] : '00:00';
+                        handleChange({ target: { name: 'event_starts_at', value: `${e.target.value}T${timePart}` } });
+                      }}
+                      min={minEventDate}
+                      className={inputClass(!!formErrors.event_starts_at)}
+                    />
+                    <TimeSelect
+                      value={form.event_starts_at ? form.event_starts_at.split('T')[1] : ''}
+                      onChange={(val) => {
+                        const datePart = form.event_starts_at ? form.event_starts_at.split('T')[0] : minEventDateStr;
+                        handleChange({ target: { name: 'event_starts_at', value: `${datePart}T${val}` } });
+                      }}
+                      hasError={!!formErrors.event_starts_at}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-xs text-gray-400">
+                    {t('services.form.eventTimezoneHint', { timezone: expertTimezone })}
+                  </p>
+                  {formErrors.event_starts_at && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_starts_at}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                    {t('services.form.capacityLabel')} <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="capacity"
+                    value={form.capacity}
+                    onChange={handleChange}
+                    min="1"
+                    max="1000"
+                    step="1"
+                    placeholder={t('services.form.capacityPlaceholder')}
+                    className={inputClass(!!formErrors.capacity)}
+                  />
+                  {formErrors.capacity && <p className="mt-1.5 text-xs text-red-500">{formErrors.capacity}</p>}
+                </div>
+                {form.format === 'IN_PERSON' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                        {t('services.form.eventLocationLabel')} <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="event_location"
+                        value={form.event_location}
+                        onChange={handleChange}
+                        placeholder={t('services.form.eventLocationPlaceholder')}
+                        className={inputClass(!!formErrors.event_location)}
+                      />
+                      {formErrors.event_location && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_location}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                        {t('services.form.eventCityLabel')} <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="event_city"
+                        value={form.event_city}
+                        onChange={handleChange}
+                        placeholder={t('services.form.eventCityPlaceholder')}
+                        className={inputClass(!!formErrors.event_city)}
+                      />
+                      {formErrors.event_city && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_city}</p>}
+                    </div>
+                  </>
+                )}
+                <p className="sm:col-span-2 text-xs text-gray-400">{t('services.form.eventHint')}</p>
+              </div>
+            )}
 
             {/* Home visit coverage — region → province/landsdel pairs, required once format is HOME_VISIT */}
             {form.format === 'HOME_VISIT' && (
@@ -639,7 +881,7 @@ const ServicesSection = () => {
                 <select name="duration_minutes" value={form.duration_minutes} onChange={handleChange}
                   className={inputClass(!!formErrors.duration_minutes)}>
                   <option value="">{t('services.form.durationSelect')}</option>
-                  {[30, 45, 60, 90, 120].map(d => (
+                  {(isEventForm ? EVENT_DURATION_OPTIONS : DURATION_OPTIONS).map(d => (
                     <option key={d} value={String(d)}>{d} min</option>
                   ))}
                 </select>
@@ -658,7 +900,8 @@ const ServicesSection = () => {
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.priceLabel')}</label>
                 <input type="number" name="price" value={form.price} onChange={handleChange}
-                  placeholder="75.00" min="1.00" step="0.01" className={inputClass(!!formErrors.price)} />
+                  placeholder={isEventForm ? '0.00' : '75.00'} min={isEventForm ? '0' : '1.00'} step="0.01" className={inputClass(!!formErrors.price)} />
+                {isEventForm && <p className="mt-1 text-xs text-gray-400">{t('services.form.eventFreePriceHint')}</p>}
                 {formErrors.price && <p className="mt-1.5 text-xs text-red-500">{formErrors.price}</p>}
               </div>
             </div>
@@ -773,6 +1016,14 @@ const ServicesSection = () => {
                           {t('services.card.homeVisitAreasLabel')} {svc.home_visit_areas.join(', ')}
                         </p>
                       )}
+                      {svc.cluster === 'EVENT' && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: expertTimezone })}
+                          {svc.capacity ? ` · ${t('services.card.capacityLabel', { count: svc.capacity })}` : ''}
+                          {svc.event_location ? ` · ${svc.event_location}` : ''}
+                          {svc.event_city ? `, ${svc.event_city}` : ''}
+                        </p>
+                      )}
                       {(svc.review_status === 'REJECTED' || svc.draft?.status === 'REJECTED') && (
                         <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
                           {(() => {
@@ -814,6 +1065,18 @@ const ServicesSection = () => {
                         className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-40 disabled:hover:text-gray-400 disabled:hover:bg-transparent">
                         {togglingId === svc.id ? <Spinner /> : <PowerIcon />}
                       </button>
+                      {svc.cluster === 'EVENT' && svc.review_status === 'APPROVED' && (
+                        <>
+                          <button onClick={() => setAttendeesModalId(svc.id)} title={t('services.card.attendeesBtn')}
+                            className="p-2 text-gray-400 hover:text-[#445446] hover:bg-[#445446]/10 rounded-lg transition-colors">
+                            <NavUsersIcon />
+                          </button>
+                          <button onClick={() => setCancelEventModal({ open: true, id: svc.id })} title={t('services.card.cancelEventBtn')}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                            <XCircleFilledIcon className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                       <button onClick={() => openDuplicate(svc)} title="Duplicate"
                         className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors">
                         <CopyIcon />
@@ -873,6 +1136,98 @@ const ServicesSection = () => {
         onClose={() => setDeleteModal({ open: false, id: null })}
         onConfirm={() => { handleDelete(deleteModal.id); setDeleteModal({ open: false, id: null }); }}
       />
+
+      <ConfirmModal
+        open={cancelEventModal.open}
+        title={t('services.card.cancelEventConfirm')}
+        message={t('services.card.cancelEventMessage')}
+        confirmLabel={t('services.card.cancelEventBtn')}
+        loading={cancellingEvent}
+        onClose={() => setCancelEventModal({ open: false, id: null })}
+        onConfirm={() => { handleCancelEvent(cancelEventModal.id); setCancelEventModal({ open: false, id: null }); }}
+      />
+
+      {attendeesModalId && (
+        <EventAttendeesModal
+          serviceId={attendeesModalId}
+          lng={lng}
+          t={t}
+          onClose={() => setAttendeesModalId(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Expert-only attendee list for one event — attendees never see each other,
+// so this is deliberately not reachable from anywhere a parent can view.
+const STATUS_BADGE_CLS = {
+  CONFIRMED: 'bg-green-100 text-green-700',
+  PENDING_PAYMENT: 'bg-amber-100 text-amber-700',
+  CANCELLED: 'bg-gray-100 text-gray-500',
+  REFUNDED: 'bg-gray-100 text-gray-500',
+};
+const EventAttendeesModal = ({ serviceId, lng, t, onClose }) => {
+  const { data, isLoading, isError } = useGetEventAttendeesQuery(serviceId);
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-[#1F2933]">{t('services.card.attendeesTitle')}</h3>
+            {data?.service?.title && <p className="text-xs text-gray-400 mt-0.5">{data.service.title}</p>}
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-10">
+            <div className="w-6 h-6 rounded-full border-2 border-[#445446] border-t-transparent animate-spin" />
+          </div>
+        )}
+        {isError && (
+          <p className="text-sm text-red-500 py-6 text-center">{t('services.errors.loadFailed')}</p>
+        )}
+        {data && (
+          <>
+            <p className="text-xs text-gray-400 mb-3">
+              {t('services.card.attendeesCount', {
+                count: data.attendees.filter((a) => ['CONFIRMED', 'PENDING_PAYMENT'].includes(a.status)).length,
+                capacity: data.service.capacity,
+              })}
+            </p>
+            <div className="overflow-y-auto flex-1 -mx-2">
+              {data.attendees.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">{t('services.card.attendeesEmpty')}</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <tbody>
+                    {data.attendees.map((a) => (
+                      <tr key={a.id} className="border-b border-gray-100 last:border-0">
+                        <td className="px-2 py-2.5">
+                          <p className="font-medium text-[#1F2933]">{a.parent.name}</p>
+                          <p className="text-xs text-gray-400">{a.parent.email}</p>
+                        </td>
+                        <td className="px-2 py-2.5 text-right">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE_CLS[a.status] || 'bg-gray-100 text-gray-500'}`}>
+                            {t('services.card.attendeeStatus.' + a.status, a.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

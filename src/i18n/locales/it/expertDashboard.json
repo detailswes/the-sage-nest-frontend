@@ -441,7 +441,8 @@
       "deleteFailed":  "Impossibile eliminare il servizio.",
       "reorderFailed": "Impossibile salvare il nuovo ordine.",
       "updateFailed":  "Impossibile aggiornare il servizio.",
-      "saveFailed":    "Impossibile salvare il servizio."
+      "saveFailed":    "Impossibile salvare il servizio.",
+      "cancelEventFailed": "Impossibile cancellare l'evento."
     },
     "form": {
       "addTitle":             "Aggiungi nuovo servizio",
@@ -449,6 +450,7 @@
       "duplicateTitle":       "Duplica servizio",
       "titleLabel":           "Titolo del servizio",
       "titlePlaceholder":     "es. Consulenza nutrizionale di 1 ora",
+      "eventTitlePlaceholder": "es. Laboratorio di massaggio infantile per neo-genitori",
       "descriptionLabel":     "Descrizione",
       "descriptionPlaceholder":"Breve descrizione di cosa include questo servizio…",
       "formatLabel":          "Formato",
@@ -478,7 +480,18 @@
       "duplicateBtn":         "Duplica servizio",
       "addBtn":               "Aggiungi servizio",
       "editProposalTitle":    "Modifica le modifiche proposte",
-      "saveSuccess":          "Servizio salvato."
+      "saveSuccess":          "Servizio salvato.",
+      "eventDateLabel":       "Data e ora dell'evento",
+      "eventTimezoneHint":    "Mostrato e salvato nel tuo fuso orario: {{timezone}}",
+      "capacityLabel":        "Numero di posti",
+      "capacityPlaceholder":  "es. 10",
+      "eventHint":            "Gli eventi sono singoli. Per ripeterlo, duplica questo servizio e imposta una nuova data.",
+      "eventLocationLabel":   "Indirizzo del luogo",
+      "eventLocationPlaceholder": "Indirizzo del luogo dell'evento",
+      "eventCityLabel":       "Città",
+      "eventCityPlaceholder": "es. Copenaghen",
+      "eventFreePriceHint":   "Gli eventi possono essere gratuiti: imposta 0 per un evento gratuito.",
+      "eventUnavailableHomeVisitHint": "Gli eventi non sono disponibili perché il tuo profilo è impostato solo su Visita a domicilio."
     },
     "validation": {
       "titleRequired":       "Il titolo è obbligatorio",
@@ -486,11 +499,18 @@
       "durationRequired":    "Seleziona una durata",
       "currencyRequired":    "Seleziona una valuta",
       "priceMin":            "Prezzo minimo: {{min}}",
+      "priceMinEvent":       "Il prezzo è obbligatorio — inserisci 0 per un evento gratuito",
       "priceMax":            "Prezzo massimo: {{max}}",
       "formatRequired":      "Seleziona un formato",
       "homeVisitAreasRequired": "Aggiungi almeno una regione e provincia per la visita a domicilio",
       "homeVisitCountryUnsupported": "Le visite a domicilio non sono ancora disponibili per il paese del tuo studio",
-      "categoryRequired":    "Seleziona una categoria"
+      "categoryRequired":    "Seleziona una categoria",
+      "eventFormatInvalid":  "Gli eventi devono essere Online o Di persona — la Visita a domicilio non è disponibile per gli eventi",
+      "eventDateRequired":   "È richiesta una data e ora dell'evento valida",
+      "eventDateFuture":     "La data e ora dell'evento devono essere almeno 24 ore da adesso",
+      "capacityRequired":    "Il numero di posti deve essere tra 1 e 1000",
+      "eventLocationRequired": "L'indirizzo del luogo è richiesto per gli eventi in presenza",
+      "eventCityRequired":   "La città è richiesta per gli eventi in presenza"
     },
     "empty": {
       "title": "Nessun servizio ancora",
@@ -516,7 +536,23 @@
       "homeVisitAreasLabel": "Zone per visita a domicilio:",
       "deleteConfirm": "Eliminare?",
       "cancelBtn":     "Annulla",
-      "deleteBtn":     "Elimina"
+      "deleteBtn":     "Elimina",
+      "capacityLabel_one":  "{{count}} posto",
+      "capacityLabel_other": "{{count}} posti",
+      "attendeesBtn":   "Visualizza partecipanti",
+      "cancelEventBtn": "Cancella evento",
+      "attendeesTitle": "Partecipanti",
+      "attendeesCount": "{{count}} di {{capacity}} posti prenotati",
+      "attendeesEmpty": "Nessuno ha ancora prenotato.",
+      "attendeeStatus": {
+        "CONFIRMED": "Confermato",
+        "PENDING_PAYMENT": "Pagamento in attesa",
+        "CANCELLED": "Cancellato",
+        "REFUNDED": "Rimborsato"
+      },
+      "cancelEventConfirm": "Cancellare questo evento?",
+      "cancelEventMessage": "Ogni partecipante verrà rimborsato e notificato. Questa azione non può essere annullata.",
+      "cancelEventSuccess": "Evento cancellato e partecipanti rimborsati."
     },
     "savedAsDraft": {
       "title": "Inviato in revisione",

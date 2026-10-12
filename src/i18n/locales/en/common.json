@@ -2,5 +2,13 @@
   "cancel": "Cancel",
   "delete": "Delete",
   "checkingForConflicts": "Checking for conflicts…",
-  "datePlaceholder": "DD/MM/YYYY"
+  "datePlaceholder": "DD/MM/YYYY",
+  "done": "Done",
+  "calendar": {
+    "weekdays": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+  },
+  "timePlaceholder": "Select a time",
+  "hourLabel": "Hour",
+  "minuteLabel": "Minute",
+  "dateTimePlaceholder": "Select date & time"
 }

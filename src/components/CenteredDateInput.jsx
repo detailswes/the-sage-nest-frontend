@@ -1,9 +1,27 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { it as dateFnsIt } from "date-fns/locale";
+import { format } from "date-fns";
+import ThemedCalendarGrid from "./calendar/ThemedCalendarGrid";
 
-const CenteredDateInput = ({ value, onChange, className }) => {
+/**
+ * CenteredDateInput — a single date field, opened as a centered popover on
+ * click anywhere on the field. Shows the same sage-themed calendar grid used
+ * throughout the app (BookingCalendar, the event date/time picker), rather
+ * than the browser's native date picker.
+ *
+ * Props:
+ *   value    — "YYYY-MM-DD" string | ""
+ *   onChange — (e: { target: { value: string } }) => void — kept as an
+ *              event-shaped callback so every existing caller (which all
+ *              read e.target.value) needs no changes.
+ *   min, max — Date, optional
+ */
+const CenteredDateInput = ({ value, onChange, className, min, max }) => {
   const [open, setOpen] = useState(false);
   const { t, i18n } = useTranslation("common");
+  const weekdayLabels = t("calendar.weekdays", { returnObjects: true });
+  const locale = i18n.language === "it" ? dateFnsIt : undefined;
 
   const display = value
     ? new Date(value + "T00:00:00").toLocaleDateString(i18n.language === "it" ? "it-IT" : "en-GB", {
@@ -26,23 +44,27 @@ const CenteredDateInput = ({ value, onChange, className }) => {
           className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
-          <div
-            className="bg-white rounded-2xl p-5 shadow-2xl flex flex-col items-center gap-3"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <input
-              type="date"
-              value={value}
-              onChange={(e) => { onChange(e); setOpen(false); }}
-              className="border border-[#c5ceba] rounded-lg px-3 py-2 text-sm text-[#1F2933] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 focus:border-[#445446]"
+          <div onClick={(e) => e.stopPropagation()}>
+            <ThemedCalendarGrid
+              selected={value ? new Date(value + "T00:00:00") : null}
+              onSelect={(date) => {
+                onChange({ target: { value: format(date, "yyyy-MM-dd") } });
+                setOpen(false);
+              }}
+              minDate={min}
+              maxDate={max ?? null}
+              weekdayLabels={weekdayLabels}
+              locale={locale}
             />
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              {t("cancel")}
-            </button>
+            <div className="flex justify-center mt-2">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {t("cancel")}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -441,7 +441,8 @@
       "deleteFailed":  "Failed to delete service.",
       "reorderFailed": "Failed to save new order.",
       "updateFailed":  "Failed to update service.",
-      "saveFailed":    "Failed to save service."
+      "saveFailed":    "Failed to save service.",
+      "cancelEventFailed": "Failed to cancel event."
     },
     "form": {
       "addTitle":             "Add New Service",
@@ -449,6 +450,7 @@
       "duplicateTitle":       "Duplicate Service",
       "titleLabel":           "Service title",
       "titlePlaceholder":     "e.g. 1-hour Nutrition Consultation",
+      "eventTitlePlaceholder": "e.g. Baby massage workshop for new parents",
       "descriptionLabel":     "Description",
       "descriptionPlaceholder":"Brief description of what this service includes…",
       "formatLabel":          "Format",
@@ -478,7 +480,18 @@
       "duplicateBtn":         "Duplicate Service",
       "addBtn":               "Add Service",
       "editProposalTitle":    "Edit Proposed Changes",
-      "saveSuccess":          "Service saved."
+      "saveSuccess":          "Service saved.",
+      "eventDateLabel":       "Event date & time",
+      "eventTimezoneHint":    "Shown and saved in your timezone: {{timezone}}",
+      "capacityLabel":        "Number of spots",
+      "capacityPlaceholder":  "e.g. 10",
+      "eventHint":            "Events are one-time only. To repeat it, duplicate this service and set a new date.",
+      "eventLocationLabel":   "Venue address",
+      "eventLocationPlaceholder": "Street address of the venue",
+      "eventCityLabel":       "City",
+      "eventCityPlaceholder": "e.g. Copenhagen",
+      "eventFreePriceHint":   "Events can be free — set 0 for a complimentary event.",
+      "eventUnavailableHomeVisitHint": "Events aren't available because your profile is locked to Home Visit."
     },
     "validation": {
       "titleRequired":       "Title is required",
@@ -486,11 +499,18 @@
       "durationRequired":    "Please select a duration",
       "currencyRequired":    "Please select a currency",
       "priceMin":            "Minimum price is {{min}}",
+      "priceMinEvent":       "Price is required — enter 0 for a free event",
       "priceMax":            "Maximum price is {{max}}",
       "formatRequired":      "Please select a format",
       "homeVisitAreasRequired": "Add at least one region and province for home visit",
       "homeVisitCountryUnsupported": "Home visit isn't available for your practice-address country yet",
-      "categoryRequired":    "Please select a category"
+      "categoryRequired":    "Please select a category",
+      "eventFormatInvalid":  "Events must be Online or In-person — Home Visit isn't available for events",
+      "eventDateRequired":   "A valid event date and time is required",
+      "eventDateFuture":     "Event date and time must be at least 24 hours from now",
+      "capacityRequired":    "Number of spots must be between 1 and 1000",
+      "eventLocationRequired": "Venue address is required for in-person events",
+      "eventCityRequired":   "City is required for in-person events"
     },
     "empty": {
       "title": "No services yet",
@@ -516,7 +536,23 @@
       "homeVisitAreasLabel": "Home visit areas:",
       "deleteConfirm": "Delete?",
       "cancelBtn":     "Cancel",
-      "deleteBtn":     "Delete"
+      "deleteBtn":     "Delete",
+      "capacityLabel_one":  "{{count}} spot",
+      "capacityLabel_other": "{{count}} spots",
+      "attendeesBtn":   "View attendees",
+      "cancelEventBtn": "Cancel event",
+      "attendeesTitle": "Attendees",
+      "attendeesCount": "{{count}} of {{capacity}} spots booked",
+      "attendeesEmpty": "No one has booked yet.",
+      "attendeeStatus": {
+        "CONFIRMED": "Confirmed",
+        "PENDING_PAYMENT": "Payment pending",
+        "CANCELLED": "Cancelled",
+        "REFUNDED": "Refunded"
+      },
+      "cancelEventConfirm": "Cancel this event?",
+      "cancelEventMessage": "Every attendee will be refunded and notified. This can't be undone.",
+      "cancelEventSuccess": "Event cancelled and attendees refunded."
     },
     "savedAsDraft": {
       "title": "Submitted for review",
