@@ -179,6 +179,7 @@
     "noFiscalCode":      "I do not have an Italian fiscal code",
     "invoiceNote":       "The invoice is issued directly by your expert, not by Sage Nest.",
     "continueBtn":       "Continue",
+    "eventLocationLabel": "Location:",
     "spotsLeft_one":     "Only {{count}} spot left",
     "spotsLeft_other":   "{{count}} spots left",
     "eventFull":         "This event is fully booked",

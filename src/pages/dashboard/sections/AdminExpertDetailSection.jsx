@@ -1081,8 +1081,10 @@ const AdminExpertDetailSection = () => {
                               )}
                               {svc.cluster === "EVENT" && (
                                 <p className="text-xs text-gray-500">
-                                  {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                                  {svc.event_starts_at && formatBookingTime(svc.event_starts_at, expert.timezone).primary}
                                   {svc.capacity ? ` · ${t("expertDetail.services.eventSpots", { count: svc.capacity })}` : ""}
+                                  {svc.event_location ? ` · ${svc.event_location}` : ""}
+                                  {svc.event_city ? `, ${svc.event_city}` : ""}
                                 </p>
                               )}
                             </div>
@@ -1104,8 +1106,10 @@ const AdminExpertDetailSection = () => {
                               <p className="text-xs text-gray-500">{svc.duration_minutes} min &middot; {priceFmt(svc.price)}</p>
                               {svc.cluster === "EVENT" && (
                                 <p className="text-xs text-gray-500">
-                                  {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                                  {svc.event_starts_at && formatBookingTime(svc.event_starts_at, expert.timezone).primary}
                                   {svc.capacity ? ` · ${t("expertDetail.services.eventSpots", { count: svc.capacity })}` : ""}
+                                  {svc.event_location ? ` · ${svc.event_location}` : ""}
+                                  {svc.event_city ? `, ${svc.event_city}` : ""}
                                 </p>
                               )}
                             </div>
@@ -1124,8 +1128,10 @@ const AdminExpertDetailSection = () => {
                           { key: "Cluster",     live: svc.cluster ? t(`expertDetail.clusterBadge.${svc.cluster}`, { defaultValue: svc.cluster }) : null, proposed: svc.draft.cluster ? t(`expertDetail.clusterBadge.${svc.draft.cluster}`, { defaultValue: svc.draft.cluster }) : null },
                           { key: "HomeVisitAreas", live: svc.home_visit_areas?.join(", ") || null, proposed: svc.draft.home_visit_areas?.join(", ") || null },
                           ...(svc.cluster === "EVENT" || svc.draft.cluster === "EVENT" ? [
-                            { key: "EventDate", live: svc.event_starts_at ? new Date(svc.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : null, proposed: svc.draft.event_starts_at ? new Date(svc.draft.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : null },
+                            { key: "EventDate", live: svc.event_starts_at ? formatBookingTime(svc.event_starts_at, expert.timezone).primary : null, proposed: svc.draft.event_starts_at ? formatBookingTime(svc.draft.event_starts_at, expert.timezone).primary : null },
                             { key: "Capacity", live: svc.capacity != null ? String(svc.capacity) : null, proposed: svc.draft.capacity != null ? String(svc.draft.capacity) : null },
+                            { key: "EventLocation", live: svc.event_location || null, proposed: svc.draft.event_location || null },
+                            { key: "EventCity", live: svc.event_city || null, proposed: svc.draft.event_city || null },
                           ] : []),
                         ];
                         return (
@@ -1192,6 +1198,8 @@ const AdminExpertDetailSection = () => {
                             <p className="text-xs text-gray-400 mt-0.5">
                               {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
                               {svc.capacity ? ` · ${t("expertDetail.services.eventSpots", { count: svc.capacity })}` : ""}
+                              {svc.event_location ? ` · ${svc.event_location}` : ""}
+                              {svc.event_city ? `, ${svc.event_city}` : ""}
                             </p>
                           )}
                         </div>

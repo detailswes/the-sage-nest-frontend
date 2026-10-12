@@ -51,21 +51,49 @@ function formatPrice(price, currency = 'EUR', lng = 'en') {
   return new Intl.NumberFormat(lng === 'it' ? 'it' : 'en', { style: 'currency', currency }).format(Number(price));
 }
 
-// An event's date/time is set once, directly, by the expert creating it —
-// unlike recurring weekly availability, there's no need to reinterpret it
-// against their profile timezone later, so we just use the browser's own
-// local time (which is virtually always where the expert actually is).
-function toDatetimeLocalValue(value) {
+// An event's date/time is stored and interpreted in the expert's registered
+// profile timezone (not the browser's — an expert travelling with their
+// laptop set to a different zone must still see and set the event in the
+// same timezone parents and emails will see it in). This renders a stored
+// UTC instant back into a "YYYY-MM-DDTHH:mm" wall-clock string as it reads
+// in `timezone`, for the date/time picker's own controlled value.
+// Mirrors the backend's zonedToUTC (service.controller.js / utils/timezone.js)
+// — converts a "YYYY-MM-DDTHH:mm" wall-clock string, read in the given IANA
+// timezone, into the UTC instant it represents. Used so the frontend's own
+// lead-time check agrees with the backend's, even when the browser's own
+// timezone differs from the expert's registered one.
+function zonedToUTC(year, month, day, hours, minutes, timezone) {
+  const guess = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0));
+  const parts = {};
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric', hour12: false,
+  }).formatToParts(guess).forEach(({ type, value }) => { parts[type] = parseInt(value, 10); });
+  const zonedHour = parts.hour === 24 ? 0 : (parts.hour || 0);
+  const diffMinutes = (hours * 60 + minutes) - (zonedHour * 60 + (parts.minute || 0));
+  return new Date(guess.getTime() + diffMinutes * 60 * 1000);
+}
+function wallClockToUTC(value, timezone) {
+  if (!value) return null;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const [, y, mo, d, h, mi] = match.map(Number);
+  return zonedToUTC(y, mo, d, h, mi, timezone);
+}
+
+function toDatetimeLocalValue(value, timezone = 'UTC') {
   if (!value) return '';
   const d = new Date(value);
   if (isNaN(d.getTime())) return '';
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function fromDatetimeLocalValue(value) {
-  if (!value) return null;
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? null : d.toISOString();
+  const parts = {};
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d).forEach(({ type, value: v }) => { parts[type] = v; });
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}`;
 }
 const CLUSTER_OPTIONS = [
   { value: 'FOR_PARENTS' },
@@ -78,6 +106,16 @@ const CLUSTER_OPTIONS = [
 // Events are always a single scheduled occurrence, delivered online or
 // in-person — "home visit" has no meaning for a one-off group gathering.
 const EVENT_FORMAT_OPTIONS = FORMAT_OPTIONS.filter((o) => o.value !== 'HOME_VISIT');
+
+const DURATION_OPTIONS = [30, 45, 60, 90, 120];
+// Workshops and courses routinely run longer than a 1:1 session — extend
+// the options for events rather than capping them at the same 120 min.
+const EVENT_DURATION_OPTIONS = [...DURATION_OPTIONS, 180, 240];
+
+// Matches the backend's minimum lead time (service.controller.js) — an event
+// must start at least this far in the future, so there's always real time
+// for parents to see and book it.
+const EVENT_MIN_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 
 const FORMAT_BADGE_CLS = {
   ONLINE:     'bg-blue-100 text-blue-700',
@@ -97,7 +135,7 @@ const EMPTY_FORM = {
   title: '', description: '',
   duration_minutes: '', price: '', currency: 'EUR',
   format: '', cluster: '', home_visit_areas: [],
-  event_starts_at: '', capacity: '',
+  event_starts_at: '', capacity: '', event_location: '', event_city: '',
 };
 
 const Spinner = ({ className = 'w-4 h-4' }) => (
@@ -121,6 +159,8 @@ function withDraft(svc) {
     home_visit_areas: d.home_visit_areas?.length ? d.home_visit_areas : svc.home_visit_areas,
     event_starts_at:  d.event_starts_at  ?? svc.event_starts_at,
     capacity:         d.capacity         ?? svc.capacity,
+    event_location:   d.event_location   ?? svc.event_location,
+    event_city:       d.event_city       ?? svc.event_city,
   };
 }
 
@@ -145,6 +185,10 @@ const ServicesSection = () => {
   // onboarding, via a webhook), it's null and services can't be added.
   const expertCurrency = profile?.currency || null;
   const currencyConfirmed = !!expertCurrency;
+  // Events are set and stored in the expert's own registered timezone (not
+  // the browser's) — this is what the date/time field is shown and read
+  // against, and what's displayed as the "named local time" in emails.
+  const expertTimezone = profile?.timezone || 'UTC';
 
   // Home-visit coverage areas are picked from a fixed region → province/landsdel/county
   // dataset scoped to the expert's practice-address country. Home visit is only
@@ -220,6 +264,12 @@ const ServicesSection = () => {
         next.format = '';
         next.home_visit_areas = [];
       }
+      // A duration only valid for events (180/240 min) has no home in the
+      // normal duration list — clear it so a stale value isn't silently
+      // carried into a non-event service.
+      if (name === 'cluster' && value !== 'EVENT' && !DURATION_OPTIONS.includes(parseInt(f.duration_minutes))) {
+        next.duration_minutes = '';
+      }
       return next;
     });
     setFormErrors((fe) => ({ ...fe, [name]: '' }));
@@ -244,11 +294,13 @@ const ServicesSection = () => {
   };
 
   const isEventForm = form.cluster === 'EVENT';
-  // Local "today", for the event date picker's lower bound and as a
-  // fallback date when the expert picks a time before picking a date.
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const todayLocalStr = toDatetimeLocalValue(new Date()).split('T')[0];
+  // Lower bound for the event date picker. With a 24h minimum lead time,
+  // "today" can never actually satisfy validate() — a calendar day only
+  // holds 24 hours total, and some of today has already elapsed — so the
+  // earliest pickable day is tomorrow, not today.
+  const minEventDate = new Date(Date.now() + EVENT_MIN_LEAD_TIME_MS);
+  minEventDate.setHours(0, 0, 0, 0);
+  const minEventDateStr = toDatetimeLocalValue(new Date(Date.now() + EVENT_MIN_LEAD_TIME_MS), expertTimezone).split('T')[0];
 
   const validate = () => {
     const errs = {};
@@ -256,7 +308,7 @@ const ServicesSection = () => {
       errs.title = t('services.validation.titleRequired');
     if (!form.description.trim())
       errs.description = t('services.validation.descriptionRequired');
-    if (![30, 45, 60, 90, 120].includes(parseInt(form.duration_minutes)))
+    if (!(isEventForm ? EVENT_DURATION_OPTIONS : DURATION_OPTIONS).includes(parseInt(form.duration_minutes)))
       errs.duration_minutes = t('services.validation.durationRequired');
     const price  = parseFloat(form.price);
     const limits = PRICE_LIMITS[form.currency] || PRICE_LIMITS.EUR;
@@ -282,14 +334,20 @@ const ServicesSection = () => {
     if (isEventForm) {
       if (form.format === 'HOME_VISIT')
         errs.format = t('services.validation.eventFormatInvalid');
-      const eventDate = form.event_starts_at ? new Date(form.event_starts_at) : null;
-      if (!eventDate || isNaN(eventDate.getTime()))
+      const eventDateUTC = form.event_starts_at ? wallClockToUTC(form.event_starts_at, expertTimezone) : null;
+      if (!eventDateUTC || isNaN(eventDateUTC.getTime()))
         errs.event_starts_at = t('services.validation.eventDateRequired');
-      else if (eventDate <= new Date())
+      else if (eventDateUTC.getTime() < Date.now() + EVENT_MIN_LEAD_TIME_MS)
         errs.event_starts_at = t('services.validation.eventDateFuture');
       const capacity = parseInt(form.capacity);
       if (isNaN(capacity) || capacity < 1 || capacity > 1000)
         errs.capacity = t('services.validation.capacityRequired');
+      if (form.format === 'IN_PERSON') {
+        if (!form.event_location.trim())
+          errs.event_location = t('services.validation.eventLocationRequired');
+        if (!form.event_city.trim())
+          errs.event_city = t('services.validation.eventCityRequired');
+      }
     }
     return errs;
   };
@@ -327,6 +385,8 @@ const ServicesSection = () => {
       // date, which the expert sets fresh for the new occurrence.
       event_starts_at:  '',
       capacity:         svc.capacity != null ? String(svc.capacity) : '',
+      event_location:   svc.event_location || '',
+      event_city:       svc.event_city || '',
     });
     setFormErrors({});
     setRegionSelect('');
@@ -351,8 +411,10 @@ const ServicesSection = () => {
       format:           lockedFormat     || effective.format || '',
       cluster:          effective.cluster      || '',
       home_visit_areas: effective.home_visit_areas || [],
-      event_starts_at:  toDatetimeLocalValue(effective.event_starts_at),
+      event_starts_at:  toDatetimeLocalValue(effective.event_starts_at, expertTimezone),
       capacity:         effective.capacity != null ? String(effective.capacity) : '',
+      event_location:   effective.event_location || '',
+      event_city:       effective.event_city || '',
     });
     setFormErrors({});
     setRegionSelect('');
@@ -386,8 +448,13 @@ const ServicesSection = () => {
         cluster:          form.cluster || null,
         home_visit_areas: form.format === 'HOME_VISIT' ? form.home_visit_areas : [],
         ...(isEventForm && {
-          event_starts_at: fromDatetimeLocalValue(form.event_starts_at),
+          // Sent as a plain wall-clock string ("YYYY-MM-DDTHH:mm"), no
+          // timezone conversion here — the backend interprets it against the
+          // expert's registered timezone (see services.form.eventTimezoneHint).
+          event_starts_at: form.event_starts_at || null,
           capacity:        parseInt(form.capacity),
+          event_location:  form.format === 'IN_PERSON' ? form.event_location.trim() : null,
+          event_city:      form.format === 'IN_PERSON' ? form.event_city.trim() : null,
         }),
       };
       const result = editingId
@@ -555,7 +622,7 @@ const ServicesSection = () => {
             <div>
               <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.titleLabel')}</label>
               <input type="text" name="title" value={form.title} onChange={handleChange}
-                placeholder={t('services.form.titlePlaceholder')} maxLength={80}
+                placeholder={t(isEventForm ? 'services.form.eventTitlePlaceholder' : 'services.form.titlePlaceholder')} maxLength={80}
                 className={inputClass(!!formErrors.title)} />
               <div className="flex items-center justify-between mt-1.5">
                 {formErrors.title
@@ -660,18 +727,21 @@ const ServicesSection = () => {
                         const timePart = form.event_starts_at ? form.event_starts_at.split('T')[1] : '00:00';
                         handleChange({ target: { name: 'event_starts_at', value: `${e.target.value}T${timePart}` } });
                       }}
-                      min={startOfToday}
+                      min={minEventDate}
                       className={inputClass(!!formErrors.event_starts_at)}
                     />
                     <TimeSelect
                       value={form.event_starts_at ? form.event_starts_at.split('T')[1] : ''}
                       onChange={(val) => {
-                        const datePart = form.event_starts_at ? form.event_starts_at.split('T')[0] : todayLocalStr;
+                        const datePart = form.event_starts_at ? form.event_starts_at.split('T')[0] : minEventDateStr;
                         handleChange({ target: { name: 'event_starts_at', value: `${datePart}T${val}` } });
                       }}
                       hasError={!!formErrors.event_starts_at}
                     />
                   </div>
+                  <p className="mt-1.5 text-xs text-gray-400">
+                    {t('services.form.eventTimezoneHint', { timezone: expertTimezone })}
+                  </p>
                   {formErrors.event_starts_at && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_starts_at}</p>}
                 </div>
                 <div>
@@ -692,7 +762,36 @@ const ServicesSection = () => {
                   {formErrors.capacity && <p className="mt-1.5 text-xs text-red-500">{formErrors.capacity}</p>}
                 </div>
                 {form.format === 'IN_PERSON' && (
-                  <p className="sm:col-span-2 text-xs text-gray-400">{t('services.form.eventInPersonHint')}</p>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                        {t('services.form.eventLocationLabel')} <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="event_location"
+                        value={form.event_location}
+                        onChange={handleChange}
+                        placeholder={t('services.form.eventLocationPlaceholder')}
+                        className={inputClass(!!formErrors.event_location)}
+                      />
+                      {formErrors.event_location && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_location}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                        {t('services.form.eventCityLabel')} <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="event_city"
+                        value={form.event_city}
+                        onChange={handleChange}
+                        placeholder={t('services.form.eventCityPlaceholder')}
+                        className={inputClass(!!formErrors.event_city)}
+                      />
+                      {formErrors.event_city && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_city}</p>}
+                    </div>
+                  </>
                 )}
                 <p className="sm:col-span-2 text-xs text-gray-400">{t('services.form.eventHint')}</p>
               </div>
@@ -782,7 +881,7 @@ const ServicesSection = () => {
                 <select name="duration_minutes" value={form.duration_minutes} onChange={handleChange}
                   className={inputClass(!!formErrors.duration_minutes)}>
                   <option value="">{t('services.form.durationSelect')}</option>
-                  {[30, 45, 60, 90, 120].map(d => (
+                  {(isEventForm ? EVENT_DURATION_OPTIONS : DURATION_OPTIONS).map(d => (
                     <option key={d} value={String(d)}>{d} min</option>
                   ))}
                 </select>
@@ -919,8 +1018,10 @@ const ServicesSection = () => {
                       )}
                       {svc.cluster === 'EVENT' && (
                         <p className="text-xs text-gray-400 mt-1">
-                          {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                          {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: expertTimezone })}
                           {svc.capacity ? ` · ${t('services.card.capacityLabel', { count: svc.capacity })}` : ''}
+                          {svc.event_location ? ` · ${svc.event_location}` : ''}
+                          {svc.event_city ? `, ${svc.event_city}` : ''}
                         </p>
                       )}
                       {(svc.review_status === 'REJECTED' || svc.draft?.status === 'REJECTED') && (

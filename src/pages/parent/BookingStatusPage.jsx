@@ -44,7 +44,10 @@ const SuccessBanner = ({ booking }) => {
   const expertName = booking.expert?.user?.account_deleted
     ? t('bookingStatus.success.deletedSpecialist')
     : booking.expert?.user?.name;
-  const location    = formatPracticeAddress(booking.expert, lng);
+  const isEvent     = booking.service?.cluster === 'EVENT';
+  const location    = isEvent
+    ? [booking.service?.event_location, booking.service?.event_city].filter(Boolean).join(', ')
+    : formatPracticeAddress(booking.expert, lng);
   const formatLabel = booking.format === 'ONLINE'
     ? t('slotStep.formatOnline')
     : booking.format === 'HOME_VISIT'

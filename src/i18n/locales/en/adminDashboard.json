@@ -623,7 +623,9 @@
         "Cluster": "Category",
         "HomeVisitAreas": "Home visit areas",
         "EventDate": "Event date",
-        "Capacity": "Number of spots"
+        "Capacity": "Number of spots",
+        "EventLocation": "Venue address",
+        "EventCity": "City"
       }
     },
     "stripe": {

@@ -179,6 +179,7 @@
     "noFiscalCode":      "Non ho un codice fiscale italiano",
     "invoiceNote":       "La fattura è emessa direttamente dal professionista, non da Sage Nest.",
     "continueBtn":       "Continua",
+    "eventLocationLabel": "Luogo:",
     "spotsLeft_one":     "Solo {{count}} posto disponibile",
     "spotsLeft_other":   "{{count}} posti disponibili",
     "eventFull":         "Questo evento è al completo",

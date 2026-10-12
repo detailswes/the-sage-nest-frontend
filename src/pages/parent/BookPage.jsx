@@ -139,16 +139,22 @@ const BookingSummaryStrip = ({ detail, service, slot, format, lng }) => {
   );
 };
 
-// ─── Live spots-left — events have no slot-picking step, so this is the ─────
-// only place the parent sees how many spots remain before committing. The
-// venue itself (for in-person events) shows later, same place and same way
-// as any other in-person service: the address on the Confirm step.
+// ─── Event venue + live spots-left — events have no slot-picking step, so ────
+// this is the only place the parent sees the venue and how many spots remain
+// before committing. The venue is the expert's own entry for this event, not
+// their practice address.
 const EventSpotsNotice = ({ service, t }) => {
   if (!service) return null;
   const spotsLeft = service.spots_left;
   const isFull = typeof spotsLeft === 'number' && spotsLeft <= 0;
+  const venue = [service.event_location, service.event_city].filter(Boolean).join(', ');
   return (
     <div className="mb-5 -mt-2 space-y-2">
+      {service.format === 'IN_PERSON' && venue && (
+        <p className="text-xs text-gray-500">
+          <span className="font-medium text-[#1F2933]">{t('detailsStep.eventLocationLabel')}</span> {venue}
+        </p>
+      )}
       {typeof spotsLeft === 'number' && (
         <p className={`text-xs font-medium ${isFull ? 'text-red-600' : spotsLeft <= 3 ? 'text-amber-600' : 'text-gray-500'}`}>
           {isFull ? t('detailsStep.eventFull') : t('detailsStep.spotsLeft', { count: spotsLeft })}
@@ -820,7 +826,9 @@ const BookPage = () => {
       }
 
       const sessionLocation = selectedFormat === 'IN_PERSON'
-        ? formatPracticeAddress(detail, lng) || null
+        ? (isEventBooking
+            ? [selectedService.event_location, selectedService.event_city].filter(Boolean).join(', ')
+            : formatPracticeAddress(detail, lng)) || null
         : null;
 
       navigate('/checkout', {
@@ -1167,7 +1175,9 @@ const BookPage = () => {
               </div>
             ))}
             {selectedFormat === 'IN_PERSON' && (() => {
-              const loc = formatPracticeAddress(detail, lng);
+              const loc = isEventBooking
+                ? [selectedService?.event_location, selectedService?.event_city].filter(Boolean).join(', ')
+                : formatPracticeAddress(detail, lng);
               return loc ? (
                 <div className="flex justify-between gap-4">
                   <span className="text-gray-500">{t('confirmStep.labelLocation')}</span>
