@@ -17,6 +17,7 @@ import { getProfileImageUrl } from '../../utils/imageUrl';
 import { resolveDocUrl } from '../../utils/legalDocs';
 import { normalizeFiscalCode, isValidItalianFiscalCode } from '../../utils/fiscalCode';
 import { formatPracticeAddress } from '../../utils/countries';
+import { formatEventVenue } from '../../utils/formatEventVenue';
 import { validateLoginForm, validateRegisterForm, checkPasswordStrength } from '../../utils/validation';
 import PasswordInput from '../../components/auth/PasswordInput';
 import useResendVerification from '../../hooks/useResendVerification';
@@ -147,7 +148,7 @@ const EventSpotsNotice = ({ service, t }) => {
   if (!service) return null;
   const spotsLeft = service.spots_left;
   const isFull = typeof spotsLeft === 'number' && spotsLeft <= 0;
-  const venue = [service.event_location, service.event_city].filter(Boolean).join(', ');
+  const venue = formatEventVenue(service);
   return (
     <div className="mb-5 -mt-2 space-y-2">
       {service.format === 'IN_PERSON' && venue && (
@@ -827,7 +828,7 @@ const BookPage = () => {
 
       const sessionLocation = selectedFormat === 'IN_PERSON'
         ? (isEventBooking
-            ? [selectedService.event_location, selectedService.event_city].filter(Boolean).join(', ')
+            ? formatEventVenue(selectedService)
             : formatPracticeAddress(detail, lng)) || null
         : null;
 
@@ -1176,7 +1177,7 @@ const BookPage = () => {
             ))}
             {selectedFormat === 'IN_PERSON' && (() => {
               const loc = isEventBooking
-                ? [selectedService?.event_location, selectedService?.event_city].filter(Boolean).join(', ')
+                ? formatEventVenue(selectedService)
                 : formatPracticeAddress(detail, lng);
               return loc ? (
                 <div className="flex justify-between gap-4">

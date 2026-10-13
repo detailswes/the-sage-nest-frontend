@@ -624,8 +624,11 @@
         "HomeVisitAreas": "Zone per visita a domicilio",
         "EventDate": "Data dell'evento",
         "Capacity": "Numero di posti",
-        "EventLocation": "Indirizzo del luogo",
-        "EventCity": "Città"
+        "EventVenueName": "Nome del luogo",
+        "EventAddress": "Indirizzo",
+        "EventPostcode": "CAP",
+        "EventCity": "Città",
+        "VideoLink": "Link della videochiamata"
       }
     },
     "stripe": {

@@ -486,10 +486,17 @@
       "capacityLabel":        "Numero di posti",
       "capacityPlaceholder":  "es. 10",
       "eventHint":            "Gli eventi sono singoli. Per ripeterlo, duplica questo servizio e imposta una nuova data.",
-      "eventLocationLabel":   "Indirizzo del luogo",
-      "eventLocationPlaceholder": "Indirizzo del luogo dell'evento",
+      "eventVenueNameLabel":  "Nome del luogo",
+      "eventVenueNamePlaceholder": "es. Studio Yoga",
+      "eventAddressLabel":    "Indirizzo",
+      "eventAddressPlaceholder": "Indirizzo del luogo dell'evento",
+      "eventPostcodeLabel":   "CAP",
+      "eventPostcodePlaceholder": "es. 2100",
       "eventCityLabel":       "Città",
       "eventCityPlaceholder": "es. Copenaghen",
+      "videoLinkLabel":       "Link della videochiamata",
+      "videoLinkPlaceholder": "es. https://zoom.us/j/...",
+      "videoLinkHint":        "Viene inviato ai genitori solo nell'email di promemoria, 24 ore prima dell'evento — mai nella conferma di prenotazione. Aggiungilo almeno 36 ore prima dell'evento, altrimenti ti invieremo un promemoria per aggiungerlo.",
       "eventFreePriceHint":   "Gli eventi possono essere gratuiti: imposta 0 per un evento gratuito.",
       "eventUnavailableHomeVisitHint": "Gli eventi non sono disponibili perché il tuo profilo è impostato solo su Visita a domicilio."
     },
@@ -509,8 +516,11 @@
       "eventDateRequired":   "È richiesta una data e ora dell'evento valida",
       "eventDateFuture":     "La data e ora dell'evento devono essere almeno 24 ore da adesso",
       "capacityRequired":    "Il numero di posti deve essere tra 1 e 1000",
-      "eventLocationRequired": "L'indirizzo del luogo è richiesto per gli eventi in presenza",
-      "eventCityRequired":   "La città è richiesta per gli eventi in presenza"
+      "eventVenueNameRequired": "Il nome del luogo è richiesto per gli eventi in presenza",
+      "eventAddressRequired": "L'indirizzo è richiesto per gli eventi in presenza",
+      "eventPostcodeRequired": "Il CAP è richiesto per gli eventi in presenza",
+      "eventCityRequired":   "La città è richiesta per gli eventi in presenza",
+      "videoLinkInvalid":    "Il link della videochiamata deve essere un URL valido che inizia con http:// o https://"
     },
     "empty": {
       "title": "Nessun servizio ancora",
@@ -539,6 +549,8 @@
       "deleteBtn":     "Elimina",
       "capacityLabel_one":  "{{count}} posto",
       "capacityLabel_other": "{{count}} posti",
+      "videoLinkSet":   "link video aggiunto",
+      "videoLinkMissing": "link video mancante",
       "attendeesBtn":   "Visualizza partecipanti",
       "cancelEventBtn": "Cancella evento",
       "attendeesTitle": "Partecipanti",
@@ -552,6 +564,8 @@
       },
       "cancelEventConfirm": "Cancellare questo evento?",
       "cancelEventMessage": "Ogni partecipante verrà rimborsato e notificato. Questa azione non può essere annullata.",
+      "cancelEventReasonLabel": "Messaggio per i partecipanti (facoltativo)",
+      "cancelEventReasonPlaceholder": "Fai sapere ai partecipanti perché l'evento è stato cancellato",
       "cancelEventSuccess": "Evento cancellato e partecipanti rimborsati."
     },
     "savedAsDraft": {

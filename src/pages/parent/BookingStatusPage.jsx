@@ -3,6 +3,7 @@ import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useGetBookingByIdQuery, useVerifyPaymentMutation } from '../../api/bookingApi';
 import { formatPracticeAddress } from '../../utils/countries';
+import { formatEventVenue } from '../../utils/formatEventVenue';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS        = 40; // ~2 minutes total
@@ -46,7 +47,7 @@ const SuccessBanner = ({ booking }) => {
     : booking.expert?.user?.name;
   const isEvent     = booking.service?.cluster === 'EVENT';
   const location    = isEvent
-    ? [booking.service?.event_location, booking.service?.event_city].filter(Boolean).join(', ')
+    ? formatEventVenue(booking.service)
     : formatPracticeAddress(booking.expert, lng);
   const formatLabel = booking.format === 'ONLINE'
     ? t('slotStep.formatOnline')

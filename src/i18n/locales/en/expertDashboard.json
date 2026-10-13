@@ -486,10 +486,17 @@
       "capacityLabel":        "Number of spots",
       "capacityPlaceholder":  "e.g. 10",
       "eventHint":            "Events are one-time only. To repeat it, duplicate this service and set a new date.",
-      "eventLocationLabel":   "Venue address",
-      "eventLocationPlaceholder": "Street address of the venue",
+      "eventVenueNameLabel":  "Venue name",
+      "eventVenueNamePlaceholder": "e.g. The Yoga Studio",
+      "eventAddressLabel":    "Street address",
+      "eventAddressPlaceholder": "Street address of the venue",
+      "eventPostcodeLabel":   "Postcode",
+      "eventPostcodePlaceholder": "e.g. 2100",
       "eventCityLabel":       "City",
       "eventCityPlaceholder": "e.g. Copenhagen",
+      "videoLinkLabel":       "Video call link",
+      "videoLinkPlaceholder": "e.g. https://zoom.us/j/...",
+      "videoLinkHint":        "Sent to parents only in their reminder email, 24 hours before the event — never in the booking confirmation. Add it at least 36 hours before the event, or we'll email you a reminder to add it.",
       "eventFreePriceHint":   "Events can be free — set 0 for a complimentary event.",
       "eventUnavailableHomeVisitHint": "Events aren't available because your profile is locked to Home Visit."
     },
@@ -509,8 +516,11 @@
       "eventDateRequired":   "A valid event date and time is required",
       "eventDateFuture":     "Event date and time must be at least 24 hours from now",
       "capacityRequired":    "Number of spots must be between 1 and 1000",
-      "eventLocationRequired": "Venue address is required for in-person events",
-      "eventCityRequired":   "City is required for in-person events"
+      "eventVenueNameRequired": "Venue name is required for in-person events",
+      "eventAddressRequired": "Street address is required for in-person events",
+      "eventPostcodeRequired": "Postcode is required for in-person events",
+      "eventCityRequired":   "City is required for in-person events",
+      "videoLinkInvalid":    "Video link must be a valid URL starting with http:// or https://"
     },
     "empty": {
       "title": "No services yet",
@@ -539,6 +549,8 @@
       "deleteBtn":     "Delete",
       "capacityLabel_one":  "{{count}} spot",
       "capacityLabel_other": "{{count}} spots",
+      "videoLinkSet":   "video link added",
+      "videoLinkMissing": "video link missing",
       "attendeesBtn":   "View attendees",
       "cancelEventBtn": "Cancel event",
       "attendeesTitle": "Attendees",
@@ -552,6 +564,8 @@
       },
       "cancelEventConfirm": "Cancel this event?",
       "cancelEventMessage": "Every attendee will be refunded and notified. This can't be undone.",
+      "cancelEventReasonLabel": "Message to attendees (optional)",
+      "cancelEventReasonPlaceholder": "Let attendees know why the event was cancelled",
       "cancelEventSuccess": "Event cancelled and attendees refunded."
     },
     "savedAsDraft": {

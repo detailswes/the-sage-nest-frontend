@@ -119,8 +119,8 @@ export const bookingApi = createApi({
       providesTags: (result, error, serviceId) => [{ type: 'EventAttendees', id: serviceId }],
     }),
     cancelEvent: builder.mutation({
-      query: (serviceId) => ({ url: `/bookings/events/${serviceId}/cancel`, method: 'POST' }),
-      invalidatesTags: (result, error, serviceId) => [
+      query: ({ serviceId, reason } = {}) => ({ url: `/bookings/events/${serviceId}/cancel`, method: 'POST', body: { reason } }),
+      invalidatesTags: (result, error, { serviceId } = {}) => [
         'Booking', 'UpcomingAppointment', 'CalendarBooking', { type: 'EventAttendees', id: serviceId },
       ],
     }),
