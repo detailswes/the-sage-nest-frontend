@@ -11,6 +11,7 @@ const ConfirmModal = ({
   checking = false,
   onConfirm,
   onClose,
+  children,
 }) => {
   const { t } = useTranslation('common');
   if (!open) return null;
@@ -46,6 +47,7 @@ const ConfirmModal = ({
                 <p className="text-xs text-amber-800">{warning}</p>
               </div>
             )}
+            {children}
           </>
         )}
 

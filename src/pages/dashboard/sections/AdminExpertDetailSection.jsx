@@ -27,6 +27,7 @@ import {
 } from "../../../api/adminApi";
 import { getProfileImageUrl, getDocumentUrl } from "../../../utils/imageUrl";
 import { formatBookingTime } from "../../../utils/formatBookingTime";
+import { formatEventVenue } from "../../../utils/formatEventVenue";
 import { getCountryName } from "../../../utils/countries";
 import BookingDetailModal from "../../../components/admin/BookingDetailModal";
 
@@ -1083,8 +1084,7 @@ const AdminExpertDetailSection = () => {
                                 <p className="text-xs text-gray-500">
                                   {svc.event_starts_at && formatBookingTime(svc.event_starts_at, expert.timezone).primary}
                                   {svc.capacity ? ` · ${t("expertDetail.services.eventSpots", { count: svc.capacity })}` : ""}
-                                  {svc.event_location ? ` · ${svc.event_location}` : ""}
-                                  {svc.event_city ? `, ${svc.event_city}` : ""}
+                                  {formatEventVenue(svc) ? ` · ${formatEventVenue(svc)}` : ""}
                                 </p>
                               )}
                             </div>
@@ -1108,8 +1108,7 @@ const AdminExpertDetailSection = () => {
                                 <p className="text-xs text-gray-500">
                                   {svc.event_starts_at && formatBookingTime(svc.event_starts_at, expert.timezone).primary}
                                   {svc.capacity ? ` · ${t("expertDetail.services.eventSpots", { count: svc.capacity })}` : ""}
-                                  {svc.event_location ? ` · ${svc.event_location}` : ""}
-                                  {svc.event_city ? `, ${svc.event_city}` : ""}
+                                  {formatEventVenue(svc) ? ` · ${formatEventVenue(svc)}` : ""}
                                 </p>
                               )}
                             </div>
@@ -1130,8 +1129,11 @@ const AdminExpertDetailSection = () => {
                           ...(svc.cluster === "EVENT" || svc.draft.cluster === "EVENT" ? [
                             { key: "EventDate", live: svc.event_starts_at ? formatBookingTime(svc.event_starts_at, expert.timezone).primary : null, proposed: svc.draft.event_starts_at ? formatBookingTime(svc.draft.event_starts_at, expert.timezone).primary : null },
                             { key: "Capacity", live: svc.capacity != null ? String(svc.capacity) : null, proposed: svc.draft.capacity != null ? String(svc.draft.capacity) : null },
-                            { key: "EventLocation", live: svc.event_location || null, proposed: svc.draft.event_location || null },
+                            { key: "EventVenueName", live: svc.event_venue_name || null, proposed: svc.draft.event_venue_name || null },
+                            { key: "EventAddress", live: svc.event_address || null, proposed: svc.draft.event_address || null },
+                            { key: "EventPostcode", live: svc.event_postcode || null, proposed: svc.draft.event_postcode || null },
                             { key: "EventCity", live: svc.event_city || null, proposed: svc.draft.event_city || null },
+                            { key: "VideoLink", live: svc.video_link || null, proposed: svc.draft.video_link || null },
                           ] : []),
                         ];
                         return (
@@ -1196,10 +1198,9 @@ const AdminExpertDetailSection = () => {
                           <p className="text-xs text-gray-400">{svc.duration_minutes} min &middot; {priceFmt(svc.price)}</p>
                           {svc.cluster === "EVENT" && (
                             <p className="text-xs text-gray-400 mt-0.5">
-                              {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                              {svc.event_starts_at && formatBookingTime(svc.event_starts_at, expert.timezone).primary}
                               {svc.capacity ? ` · ${t("expertDetail.services.eventSpots", { count: svc.capacity })}` : ""}
-                              {svc.event_location ? ` · ${svc.event_location}` : ""}
-                              {svc.event_city ? `, ${svc.event_city}` : ""}
+                              {formatEventVenue(svc) ? ` · ${formatEventVenue(svc)}` : ""}
                             </p>
                           )}
                         </div>

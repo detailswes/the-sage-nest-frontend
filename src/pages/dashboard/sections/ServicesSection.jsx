@@ -21,6 +21,7 @@ import {
   countryKeyFromIso, isHomeVisitCountrySupported,
   getRegions, getSubregions, getSubLevel, formatArea, isValidArea,
 } from '../../../data/homeVisitAreas';
+import { formatEventVenue } from '../../../utils/formatEventVenue';
 
 const FORMAT_OPTIONS  = [
   { value: 'ONLINE' },
@@ -135,7 +136,9 @@ const EMPTY_FORM = {
   title: '', description: '',
   duration_minutes: '', price: '', currency: 'EUR',
   format: '', cluster: '', home_visit_areas: [],
-  event_starts_at: '', capacity: '', event_location: '', event_city: '',
+  event_starts_at: '', capacity: '',
+  event_venue_name: '', event_address: '', event_postcode: '', event_city: '',
+  video_link: '',
 };
 
 const Spinner = ({ className = 'w-4 h-4' }) => (
@@ -159,8 +162,11 @@ function withDraft(svc) {
     home_visit_areas: d.home_visit_areas?.length ? d.home_visit_areas : svc.home_visit_areas,
     event_starts_at:  d.event_starts_at  ?? svc.event_starts_at,
     capacity:         d.capacity         ?? svc.capacity,
-    event_location:   d.event_location   ?? svc.event_location,
+    event_venue_name: d.event_venue_name ?? svc.event_venue_name,
+    event_address:    d.event_address    ?? svc.event_address,
+    event_postcode:   d.event_postcode   ?? svc.event_postcode,
     event_city:       d.event_city       ?? svc.event_city,
+    video_link:       d.video_link       ?? svc.video_link,
   };
 }
 
@@ -220,6 +226,7 @@ const ServicesSection = () => {
   const [deleteModal, setDeleteModal]   = useState({ open: false, id: null });
   const [attendeesModalId, setAttendeesModalId] = useState(null);
   const [cancelEventModal, setCancelEventModal] = useState({ open: false, id: null });
+  const [cancelEventReason, setCancelEventReason] = useState('');
   const [cancelEventMutation, { isLoading: cancellingEvent }] = useCancelEventMutation();
 
   // "In Review" default: a new expert's first-ever service always starts
@@ -343,11 +350,17 @@ const ServicesSection = () => {
       if (isNaN(capacity) || capacity < 1 || capacity > 1000)
         errs.capacity = t('services.validation.capacityRequired');
       if (form.format === 'IN_PERSON') {
-        if (!form.event_location.trim())
-          errs.event_location = t('services.validation.eventLocationRequired');
+        if (!form.event_venue_name.trim())
+          errs.event_venue_name = t('services.validation.eventVenueNameRequired');
+        if (!form.event_address.trim())
+          errs.event_address = t('services.validation.eventAddressRequired');
+        if (!form.event_postcode.trim())
+          errs.event_postcode = t('services.validation.eventPostcodeRequired');
         if (!form.event_city.trim())
           errs.event_city = t('services.validation.eventCityRequired');
       }
+      if (form.format === 'ONLINE' && form.video_link.trim() && !/^https?:\/\/.+/i.test(form.video_link.trim()))
+        errs.video_link = t('services.validation.videoLinkInvalid');
     }
     return errs;
   };
@@ -385,8 +398,11 @@ const ServicesSection = () => {
       // date, which the expert sets fresh for the new occurrence.
       event_starts_at:  '',
       capacity:         svc.capacity != null ? String(svc.capacity) : '',
-      event_location:   svc.event_location || '',
+      event_venue_name: svc.event_venue_name || '',
+      event_address:    svc.event_address || '',
+      event_postcode:   svc.event_postcode || '',
       event_city:       svc.event_city || '',
+      video_link:       svc.video_link || '',
     });
     setFormErrors({});
     setRegionSelect('');
@@ -413,8 +429,11 @@ const ServicesSection = () => {
       home_visit_areas: effective.home_visit_areas || [],
       event_starts_at:  toDatetimeLocalValue(effective.event_starts_at, expertTimezone),
       capacity:         effective.capacity != null ? String(effective.capacity) : '',
-      event_location:   effective.event_location || '',
+      event_venue_name: effective.event_venue_name || '',
+      event_address:    effective.event_address || '',
+      event_postcode:   effective.event_postcode || '',
       event_city:       effective.event_city || '',
+      video_link:       effective.video_link || '',
     });
     setFormErrors({});
     setRegionSelect('');
@@ -453,8 +472,11 @@ const ServicesSection = () => {
           // expert's registered timezone (see services.form.eventTimezoneHint).
           event_starts_at: form.event_starts_at || null,
           capacity:        parseInt(form.capacity),
-          event_location:  form.format === 'IN_PERSON' ? form.event_location.trim() : null,
+          event_venue_name: form.format === 'IN_PERSON' ? form.event_venue_name.trim() : null,
+          event_address:   form.format === 'IN_PERSON' ? form.event_address.trim() : null,
+          event_postcode:  form.format === 'IN_PERSON' ? form.event_postcode.trim() : null,
           event_city:      form.format === 'IN_PERSON' ? form.event_city.trim() : null,
+          video_link:      form.format === 'ONLINE' ? (form.video_link.trim() || null) : null,
         }),
       };
       const result = editingId
@@ -482,9 +504,9 @@ const ServicesSection = () => {
     }
   };
 
-  const handleCancelEvent = async (id) => {
+  const handleCancelEvent = async (id, reason) => {
     try {
-      await cancelEventMutation(id).unwrap();
+      await cancelEventMutation({ serviceId: id, reason }).unwrap();
       toast.success(t('services.card.cancelEventSuccess'));
     } catch (err) {
       toast.error(err?.data?.error || t('services.errors.cancelEventFailed'));
@@ -765,17 +787,45 @@ const ServicesSection = () => {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                        {t('services.form.eventLocationLabel')} <span className="text-red-400">*</span>
+                        {t('services.form.eventVenueNameLabel')} <span className="text-red-400">*</span>
                       </label>
                       <input
                         type="text"
-                        name="event_location"
-                        value={form.event_location}
+                        name="event_venue_name"
+                        value={form.event_venue_name}
                         onChange={handleChange}
-                        placeholder={t('services.form.eventLocationPlaceholder')}
-                        className={inputClass(!!formErrors.event_location)}
+                        placeholder={t('services.form.eventVenueNamePlaceholder')}
+                        className={inputClass(!!formErrors.event_venue_name)}
                       />
-                      {formErrors.event_location && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_location}</p>}
+                      {formErrors.event_venue_name && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_venue_name}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                        {t('services.form.eventAddressLabel')} <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="event_address"
+                        value={form.event_address}
+                        onChange={handleChange}
+                        placeholder={t('services.form.eventAddressPlaceholder')}
+                        className={inputClass(!!formErrors.event_address)}
+                      />
+                      {formErrors.event_address && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_address}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                        {t('services.form.eventPostcodeLabel')} <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="event_postcode"
+                        value={form.event_postcode}
+                        onChange={handleChange}
+                        placeholder={t('services.form.eventPostcodePlaceholder')}
+                        className={inputClass(!!formErrors.event_postcode)}
+                      />
+                      {formErrors.event_postcode && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_postcode}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
@@ -792,6 +842,23 @@ const ServicesSection = () => {
                       {formErrors.event_city && <p className="mt-1.5 text-xs text-red-500">{formErrors.event_city}</p>}
                     </div>
                   </>
+                )}
+                {form.format === 'ONLINE' && (
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                      {t('services.form.videoLinkLabel')}
+                    </label>
+                    <input
+                      type="text"
+                      name="video_link"
+                      value={form.video_link}
+                      onChange={handleChange}
+                      placeholder={t('services.form.videoLinkPlaceholder')}
+                      className={inputClass(!!formErrors.video_link)}
+                    />
+                    <p className="mt-1.5 text-xs text-gray-400">{t('services.form.videoLinkHint')}</p>
+                    {formErrors.video_link && <p className="mt-1.5 text-xs text-red-500">{formErrors.video_link}</p>}
+                  </div>
                 )}
                 <p className="sm:col-span-2 text-xs text-gray-400">{t('services.form.eventHint')}</p>
               </div>
@@ -1020,8 +1087,8 @@ const ServicesSection = () => {
                         <p className="text-xs text-gray-400 mt-1">
                           {svc.event_starts_at && new Date(svc.event_starts_at).toLocaleString(lng === 'it' ? 'it-IT' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: expertTimezone })}
                           {svc.capacity ? ` · ${t('services.card.capacityLabel', { count: svc.capacity })}` : ''}
-                          {svc.event_location ? ` · ${svc.event_location}` : ''}
-                          {svc.event_city ? `, ${svc.event_city}` : ''}
+                          {svc.format === 'IN_PERSON' && formatEventVenue(svc) ? ` · ${formatEventVenue(svc)}` : ''}
+                          {svc.format === 'ONLINE' ? ` · ${svc.video_link ? t('services.card.videoLinkSet') : t('services.card.videoLinkMissing')}` : ''}
                         </p>
                       )}
                       {(svc.review_status === 'REJECTED' || svc.draft?.status === 'REJECTED') && (
@@ -1143,9 +1210,25 @@ const ServicesSection = () => {
         message={t('services.card.cancelEventMessage')}
         confirmLabel={t('services.card.cancelEventBtn')}
         loading={cancellingEvent}
-        onClose={() => setCancelEventModal({ open: false, id: null })}
-        onConfirm={() => { handleCancelEvent(cancelEventModal.id); setCancelEventModal({ open: false, id: null }); }}
-      />
+        onClose={() => { setCancelEventModal({ open: false, id: null }); setCancelEventReason(''); }}
+        onConfirm={() => {
+          handleCancelEvent(cancelEventModal.id, cancelEventReason);
+          setCancelEventModal({ open: false, id: null });
+          setCancelEventReason('');
+        }}
+      >
+        <div className="mb-4 text-left">
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('services.card.cancelEventReasonLabel')}</label>
+          <textarea
+            value={cancelEventReason}
+            onChange={(e) => setCancelEventReason(e.target.value)}
+            placeholder={t('services.card.cancelEventReasonPlaceholder')}
+            rows={3}
+            maxLength={500}
+            className="w-full px-3 py-2 rounded-lg border border-[#E4E7E4] text-sm focus:outline-none focus:ring-2 focus:ring-[#445446]/30"
+          />
+        </div>
+      </ConfirmModal>
 
       {attendeesModalId && (
         <EventAttendeesModal
