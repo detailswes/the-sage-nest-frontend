@@ -989,6 +989,18 @@
       "actions": "Azioni"
     },
     "empty": "Nessun errore di sincronizzazione — tutto è aggiornato.",
+    "viewDetails": "Visualizza dettagli",
+    "detail": {
+      "title": "Dettagli dell'errore di sincronizzazione",
+      "errorHeading": "Errore completo",
+      "errorCopied": "Errore copiato negli appunti.",
+      "copyBtn": "Copia",
+      "payloadHeading": "Dati che abbiamo provato a sincronizzare",
+      "noPayload": "Nessun payload registrato.",
+      "attemptsLabel": "Tentativi",
+      "statusLabel": "Stato",
+      "lastAttemptLabel": "Ultimo tentativo"
+    },
     "retry": {
       "button": "Ri-sincronizza",
       "inProgress": "Sincronizzazione…",

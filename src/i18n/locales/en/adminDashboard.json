@@ -989,6 +989,18 @@
       "actions": "Actions"
     },
     "empty": "No sync failures — everything is up to date.",
+    "viewDetails": "View details",
+    "detail": {
+      "title": "Sync failure details",
+      "errorHeading": "Full error",
+      "errorCopied": "Error copied to clipboard.",
+      "copyBtn": "Copy",
+      "payloadHeading": "Data we tried to sync",
+      "noPayload": "No payload recorded.",
+      "attemptsLabel": "Attempts",
+      "statusLabel": "Status",
+      "lastAttemptLabel": "Last attempt"
+    },
     "retry": {
       "button": "Re-sync",
       "inProgress": "Syncing…",
