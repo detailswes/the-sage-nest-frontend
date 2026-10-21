@@ -709,6 +709,7 @@
       "approve": "Approve Expert",
       "approving": "Approving…",
       "cannotApprove": "Cannot approve — expert has not completed Stripe onboarding.",
+      "cannotApproveNoAvailability": "Cannot approve — expert has not added any availability.",
       "requestChanges": "Request Changes",
       "approveSuccess": "Expert approved successfully.",
       "rejectSuccess": "Expert rejected successfully.",

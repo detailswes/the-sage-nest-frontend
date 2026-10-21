@@ -1035,8 +1035,12 @@ const AvailabilitySection = () => {
     setRemovingId(id);
     try {
       await removeAvailabilitySlot(id).unwrap();
-    } catch {
-      setSlotError(t('availability.weekly.removeFailed'));
+    } catch (err) {
+      setSlotError(
+        err?.data?.code === 'LAST_SLOT_ACTIVE_SERVICES'
+          ? t('availability.weekly.lastSlotActiveServices')
+          : t('availability.weekly.removeFailed')
+      );
     } finally {
       setRemovingId(null);
     }

@@ -1350,7 +1350,7 @@ const AdminExpertDetailSection = () => {
                     </>
                   ) : expert.status === "REJECTED" ? (
                     <>
-                      <button onClick={() => setConfirmAction("approve")} disabled={!!actionLoadingKey || !expert.stripe_onboarding_complete}
+                      <button onClick={() => setConfirmAction("approve")} disabled={!!actionLoadingKey || !expert.stripe_onboarding_complete || !expert.has_availability}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         {actionLoadingKey === "approve" ? t("expertDetail.statusActions.approving") : t("expertDetail.statusActions.approve")}
                       </button>
@@ -1359,16 +1359,26 @@ const AdminExpertDetailSection = () => {
                           {t("expertDetail.statusActions.cannotApprove")}
                         </p>
                       )}
+                      {expert.stripe_onboarding_complete && !expert.has_availability && (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                          {t("expertDetail.statusActions.cannotApproveNoAvailability")}
+                        </p>
+                      )}
                     </>
                   ) : (
                     <>
-                      <button onClick={() => setConfirmAction("approve")} disabled={!!actionLoadingKey || !expert.stripe_onboarding_complete}
+                      <button onClick={() => setConfirmAction("approve")} disabled={!!actionLoadingKey || !expert.stripe_onboarding_complete || !expert.has_availability}
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         {actionLoadingKey === "approve" ? t("expertDetail.statusActions.approving") : t("expertDetail.statusActions.approve")}
                       </button>
                       {!expert.stripe_onboarding_complete && (
                         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
                           {t("expertDetail.statusActions.cannotApprove")}
+                        </p>
+                      )}
+                      {expert.stripe_onboarding_complete && !expert.has_availability && (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                          {t("expertDetail.statusActions.cannotApproveNoAvailability")}
                         </p>
                       )}
                       <button onClick={() => setConfirmAction("reject")} disabled={!!actionLoadingKey}
