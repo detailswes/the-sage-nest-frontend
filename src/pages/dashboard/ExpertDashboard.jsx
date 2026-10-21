@@ -192,6 +192,22 @@ const ExpertDashboard = () => {
             </div>
           )}
 
+          {/* Pre-approval: availability is required before an admin can approve */}
+          {["PENDING", "CHANGES_REQUESTED"].includes(expertStatus) && hasAvailability === false && (
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4">
+              <div className="flex items-start gap-3">
+                <CalendarIcon className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-blue-800">{t('banners.availabilityRequired.title')}</p>
+                  <p className="text-sm text-blue-700 mt-1">{t('banners.availabilityRequired.body')}</p>
+                  <Link to="/dashboard/expert/availability" className="inline-block mt-2.5 text-xs font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900">
+                    {t('banners.noAvailability.cta')}
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* No availability banner */}
           {expertStatus === "APPROVED" && hasAvailability === false && (
             <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4">

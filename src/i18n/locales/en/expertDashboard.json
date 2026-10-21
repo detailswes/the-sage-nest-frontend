@@ -20,6 +20,10 @@
       "title":  "Profile changes requested",
       "footer": "Please update your profile and save — this will resubmit it for review."
     },
+    "availabilityRequired": {
+      "title": "Add your availability to get approved",
+      "body":  "Your profile can't be approved until you have set your weekly availability. Please add it before waiting for review."
+    },
     "noAvailability": {
       "title": "Add your availability so parents can book you",
       "body":  "Your profile is live but you have no availability set for the next 14 days — parents won't be able to book a session until you do.",
@@ -667,7 +671,8 @@
       "conflictNote":    "These bookings will not be cancelled automatically — you must manage them separately.",
       "addSuccess":   "Slot added to your weekly schedule.",
       "addFailed":    "Failed to add slot.",
-      "removeFailed": "Failed to remove slot."
+      "removeFailed": "Failed to remove slot.",
+      "lastSlotActiveServices": "This is your last availability slot. Deactivate your active services before removing it, otherwise parents will see services with no bookable dates."
     },
 
     "blockout": {

@@ -20,6 +20,10 @@
       "title":  "Modifiche al profilo richieste",
       "footer": "Aggiorna il tuo profilo e salva — verrà reinviato per la revisione."
     },
+    "availabilityRequired": {
+      "title": "Aggiungi la tua disponibilità per essere approvato",
+      "body":  "Il tuo profilo non può essere approvato finché non imposti la tua disponibilità settimanale. Aggiungila prima di attendere la revisione."
+    },
     "noAvailability": {
       "title": "Aggiungi la tua disponibilità per ricevere prenotazioni",
       "body":  "Il tuo profilo è attivo ma non hai disponibilità impostata per i prossimi 14 giorni — i genitori non potranno prenotare una sessione finché non lo farai.",
@@ -667,7 +671,8 @@
       "conflictNote":    "Queste prenotazioni non verranno cancellate automaticamente — devi gestirle separatamente.",
       "addSuccess":   "Slot aggiunto al tuo orario settimanale.",
       "addFailed":    "Impossibile aggiungere lo slot.",
-      "removeFailed": "Impossibile rimuovere lo slot."
+      "removeFailed": "Impossibile rimuovere lo slot.",
+      "lastSlotActiveServices": "Questa è la tua ultima fascia di disponibilità. Disattiva i tuoi servizi attivi prima di rimuoverla, altrimenti i genitori vedranno servizi senza date prenotabili."
     },
 
     "blockout": {

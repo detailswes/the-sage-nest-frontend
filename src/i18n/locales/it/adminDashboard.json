@@ -709,6 +709,7 @@
       "approve": "Approva esperto",
       "approving": "Approvazione…",
       "cannotApprove": "Impossibile approvare — l'esperto non ha completato l'onboarding Stripe.",
+      "cannotApproveNoAvailability": "Impossibile approvare — l'esperto non ha aggiunto alcuna disponibilità.",
       "requestChanges": "Richiedi modifiche",
       "approveSuccess": "Esperto approvato con successo.",
       "rejectSuccess": "Esperto rifiutato con successo.",
