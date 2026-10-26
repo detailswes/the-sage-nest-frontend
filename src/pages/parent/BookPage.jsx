@@ -216,22 +216,27 @@ const ConsentBlock = ({ legalVersions, tcAccepted, setTcAccepted }) => {
 };
 
 // ─── Verification pending panel ───────────────────────────────────────────────
-const VerificationPendingPanel = ({ email, returnTo, onSwitchToLogin }) => {
+const VerificationPendingPanel = ({ email, returnTo, onSwitchToLogin, existingAccount }) => {
+  const { t } = useTranslation('parentBookings');
   const { resend, status, countdown } = useResendVerification();
   return (
     <div className="text-center py-2">
       <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
         <EnvelopeIcon className="w-6 h-6 text-blue-500" />
       </div>
-      <h3 className="text-base font-semibold text-[#1F2933] mb-2">Check your inbox</h3>
-      <p className="text-sm text-gray-500 mb-1">We sent a verification link to</p>
+      <h3 className="text-base font-semibold text-[#1F2933] mb-2">
+        {t(existingAccount ? 'accountStep.verifyPending.titleExisting' : 'accountStep.verifyPending.titleSent')}
+      </h3>
+      <p className="text-sm text-gray-500 mb-1">
+        {t(existingAccount ? 'accountStep.verifyPending.existingLead' : 'accountStep.verifyPending.sentTo')}
+      </p>
       <p className="text-sm font-medium text-[#1F2933] mb-5 break-all">{email}</p>
       <p className="text-xs text-gray-400 leading-relaxed mb-5">
-        Click the link in the email to verify your account — you'll be returned here to complete your booking.
+        {t(existingAccount ? 'accountStep.verifyPending.bodyExisting' : 'accountStep.verifyPending.bodySent')}
       </p>
       {status === 'sent' && countdown > 0 ? (
         <div className="w-full mb-3 py-2.5 px-4 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700 text-center">
-          Email sent! Resend available in {countdown}s.
+          {t('accountStep.verifyPending.resentCountdown', { count: countdown })}
         </div>
       ) : (
         <button
@@ -239,14 +244,14 @@ const VerificationPendingPanel = ({ email, returnTo, onSwitchToLogin }) => {
           disabled={status === 'sending' || countdown > 0}
           className="w-full mb-3 py-2.5 px-4 rounded-lg border border-[#E4E7E4] text-sm font-medium text-gray-600 hover:border-[#445446] hover:text-[#445446] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {status === 'sending' ? 'Sending…' : status === 'error' ? 'Failed — try again' : 'Resend verification email'}
+          {status === 'sending' ? t('accountStep.verifyPending.sending') : status === 'error' ? t('accountStep.verifyPending.error') : t('accountStep.verifyPending.resend')}
         </button>
       )}
       <button
         onClick={onSwitchToLogin}
         className="w-full py-2 text-sm text-[#445446] font-medium hover:underline"
       >
-        Already verified? Sign in
+        {t('accountStep.verifyPending.alreadyVerified')}
       </button>
     </div>
   );
@@ -316,7 +321,7 @@ const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
       if (err?.response?.data?.email_not_verified && onVerificationNeeded) {
         onVerificationNeeded(email);
       } else {
-        setError(err?.response?.data?.error || 'Login failed. Please try again.');
+        setError(err?.response?.data?.error || tAuth('login.defaultError'));
       }
     } finally { setLoading(false); }
   };
@@ -372,13 +377,14 @@ const InlineLogin = ({ onSuccess, onVerificationNeeded }) => {
 
 // ─── Inline Register form (Account step) ─────────────────────────────────────
 // Marketing checkbox's only place in the flow (booking flow spec v1.7 §4).
-const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
+const InlineRegister = ({ onVerificationSent, onExistingUnverified, onSwitchToLogin, returnTo, legalVersions }) => {
   const { t, i18n } = useTranslation('parentBookings');
   const { t: tAuth } = useTranslation('auth');
   const termsHref = resolveDocUrl(legalVersions?.terms_conditions, i18n.language, '/terms-conditions');
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketing, setMarketing] = useState(false);
@@ -392,7 +398,7 @@ const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
     if (!termsAccepted)   errs.termsConditions = t('consentLabels.termsRequired');
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
-    setLoading(true); setServerError('');
+    setLoading(true); setServerError(''); setAlreadyRegistered(false);
     try {
       const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; } })();
       await registerUser({
@@ -405,10 +411,14 @@ const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
       });
       onVerificationSent(form.email);
     } catch (err) {
-      if (err?.response?.status === 409) {
-        setServerError('This email is already registered. Check your inbox for a verification link, or sign in instead.');
+      const code = err?.response?.data?.code;
+      if (code === 'EMAIL_EXISTS_UNVERIFIED') {
+        onExistingUnverified(form.email);
+      } else if (err?.response?.status === 409) {
+        setServerError(t('accountStep.alreadyRegistered'));
+        setAlreadyRegistered(true);
       } else {
-        setServerError(err?.response?.data?.error || 'Registration failed. Please try again.');
+        setServerError(err?.response?.data?.error || t('accountStep.registerFailed'));
       }
     } finally { setLoading(false); }
   };
@@ -469,7 +479,17 @@ const InlineRegister = ({ onVerificationSent, returnTo, legalVersions }) => {
         ))}
       </div>
 
-      {serverError && <p className="text-xs text-red-600">{serverError}</p>}
+      {serverError && (
+        <p className="text-xs text-red-600">
+          {serverError}
+          {alreadyRegistered && (
+            <>
+              {' '}
+              <button type="button" onClick={onSwitchToLogin} className="font-semibold underline">{t('accountStep.signIn')}</button>
+            </>
+          )}
+        </p>
+      )}
       <button type="submit" disabled={loading}
         className="w-full py-3 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60">
         {loading ? t('accountStep.creatingAccountBtn') : t('accountStep.createAccountBtn')}
@@ -514,6 +534,7 @@ const BookPage = () => {
   // Account step
   const [authTab,              setAuthTab]              = useState('register');
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState(null);
+  const [pendingIsExisting, setPendingIsExisting] = useState(false); // true when the account pre-dates this visit (no email was just sent)
 
   // Details step — billing, health consent, withdrawal. All start unset/unticked
   // on every visit — no prior entry/acceptance is reused (spec §1: every
@@ -1015,14 +1036,15 @@ const BookPage = () => {
               <VerificationPendingPanel
                 email={pendingVerificationEmail}
                 returnTo={returnTo}
-                onSwitchToLogin={() => { setPendingVerificationEmail(null); setAuthTab('login'); }}
+                existingAccount={pendingIsExisting}
+                onSwitchToLogin={() => { setPendingVerificationEmail(null); setPendingIsExisting(false); setAuthTab('login'); }}
               />
             ) : authTab === 'login' ? (
               <>
                 <p className="text-base font-semibold text-[#1F2933] mb-4">{t('accountStep.signInTitle')}</p>
                 <InlineLogin
                   onSuccess={() => setStep(STEPS.DETAILS)}
-                  onVerificationNeeded={setPendingVerificationEmail}
+                  onVerificationNeeded={(e) => { setPendingIsExisting(true); setPendingVerificationEmail(e); }}
                 />
                 <p className="text-sm text-gray-500 text-center mt-4">
                   {t('accountStep.noAccount')}{' '}
@@ -1041,7 +1063,9 @@ const BookPage = () => {
                   </button>
                 </p>
                 <InlineRegister
-                  onVerificationSent={setPendingVerificationEmail}
+                  onVerificationSent={(e) => { setPendingIsExisting(false); setPendingVerificationEmail(e); }}
+                  onExistingUnverified={(e) => { setPendingIsExisting(true); setPendingVerificationEmail(e); }}
+                  onSwitchToLogin={() => setAuthTab('login')}
                   legalVersions={legalVersions}
                   returnTo={returnTo}
                 />
