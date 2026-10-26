@@ -389,7 +389,16 @@ const InlineRegister = ({ onVerificationSent, onExistingUnverified, onSwitchToLo
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketing, setMarketing] = useState(false);
 
-  const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  const clearError = (key) => setErrors((prev) => {
+    if (!prev[key]) return prev;
+    const { [key]: _, ...rest } = prev;
+    return rest;
+  });
+
+  const handleChange = (e) => {
+    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+    clearError(e.target.name);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -439,7 +448,7 @@ const InlineRegister = ({ onVerificationSent, onExistingUnverified, onSwitchToLo
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{t('accountStep.password')}</label>
         <PasswordInput name="password" value={form.password}
-          onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} placeholder={t('accountStep.passwordPlaceholder')} hasError={!!errors.password} />
+          onChange={(e) => { setForm((p) => ({ ...p, password: e.target.value })); clearError('password'); }} placeholder={t('accountStep.passwordPlaceholder')} hasError={!!errors.password} />
         {errors.password && <p className="text-xs text-red-500 mt-0.5">{errors.password}</p>}
         {form.password && (
           <ul className="mt-2 space-y-1">
@@ -459,14 +468,14 @@ const InlineRegister = ({ onVerificationSent, onExistingUnverified, onSwitchToLo
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{t('accountStep.confirmPassword')}</label>
         <PasswordInput name="confirmPassword" value={form.confirmPassword}
-          onChange={(e) => setForm((p) => ({ ...p, confirmPassword: e.target.value }))} placeholder={t('accountStep.confirmPasswordPlaceholder')} hasError={!!errors.confirmPassword} />
+          onChange={(e) => { setForm((p) => ({ ...p, confirmPassword: e.target.value })); clearError('confirmPassword'); }} placeholder={t('accountStep.confirmPasswordPlaceholder')} hasError={!!errors.confirmPassword} />
         {errors.confirmPassword && <p className="text-xs text-red-500 mt-0.5">{errors.confirmPassword}</p>}
       </div>
       {field('phone', t('accountStep.phone'), 'tel', t('accountStep.phonePlaceholder'))}
 
       <div className="space-y-2 pt-1">
         {[
-          { id: 'terms',   checked: termsAccepted,   onChange: () => setTermsAccepted((v) => !v),   label: <>{t('consentLabels.termsPrefix')} <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">{t('consentLabels.termsLink')}</a></>, err: errors.termsConditions },
+          { id: 'terms',   checked: termsAccepted,   onChange: (e) => { setTermsAccepted(e.target.checked); if (e.target.checked) clearError('termsConditions'); },   label: <>{t('consentLabels.termsPrefix')} <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] underline">{t('consentLabels.termsLink')}</a></>, err: errors.termsConditions },
           { id: 'mkt',     checked: marketing,       onChange: () => setMarketing((v) => !v),       label: t('consentLabels.marketingOptInShort') },
         ].map(({ id, checked, onChange, label, err }) => (
           <div key={id}>
