@@ -22,6 +22,7 @@ const Register = () => {
   const { login } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [emailSent, setEmailSent] = useState(null); // { email }
+  const [existing, setExisting] = useState(null); // { email, verified } — email already registered
   const { resend, status: resendStatus, countdown } = useResendVerification();
   const { data: legalVersions } = useGetLegalVersionsQuery();
   const termsHref = resolveDocUrl(legalVersions?.terms_conditions, i18n.language, '/terms-conditions');
@@ -62,6 +63,7 @@ const Register = () => {
       return;
     }
 
+    setExisting(null);
     setLoading(true);
     try {
       const detectedTz = (() => {
@@ -92,6 +94,11 @@ const Register = () => {
         login(data);
       }
     } catch (err) {
+      const code = err?.response?.data?.code;
+      if (code === 'EMAIL_EXISTS_VERIFIED' || code === 'EMAIL_EXISTS_UNVERIFIED') {
+        setExisting({ email: form.email, verified: code === 'EMAIL_EXISTS_VERIFIED' });
+        return;
+      }
       const message =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
@@ -192,6 +199,41 @@ const Register = () => {
           {t(`register.roles.${activeRole}.description`)}
         </p>
       </div>
+
+      {existing && (
+        <div
+          role="alert"
+          className={`mb-5 rounded-xl border px-4 py-4 ${existing.verified ? 'border-[#E4E7E4] bg-[#F5F7F5]' : 'border-amber-200 bg-amber-50'}`}
+        >
+          <p className={`text-sm font-medium ${existing.verified ? 'text-[#1F2933]' : 'text-amber-800'}`}>
+            {t(existing.verified ? 'register.exists.verifiedTitle' : 'register.exists.unverifiedTitle')}
+          </p>
+          <p className={`text-xs mt-0.5 mb-3 break-words ${existing.verified ? 'text-gray-500' : 'text-amber-700'}`}>
+            {t(existing.verified ? 'register.exists.verifiedMessage' : 'register.exists.unverifiedMessage', { email: existing.email })}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/login"
+              className="text-xs font-semibold text-white bg-[#445446] hover:bg-[#3a4a3b] px-3 py-1.5 rounded-lg transition-colors"
+            >
+              {t('register.exists.signInBtn')}
+            </Link>
+            {!existing.verified && (
+              <button
+                type="button"
+                onClick={() => resend(existing.email)}
+                disabled={resendStatus === 'sending' || countdown > 0}
+                className="text-xs font-semibold text-amber-700 bg-white border border-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-100 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {resendStatus === 'sending' && t('register.exists.sendingBtn')}
+                {resendStatus === 'sent' && countdown > 0 && t('register.exists.resentBtn', { count: countdown })}
+                {resendStatus === 'error' && t('register.exists.errorBtn')}
+                {(resendStatus === 'idle' || (resendStatus === 'sent' && countdown === 0)) && t('register.exists.resendBtn')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Full name */}

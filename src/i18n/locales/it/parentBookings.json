@@ -160,7 +160,22 @@
     "signInBtn":                  "Accedi e continua",
     "signingInBtn":               "Accesso in corso…",
     "noAccount":                  "Non hai un account?",
-    "createOne":                  "Creane uno"
+    "createOne":                  "Creane uno",
+    "alreadyRegistered":          "Esiste già un account con questa email.",
+    "registerFailed":             "Registrazione non riuscita. Riprova.",
+    "verifyPending": {
+      "titleSent":       "Controlla la tua posta",
+      "titleExisting":   "Email non ancora verificata",
+      "sentTo":          "Abbiamo inviato un link di verifica a",
+      "existingLead":    "Questa email è registrata ma non verificata:",
+      "bodySent":        "Clicca sul link nell'email per verificare il tuo account: tornerai qui per completare la prenotazione.",
+      "bodyExisting":    "Clicca sul link nella precedente email di verifica oppure richiedine uno nuovo qui sotto: tornerai qui per completare la prenotazione.",
+      "resentCountdown": "Email inviata! Potrai richiederla di nuovo tra {{count}}s.",
+      "sending":         "Invio…",
+      "error":           "Invio non riuscito — riprova",
+      "resend":          "Invia di nuovo l'email di verifica",
+      "alreadyVerified": "Hai già verificato? Accedi"
+    }
   },
   "detailsStep": {
     "back":             "Indietro",

@@ -160,7 +160,22 @@
     "signInBtn":                  "Sign in & continue",
     "signingInBtn":               "Signing in…",
     "noAccount":                  "Don't have an account?",
-    "createOne":                  "Create one"
+    "createOne":                  "Create one",
+    "alreadyRegistered":          "An account with this email already exists.",
+    "registerFailed":             "Registration failed. Please try again.",
+    "verifyPending": {
+      "titleSent":       "Check your inbox",
+      "titleExisting":   "Email not verified yet",
+      "sentTo":          "We sent a verification link to",
+      "existingLead":    "This email is registered but not verified:",
+      "bodySent":        "Click the link in the email to verify your account — you'll be returned here to complete your booking.",
+      "bodyExisting":    "Click the link in your earlier verification email, or request a new one below — you'll be returned here to complete your booking.",
+      "resentCountdown": "Email sent! Resend available in {{count}}s.",
+      "sending":         "Sending…",
+      "error":           "Failed — try again",
+      "resend":          "Resend verification email",
+      "alreadyVerified": "Already verified? Sign in"
+    }
   },
   "detailsStep": {
     "back":             "Back",
