@@ -32,7 +32,9 @@ const ForgotPassword = () => {
       setSent(true);
     } catch (err) {
       const code = err?.response?.status;
-      if (code === 429) {
+      if (err?.response?.data?.code === 'EMAIL_NOT_FOUND') {
+        setServerError(t('forgotPassword.notFound'));
+      } else if (code === 429) {
         setServerError(t('forgotPassword.rateLimited'));
       } else {
         setServerError(t('forgotPassword.genericError'));

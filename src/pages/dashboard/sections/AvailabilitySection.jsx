@@ -324,6 +324,7 @@ const Legend = () => {
     { color: "#ef4444", label: t('availability.legend.blocked') },
     { color: "#2563eb", label: t('availability.legend.bookedOnline') },
     { color: "#445446", label: t('availability.legend.bookedInPerson'), border: "2px dashed #445446", bg: "transparent" },
+    { color: "#b45309", label: t('availability.legend.bookedHomeVisit') },
   ];
   return (
     <div className="flex items-center gap-4 mb-4 flex-wrap">
