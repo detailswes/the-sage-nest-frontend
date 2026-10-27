@@ -60,7 +60,7 @@ const CenteredDateInput = ({ value, onChange, className, min, max }) => {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                className="px-4 py-1.5 text-xs font-medium text-white bg-white/20 hover:bg-white/30 rounded-full transition-colors"
               >
                 {t("cancel")}
               </button>
