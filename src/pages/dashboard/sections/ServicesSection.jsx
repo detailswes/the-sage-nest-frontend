@@ -665,16 +665,16 @@ const ServicesSection = () => {
               <label className="block text-sm font-medium text-[#1F2933] mb-1.5">{t('services.form.descriptionLabel')}</label>
               <textarea name="description" value={form.description} onChange={handleChange} rows={2}
                 placeholder={t('services.form.descriptionPlaceholder')}
-                maxLength={500}
+                maxLength={700}
                 className={`${inputClass(!!formErrors.description)} resize-none`} />
               {formErrors.description && <p className="mt-1.5 text-xs text-red-500">{formErrors.description}</p>}
               <div className="flex justify-end mt-1.5">
                 <p className={`text-xs tabular-nums ${
-                  form.description.length >= 480 ? 'text-red-500' :
-                  form.description.length >= 400 ? 'text-amber-500' :
+                  form.description.length >= 680 ? 'text-red-500' :
+                  form.description.length >= 560 ? 'text-amber-500' :
                   'text-gray-400'
                 }`}>
-                  {form.description.length}/500
+                  {form.description.length}/700
                 </p>
               </div>
             </div>
