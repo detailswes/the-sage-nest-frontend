@@ -169,12 +169,14 @@ const EventSpotsNotice = ({ service, t }) => {
 // Trimmed to just the mandatory Terms+Cancellation checkbox and the plain-text
 // privacy notice (booking flow spec v1.7 §6) — withdrawal moved to Details,
 // marketing moved to Account-only (InlineRegister).
-const ConsentBlock = ({ legalVersions, tcAccepted, setTcAccepted }) => {
+const ConsentBlock = ({ legalVersions, tcAccepted, setTcAccepted, isEvent = false }) => {
   const { i18n } = useTranslation('parentBookings');
 
   const termsHref        = resolveDocUrl(legalVersions?.terms_conditions, i18n.language, '/terms-conditions');
   const cancellationHref = resolveDocUrl(legalVersions?.cancellation_policy, i18n.language, '/cancellation-policy');
   const privacyHref      = resolveDocUrl(legalVersions?.privacy_policy, i18n.language, '/privacy-policy');
+  // Events use their own terms, which replace the Cancellation Policy.
+  const eventTermsHref   = resolveDocUrl(legalVersions?.event_terms, i18n.language, '/event-terms');
 
   const checkboxCls = "mt-px h-3.5 w-3.5 shrink-0 accent-[#445446] focus:outline-none focus:ring-2 focus:ring-[#445446]/30 rounded-sm";
 
@@ -188,16 +190,29 @@ const ConsentBlock = ({ legalVersions, tcAccepted, setTcAccepted }) => {
           className={checkboxCls}
         />
         <span className="text-xs text-[#1F2933] leading-relaxed">
-          <Trans
-            i18nKey="consentBlock.termsLabel"
-            ns="parentBookings"
-            components={[
-              // eslint-disable-next-line jsx-a11y/anchor-has-content
-              <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
-              // eslint-disable-next-line jsx-a11y/anchor-has-content
-              <a href={cancellationHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
-            ]}
-          />
+          {isEvent ? (
+            <Trans
+              i18nKey="consentBlock.eventTermsLabel"
+              ns="parentBookings"
+              components={[
+                // eslint-disable-next-line jsx-a11y/anchor-has-content
+                <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+                // eslint-disable-next-line jsx-a11y/anchor-has-content
+                <a href={eventTermsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+              ]}
+            />
+          ) : (
+            <Trans
+              i18nKey="consentBlock.termsLabel"
+              ns="parentBookings"
+              components={[
+                // eslint-disable-next-line jsx-a11y/anchor-has-content
+                <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+                // eslint-disable-next-line jsx-a11y/anchor-has-content
+                <a href={cancellationHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+              ]}
+            />
+          )}
         </span>
       </label>
 
@@ -605,11 +620,11 @@ const BookPage = () => {
   const { data: legalVersions } = useGetLegalVersionsQuery();
 
   // 14-day cooling-off period, measured from now (the moment of booking creation) —
-  // mirrors the server-side check in createBooking(). Never applies to a free
-  // event: there's no payment to withdraw from.
+  // mirrors the server-side check in createBooking(). Never applies to events
+  // (no withdrawal right; a paid event uses an acknowledgement instead).
   const withdrawalApplicable = !!(
     selectedSlot &&
-    !(selectedService?.cluster === 'EVENT' && Number(selectedService?.price) === 0) &&
+    selectedService?.cluster !== 'EVENT' &&
     new Date(selectedSlot.start).getTime() - Date.now() <= WITHDRAWAL_WINDOW_MS
   );
 
@@ -811,6 +826,10 @@ const BookPage = () => {
   // A free event has nothing to invoice and nothing to withdraw from — the
   // backend skips both entirely for a $0 booking, so the UI does too.
   const isFreeEvent = isEventBooking && Number(selectedService?.price) === 0;
+  // Events never have the 14-day withdrawal right (Art. 16(l)); a paid event
+  // instead asks the parent to acknowledge that, whatever the event date.
+  const withdrawalAckRequired = isEventBooking && !isFreeEvent;
+  const withdrawalNeeded = withdrawalApplicable || withdrawalAckRequired;
 
   const billingValid = isFreeEvent || (billing.invoiceHolder.trim().length > 0 && (
     !isItalianExpert || (
@@ -822,7 +841,7 @@ const BookPage = () => {
   ));
   const detailsValid = billingValid
     && (!healthConsentRequired || healthConsentGiven)
-    && (!withdrawalApplicable || withdrawalAccepted);
+    && (!withdrawalNeeded || withdrawalAccepted);
 
   const doCheckout = async (existingLockId) => {
     try {
@@ -833,7 +852,7 @@ const BookPage = () => {
         expertId: selectedExpert.id, serviceId: selectedService.id,
         scheduledAt: selectedSlot.start, format: selectedFormat, lockId: lid,
         tcAccepted,
-        withdrawalAccepted: withdrawalApplicable ? withdrawalAccepted : undefined,
+        withdrawalAccepted: withdrawalNeeded ? withdrawalAccepted : undefined,
         language: i18n.language,
         billingInvoiceHolder: isFreeEvent ? undefined : billing.invoiceHolder.trim(),
         billingAddress:   !isFreeEvent && isItalianExpert ? billing.address.trim()   : undefined,
@@ -1140,11 +1159,11 @@ const BookPage = () => {
 
           <div className="p-5 space-y-4">
             {healthConsentRequired && (
-              <HealthConsentBlock flow={healthFlow} given={healthConsentGiven} setGiven={setHealthConsentGiven} showError={showDetailsErrors} />
+              <HealthConsentBlock flow={healthFlow} given={healthConsentGiven} setGiven={setHealthConsentGiven} showError={showDetailsErrors} isEvent={isEventBooking} />
             )}
 
-            {withdrawalApplicable && (
-              <WithdrawalBlock accepted={withdrawalAccepted} setAccepted={setWithdrawalAccepted} showError={showDetailsErrors} />
+            {withdrawalNeeded && (
+              <WithdrawalBlock accepted={withdrawalAccepted} setAccepted={setWithdrawalAccepted} showError={showDetailsErrors} isEvent={isEventBooking} />
             )}
 
             <button
@@ -1199,9 +1218,16 @@ const BookPage = () => {
 
           <div className="space-y-2 text-sm">
             {[
+              ...(isEventBooking ? [
+                { label: t('confirmStep.labelEvent'), value: selectedService?.title },
+                { label: t('confirmStep.labelType'),  value: t('confirmStep.eventTypeValue') },
+              ] : []),
               { label: t('confirmStep.labelFormat'),   value: t(formatLabelKey('confirmStep', selectedFormat)) },
               { label: t('confirmStep.labelWhen'),     value: `${formatSlotDate(selectedSlot?.start, lng)}, ${formatSlotTime(selectedSlot?.start, lng)}` },
               { label: t('confirmStep.labelDuration'), value: formatDuration(selectedService?.duration_minutes, t) },
+              ...(isEventBooking ? [
+                { label: t('confirmStep.labelOrganizer'), value: detail?.user?.name },
+              ] : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between gap-4">
                 <span className="text-gray-500">{label}</span>
@@ -1246,20 +1272,37 @@ const BookPage = () => {
             (booking flow spec v1.7 §6: contradicts the health consent just given) */}
         <div className="px-5 pt-4 pb-4">
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
-            {t('confirmStep.healthcareNotice')}
+            {isEventBooking ? t('confirmStep.eventHealthcareNotice') : t('confirmStep.healthcareNotice')}
           </div>
         </div>
+
+        {/* Event cancellation rule (paid events) — Event Checkout spec, Copy #5 */}
+        {withdrawalAckRequired && (
+          <div className="px-5 pb-4">
+            <div className="p-3 bg-[#f0f2ed] border border-[#c5ceba] rounded-lg text-xs text-[#1F2933] leading-relaxed">
+              <p className="font-semibold text-[#445446] uppercase tracking-wide mb-1">{t('confirmStep.eventCancellationTitle')}</p>
+              <p>{t('confirmStep.eventCancellationBody')}</p>
+            </div>
+          </div>
+        )}
 
         {/* Terms + Cancellation Policy checkbox, privacy line, Proceed */}
         <div className="p-5 pt-0">
           <ConsentBlock
             legalVersions={legalVersions}
             tcAccepted={tcAccepted} setTcAccepted={setTcAccepted}
+            isEvent={isEventBooking}
           />
           <button onClick={handleProceed}
             disabled={creating || locking || !tcAccepted || !detailsValid}
             className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-            {creating || locking ? t('confirmStep.preparingBtn') : t('confirmStep.proceedBtn')}
+            {creating || locking
+              ? t('confirmStep.preparingBtn')
+              : isEventBooking
+                ? (isFreeEvent
+                    ? t('confirmStep.bookSeatBtn')
+                    : t('confirmStep.payBtn', { amount: formatPrice(selectedService?.price, selectedService?.currency || 'EUR', lng) }))
+                : t('confirmStep.proceedBtn')}
           </button>
         </div>
       </div>

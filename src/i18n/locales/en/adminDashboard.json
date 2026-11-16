@@ -15,7 +15,6 @@
     "cancel": "Cancel",
     "confirm": "Yes, sign out"
   },
-
   "parentMgmt": {
     "pageTitle": "Parent Management",
     "pageSubtitle": "Review and manage parent accounts on the platform.",
@@ -53,7 +52,6 @@
       "next": "Next"
     }
   },
-
   "parentDetail": {
     "breadcrumb": "Parent Management",
     "notFound": "Parent not found",
@@ -220,7 +218,6 @@
       "deletionFailed": "Deletion failed. Please try again."
     }
   },
-
   "bookingsMgmt": {
     "pageTitle": "Booking Management",
     "pageSubtitle": "Platform-wide booking list — search, filter and take action on any booking.",
@@ -257,7 +254,6 @@
       "next": "Next"
     }
   },
-
   "paymentsMgmt": {
     "pageTitle": "Payment Overview",
     "subtitleTransactions": "Platform-wide transaction list — view amounts, fees, payouts and Stripe references.",
@@ -359,7 +355,6 @@
       }
     }
   },
-
   "expertMgmt": {
     "pageTitle": "Expert Management",
     "pageSubtitle": "Review and manage expert accounts on the platform.",
@@ -455,7 +450,6 @@
       "resendVerification": "Verification email resent successfully."
     }
   },
-
   "expertDetail": {
     "breadcrumb": "Expert Management",
     "notFoundError": "Expert not found.",
@@ -785,7 +779,6 @@
       "deletionFailed": "Deletion failed."
     }
   },
-
   "bookingModal": {
     "title": "Booking #{{id}}",
     "loadError": "Failed to load booking details.",
@@ -854,7 +847,6 @@
     },
     "disputed": "Disputed"
   },
-
   "adminActions": {
     "title": "Admin Actions",
     "cancelBooking": "Cancel Booking",
@@ -930,7 +922,6 @@
       "confirm": "Yes, issue refund"
     }
   },
-
   "legalCompliance": {
     "pageTitle": "Legal Compliance",
     "pageSubtitle": "Parents and their acceptance status for the current document versions",
@@ -969,7 +960,6 @@
       "next": "Next"
     }
   },
-
   "webflowSync": {
     "pageTitle": "Webflow Sync Health",
     "pageSubtitle": "Items that failed to sync to Webflow after 3 retries — review and re-sync below.",
@@ -1031,7 +1021,6 @@
       "next": "Next"
     }
   },
-
   "legalDocs": {
     "pageTitle": "Legal Documents",
     "pageSubtitle": "Upload a PDF and publish a new version. The live document links used at signup and checkout update automatically.",
@@ -1042,15 +1031,16 @@
       "EXPERT": "Expert"
     },
     "audienceSubtitle": {
-      "PARENT": "Documents shown to parents during signup and booking.",
+      "PARENT": "Documents shown to parents during signup and booking. Terms & Conditions and the Cancellation Policy apply to 1:1 sessions; Event Terms apply to events.",
       "EXPERT": "Documents shown to experts during signup."
     },
     "docType": {
       "PRIVACY_POLICY": "Privacy Policy",
-      "TERMS_CONDITIONS": "Terms & Conditions",
-      "CANCELLATION_POLICY": "Cancellation & Rescheduling Policy",
+      "TERMS_CONDITIONS": "Terms & Conditions (1:1 Sessions)",
+      "CANCELLATION_POLICY": "Cancellation & Rescheduling Policy (1:1 Sessions)",
       "EXPERT_TERMS_CONDITIONS": "Expert Account Terms",
-      "EXPERT_PRIVACY_NOTICE": "Expert Privacy Notice"
+      "EXPERT_PRIVACY_NOTICE": "Expert Privacy Notice",
+      "EVENT_TERMS": "Event Terms & Conditions"
     },
     "card": {
       "version": "Version {{v}}",
@@ -1067,7 +1057,7 @@
       "choosePdfIt": "Choose Italian PDF…",
       "instructions": "Attach both the English and Italian PDF below before publishing.",
       "reacceptPrivacy": " Users will see a non-blocking notice of the update — no forced re-acceptance.",
-      "reacceptTerms": " All parents will be asked to confirm this version at their next booking.",
+      "reacceptTerms": " All parents will be asked to confirm this version at their next 1:1 session booking.",
       "reacceptExpertTerms": " Experts will see this version linked from the signup page going forward.",
       "reacceptExpertPrivacy": " Shown to experts as an information notice at signup — no acceptance is recorded.",
       "versionPlaceholder": "e.g. 1.1 or 2.0.1",
@@ -1076,19 +1066,21 @@
       "formatHint": "Use numeric format e.g. 1.1 or 2.0.1",
       "publishSuccess": "{{docLabel}} v{{version}} published successfully.",
       "publishError": "Failed to publish version.",
-      "versionHistoryBtn": "Version history"
+      "versionHistoryBtn": "Version history",
+      "reacceptEventTerms": " Applies to event bookings only. Parents accept it at checkout when booking an event; 1:1 sessions use the Terms & Conditions and Cancellation Policy above."
     },
     "confirmModal": {
       "title": "Publish {{docLabel}} v{{version}}?",
       "body": "Make sure the attached PDF is the final version before confirming.",
       "bodyPrivacy": " Users will see a non-blocking notice of the update — no forced re-acceptance.",
-      "bodyTerms": " All parents will be asked to confirm this version at their next booking.",
-      "bodyCancellation": " This version will immediately become the one linked from checkout.",
+      "bodyTerms": " All parents will be asked to confirm this version at their next 1:1 session booking.",
+      "bodyCancellation": " This version will immediately become the one linked from 1:1 session checkout.",
       "bodyExpertTerms": " Experts will see this version linked from the signup page going forward.",
       "bodyExpertPrivacy": " Shown to experts as an information notice at signup — no acceptance is recorded.",
       "cannotUndo": " This cannot be undone.",
       "cancel": "Cancel",
-      "confirm": "Yes, publish"
+      "confirm": "Yes, publish",
+      "bodyEventTerms": " All parents will be asked to accept this version when booking an event. Applies to events only — 1:1 sessions are unaffected."
     },
     "versionHistory": {
       "title": "Version History",
@@ -1104,14 +1096,12 @@
       "shownToUser_other": "parents"
     }
   },
-
   "sessionFormat": {
     "ONLINE": "Online",
     "IN_PERSON": "In-Person",
     "HOME_VISIT": "Home Visit",
     "BOTH": "Multiple formats"
   },
-
   "transferStatus": {
     "payoutSent": "Payout sent",
     "resolved": "Resolved — manually handled",

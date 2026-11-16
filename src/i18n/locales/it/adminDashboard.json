@@ -15,7 +15,6 @@
     "cancel": "Annulla",
     "confirm": "Sì, esci"
   },
-
   "parentMgmt": {
     "pageTitle": "Gestione Genitori",
     "pageSubtitle": "Esamina e gestisci gli account dei genitori sulla piattaforma.",
@@ -53,7 +52,6 @@
       "next": "Succ."
     }
   },
-
   "parentDetail": {
     "breadcrumb": "Gestione Genitori",
     "notFound": "Genitore non trovato",
@@ -220,7 +218,6 @@
       "deletionFailed": "Cancellazione fallita. Riprova."
     }
   },
-
   "bookingsMgmt": {
     "pageTitle": "Gestione Prenotazioni",
     "pageSubtitle": "Elenco prenotazioni della piattaforma — cerca, filtra e intervieni su qualsiasi prenotazione.",
@@ -257,7 +254,6 @@
       "next": "Successivo"
     }
   },
-
   "paymentsMgmt": {
     "pageTitle": "Panoramica Pagamenti",
     "subtitleTransactions": "Elenco transazioni della piattaforma — visualizza importi, commissioni, pagamenti e riferimenti Stripe.",
@@ -359,7 +355,6 @@
       }
     }
   },
-
   "expertMgmt": {
     "pageTitle": "Gestione Esperti",
     "pageSubtitle": "Esamina e gestisci gli account degli esperti sulla piattaforma.",
@@ -455,7 +450,6 @@
       "resendVerification": "Email di verifica reinviata con successo."
     }
   },
-
   "expertDetail": {
     "breadcrumb": "Gestione Esperti",
     "notFoundError": "Esperto non trovato.",
@@ -785,7 +779,6 @@
       "deletionFailed": "Eliminazione fallita."
     }
   },
-
   "bookingModal": {
     "title": "Prenotazione #{{id}}",
     "loadError": "Impossibile caricare i dettagli della prenotazione.",
@@ -854,7 +847,6 @@
     },
     "disputed": "In contestazione"
   },
-
   "adminActions": {
     "title": "Azioni amministratore",
     "cancelBooking": "Annulla prenotazione",
@@ -930,7 +922,6 @@
       "confirm": "Sì, emetti rimborso"
     }
   },
-
   "legalCompliance": {
     "pageTitle": "Conformità Legale",
     "pageSubtitle": "Genitori e il loro stato di accettazione per le versioni attuali dei documenti",
@@ -969,7 +960,6 @@
       "next": "Successivo"
     }
   },
-
   "webflowSync": {
     "pageTitle": "Stato Sincronizzazione Webflow",
     "pageSubtitle": "Elementi che non sono stati sincronizzati con Webflow dopo 3 tentativi — controlla e ri-sincronizza qui sotto.",
@@ -1031,7 +1021,6 @@
       "next": "Successivo"
     }
   },
-
   "legalDocs": {
     "pageTitle": "Documenti Legali",
     "pageSubtitle": "Carica un PDF e pubblica una nuova versione. I link ai documenti live usati in registrazione e checkout si aggiornano automaticamente.",
@@ -1042,15 +1031,16 @@
       "EXPERT": "Professionista"
     },
     "audienceSubtitle": {
-      "PARENT": "Documenti mostrati ai genitori in fase di registrazione e prenotazione.",
+      "PARENT": "Documenti mostrati ai genitori in fase di registrazione e prenotazione. Termini e Condizioni e Condizioni di Cancellazione si applicano alle sessioni 1:1; i Termini degli Eventi si applicano agli eventi.",
       "EXPERT": "Documenti mostrati ai professionisti in fase di registrazione."
     },
     "docType": {
       "PRIVACY_POLICY": "Informativa sulla Privacy",
-      "TERMS_CONDITIONS": "Termini e Condizioni",
-      "CANCELLATION_POLICY": "Condizioni di Cancellazione e Modifica",
+      "TERMS_CONDITIONS": "Termini e Condizioni (Sessioni 1:1)",
+      "CANCELLATION_POLICY": "Condizioni di Cancellazione e Modifica (Sessioni 1:1)",
       "EXPERT_TERMS_CONDITIONS": "Termini di Utilizzo dell'Account Professionista",
-      "EXPERT_PRIVACY_NOTICE": "Informativa Privacy Professionisti"
+      "EXPERT_PRIVACY_NOTICE": "Informativa Privacy Professionisti",
+      "EVENT_TERMS": "Termini e Condizioni degli Eventi"
     },
     "card": {
       "version": "Versione {{v}}",
@@ -1067,7 +1057,7 @@
       "choosePdfIt": "Scegli PDF italiano…",
       "instructions": "Allega sia il PDF in inglese che quello in italiano prima di pubblicare.",
       "reacceptPrivacy": " Gli utenti vedranno una notifica non bloccante dell'aggiornamento — nessuna nuova accettazione forzata.",
-      "reacceptTerms": " Tutti i genitori dovranno confermare questa versione alla prossima prenotazione.",
+      "reacceptTerms": " Tutti i genitori dovranno confermare questa versione alla prossima prenotazione di una sessione 1:1.",
       "reacceptExpertTerms": " I professionisti vedranno questa versione collegata dalla pagina di registrazione d'ora in poi.",
       "reacceptExpertPrivacy": " Mostrato ai professionisti come avviso informativo in fase di registrazione — nessuna accettazione viene registrata.",
       "versionPlaceholder": "es. 1.1 o 2.0.1",
@@ -1076,19 +1066,21 @@
       "formatHint": "Usa il formato numerico, es. 1.1 o 2.0.1",
       "publishSuccess": "{{docLabel}} v{{version}} pubblicato con successo.",
       "publishError": "Impossibile pubblicare la versione.",
-      "versionHistoryBtn": "Cronologia versioni"
+      "versionHistoryBtn": "Cronologia versioni",
+      "reacceptEventTerms": " Si applica solo alle prenotazioni di eventi. I genitori la accettano al checkout quando prenotano un evento; le sessioni 1:1 usano i Termini e Condizioni e le Condizioni di Cancellazione indicati sopra."
     },
     "confirmModal": {
       "title": "Pubblicare {{docLabel}} v{{version}}?",
       "body": "Assicurarsi che il PDF allegato sia la versione definitiva prima di confermare.",
       "bodyPrivacy": " Gli utenti vedranno una notifica non bloccante dell'aggiornamento — nessuna nuova accettazione forzata.",
-      "bodyTerms": " Tutti i genitori dovranno confermare questa versione alla prossima prenotazione.",
-      "bodyCancellation": " Questa versione diventerà immediatamente quella collegata dal checkout.",
+      "bodyTerms": " Tutti i genitori dovranno confermare questa versione alla prossima prenotazione di una sessione 1:1.",
+      "bodyCancellation": " Questa versione diventerà immediatamente quella collegata dal checkout delle sessioni 1:1.",
       "bodyExpertTerms": " I professionisti vedranno questa versione collegata dalla pagina di registrazione d'ora in poi.",
       "bodyExpertPrivacy": " Mostrato ai professionisti come avviso informativo in fase di registrazione — nessuna accettazione viene registrata.",
       "cannotUndo": " Questa operazione non può essere annullata.",
       "cancel": "Annulla",
-      "confirm": "Sì, pubblica"
+      "confirm": "Sì, pubblica",
+      "bodyEventTerms": " Tutti i genitori dovranno accettare questa versione quando prenotano un evento. Si applica solo agli eventi — le sessioni 1:1 non sono interessate."
     },
     "versionHistory": {
       "title": "Cronologia Versioni",
@@ -1104,14 +1096,12 @@
       "shownToUser_other": "genitori"
     }
   },
-
   "sessionFormat": {
     "ONLINE": "Online",
     "IN_PERSON": "In presenza",
     "HOME_VISIT": "Visita a domicilio",
     "BOTH": "Più modalità"
   },
-
   "transferStatus": {
     "payoutSent": "Pagamento inviato",
     "resolved": "Risolto — gestito manualmente",

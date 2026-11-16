@@ -93,6 +93,7 @@ const REACCEPT_KEY = {
   TERMS_CONDITIONS: "reacceptTerms",
   EXPERT_TERMS_CONDITIONS: "reacceptExpertTerms",
   EXPERT_PRIVACY_NOTICE: "reacceptExpertPrivacy",
+  EVENT_TERMS: "reacceptEventTerms",
 };
 
 const CONFIRM_BODY_KEY = {
@@ -101,6 +102,7 @@ const CONFIRM_BODY_KEY = {
   CANCELLATION_POLICY: "bodyCancellation",
   EXPERT_TERMS_CONDITIONS: "bodyExpertTerms",
   EXPERT_PRIVACY_NOTICE: "bodyExpertPrivacy",
+  EVENT_TERMS: "bodyEventTerms",
 };
 
 // ─── Doc card ──────────────────────────────────────────────────────────────────
@@ -355,6 +357,7 @@ const LegalDocumentsSection = () => {
   const cancellationDocs    = data?.cancellation_policy       ?? [];
   const expertTermsDocs     = data?.expert_terms_conditions   ?? [];
   const expertPrivacyDocs   = data?.expert_privacy_notice     ?? [];
+  const eventTermsDocs      = data?.event_terms               ?? [];
 
   return (
     <div>
@@ -402,6 +405,7 @@ const LegalDocumentsSection = () => {
           <DocCard type="PRIVACY_POLICY"      docs={privacyDocs}      />
           <DocCard type="TERMS_CONDITIONS"    docs={termsDocs}        />
           <DocCard type="CANCELLATION_POLICY" docs={cancellationDocs} />
+          <DocCard type="EVENT_TERMS"         docs={eventTermsDocs}   />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
