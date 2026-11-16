@@ -7,9 +7,10 @@ import { useTranslation } from 'react-i18next';
 // recipient — never both. The helper line is part of the consent, not
 // decoration. Independent of the withdrawal block — neither triggers nor
 // suppresses the other.
-const HealthConsentBlock = ({ flow, given, setGiven, showError }) => {
+const HealthConsentBlock = ({ flow, given, setGiven, showError, isEvent = false }) => {
   const { t } = useTranslation('parentBookings');
-  const body = flow === 'B' ? t('healthConsent.flowB') : t('healthConsent.flowA');
+  // Events use one wording (no parent/baby flows) — Event Checkout spec, Copy #1.
+  const body = isEvent ? t('healthConsent.eventBody') : flow === 'B' ? t('healthConsent.flowB') : t('healthConsent.flowA');
 
   return (
     <div className="rounded-xl border-2 border-teal-200 bg-teal-50/60 p-4">
@@ -26,7 +27,7 @@ const HealthConsentBlock = ({ flow, given, setGiven, showError }) => {
         <span className="text-xs text-[#1F2933] leading-relaxed">{body}</span>
       </label>
       <p className="text-[11px] text-teal-700/80 leading-relaxed mt-2 ml-[22px]">
-        {t('healthConsent.helper')}
+        {isEvent ? t('healthConsent.eventHelper') : t('healthConsent.helper')}
       </p>
       {showError && !given && (
         <p className="text-xs text-red-600 mt-2 ml-[22px]">{t('errors.consentRequired')}</p>
