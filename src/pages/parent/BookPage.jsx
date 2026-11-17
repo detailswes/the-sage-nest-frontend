@@ -196,9 +196,9 @@ const ConsentBlock = ({ legalVersions, tcAccepted, setTcAccepted, isEvent = fals
               ns="parentBookings"
               components={[
                 // eslint-disable-next-line jsx-a11y/anchor-has-content
-                <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
-                // eslint-disable-next-line jsx-a11y/anchor-has-content
                 <a href={eventTermsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
+                // eslint-disable-next-line jsx-a11y/anchor-has-content
+                <a href={termsHref} target="_blank" rel="noopener noreferrer" className="text-[#445446] font-medium underline" />,
               ]}
             />
           ) : (
