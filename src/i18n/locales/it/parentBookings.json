@@ -128,7 +128,7 @@
   "consentBlock": {
     "termsLabel": "Ho letto e accetto i <0>Termini per il Consumatore</0> e le <1>Condizioni di Cancellazione e Modifica della Prenotazione</1>.",
     "privacyNotice": "I tuoi dati personali sono trattati per gestire la tua prenotazione, come descritto nella nostra <0>Informativa sulla Privacy</0>.",
-    "eventTermsLabel": "Ho letto e accetto i <0>Termini per il Consumatore</0> e i <1>Termini Eventi</1>."
+    "eventTermsLabel": "Ho letto e accetto i <0>Termini Eventi</0> e i <1>Termini per il Consumatore</1>, che regolano l’utilizzo della piattaforma."
   },
   "serviceStep": {
     "back": "Torna al profilo dell'esperto",

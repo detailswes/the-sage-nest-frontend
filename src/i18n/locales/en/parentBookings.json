@@ -128,7 +128,7 @@
   "consentBlock": {
     "termsLabel": "I have read and accept the <0>Consumer Terms</0> and the <1>Cancellation and Rescheduling Policy</1>.",
     "privacyNotice": "Your personal data is processed to manage your booking, as described in our <0>Privacy Policy</0>.",
-    "eventTermsLabel": "I have read and accept the <0>Consumer Terms</0> and the <1>Event Terms</1>."
+    "eventTermsLabel": "I have read and accept the <0>Event Terms</0> and the <1>Consumer Terms</1>, which govern the use of the platform."
   },
   "serviceStep": {
     "back": "Back to expert profile",
