@@ -128,7 +128,8 @@
   "consentBlock": {
     "termsLabel": "I have read and accept the <0>Consumer Terms</0> and the <1>Cancellation and Rescheduling Policy</1>.",
     "privacyNotice": "Your personal data is processed to manage your booking, as described in our <0>Privacy Policy</0>.",
-    "eventTermsLabel": "I have read and accept the <0>Event Terms</0> and the <1>Consumer Terms</1>, which govern the use of the platform."
+    "eventTermsLabel": "I have read and accept the <0>Event Terms</0>, which govern participation in the event, and the <1>Consumer Terms</1>, which govern the use of the platform.",
+    "eventPrivacyNotice": "Your personal data is processed to manage your booking and is shared with the professional organising the event, as described in our <0>Privacy Policy</0>."
   },
   "serviceStep": {
     "back": "Back to expert profile",
@@ -241,9 +242,9 @@
     "healthcareNotice": "Sage Nest is a booking platform and does not provide healthcare services. The professionals on the platform are independent: the contract for the session is concluded directly between you and the professional. If you believe you or your child need urgent medical care, call 112.",
     "proceedBtn": "Proceed to payment →",
     "preparingBtn": "Preparing payment…",
-    "eventHealthcareNotice": "Sage Nest is a booking platform and does not provide healthcare services. The professionals on the platform are independent: the contract for the event is made directly between you and the professional. If you think you or your child need urgent medical care, call 112.",
+    "eventHealthcareNotice": "Sage Nest is a booking platform. This event is organised by an independent professional, with whom you enter into the contract directly. Events are informational and do not replace a medical visit or healthcare consultation.",
     "eventCancellationTitle": "CANCELLATION",
-    "eventCancellationBody": "Full refund if you cancel at least 7 days before the event. After that, no refund – but you can pass your place to another adult.",
+    "eventCancellationBody": "Full refund if you cancel at least 7 days before the event. <0>If you cancel within 7 days of the event, no refund is available</0>, but you can transfer your place to another adult.",
     "labelEvent": "Event",
     "labelType": "Type",
     "labelOrganizer": "Organised by",
