@@ -128,7 +128,8 @@
   "consentBlock": {
     "termsLabel": "Ho letto e accetto i <0>Termini per il Consumatore</0> e le <1>Condizioni di Cancellazione e Modifica della Prenotazione</1>.",
     "privacyNotice": "I tuoi dati personali sono trattati per gestire la tua prenotazione, come descritto nella nostra <0>Informativa sulla Privacy</0>.",
-    "eventTermsLabel": "Ho letto e accetto i <0>Termini Eventi</0> e i <1>Termini per il Consumatore</1>, che regolano l’utilizzo della piattaforma."
+    "eventTermsLabel": "Ho letto e accetto i <0>Termini Eventi</0>, che regolano la partecipazione all’evento, e i <1>Termini per il Consumatore</1>, che regolano l’utilizzo della piattaforma.",
+    "eventPrivacyNotice": "I tuoi dati personali sono trattati per gestire la prenotazione e sono comunicati al professionista che organizza l’evento, come descritto nella nostra <0>Informativa sulla Privacy</0>."
   },
   "serviceStep": {
     "back": "Torna al profilo dell'esperto",
@@ -241,9 +242,9 @@
     "healthcareNotice": "Sage Nest è una piattaforma di prenotazione e non eroga prestazioni sanitarie. I professionisti presenti sulla piattaforma sono indipendenti: il contratto per la sessione si conclude direttamente tra te e il professionista. Se ritieni che tu o il tuo bambino abbiate bisogno di cure mediche urgenti, chiama il 112.",
     "proceedBtn": "Procedi al pagamento →",
     "preparingBtn": "Preparazione pagamento…",
-    "eventHealthcareNotice": "Sage Nest è una piattaforma di prenotazione e non eroga prestazioni sanitarie. I professionisti presenti sulla piattaforma sono indipendenti: il contratto per l’evento si conclude direttamente tra te e il professionista. Se ritieni che tu o il tuo bambino abbiate bisogno di cure mediche urgenti, chiama il 112.",
+    "eventHealthcareNotice": "Sage Nest è una piattaforma di prenotazione. L’evento è organizzato da un professionista indipendente, con cui concludi direttamente il contratto. Gli eventi hanno carattere informativo e non sostituiscono una visita o una consulenza sanitaria.",
     "eventCancellationTitle": "CANCELLAZIONE",
-    "eventCancellationBody": "Rimborso totale se cancelli almeno 7 giorni prima dell’evento. Dopo, nessun rimborso, ma puoi cedere il tuo posto a un altro adulto.",
+    "eventCancellationBody": "Rimborso totale se cancelli almeno 7 giorni prima dell’evento. <0>Se cancelli nei 7 giorni precedenti l’evento, non è previsto alcun rimborso</0>, ma puoi cedere il tuo posto a un altro adulto.",
     "labelEvent": "Evento",
     "labelType": "Tipo",
     "labelOrganizer": "Organizzato da",

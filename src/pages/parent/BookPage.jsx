@@ -218,7 +218,7 @@ const ConsentBlock = ({ legalVersions, tcAccepted, setTcAccepted, isEvent = fals
 
       <p className="text-xs text-gray-400 leading-relaxed">
         <Trans
-          i18nKey="consentBlock.privacyNotice"
+          i18nKey={isEvent ? 'consentBlock.eventPrivacyNotice' : 'consentBlock.privacyNotice'}
           ns="parentBookings"
           components={[
             // eslint-disable-next-line jsx-a11y/anchor-has-content
@@ -1281,7 +1281,7 @@ const BookPage = () => {
           <div className="px-5 pb-4">
             <div className="p-3 bg-[#f0f2ed] border border-[#c5ceba] rounded-lg text-xs text-[#1F2933] leading-relaxed">
               <p className="font-semibold text-[#445446] uppercase tracking-wide mb-1">{t('confirmStep.eventCancellationTitle')}</p>
-              <p>{t('confirmStep.eventCancellationBody')}</p>
+              <p><Trans i18nKey="confirmStep.eventCancellationBody" ns="parentBookings" components={[<strong />]} /></p>
             </div>
           </div>
         )}
