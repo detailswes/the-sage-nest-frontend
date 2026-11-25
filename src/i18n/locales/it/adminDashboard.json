@@ -879,6 +879,8 @@
       "tierFull": "rimborso completo (>24 ore)",
       "tierHalf": "rimborso 50% (12–24 ore)",
       "tierNone": "nessun rimborso (<12 ore)",
+      "tierEventFull": "rimborso completo (≥7 giorni, evento)",
+      "tierEventNone": "nessun rimborso (<7 giorni, evento)",
       "errGtZero": "L'importo deve essere maggiore di 0.",
       "errExceedsTotal": "L'importo non può superare il totale della prenotazione ({{amount}}).",
       "errOverrideRequired": "È richiesto un motivo di deroga quando l'importo si discosta dalla politica di cancellazione.",

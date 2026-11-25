@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  formatDate, formatTime, formatDuration, hoursUntil, fmtCurrency, statusKey, STATUS_STYLES,
+  formatDate, formatTimeWithZone, formatDuration, hoursUntil, fmtCurrency, statusKey, STATUS_STYLES,
+  isEventBooking, isFreeBooking,
 } from '../../utils/bookingDisplay';
+import { formatEventVenue } from '../../utils/formatEventVenue';
 import PersonAvatar from './PersonAvatar';
 import CancellationPolicy from './CancellationPolicy';
 import BookingInvoicingInfo from './BookingInvoicingInfo';
@@ -25,6 +27,7 @@ const BookingDetailSheet = ({ booking, onClose, role = 'parent' }) => {
   const lng = i18n.language;
   const [copied, setCopied] = useState(false);
   const isExpertView = role === 'expert';
+  const isEvent      = isEventBooking(booking);
 
   const ref        = `SN-${new Date(booking.created_at).getFullYear()}-${String(booking.id).padStart(5, '0')}`;
   const currency   = booking.currency || 'EUR';
@@ -34,15 +37,18 @@ const BookingDetailSheet = ({ booking, onClose, role = 'parent' }) => {
         ? t('detailSheet.deletedSpecialist')
         : (booking.expert?.user?.name || t('detailSheet.deletedSpecialist')));
   const counterpartEmail = isExpertView ? booking.parent?.email : null;
-  const counterpartLabel = isExpertView ? t('detailSheet.clientSection') : t('detailSheet.specialistSection');
+  const counterpartLabel = isExpertView
+    ? t('detailSheet.clientSection')
+    : (isEvent ? t('detailSheet.hostSection') : t('detailSheet.specialistSection'));
   const avatarImage = isExpertView ? undefined : booking.expert?.profile_image;
   const duration   = formatDuration(booking.service?.duration_minutes);
   const hrs        = hoursUntil(booking.scheduled_at);
   const isUpcoming = booking.status === 'CONFIRMED' && hrs > 0;
   const sk         = statusKey(booking);
-  const location   = !isExpertView
-    ? formatPracticeAddress(booking.expert, lng)
-    : '';
+  // In-person events happen at the event venue, not the expert's practice.
+  const location   = isEvent
+    ? formatEventVenue(booking.service)
+    : (!isExpertView ? formatPracticeAddress(booking.expert, lng) : '');
 
   const paymentStatusLabel =
     booking.status === 'PENDING_PAYMENT'                                      ? t('detailSheet.paymentAwaiting')
@@ -145,11 +151,14 @@ const BookingDetailSheet = ({ booking, onClose, role = 'parent' }) => {
 
           {/* Session details */}
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">{t('detailSheet.sessionSection')}</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">{isEvent ? t('detailSheet.eventSection') : t('detailSheet.sessionSection')}</p>
             <div className="space-y-3">
-              <DetailRow label={t('detailSheet.serviceLabel')}  value={booking.service?.title || t('detailSheet.sessionSection')} />
+              <DetailRow
+                label={isEvent ? t('detailSheet.eventLabel') : t('detailSheet.serviceLabel')}
+                value={booking.service?.title || (isEvent ? t('detailSheet.eventSection') : t('detailSheet.sessionSection'))}
+              />
               <DetailRow label={t('detailSheet.dateLabel')}     value={formatDate(booking.scheduled_at, lng)} />
-              <DetailRow label={t('detailSheet.timeLabel')}     value={formatTime(booking.scheduled_at)} />
+              <DetailRow label={t('detailSheet.timeLabel')}     value={formatTimeWithZone(booking.scheduled_at, isExpertView ? null : booking.parent?.timezone, lng)} />
               {duration && <DetailRow label={t('detailSheet.durationLabel')} value={duration} />}
               <DetailRow
                 label={t('detailSheet.formatLabel')}
@@ -192,11 +201,12 @@ const BookingDetailSheet = ({ booking, onClose, role = 'parent' }) => {
             </div>
           )}
 
-          {/* Cancellation policy — parent view only, upcoming confirmed sessions */}
+          {/* Cancellation policy — parent view only, upcoming confirmed bookings.
+              Events carry their own policy (7-day rule), not the session tiers. */}
           {isUpcoming && !isExpertView && (
             <div>
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('detailSheet.policySection')}</p>
-              <CancellationPolicy compact />
+              <CancellationPolicy compact event={isEvent} free={isEvent && isFreeBooking(booking)} />
             </div>
           )}
 
