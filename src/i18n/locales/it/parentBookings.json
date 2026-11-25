@@ -43,7 +43,10 @@
     "paymentPaid": "Pagato",
     "cancellationSection": "Cancellazione",
     "policySection": "Politica di cancellazione",
-    "deletedSpecialist": "Specialista eliminato"
+    "deletedSpecialist": "Specialista eliminato",
+    "eventSection": "Evento",
+    "eventLabel": "Evento",
+    "hostSection": "Organizzato da"
   },
   "card": {
     "onlineReminder": "Il tuo esperto condividerà un link per la riunione (Zoom / Teams) prima della sessione.",
@@ -76,7 +79,12 @@
     "withdrawalLabel": "La sessione è prenotata entro i prossimi 14 giorni. Chiedo che si svolga alla data scelta, prima della scadenza del periodo di recesso, e accetto di perdere il diritto di recesso una volta che la sessione è stata erogata.",
     "withdrawalWhy": "Perché mi viene chiesto?",
     "withdrawalWhyBody": "Per legge hai 14 giorni dalla conferma per cambiare idea e ottenere il rimborso. La data che hai scelto rientra in questi 14 giorni, quindi ci serve la tua conferma. L'orario della sessione non cambia. Una volta svolta, il diritto di recesso non si applica più.",
-    "withdrawalRequiredError": "Conferma il consenso all'esecuzione anticipata per riprogrammare entro i prossimi 14 giorni."
+    "withdrawalRequiredError": "Conferma il consenso all'esecuzione anticipata per riprogrammare entro i prossimi 14 giorni.",
+    "onlineReminderEvent": "Il link per partecipare ti sarà inviato via email 24 ore prima dell'evento.",
+    "refundEventFull": "Riceverai un rimborso completo{{amount}} — stai cancellando almeno 7 giorni prima dell'evento.",
+    "refundEventNone": "Non verrà emesso alcun rimborso — stai cancellando meno di 7 giorni prima dell'evento, quindi si applica la politica di cancellazione degli eventi. Il tuo posto verrà liberato.",
+    "refundEventFree": "Questo è un evento gratuito, quindi non c'è nulla da rimborsare e non si applica alcuna penale di cancellazione.",
+    "refundNone": "Non verrà emesso alcun rimborso — la cancellazione avviene meno di 12 ore prima della sessione."
   },
   "pastCard": {
     "viewDetails": "Visualizza dettagli",
@@ -95,7 +103,9 @@
     "serviceInactive": "Questo servizio non è più offerto dall'esperto.",
     "unavailableSuffix": " Puoi cercare altri esperti disponibili.",
     "enjoyedSession": "Hai apprezzato questa sessione?",
-    "bookAgain": "Prenota di nuovo"
+    "bookAgain": "Prenota di nuovo",
+    "enjoyedEvent": "Ti è piaciuto questo evento?",
+    "browseEvents": "Scopri altri eventi"
   },
   "calendar": {
     "weekdays": [
@@ -371,5 +381,18 @@
     "fiscalCodeRequired": "Inserisci il tuo codice fiscale: è obbligatorio sulla fattura.",
     "fiscalCodeInvalid": "Il codice fiscale non è valido. Controlla di averlo inserito correttamente.",
     "consentRequired": "Per continuare è necessario il tuo consenso."
+  },
+  "eventCancellationPolicy": {
+    "compactPrefix": "Politica di cancellazione degli eventi: ",
+    "compactBody": "almeno 7 giorni prima dell'evento → rimborso completo · meno di 7 giorni prima → nessun rimborso · evento annullato dal professionista → rimborso completo · eventi gratuiti → nessuna penale",
+    "freeBody": "questo è un evento gratuito, quindi non c'è nulla da rimborsare e non si applica alcuna penale di cancellazione. Cancella il prima possibile, così il tuo posto può andare a un altro genitore.",
+    "intro": "Alle prenotazioni di eventi si applica la seguente politica di cancellazione:",
+    "tier1Label": "Almeno 7 giorni",
+    "tier1Suffix": " prima dell'evento → Rimborso completo",
+    "tier2Label": "Meno di 7 giorni",
+    "tier2Suffix": " prima dell'evento → Nessun rimborso",
+    "expertCancelNote": "Se il professionista annulla l'evento, riceverai sempre un <1>rimborso completo</1> indipendentemente dal momento. Gli eventi gratuiti non prevedono alcuna penale di cancellazione.",
+    "noReschedule": "Le prenotazioni degli eventi non possono essere riprogrammate — se non puoi più partecipare, cancella la prenotazione così il tuo posto può andare a un altro genitore.",
+    "footer": "Le cancellazioni vengono elaborate in base all'orario in cui la tua richiesta viene ricevuta da Sage Nest. Tutti i dettagli sono nei Termini per gli eventi che hai accettato al momento della prenotazione."
   }
 }

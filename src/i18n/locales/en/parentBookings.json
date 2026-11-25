@@ -43,7 +43,10 @@
     "paymentPaid": "Paid",
     "cancellationSection": "Cancellation",
     "policySection": "Cancellation policy",
-    "deletedSpecialist": "Deleted specialist"
+    "deletedSpecialist": "Deleted specialist",
+    "eventSection": "Event",
+    "eventLabel": "Event",
+    "hostSection": "Hosted by"
   },
   "card": {
     "onlineReminder": "Your expert will share a meeting link (Zoom / Teams) before the session.",
@@ -76,7 +79,12 @@
     "withdrawalLabel": "The session is booked within the next 14 days. I ask that it goes ahead on the date I chose, before the withdrawal period ends, and accept that I lose the right of withdrawal once the session has taken place.",
     "withdrawalWhy": "Why am I asked this?",
     "withdrawalWhyBody": "By law you have 14 days from confirming a booking to change your mind and get a refund. Your chosen date falls inside those 14 days, so we need you to confirm you still want it. Nothing changes about your session time. Once it has taken place, the 14-day right no longer applies.",
-    "withdrawalRequiredError": "Please confirm the early-performance consent to reschedule into the next 14 days."
+    "withdrawalRequiredError": "Please confirm the early-performance consent to reschedule into the next 14 days.",
+    "onlineReminderEvent": "The link to join will be sent by email 24 h before the event.",
+    "refundEventFull": "You'll receive a full refund{{amount}} — you are cancelling at least 7 days before the event.",
+    "refundEventNone": "No refund will be issued — you are cancelling less than 7 days before the event, so the event cancellation policy applies. Your place will be released.",
+    "refundEventFree": "This is a free event, so there is nothing to refund and no cancellation penalty applies.",
+    "refundNone": "No refund will be issued — cancellation is less than 12 hours before your session."
   },
   "pastCard": {
     "viewDetails": "View details",
@@ -95,7 +103,9 @@
     "serviceInactive": "This service is no longer offered by the expert.",
     "unavailableSuffix": " You can browse other available experts.",
     "enjoyedSession": "Enjoyed this session?",
-    "bookAgain": "Book again"
+    "bookAgain": "Book again",
+    "enjoyedEvent": "Enjoyed this event?",
+    "browseEvents": "Browse other events"
   },
   "calendar": {
     "weekdays": [
@@ -371,5 +381,18 @@
     "fiscalCodeRequired": "Please enter your fiscal code — it is required on the invoice.",
     "fiscalCodeInvalid": "This does not look like a valid fiscal code. Please check it for a typo.",
     "consentRequired": "Please confirm your consent to continue."
+  },
+  "eventCancellationPolicy": {
+    "compactPrefix": "Event cancellation policy: ",
+    "compactBody": "at least 7 days before the event → full refund · less than 7 days before → no refund · event cancelled by the expert → full refund · free events → no penalty",
+    "freeBody": "this is a free event, so there is nothing to refund and no cancellation penalty applies. Please cancel as soon as possible so your place can go to another parent.",
+    "intro": "The following cancellation policy applies to event bookings:",
+    "tier1Label": "At least 7 days",
+    "tier1Suffix": " before the event → Full refund",
+    "tier2Label": "Less than 7 days",
+    "tier2Suffix": " before the event → No refund",
+    "expertCancelNote": "If the expert cancels the event, you will always receive a <1>full refund</1> regardless of timing. Free events carry no cancellation penalty.",
+    "noReschedule": "Event bookings can't be rescheduled — if you can no longer attend, please cancel so your place can go to another parent.",
+    "footer": "Cancellations are processed based on the time your request is received by Sage Nest. Full details are in the Event Terms you accepted at booking."
   }
 }

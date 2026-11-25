@@ -9,17 +9,23 @@ import {
   useAdminMarkTransferResolvedMutation,
 } from "../../api/adminApi";
 
+// Mirrors utils/refundPolicy.js on the backend (the server is authoritative).
+// Events: >= 7 days → full, otherwise none. Sessions: >= 24 h full, >= 12 h 50%.
 function computeRefundPolicy(bk) {
   const total = parseFloat(bk.amount);
   const ref   = bk.status === "CANCELLED" && bk.cancelled_at
     ? new Date(bk.cancelled_at)
     : new Date();
   const h   = (new Date(bk.scheduled_at).getTime() - ref.getTime()) / 3_600_000;
-  const pct = h >= 24 ? 100 : h >= 12 ? 50 : 0;
+  const isEvent = bk.service?.cluster === "EVENT";
+  const pct = isEvent ? (h >= 168 ? 100 : 0) : (h >= 24 ? 100 : h >= 12 ? 50 : 0);
+  const tierKey = isEvent
+    ? (h >= 168 ? "tierEventFull" : "tierEventNone")
+    : (h >= 24 ? "tierFull" : h >= 12 ? "tierHalf" : "tierNone");
   return {
     policyPercent: pct,
     policyAmount:  parseFloat((total * pct / 100).toFixed(2)),
-    tierKey:       h >= 24 ? "tierFull" : h >= 12 ? "tierHalf" : "tierNone",
+    tierKey,
   };
 }
 

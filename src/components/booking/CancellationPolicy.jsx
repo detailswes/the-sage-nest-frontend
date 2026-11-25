@@ -1,7 +1,64 @@
 import { useTranslation, Trans } from 'react-i18next';
 
-const CancellationPolicy = ({ compact = false, small = false }) => {
+// `event` switches to the event policy (≥7 days → full refund, <7 days → none,
+// expert-cancelled → full refund, free events → no penalty); `free` narrows the
+// event wording for complimentary events. Must match the event confirmation
+// email, the Event Terms and cancelBooking() on the backend.
+const CancellationPolicy = ({ compact = false, small = false, event = false, free = false }) => {
   const { t } = useTranslation('parentBookings');
+
+  if (event && free) {
+    return (
+      <div className={`rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-amber-800 leading-relaxed ${compact ? 'text-xs' : small ? 'text-xs' : 'text-sm'}`}>
+        <span className="font-semibold">{t('eventCancellationPolicy.compactPrefix')}</span>
+        {t('eventCancellationPolicy.freeBody')}
+      </div>
+    );
+  }
+
+  if (event && compact) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 leading-relaxed">
+        <span className="font-semibold">{t('eventCancellationPolicy.compactPrefix')}</span>
+        {t('eventCancellationPolicy.compactBody')}
+      </div>
+    );
+  }
+
+  if (event) {
+    return (
+      <div className={`rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900 leading-relaxed space-y-3 ${small ? 'text-xs' : 'text-sm'}`}>
+        <p>{t('eventCancellationPolicy.intro')}</p>
+        <ul className="space-y-1.5 pl-2">
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-px">•</span>
+            <span>
+              <span className="font-semibold">{t('eventCancellationPolicy.tier1Label')}</span>
+              {t('eventCancellationPolicy.tier1Suffix')}
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="shrink-0 mt-px">•</span>
+            <span>
+              <span className="font-semibold">{t('eventCancellationPolicy.tier2Label')}</span>
+              {t('eventCancellationPolicy.tier2Suffix')}
+            </span>
+          </li>
+        </ul>
+        <p>
+          <Trans
+            i18nKey="eventCancellationPolicy.expertCancelNote"
+            ns="parentBookings"
+            components={[<span />, <span className="font-semibold" />]}
+          />
+        </p>
+        <p>{t('eventCancellationPolicy.noReschedule')}</p>
+        <p className={`text-amber-700 ${small ? 'text-[10px]' : 'text-xs'}`}>
+          {t('eventCancellationPolicy.footer')}
+        </p>
+      </div>
+    );
+  }
 
   if (compact) {
     return (

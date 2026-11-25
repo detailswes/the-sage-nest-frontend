@@ -879,6 +879,8 @@
       "tierFull": "full refund (>24 h)",
       "tierHalf": "50% refund (12–24 h)",
       "tierNone": "no refund (<12 h)",
+      "tierEventFull": "full refund (≥7 days, event)",
+      "tierEventNone": "no refund (<7 days, event)",
       "errGtZero": "Amount must be greater than 0.",
       "errExceedsTotal": "Amount cannot exceed the booking total ({{amount}}).",
       "errOverrideRequired": "An override reason is required when the amount deviates from the cancellation policy.",
