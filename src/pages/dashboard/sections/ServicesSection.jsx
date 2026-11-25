@@ -271,6 +271,13 @@ const ServicesSection = () => {
         next.format = '';
         next.home_visit_areas = [];
       }
+      // Events ignore the profile's delivery-mode lock (the expert picks
+      // Online or In-person per event); every other category stays locked to
+      // the profile mode, so switching away from Event snaps the format back.
+      if (name === 'cluster' && value !== 'EVENT' && f.cluster === 'EVENT' && lockedFormat) {
+        next.format = lockedFormat;
+        next.home_visit_areas = lockedFormat === 'HOME_VISIT' ? f.home_visit_areas : [];
+      }
       // A duration only valid for events (180/240 min) has no home in the
       // normal duration list — clear it so a stale value isn't silently
       // carried into a non-event service.
@@ -301,6 +308,9 @@ const ServicesSection = () => {
   };
 
   const isEventForm = form.cluster === 'EVENT';
+  // The profile's delivery mode locks Format for 1:1 services only — events pick
+  // Online / In-person per event.
+  const formatLocked = !!lockedFormat && !isEventForm;
   // Lower bound for the event date picker. With a 24h minimum lead time,
   // "today" can never actually satisfy validate() — a calendar day only
   // holds 24 hours total, and some of today has already elapsed — so the
@@ -391,7 +401,7 @@ const ServicesSection = () => {
       // service was saved under — if they differ, the price below needs a
       // deliberate review rather than being silently carried over.
       currency:         expertCurrency,
-      format:           lockedFormat     || svc.format || '',
+      format:           (lockedFormat && svc.cluster !== 'EVENT') ? lockedFormat : (svc.format || ''),
       cluster:          svc.cluster      || '',
       home_visit_areas: svc.home_visit_areas || [],
       // An event is one-time — duplicating carries over everything except the
@@ -424,7 +434,7 @@ const ServicesSection = () => {
       duration_minutes: String(effective.duration_minutes),
       price:            String(effective.price),
       currency:         expertCurrency,
-      format:           lockedFormat     || effective.format || '',
+      format:           (lockedFormat && effective.cluster !== 'EVENT') ? lockedFormat : (effective.format || ''),
       cluster:          effective.cluster      || '',
       home_visit_areas: effective.home_visit_areas || [],
       event_starts_at:  toDatetimeLocalValue(effective.event_starts_at, expertTimezone),
@@ -683,14 +693,28 @@ const ServicesSection = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
+                  {t('services.form.categoryLabel')} <span className="text-red-400">*</span>
+                </label>
+                <select name="cluster" value={form.cluster} onChange={handleChange} className={inputClass(!!formErrors.cluster)}>
+                  <option value="" disabled>{t('services.form.categorySelect')}</option>
+                  {CLUSTER_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {t('services.clusters.' + o.value)}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.cluster && <p className="mt-1.5 text-xs text-red-500">{formErrors.cluster}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
                   {t('services.form.formatLabel')} <span className="text-red-400">*</span>
                 </label>
                 <select
                   name="format"
                   value={form.format}
                   onChange={handleChange}
-                  disabled={!!lockedFormat}
-                  className={`${inputClass(!!formErrors.format)} ${lockedFormat ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''}`}
+                  disabled={formatLocked}
+                  className={`${inputClass(!!formErrors.format)} ${formatLocked ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''}`}
                 >
                   <option value="" disabled>{t('services.form.formatSelect')}</option>
                   {(isEventForm ? EVENT_FORMAT_OPTIONS : FORMAT_OPTIONS).map((o) => (
@@ -703,7 +727,7 @@ const ServicesSection = () => {
                     </option>
                   ))}
                 </select>
-                {lockedFormat ? (
+                {formatLocked ? (
                   <p className="mt-1 text-xs text-gray-400">
                     {t('services.form.lockedFormatHint')}
                   </p>
@@ -715,23 +739,6 @@ const ServicesSection = () => {
                   </p>
                 )}
                 {formErrors.format && <p className="mt-1.5 text-xs text-red-500">{formErrors.format}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1F2933] mb-1.5">
-                  {t('services.form.categoryLabel')} <span className="text-red-400">*</span>
-                </label>
-                <select name="cluster" value={form.cluster} onChange={handleChange} className={inputClass(!!formErrors.cluster)}>
-                  <option value="" disabled>{t('services.form.categorySelect')}</option>
-                  {CLUSTER_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value} disabled={o.value === 'EVENT' && lockedFormat === 'HOME_VISIT'}>
-                      {t('services.clusters.' + o.value)}
-                    </option>
-                  ))}
-                </select>
-                {formErrors.cluster && <p className="mt-1.5 text-xs text-red-500">{formErrors.cluster}</p>}
-                {lockedFormat === 'HOME_VISIT' && (
-                  <p className="mt-1 text-xs text-gray-400">{t('services.form.eventUnavailableHomeVisitHint')}</p>
-                )}
               </div>
             </div>
 
