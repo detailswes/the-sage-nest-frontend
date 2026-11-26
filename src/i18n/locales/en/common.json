@@ -3,6 +3,9 @@
   "delete": "Delete",
   "checkingForConflicts": "Checking for conflicts…",
   "datePlaceholder": "DD/MM/YYYY",
+  "dobInvalid": "Enter a valid date as DD/MM/YYYY (not in the future).",
+  "dateInvalid": "Enter a valid date as DD/MM/YYYY.",
+  "dateInvalidFuture": "Enter a valid future date as DD/MM/YYYY.",
   "done": "Done",
   "calendar": {
     "weekdays": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
