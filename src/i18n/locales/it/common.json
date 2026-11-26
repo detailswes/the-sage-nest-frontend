@@ -3,6 +3,9 @@
   "delete": "Elimina",
   "checkingForConflicts": "Verifica dei conflitti in corso…",
   "datePlaceholder": "GG/MM/AAAA",
+  "dobInvalid": "Inserisci una data valida nel formato GG/MM/AAAA (non nel futuro).",
+  "dateInvalid": "Inserisci una data valida nel formato GG/MM/AAAA.",
+  "dateInvalidFuture": "Inserisci una data futura valida nel formato GG/MM/AAAA.",
   "done": "Fatto",
   "calendar": {
     "weekdays": ["Do", "Lu", "Ma", "Me", "Gi", "Ve", "Sa"]

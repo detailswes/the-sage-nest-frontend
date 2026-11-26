@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { isoToDob } from "../../../components/DateTextInput";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
@@ -908,7 +909,7 @@ const AdminExpertDetailSection = () => {
                       const rows = [
                         [t("expertDetail.bizInfo.rows.entityType"), bi.entity_type === "INDIVIDUAL" ? t("expertDetail.bizInfo.rows.individual") : t("expertDetail.bizInfo.rows.company")],
                         [t("expertDetail.bizInfo.rows.legalName"), bi.legal_name],
-                        ...(bi.entity_type === "INDIVIDUAL" && bi.date_of_birth ? [[t("expertDetail.bizInfo.rows.dob"), new Date(bi.date_of_birth).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })]] : []),
+                        ...(bi.entity_type === "INDIVIDUAL" && bi.date_of_birth ? [[t("expertDetail.bizInfo.rows.dob"), isoToDob(bi.date_of_birth)]] : []),
                         [t("expertDetail.bizInfo.rows.street"), bi.address_street],
                         [t("expertDetail.bizInfo.rows.city"), bi.address_city],
                         [t("expertDetail.bizInfo.rows.postalCode"), bi.address_postal_code],

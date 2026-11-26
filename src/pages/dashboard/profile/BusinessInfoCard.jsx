@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { useSaveBusinessInfoMutation } from "../../../api/expertApi";
 import { getCountryName, getLocalizedCountries } from "../../../utils/countries";
-import CenteredDateInput from "../../../components/CenteredDateInput";
+import DateTextInput, { isoToDob } from "../../../components/DateTextInput";
 
 const Spinner = () => (
   <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin flex-shrink-0" />
@@ -28,14 +28,6 @@ const EMPTY_FORM = {
   business_address: "",
 };
 
-const formatDate = (iso, lng = 'en') =>
-  iso
-    ? new Date(iso).toLocaleDateString(lng === 'it' ? 'it-IT' : 'en-GB', {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : "—";
 
 const InfoRow = ({ label, value }) => (
   <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-3 py-2 border-b border-[#F0F2F0] last:border-0">
@@ -50,7 +42,6 @@ const InfoRow = ({ label, value }) => (
 
 const BusinessInfoCard = ({ initialData = null }) => {
   const { t, i18n } = useTranslation("expertDashboard");
-  const lng = i18n.language;
   const [data, setData] = useState(initialData);
   const [showForm, setShowForm] = useState(!initialData);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -188,7 +179,7 @@ const BusinessInfoCard = ({ initialData = null }) => {
             {data.entity_type === "INDIVIDUAL" && (
               <InfoRow
                 label={t("profile.business.infoRows.dateOfBirth")}
-                value={formatDate(data.date_of_birth, lng)}
+                value={isoToDob(data.date_of_birth) || "—"}
               />
             )}
             <InfoRow label={t("profile.business.infoRows.street")} value={data.address_street} />
@@ -285,11 +276,14 @@ const BusinessInfoCard = ({ initialData = null }) => {
               <label className={labelClass}>
                 {t("profile.business.form.dobLabel")} <span className="text-red-500">*</span>
               </label>
-              <CenteredDateInput
+              <DateTextInput
+                min={new Date(1900, 0, 1)}
+                max={new Date()}
+                invalidKey="dobInvalid"
+                autoComplete="bday"
                 value={form.date_of_birth}
                 onChange={(e) => handleChange({ target: { name: "date_of_birth", value: e.target.value } })}
-                max={new Date()}
-                className={`${inputClass("date_of_birth")} uppercase`}
+                className={inputClass("date_of_birth")}
               />
               {fieldErrors.date_of_birth && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.date_of_birth}</p>}
             </div>

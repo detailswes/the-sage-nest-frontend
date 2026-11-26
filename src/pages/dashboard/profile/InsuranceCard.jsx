@@ -1,11 +1,10 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { startOfDay } from 'date-fns';
 import { useSaveInsuranceMutation, useDeleteInsuranceMutation } from '../../../api/expertApi';
 import { getDocumentUrl } from '../../../utils/imageUrl';
 import ConfirmModal from '../../../components/ConfirmModal';
-import CenteredDateInput from '../../../components/CenteredDateInput';
+import DateTextInput from '../../../components/DateTextInput';
 import { LockFilledIcon, AttachmentLinkIcon, TrashIcon, WarningTriangleFilledIcon } from '../../../assets/icons';
 
 const DOC_TYPES = 'application/pdf,image/jpeg,image/jpg,image/png';
@@ -183,9 +182,12 @@ const InsuranceCard = ({ initialData = null }) => {
 
           <div>
             <label className="block text-xs font-medium text-[#1F2933] mb-1">{t('profile.insurance.form.expiryLabel')}</label>
-            <CenteredDateInput
+            {/* Typed as DD/MM/YYYY; must be a future date (backend rejects today and earlier). */}
+            <DateTextInput
               value={form.policy_expires_at}
-              min={startOfDay(new Date())}
+              min={new Date(Date.now() + 24 * 60 * 60 * 1000)}
+              max={new Date(Date.now() + 20 * 365 * 24 * 60 * 60 * 1000)}
+              invalidKey="dateInvalidFuture"
               onChange={(e) => {
                 const val = e.target.value;
                 setForm((f) => ({ ...f, policy_expires_at: val }));
@@ -197,7 +199,7 @@ const InsuranceCard = ({ initialData = null }) => {
                   setDateWarning('');
                 }
               }}
-              className={`${inputClass(!form.policy_expires_at && !!formError)} uppercase`}
+              className={inputClass(!form.policy_expires_at && !!formError)}
             />
             {dateWarning && (
               <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
