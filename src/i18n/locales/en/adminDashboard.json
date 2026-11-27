@@ -814,6 +814,7 @@
     },
     "paymentStatus": {
       "noPayment": "No payment",
+      "awaitingPayment": "Awaiting payment (not charged)",
       "capturedTransferFailed": "Captured — transfer failed",
       "captured": "Payment captured",
       "capturedRefunded": "Captured — refunded",
