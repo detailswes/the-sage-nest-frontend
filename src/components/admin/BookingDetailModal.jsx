@@ -107,6 +107,8 @@ function BookingDetailModal({ bookingId, onClose, onUpdated }) {
   };
 
   const getPaymentStatusLabel = () => {
+    // Checkout opened but not paid yet — a PaymentIntent exists, money hasn't moved.
+    if (booking?.status === "PENDING_PAYMENT") return t("bookingModal.paymentStatus.awaitingPayment");
     if (!booking?.stripe_payment_intent_id) return t("bookingModal.paymentStatus.noPayment");
     if (isPartialRefund(booking)) return t("bookingModal.paymentStatus.capturedPartiallyRefunded");
     if (["CONFIRMED", "COMPLETED"].includes(booking.status)) {
