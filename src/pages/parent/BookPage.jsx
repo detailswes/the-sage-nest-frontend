@@ -144,10 +144,14 @@ const BookingSummaryStrip = ({ detail, service, slot, format, lng }) => {
 // this is the only place the parent sees the venue and how many spots remain
 // before committing. The venue is the expert's own entry for this event, not
 // their practice address.
+// Remaining spots are only mentioned when 5 or fewer are left (total seats are never
+// shown); at 0 the event reads as fully booked and booking is blocked.
+const EVENT_SPOTS_VISIBLE_MAX = 5;
 const EventSpotsNotice = ({ service, t }) => {
   if (!service) return null;
   const spotsLeft = service.spots_left;
   const isFull = typeof spotsLeft === 'number' && spotsLeft <= 0;
+  const showCount = typeof spotsLeft === 'number' && spotsLeft > 0 && spotsLeft <= EVENT_SPOTS_VISIBLE_MAX;
   const venue = formatEventVenue(service);
   return (
     <div className="mb-5 -mt-2 space-y-2">
@@ -156,8 +160,8 @@ const EventSpotsNotice = ({ service, t }) => {
           <span className="font-medium text-[#1F2933]">{t('detailsStep.eventLocationLabel')}</span> {venue}
         </p>
       )}
-      {typeof spotsLeft === 'number' && (
-        <p className={`text-xs font-medium ${isFull ? 'text-red-600' : spotsLeft <= 3 ? 'text-amber-600' : 'text-gray-500'}`}>
+      {(isFull || showCount) && (
+        <p className={`text-xs font-medium ${isFull ? 'text-red-600' : 'text-amber-600'}`}>
           {isFull ? t('detailsStep.eventFull') : t('detailsStep.spotsLeft', { count: spotsLeft })}
         </p>
       )}
@@ -823,6 +827,8 @@ const BookPage = () => {
   const healthConsentRequired = detail?.is_health_professional === true;
   const healthFlow = selectedService?.cluster === 'FOR_BABY' ? 'B' : 'A';
   const isEventBooking = selectedService?.cluster === 'EVENT';
+  // No spots left → booking is disabled (the server also rejects it with 409).
+  const eventFull = isEventBooking && typeof selectedService?.spots_left === 'number' && selectedService.spots_left <= 0;
   // A free event has nothing to invoice and nothing to withdraw from — the
   // backend skips both entirely for a $0 booking, so the UI does too.
   const isFreeEvent = isEventBooking && Number(selectedService?.price) === 0;
@@ -898,7 +904,7 @@ const BookPage = () => {
   };
 
   const handleProceed = () => {
-    if (!tcAccepted || !detailsValid) return;
+    if (eventFull || !tcAccepted || !detailsValid) return;
     doCheckout(lockId || null);
   };
 
@@ -1168,7 +1174,8 @@ const BookPage = () => {
 
             <button
               onClick={() => detailsValid ? setStep(STEPS.CONFIRM) : setShowDetailsErrors(true)}
-              className={`w-full py-3.5 px-4 text-white text-sm font-semibold rounded-xl transition-colors ${
+              disabled={eventFull}
+              className={`w-full py-3.5 px-4 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                 detailsValid ? 'bg-[#445446] hover:bg-[#3a4a3b]' : 'bg-[#445446]/60 hover:bg-[#445446]/70'
               }`}>
               {t('detailsStep.continueBtn')}
@@ -1294,7 +1301,7 @@ const BookPage = () => {
             isEvent={isEventBooking}
           />
           <button onClick={handleProceed}
-            disabled={creating || locking || !tcAccepted || !detailsValid}
+            disabled={eventFull || creating || locking || !tcAccepted || !detailsValid}
             className="w-full mt-4 py-3.5 px-4 bg-[#445446] hover:bg-[#3a4a3b] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
             {creating || locking
               ? t('confirmStep.preparingBtn')
